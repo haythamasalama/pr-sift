@@ -31,7 +31,7 @@ open-source Chrome extension that turns that list into a focused review.
 Chips come from the pull request itself. Click `.php` to see only PHP, add `added` to see only new PHP files,
 shift-click `.lock` to hide lock files for good. Add your own types such as `.blade.php` or `.test.ts`.
 
-![Filtering by type and change status](media/videos/filters-demo.gif)
+![Filtering by type and change status](media/videos/filters.gif)
 
 ### Never read the same file twice
 
@@ -39,14 +39,14 @@ Mark a file or a whole folder as viewed and it leaves the list. A ring shows wha
 content, so a file that changes after a new push comes back by itself. Collapse or expand any folder and everything
 inside it.
 
-![Marking folders as viewed](media/videos/review-demo.gif)
+![Marking folders as viewed](media/videos/review.gif)
 
 ### Private notes, sent to the AI you use
 
 Drag over lines to write a note only you can see. Resolve notes as you go, post one to GitHub when it is worth it, or
 copy them all with their code as a ready prompt for **Claude, ChatGPT or Gemini**.
 
-![Writing a private note and sending it to an assistant](media/videos/notes-demo.gif)
+![Writing a private note and sending it to an assistant](media/videos/notes.gif)
 
 ### And the small things
 
