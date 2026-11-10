@@ -24,12 +24,22 @@ function icon(name, cls = 'size-5') {
     .replace(/\n\s*/g, ' ')
 }
 
-const brandIcon = (slug) => {
-  const path = slug === 'microsoftedge' ? here('assets/brands/microsoftedge.svg') : here(`node_modules/simple-icons/icons/${slug}.svg`)
+const VENDORED_BRANDS = new Set(['microsoftedge', 'openai'])
+const brandIcon = (slug, cls = 'size-5') => {
+  const path = VENDORED_BRANDS.has(slug) ? here(`assets/brands/${slug}.svg`) : here(`node_modules/simple-icons/icons/${slug}.svg`)
   return readFileSync(path, 'utf8')
-    .replace('<svg ', '<svg class="size-5" fill="currentColor" aria-hidden="true" ')
+    .replace('<svg ', `<svg class="${cls}" fill="currentColor" aria-hidden="true" `)
     .replace(/<title>.*?<\/title>/, '')
 }
+
+const AI_TOOLS = [
+  ['claude', 'Claude Code'],
+  ['openai', 'Codex'],
+  ['cursor', 'Cursor'],
+  ['githubcopilot', 'GitHub Copilot'],
+  ['claude', 'Claude'],
+  ['openai', 'ChatGPT'],
+]
 
 const MARK = 'M22 28h56L57 53v20l-14-7V53L22 28Z'
 const logo = (cls = 'size-7') =>
@@ -375,10 +385,14 @@ function homePage() {
     [
       'ai',
       `<div class="max-w-3xl">${iconBox('bot')}${h2(h.ai.title, 'mt-5')}${lead(h.ai.lead)}</div>
+      <ul class="mt-8 flex flex-wrap gap-2" aria-label="Supported AI tools">
+        ${AI_TOOLS.map(([slug, name]) => `<li class="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-1.5 text-sm font-medium">${brandIcon(slug, 'size-4')}${esc(name)}</li>`).join('')}
+        <li class="inline-flex items-center gap-2 rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted">${icon('clipboard', 'size-4')}Any other AI</li>
+      </ul>
       <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
         ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
-      <div class="mt-10">${video('claude', 'Copying notes for ChatGPT, Gemini and Claude')}</div>`,
+      <div class="mt-10">${video('claude', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
     ],
     [
       'pain',
@@ -443,7 +457,7 @@ function homePage() {
   const body = `
     <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
       <div class="@container min-w-0">
-        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-paper">New</span>Send notes to ChatGPT or Gemini${icon('chevron-right', 'size-3.5 text-muted')}</a>
+        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-paper">New</span><span class="flex items-center gap-1.5">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>Send notes to your AI agent${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>

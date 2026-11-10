@@ -35,7 +35,7 @@ export const prSift = {
     progress: ['yes', 'Files left in a ring'],
     reset: ['yes', 'By file content'],
     notes: ['yes', 'Multi-line, stay in your browser'],
-    ai: ['yes', 'Claude, ChatGPT or Gemini'],
+    ai: ['yes', 'Claude Code, Codex, Cursor, Copilot, Claude, ChatGPT'],
     split: ['yes', 'All files or one file'],
     account: ['yes', 'Token optional'],
   },
