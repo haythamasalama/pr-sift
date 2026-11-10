@@ -1,15 +1,34 @@
 import './style.css'
 
-document.querySelectorAll('[data-theme-toggle]').forEach((button) =>
+const html = document.documentElement
+const systemDark = matchMedia('(prefers-color-scheme: dark)')
+const themeButtons = document.querySelectorAll('[data-theme-mode]')
+
+function applyTheme(mode) {
+  html.dataset.theme = mode
+  html.classList.toggle('dark', mode === 'dark' || (mode === 'system' && systemDark.matches))
+  for (const button of themeButtons) button.setAttribute('aria-pressed', String(button.dataset.themeMode === mode))
+}
+
+function saveTheme(mode) {
+  try {
+    if (mode === 'system') localStorage.removeItem('theme')
+    else localStorage.setItem('theme', mode)
+  } catch {
+    return
+  }
+}
+
+applyTheme(html.dataset.theme || 'system')
+systemDark.addEventListener('change', () => {
+  if (html.dataset.theme === 'system') applyTheme('system')
+})
+for (const button of themeButtons) {
   button.addEventListener('click', () => {
-    const dark = document.documentElement.classList.toggle('dark')
-    try {
-      localStorage.setItem('theme', dark ? 'dark' : 'light')
-    } catch {
-      return
-    }
-  }),
-)
+    saveTheme(button.dataset.themeMode)
+    applyTheme(button.dataset.themeMode)
+  })
+}
 
 for (const root of document.querySelectorAll('[data-playground]')) {
   const chips = [...root.querySelectorAll('[data-chip]')]

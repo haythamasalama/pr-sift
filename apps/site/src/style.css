@@ -34,15 +34,15 @@
 }
 
 .dark {
-  --paper: #000000;
-  --raised: #0d1117;
-  --ink: #ffffff;
-  --muted: #8b949e;
-  --line: #30363d;
-  --add: #3fb950;
-  --add-bg: rgb(46 160 67 / 0.18);
-  --del: #f85149;
-  --del-bg: rgb(248 81 73 / 0.16);
+  --paper: #161618;
+  --raised: #1e1e21;
+  --ink: #ececee;
+  --muted: #a0a0a8;
+  --line: #2e2e33;
+  --add: #5cc77a;
+  --add-bg: rgb(92 199 122 / 0.14);
+  --del: #f07a72;
+  --del-bg: rgb(240 122 114 / 0.14);
 }
 
 html {
@@ -52,6 +52,14 @@ html {
 
 html.dark {
   color-scheme: dark;
+}
+
+/* Keyed on the html attribute set in <head>, so the active option shows before main.js runs. */
+html[data-theme='system'] [data-theme-mode='system'],
+html[data-theme='light'] [data-theme-mode='light'],
+html[data-theme='dark'] [data-theme-mode='dark'] {
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  color: var(--ink);
 }
 
 :focus-visible {

@@ -153,7 +153,18 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
         ${NAV.map(([label, href]) => `<a href="${href.startsWith('#') ? link() + href : link(href)}" class="hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <button type="button" data-theme-toggle class="flex size-9 items-center justify-center rounded-md text-muted hover:bg-raised hover:text-ink" aria-label="Switch between light and dark">${icon('moon', 'size-[18px] dark:hidden')}${icon('sun', 'hidden size-[18px] dark:block')}</button>
+      <div role="group" aria-label="Theme" class="flex items-center gap-0.5 rounded-md border border-line p-0.5">
+        ${[
+          ['system', 'monitor', 'System'],
+          ['light', 'sun', 'Light'],
+          ['dark', 'moon', 'Dark'],
+        ]
+          .map(
+            ([mode, ic, label]) =>
+              `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex size-7 items-center justify-center rounded text-muted transition-colors hover:text-ink">${icon(ic, 'size-4')}</button>`,
+          )
+          .join('')}
+      </div>
       <a href="${REPO_URL}" class="inline-flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="hidden sm:inline">Star</span><span data-stars class="text-muted"></span></a>
     </nav>
   </header>`
@@ -194,7 +205,7 @@ function footer() {
   </footer>`
 }
 
-const THEME_SCRIPT = `<script>try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>`
+const THEME_SCRIPT = `<script>(function(){var m='system';try{m=localStorage.getItem('theme')||m}catch(e){}if(m!=='light'&&m!=='dark')m='system';var r=document.documentElement;r.dataset.theme=m;if(m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))r.classList.add('dark')})()</script>`
 
 function layout({ path, title, description, body, jsonLd = [], type = 'website' }) {
   const url = SITE_URL + path
@@ -210,7 +221,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website' 
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)" />
     <meta name="author" content="${AUTHOR.name}" />
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="PR Sift" />
