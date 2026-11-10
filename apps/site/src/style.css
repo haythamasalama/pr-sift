@@ -1,65 +1,103 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+@theme inline {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-add: var(--add);
+  --color-add-bg: var(--add-bg);
+  --color-del: var(--del);
+  --color-del-bg: var(--del-bg);
+}
+
+:root {
+  --paper: #ffffff;
+  --raised: #f6f8fa;
+  --ink: #000000;
+  --muted: #57606a;
+  --line: #d0d7de;
+  --add: #1a7f37;
+  --add-bg: #dafbe1;
+  --del: #cf222e;
+  --del-bg: #ffebe9;
+}
+
+.dark {
+  --paper: #000000;
+  --raised: #0d1117;
+  --ink: #ffffff;
+  --muted: #8b949e;
+  --line: #30363d;
+  --add: #3fb950;
+  --add-bg: rgb(46 160 67 / 0.18);
+  --del: #f85149;
+  --del-bg: rgb(248 81 73 / 0.16);
 }
 
 html {
   scroll-behavior: smooth;
-  font-feature-settings: 'cv11', 'ss01';
+  color-scheme: light;
 }
 
-.reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity 0.6s ease,
-    transform 0.6s ease;
+html.dark {
+  color-scheme: dark;
 }
 
-.reveal.shown {
-  opacity: 1;
-  transform: none;
-}
-
-[data-file].is-hidden {
-  opacity: 0;
-  max-height: 0;
-  padding-block: 0;
-  margin-block: 0;
-  box-shadow: none;
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 [data-file] {
-  max-height: 3rem;
+  max-height: 2.75rem;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    margin 0.35s ease,
+    padding 0.35s ease;
+}
+
+[data-file].is-hidden {
+  max-height: 0;
+  opacity: 0;
+  margin-block: 0;
+  padding-block: 0;
+  border-width: 0;
 }
 
 .chip[data-state='include'] {
-  background: var(--color-neutral-950);
-  border-color: var(--color-neutral-950);
-  color: white;
-}
-
-.dark .chip[data-state='include'] {
-  background: white;
-  border-color: white;
-  color: var(--color-neutral-950);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
 .chip[data-state='exclude'] {
-  color: var(--color-red-600);
-  border-color: color-mix(in oklab, var(--color-red-600) 40%, transparent);
+  color: var(--del);
+  border-color: var(--del);
   text-decoration: line-through;
 }
 
+.chip.is-pressing {
+  transform: scale(0.94);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
+  html {
+    scroll-behavior: auto;
+  }
+  [data-file],
+  .chip {
     transition: none;
   }
 }

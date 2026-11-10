@@ -1,17 +1,5 @@
 import './style.css'
 
-const observer = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue
-      entry.target.classList.add('shown')
-      observer.unobserve(entry.target)
-    }
-  },
-  { rootMargin: '0px 0px -10% 0px' },
-)
-document.querySelectorAll('.reveal').forEach((el) => observer.observe(el))
-
 document.querySelectorAll('[data-theme-toggle]').forEach((button) =>
   button.addEventListener('click', () => {
     const dark = document.documentElement.classList.toggle('dark')
@@ -44,6 +32,48 @@ for (const root of document.querySelectorAll('[data-playground]')) {
     }
     for (const chip of chips) chip.dataset.state = state.get(chip.dataset.chip) ?? ''
     summary.textContent = state.size ? `${visible} of ${files.length} files` : hint
+  }
+
+  let playing = root.hasAttribute('data-autoplay') && !matchMedia('(prefers-reduced-motion: reduce)').matches
+  const stop = () => (playing = false)
+  root.addEventListener('pointerdown', stop, { capture: true })
+  root.addEventListener('keydown', stop, { capture: true })
+
+  const press = (key, hide = false) => {
+    const chip = chips.find((c) => c.dataset.chip === key)
+    chip.classList.add('is-pressing')
+    setTimeout(() => chip.classList.remove('is-pressing'), 160)
+    if (hide) state.set(key, 'exclude')
+    else state.set(key, 'include')
+    render()
+  }
+
+  const SCRIPT = [
+    [1200, () => press('.lock', true)],
+    [1500, () => press('.md', true)],
+    [1500, () => press('.php')],
+    [1500, () => press('status:added')],
+    [3200, () => (state.clear(), render())],
+  ]
+
+  async function loop() {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+    while (playing) {
+      for (const [delay, step] of SCRIPT) {
+        await wait(delay)
+        if (!playing) return
+        step()
+      }
+    }
+  }
+  if (playing) {
+    const seen = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        seen.disconnect()
+        loop()
+      }
+    })
+    seen.observe(root)
   }
 
   for (const chip of chips) {
