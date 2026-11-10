@@ -17,7 +17,8 @@ const open = shallowRef(false)
 const dead = shallowRef(false)
 const { dark } = useAppearance()
 const rootEl = useTemplateRef<HTMLElement>('root')
-provide(portalTargetKey, rootEl)
+const portalEl = useTemplateRef<HTMLElement>('portal')
+provide(portalTargetKey, portalEl)
 const githubRefresh = useGithubRefreshSignal()
 const acknowledged = shallowRef(false)
 const externalUpdate = computed(() => githubRefresh.value && !acknowledged.value)
@@ -71,5 +72,6 @@ onBeforeUnmount(() => {
       @refreshed="acknowledged = githubRefresh"
       @close="open = false"
     />
+    <div ref="portal" />
   </div>
 </template>
