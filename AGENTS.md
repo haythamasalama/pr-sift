@@ -1,6 +1,7 @@
 # PR Sift: notes for contributors and coding agents
 
-PR Sift is a Chrome extension that helps review large GitHub pull requests. Read `docs/ARCHITECTURE.md` first.
+PR Sift is a Chrome extension that helps review large GitHub pull requests. Read `docs/ARCHITECTURE.md` first, and
+`BRAND.md` before any visual or copy change.
 
 ## Commands
 

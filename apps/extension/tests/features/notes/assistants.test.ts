@@ -1,15 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { ASSISTANTS, assistantById } from '../../../src/features/notes/assistants'
+import { ASSISTANTS, assistantById, assistantsOfKind } from '../../../src/features/notes/assistants'
 
 describe('assistants', () => {
-  it('offers Claude, ChatGPT, Gemini and a clipboard-only option', () => {
-    expect(ASSISTANTS.map((a) => a.label)).toEqual(['Claude', 'ChatGPT', 'Gemini', 'Clipboard only'])
+  it('offers coding agents, then chats, then a clipboard-only option', () => {
+    expect(assistantsOfKind('agent').map((a) => a.label)).toEqual(['Claude Code', 'Codex', 'Cursor', 'GitHub Copilot'])
+    expect(assistantsOfKind('chat').map((a) => a.label)).toEqual(['Claude', 'ChatGPT'])
+    expect(assistantsOfKind('clipboard').map((a) => a.label)).toEqual(['Clipboard only'])
   })
 
-  it('falls back to Claude for an unknown or missing choice', () => {
-    expect(assistantById(undefined).id).toBe('claude')
-    expect(assistantById('nope').id).toBe('claude')
-    expect(assistantById('gemini').url).toBe('https://gemini.google.com/app')
+  it('only opens a page for chats', () => {
+    for (const a of ASSISTANTS) expect(a.url !== null).toBe(a.kind === 'chat')
+  })
+
+  it('falls back to Claude Code for an unknown, missing or removed choice', () => {
+    expect(assistantById(undefined).id).toBe('claude-code')
+    expect(assistantById('nope').id).toBe('claude-code')
+    expect(assistantById('gemini').id).toBe('claude-code')
+    expect(assistantById('chatgpt').url).toBe('https://chatgpt.com/')
   })
 
   it('never puts note contents in the assistant URL', () => {

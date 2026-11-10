@@ -15,46 +15,42 @@
 
 <p align="center">
   <a href="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml"><img src="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-black.svg" alt="MIT license" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-black.svg" alt="PolyForm Shield license" /></a>
 </p>
 
 ![PR Sift on a 41-file pull request](media/screenshots/review.webp)
 
-Pull requests keep getting bigger, and AI agents now open them with hundreds of files. GitHub shows everything in one
-long list, so the ten files that matter hide between lock files, translations and renames. PR Sift is a free,
-open-source Chrome extension that turns that list into a focused review.
+A free Chrome extension that turns a long GitHub pull request into a focused review.
 
 ## What it does
 
-### Show exactly the files you want
+### Show only the files you want
 
-Chips come from the pull request itself. Click `.php` to see only PHP, add `added` to see only new PHP files,
-shift-click `.lock` to hide lock files for good. Add your own types such as `.blade.php` or `.test.ts`.
+Click a type or change to show it. Shift-click to hide it for good.
 
 ![Filtering by type and change status](media/videos/filters.gif)
 
-### Never read the same file twice
+### Never read a file twice
 
-Mark a file or a whole folder as viewed and it leaves the list. A ring shows what is left. Marks follow the file
-content, so a file that changes after a new push comes back by itself. Collapse or expand any folder and everything
-inside it.
+Mark files or whole folders as viewed. A new push brings changed files back.
 
 ![Marking folders as viewed](media/videos/review.gif)
 
-### Private notes, sent to the AI you use
+### Private notes for your AI
 
-Drag over lines to write a note only you can see. Resolve notes as you go, post one to GitHub when it is worth it, or
-copy them all with their code as a ready prompt for **Claude, ChatGPT or Gemini**.
+Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post one to GitHub.
 
 ![Writing a private note and sending it to an assistant](media/videos/notes.gif)
 
 ### And the small things
 
-| Smart filters                                          | Split one file, copy anything               |
-| ------------------------------------------------------ | ------------------------------------------- |
-| ![Smart filters](media/screenshots/smart-filters.webp) | ![Split view](media/screenshots/split.webp) |
-| **Choose your assistant**                              | **Light and dark**                          |
-| ![Notes export](media/screenshots/ai-export.webp)      | ![Dark mode](media/screenshots/dark.webp)   |
+- 🧩 Smart filters for tests, migrations, translations, config and CI
+- 🪟 Split or unified diffs, for every file or just one
+- 📋 Copy a file's name, path, diff or added lines
+- 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
+- 🌓 Light, dark or system theme
+
+See them all on the [website](https://haythamasalama.github.io/pr-sift/).
 
 ## Install
 
@@ -80,20 +76,27 @@ no server, account or analytics. A GitHub token is optional. Details in [PRIVACY
 
 ## Contributing
 
-Ideas, bug reports and pull requests are welcome, and small ones count.
-
-- **Found a bug or have an idea?** [Open an issue](https://github.com/haythamasalama/pr-sift/issues/new/choose).
-- **Want to code?** Read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), then
-  run `pnpm check`. The pure logic lives in `packages/core` and is the easiest place to start.
-- **Using an AI coding agent?** [AGENTS.md](AGENTS.md) and the skills in `.claude/skills` explain the project's rules.
-
-```
-apps/extension    the Chrome extension (Vue 3, Vite, Tailwind, shadcn-vue)
-apps/site         the website
-packages/core     diff parsing, file tree, smart filters, notes. No browser APIs
-tools/capture     regenerates every screenshot and video in this README
-```
+- 🌐 How it works: the [website](https://haythamasalama.github.io/pr-sift/)
+- 🛠️ How to help: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-[MIT](LICENSE). Not affiliated with GitHub.
+[PolyForm Shield 1.0.0](LICENSE): free to use, including at work. You may not sell PR Sift or publish a copy or a competing product. Not affiliated with GitHub.
+
+Copyright © 2026 Haytham A. Salama.
+
+## Author
+
+<a href="https://haythamasalama.me/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="media/brand/haythamasalama-signature-white.svg" />
+    <img src="media/brand/haythamasalama-signature-black.svg" alt="Haytham A. Salama" width="120" />
+  </picture>
+</a>
+
+Made by **Haytham A. Salama**, senior software engineer.
+
+- 🌐 [haythamasalama.me](https://haythamasalama.me/)
+- 𝕏 [@haythamasalama](https://x.com/haythamasalama)
+- 💼 [LinkedIn](https://www.linkedin.com/in/haythamasalama)
+- 🐙 [GitHub](https://github.com/haythamasalama)

@@ -24,8 +24,8 @@ Uninstalling the extension deletes all of it.
 PR Sift never sends your notes, code or token anywhere else. Notes are posted to GitHub only when you press
 **Post to GitHub** and confirm.
 
-**Copy for Claude, ChatGPT or Gemini** puts your notes on the clipboard and opens the assistant in a new tab. PR Sift
-sends nothing to the assistant; you paste the notes yourself.
+**Copy for …** puts your notes on the clipboard. For Claude or ChatGPT it also opens the site in a new tab. PR Sift
+sends nothing to any assistant; you paste the notes yourself.
 
 ## Permissions
 

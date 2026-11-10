@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "The PR Sift website: a static, SEO-friendly site for GitHub Pages.",
+  "author": "Haytham A. Salama (https://haythamasalama.me/)",
+  "license": "PolyForm-Shield-1.0.0",
   "scripts": {
     "pages": "node scripts/build-pages.mjs",
     "dev": "node scripts/build-pages.mjs && vite",
@@ -17,6 +19,6 @@
     "lucide-static": "^1.71.0",
     "simple-icons": "^16.37.0",
     "tailwindcss": "^4.3.5",
-    "vite": "^8.3.6"
+    "vite": "^8.3.7"
   }
 }

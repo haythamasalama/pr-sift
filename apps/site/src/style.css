@@ -34,15 +34,15 @@
 }
 
 .dark {
-  --paper: #161618;
-  --raised: #1e1e21;
+  --paper: #111113;
+  --raised: #19191c;
   --ink: #ececee;
   --muted: #a0a0a8;
-  --line: #2e2e33;
-  --add: #5cc77a;
-  --add-bg: rgb(92 199 122 / 0.14);
-  --del: #f07a72;
-  --del-bg: rgb(240 122 114 / 0.14);
+  --line: #2a2a2f;
+  --add: #4ade80;
+  --add-bg: rgb(74 222 128 / 0.18);
+  --del: #ff6b6b;
+  --del-bg: rgb(255 107 107 / 0.2);
 }
 
 html {
@@ -60,6 +60,15 @@ html[data-theme='light'] [data-theme-mode='light'],
 html[data-theme='dark'] [data-theme-mode='dark'] {
   background: color-mix(in srgb, var(--ink) 11%, transparent);
   color: var(--ink);
+}
+
+/* His brand allows the signature only in pure black or pure white, so it skips the ink token. */
+.signature {
+  color: #000;
+}
+
+.dark .signature {
+  color: #fff;
 }
 
 :focus-visible {
@@ -108,4 +117,9 @@ html[data-theme='dark'] [data-theme-mode='dark'] {
   .chip {
     transition: none;
   }
+}
+
+/* One line per diff row: 27 monospace characters plus the row padding and gap. */
+.hero-diff {
+  font-size: min(2.15rem, calc((100cqi - 40px) / 16));
 }

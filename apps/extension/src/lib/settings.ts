@@ -11,7 +11,7 @@ export const DEFAULTS: Settings = {
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',
-  assistant: 'claude',
+  assistant: 'claude-code',
 }
 
 export async function getSettings(): Promise<Settings> {

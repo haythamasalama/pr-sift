@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/pr-sift/'
@@ -24,12 +24,22 @@ function icon(name, cls = 'size-5') {
     .replace(/\n\s*/g, ' ')
 }
 
-const brandIcon = (slug) => {
-  const path = slug === 'microsoftedge' ? here('assets/brands/microsoftedge.svg') : here(`node_modules/simple-icons/icons/${slug}.svg`)
+const VENDORED_BRANDS = new Set(['microsoftedge', 'openai'])
+const brandIcon = (slug, cls = 'size-5') => {
+  const path = VENDORED_BRANDS.has(slug) ? here(`assets/brands/${slug}.svg`) : here(`node_modules/simple-icons/icons/${slug}.svg`)
   return readFileSync(path, 'utf8')
-    .replace('<svg ', '<svg class="size-5" fill="currentColor" aria-hidden="true" ')
+    .replace('<svg ', `<svg class="${cls}" fill="currentColor" aria-hidden="true" `)
     .replace(/<title>.*?<\/title>/, '')
 }
+
+const AI_TOOLS = [
+  ['claude', 'Claude Code'],
+  ['openai', 'Codex'],
+  ['cursor', 'Cursor'],
+  ['githubcopilot', 'GitHub Copilot'],
+  ['claude', 'Claude'],
+  ['openai', 'ChatGPT'],
+]
 
 const MARK = 'M22 28h56L57 53v20l-14-7V53L22 28Z'
 const logo = (cls = 'size-7') =>
@@ -146,35 +156,52 @@ const NAV = [
   ['Changelog', 'changelog/'],
 ]
 
+const navHref = (href) => (href.startsWith('#') ? link() + href : link(href))
+
 const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur-xl">
     <nav class="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6" aria-label="Main">
-      <a href="${link()}" class="flex items-center gap-2 font-semibold tracking-tight">${logo()}PR Sift</a>
+      <a href="${link()}" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight whitespace-nowrap">${logo()}PR Sift</a>
       <div class="hidden items-center gap-6 text-sm text-muted md:flex">
-        ${NAV.map(([label, href]) => `<a href="${href.startsWith('#') ? link() + href : link(href)}" class="hover:text-ink">${label}</a>`).join('')}
+        ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="whitespace-nowrap hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <div role="group" aria-label="Theme" class="flex items-center gap-0.5 rounded-md border border-line p-0.5">
-        ${[
-          ['system', 'monitor', 'System'],
-          ['light', 'sun', 'Light'],
-          ['dark', 'moon', 'Dark'],
-        ]
-          .map(
-            ([mode, ic, label]) =>
-              `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex size-7 items-center justify-center rounded text-muted transition-colors hover:text-ink">${icon(ic, 'size-4')}</button>`,
-          )
-          .join('')}
-      </div>
-      <a href="${REPO_URL}" class="inline-flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="hidden sm:inline">Star</span><span data-stars class="text-muted"></span></a>
+      <a href="${REPO_URL}" aria-label="Star PR Sift on GitHub" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="h-4 w-px bg-line" aria-hidden="true"></span><span class="flex items-center gap-1.5">${icon('star', 'size-3.5')}Star</span><span data-stars class="text-muted empty:hidden"></span></a>
+      <details data-menu class="relative md:hidden">
+        <summary aria-label="Menu" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-line text-muted hover:text-ink [&::-webkit-details-marker]:hidden">${icon('menu', 'size-4')}</summary>
+        <div class="absolute right-0 top-full mt-2 flex w-48 flex-col rounded-lg border border-line bg-paper p-1.5 shadow-lg">
+          ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="rounded-md px-3 py-2 text-sm hover:bg-raised">${label}</a>`).join('')}
+        </div>
+      </details>
     </nav>
   </header>`
 
+const themePicker = () => `<div role="group" aria-label="Theme" class="inline-flex items-center gap-0.5 rounded-full bg-raised p-[3px]">
+          ${[
+            ['system', 'monitor', 'System'],
+            ['light', 'sun', 'Light'],
+            ['dark', 'moon', 'Dark'],
+          ]
+            .map(
+              ([mode, ic, label]) =>
+                `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex h-[26px] w-[30px] items-center justify-center rounded-full text-muted transition-colors hover:text-ink">${icon(ic, 'size-[15px]')}</button>`,
+            )
+            .join('')}
+        </div>`
+
+const appLogo = (slug) =>
+  readFileSync(here(`assets/apps/${slug}.svg`), 'utf8').replace('<svg ', '<svg class="size-9 shrink-0" aria-hidden="true" ')
+
+const appName = (app) => (app.logo === 'easyshoot' ? 'Easy<span class="text-[#1a63d6] dark:text-[#8cc4ff]">Shoot</span>' : esc(app.name))
+
+const SIGNATURE = readFileSync(here('assets/haythamasalama-signature.svg'), 'utf8').replace('<svg ', '<svg class="h-[22px] w-11" ')
+
 function footer() {
-  const column = (title, items) =>
-    `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul></div>`
+  const column = (title, items, extra = '') =>
+    `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul>${extra}</div>`
+  const legal = 'px-3 leading-none text-ink/80 hover:text-ink'
   return `<footer class="border-t border-line">
-    <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
-      <div>
+    <div class="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
+      <div class="col-span-2 md:col-span-1">
         <a href="${link()}" class="flex items-center gap-2 font-semibold">${logo('size-6')}PR Sift</a>
         <p class="mt-4 max-w-56 text-sm leading-relaxed text-muted">Review large GitHub pull requests without the noise.</p>
       </div>
@@ -182,24 +209,38 @@ function footer() {
         ['Private notes', link() + '#notes'],
         ['Features', link() + '#features'],
         ['Changelog', link('changelog/')],
-        ['Privacy', link('privacy/')],
       ])}
       ${column(
         'Guides',
         guides.map((g) => [g.short, link(`guides/${g.slug}/`)]),
       )}
       ${column('Compare', [...compare.map((c) => [`vs ${c.name}`, link(`compare/${c.slug}/`)]), ['All tools', link('compare/')]])}
-      ${column('Resources', [
-        ['GitHub', REPO_URL],
-        ['Report a bug', `${REPO_URL}/issues/new/choose`],
-        ['Brand', link('brand/')],
-        ['Sitemap', link('sitemap.xml')],
-      ])}
+      ${column(
+        'Resources',
+        [
+          ['GitHub', REPO_URL],
+          ['Report a bug', `${REPO_URL}/issues/new/choose`],
+          ['Brand', link('brand/')],
+          ['Sitemap', link('sitemap.xml')],
+        ],
+        `<div class="mt-6">${themePicker()}</div>`,
+      )}
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-t border-line py-6 text-sm text-muted">
-        <span>© ${YEAR} PR Sift. MIT license.</span>
-        <span>Made by <a href="${AUTHOR.url}" class="text-ink hover:underline">${AUTHOR.name}</a></span>
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line py-6">
+        <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
+        <ul class="-mx-2.5 flex flex-wrap items-center gap-2 sm:mx-0">
+          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="flex items-center gap-3 rounded-xl py-2 pr-4 pl-2.5 transition-colors hover:bg-raised">${appLogo(app.logo)}<span class="flex flex-col"><span class="leading-tight font-semibold tracking-tight">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+        </ul>
+      </div>
+      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
+        <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
+        <nav aria-label="Legal" class="-ml-3 flex items-center">
+          <a href="${link('privacy/')}" class="${legal}">Privacy Policy</a>
+          <a href="${REPO_URL}/blob/main/LICENSE" class="border-l border-line ${legal}">License</a>
+          <a href="${AUTHOR.x}" aria-label="${AUTHOR.name} on X" title="X" class="ml-2 flex size-8 items-center justify-center rounded-full bg-raised text-ink/80 hover:text-ink">${brandIcon('x', 'size-3.5')}</a>
+          <a href="${AUTHOR.url}" rel="author" aria-label="${AUTHOR.name}" title="${AUTHOR.name}" class="signature ml-4">${SIGNATURE}</a>
+        </nav>
       </div>
     </div>
   </footer>`
@@ -221,7 +262,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website' 
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#161618" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)" />
     <meta name="author" content="${AUTHOR.name}" />
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="PR Sift" />
@@ -279,7 +320,7 @@ const appLd = {
   downloadUrl: INSTALL_URL,
   softwareHelp: SITE_URL + 'guides/',
   releaseNotes: SITE_URL + 'changelog/',
-  license: 'https://opensource.org/licenses/MIT',
+  license: 'https://polyformproject.org/licenses/shield/1.0.0',
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   image: SITE_URL + 'media/og.png',
@@ -375,10 +416,14 @@ function homePage() {
     [
       'ai',
       `<div class="max-w-3xl">${iconBox('bot')}${h2(h.ai.title, 'mt-5')}${lead(h.ai.lead)}</div>
+      <ul class="mt-8 flex flex-wrap gap-2" aria-label="Supported AI tools">
+        ${AI_TOOLS.map(([slug, name]) => `<li class="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-1.5 text-sm font-medium">${brandIcon(slug, 'size-4')}${esc(name)}</li>`).join('')}
+        <li class="inline-flex items-center gap-2 rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted">${icon('clipboard', 'size-4')}Any other AI</li>
+      </ul>
       <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
         ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
-      <div class="mt-10">${video('claude', 'Copying notes for ChatGPT, Gemini and Claude')}</div>`,
+      <div class="mt-10">${video('claude', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
     ],
     [
       'pain',
@@ -414,7 +459,7 @@ function homePage() {
       <div class="mt-12">${shot('launcher', 'The PR Sift button on a real GitHub pull request')}</div>`,
     ],
     [
-      'open-source',
+      'source-code',
       `<div class="grid gap-12 lg:grid-cols-12">
         <div class="lg:col-span-5">
           ${iconBox('github')}${h2(h.openSource.title, 'mt-5')}${lead(h.openSource.text)}
@@ -442,9 +487,9 @@ function homePage() {
 
   const body = `
     <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
-      <div class="min-w-0">
-        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-paper">New</span>Send notes to ChatGPT or Gemini${icon('chevron-right', 'size-3.5 text-muted')}</a>
-        <h1 class="mt-7 font-mono text-[clamp(1.35rem,2.6vw,2.15rem)] leading-[1.25] font-medium tracking-tight">
+      <div class="@container min-w-0">
+        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-paper">New</span><span class="flex items-center gap-1.5">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>Send notes to your AI agent${icon('chevron-right', 'size-3.5 text-muted')}</a>
+        <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
         </h1>
@@ -819,7 +864,7 @@ ${home.features.map((f) => `- ${f.title}. ${f.text}`).join('\n')}
 
 ## Facts
 
-- Price: free. License: MIT. Source: ${REPO_URL}
+- Price: free, including at work. License: PolyForm Shield 1.0.0 (public source code; no resale and no competing copies). Source: ${REPO_URL}
 - Browsers: Chrome, Edge, Brave, Arc, Dia, Opera, Vivaldi and other Chromium browsers.
 - Privacy: no server, no account, no analytics. Data stays in the browser. Talks only to GitHub.
 - A GitHub token is optional and only used to post a note as a review comment.

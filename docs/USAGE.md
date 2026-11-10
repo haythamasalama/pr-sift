@@ -2,23 +2,23 @@
 
 ## Everyday actions
 
-| Action                       | How                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------ |
-| Show only one type           | Click a chip under **Types**, e.g. `.php`                                |
-| Combine type and change      | Click `.php`, then `added`: only new PHP files                           |
-| Always hide a type           | Shift-click or right-click its chip. Remembered across pull requests     |
-| Add your own type            | **+ type**, e.g. `.blade.php`, `.test.ts`                                |
-| Undo every filter            | **Reset filters**                                                        |
-| Jump to a folder or file     | Click it in the tree; search above the tree opens matching folders       |
-| Expand or collapse a subtree | The two icons on a folder row                                            |
-| Mark a folder as viewed      | The checkbox on the folder row                                           |
-| Hide what you have read      | **Hide viewed**; the ring shows what is left                             |
-| Split one file               | The split icon on the file header                                        |
-| Copy name, path, diff, lines | The copy icon on the file header                                         |
-| Write a note on many lines   | Drag from the `+` next to a line, or select code and press **Add note**  |
-| Resolve, edit or post a note | The icons on the note, or in **Notes**                                   |
-| Send notes to an assistant   | **Notes** → **Copy for Claude**; the arrow picks ChatGPT, Gemini or none |
-| Theme                        | The palette button: system, light or dark                                |
+| Action                       | How                                                                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Show only one type           | Click a chip under **Types**, e.g. `.php`                                                                              |
+| Combine type and change      | Click `.php`, then `added`: only new PHP files                                                                         |
+| Always hide a type           | Shift-click or right-click its chip. Remembered across pull requests                                                   |
+| Add your own type            | **+ type**, e.g. `.blade.php`, `.test.ts`                                                                              |
+| Undo every filter            | **Reset filters**                                                                                                      |
+| Jump to a folder or file     | Click it in the tree; search above the tree opens matching folders                                                     |
+| Expand or collapse a subtree | The two icons on a folder row                                                                                          |
+| Mark a folder as viewed      | The checkbox on the folder row                                                                                         |
+| Hide what you have read      | **Hide viewed**; the ring shows what is left                                                                           |
+| Split one file               | The split icon on the file header                                                                                      |
+| Copy name, path, diff, lines | The copy icon on the file header                                                                                       |
+| Write a note on many lines   | Drag from the `+` next to a line, or select code and press **Add note**                                                |
+| Resolve, edit or post a note | The icons on the note, or in **Notes**                                                                                 |
+| Send notes to an assistant   | **Notes** → **Copy for Claude Code**; the arrow picks Codex, Cursor, GitHub Copilot, Claude, ChatGPT or clipboard only |
+| Theme                        | The palette button: system, light or dark                                                                              |
 
 ## Settings
 

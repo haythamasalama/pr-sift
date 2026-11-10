@@ -30,5 +30,5 @@ export interface Settings {
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
-  assistant: 'claude' | 'chatgpt' | 'gemini' | 'clipboard'
+  assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
-  "license": "MIT",
+  "author": "Haytham A. Salama (https://haythamasalama.me/)",
+  "license": "PolyForm-Shield-1.0.0",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "pnpm --filter @pr-sift/extension build",
@@ -21,11 +22,11 @@
     "@eslint/js": "^10.0.1",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-vue": "^10.12.0",
+    "eslint-plugin-vue": "^10.12.1",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.72.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2",
     "vue-eslint-parser": "^10.4.2"
   },
   "pnpm": {

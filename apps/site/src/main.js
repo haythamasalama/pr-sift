@@ -30,12 +30,24 @@ for (const button of themeButtons) {
   })
 }
 
+const menu = document.querySelector('[data-menu]')
+if (menu) {
+  document.addEventListener('click', (event) => {
+    if (!menu.contains(event.target) || event.target.closest('a')) menu.open = false
+  })
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') menu.open = false
+  })
+}
+
 for (const root of document.querySelectorAll('[data-playground]')) {
   const chips = [...root.querySelectorAll('[data-chip]')]
   const files = [...root.querySelectorAll('[data-file]')]
   const summary = root.querySelector('[data-summary]')
   const hint = summary.textContent
   const state = new Map()
+  const list = files[0].parentElement
+  list.style.minHeight = `${list.offsetHeight}px`
 
   const matches = (file, key) => (key.startsWith('status:') ? file.dataset.status === key.slice(7) : file.dataset.type === key)
 

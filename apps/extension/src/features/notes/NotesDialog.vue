@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
@@ -21,7 +21,7 @@ import { buildReviewPrompt, describeLines, startOf } from '@pr-sift/core'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from '../../components/Modal.vue'
 import { getSettings, saveSetting } from '../../lib/settings'
-import { ASSISTANTS, assistantById, type AssistantId } from './assistants'
+import { assistantById, assistantsOfKind, type AssistantId } from './assistants'
 
 const { pr, title, notes, files } = defineProps<{ pr: PrRef; title: string; notes: Note[]; files: PrFile[] }>()
 const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; update: [id: string, patch: NotePatch]; clear: [] }>()
@@ -61,7 +61,8 @@ const grouped = computed(() => {
   return [...map]
 })
 
-const assistant = shallowRef(assistantById('claude'))
+const assistant = shallowRef(assistantById(undefined))
+const clipboardOnly = assistantById('clipboard')
 onMounted(async () => (assistant.value = assistantById((await getSettings()).assistant)))
 
 function chooseAssistant(id: AssistantId) {
@@ -187,12 +188,12 @@ function clear() {
             <ClipboardCopy v-else />
             {{
               copied
-                ? assistant.url
-                  ? `Copied, paste it into ${assistant.label}`
-                  : 'Copied'
-                : assistant.url
-                  ? `Copy for ${assistant.label}`
-                  : 'Copy prompt'
+                ? assistant.kind === 'clipboard'
+                  ? 'Copied'
+                  : `Copied, paste it into ${assistant.label}`
+                : assistant.kind === 'clipboard'
+                  ? 'Copy prompt'
+                  : `Copy for ${assistant.label}`
             }}
           </Button>
           <DropdownMenu>
@@ -201,13 +202,18 @@ function clear() {
                 <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-44">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Send notes to</DropdownMenuLabel>
-                <DropdownMenuRadioGroup :model-value="assistant.id" @update:model-value="(v) => chooseAssistant(v as AssistantId)">
-                  <DropdownMenuRadioItem v-for="a in ASSISTANTS" :key="a.id" :value="a.id">{{ a.label }}</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuGroup>
+            <DropdownMenuContent align="end" class="w-48">
+              <DropdownMenuRadioGroup :model-value="assistant.id" @update:model-value="(v) => chooseAssistant(v as AssistantId)">
+                <DropdownMenuLabel>Coding agents</DropdownMenuLabel>
+                <DropdownMenuRadioItem v-for="a in assistantsOfKind('agent')" :key="a.id" :value="a.id">{{
+                  a.label
+                }}</DropdownMenuRadioItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Chat</DropdownMenuLabel>
+                <DropdownMenuRadioItem v-for="a in assistantsOfKind('chat')" :key="a.id" :value="a.id">{{ a.label }}</DropdownMenuRadioItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioItem :value="clipboardOnly.id">{{ clipboardOnly.label }}</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

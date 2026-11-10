@@ -35,7 +35,7 @@ Leave the scope out when the change spans the whole project.
 ## Examples
 
 ```
-feat(notes): send notes to ChatGPT or Gemini
+feat(notes): send notes to Codex or Cursor
 fix(filters): combine type and status filters with AND
 refactor(core): move glob matching out of settings
 docs: shorten the README

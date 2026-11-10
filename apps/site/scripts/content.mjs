@@ -1,12 +1,22 @@
 export const SITE_URL = 'https://haythamasalama.github.io/pr-sift/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
-export const AUTHOR = { name: 'Haytham Salama', url: 'https://haythamasalama.me/' }
+export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
+
+export const SIBLING_APPS = [
+  { logo: 'easyshoot', name: 'EasyShoot', about: 'Screenshot app for Mac', url: 'https://easyshoot.app/' },
+  {
+    logo: 'whatsapp-business-monitor',
+    name: 'WhatsApp Business Monitor',
+    about: 'Open-source WhatsApp dashboard',
+    url: 'https://wbm.haythamasalama.me/',
+  },
+]
 
 export const home = {
   title: 'PR Sift: review large GitHub pull requests without the noise',
   description:
-    'Free, open-source Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude, ChatGPT or Gemini.',
+    'Free Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude Code, Codex, Cursor or ChatGPT.',
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
     cta: 'Install PR Sift',
@@ -16,7 +26,7 @@ export const home = {
     ['tour', 'play', 'Full tour', 'A 10-file pull request, from noise to notes.'],
     ['filters', 'funnel', 'Filters', 'Include, exclude and combine types and changes.'],
     ['review', 'list-checks', 'Review', 'Mark files and whole folders as viewed.'],
-    ['claude', 'bot', 'Notes to AI', 'Copy your notes for Claude, ChatGPT or Gemini.'],
+    ['claude', 'bot', 'Notes to AI', 'Copy your notes for Claude Code, Codex, Cursor or ChatGPT.'],
   ],
   notesStory: {
     title: 'Notes for you, not for the whole pull request',
@@ -150,8 +160,8 @@ export const home = {
     steps: [
       ['notebook-pen', 'Write notes', 'on the lines you doubt.'],
       ['message-square-text', 'Open Notes', 'all of them, by file.'],
-      ['bot', 'Pick an assistant', 'Claude, ChatGPT or Gemini.'],
-      ['clipboard-check', 'Paste', 'into the tab that opens.'],
+      ['bot', 'Pick your AI', 'a coding agent or a chat.'],
+      ['clipboard-check', 'Paste', 'into your agent or the chat that opens.'],
     ],
   },
   theme: {
@@ -160,7 +170,7 @@ export const home = {
   },
   openSource: {
     title: 'Built in the open',
-    text: 'MIT licensed. Read the code, report a bug or send a pull request.',
+    text: 'The source code is public. Read it, report a bug or send a pull request.',
     links: [
       ['github', 'Source code', REPO_URL],
       ['bug', 'Report a bug', `${REPO_URL}/issues/new?template=bug_report.yml`],
@@ -180,7 +190,7 @@ export const home = {
     text: 'No server, no account, no analytics. PR Sift only talks to GitHub.',
   },
   faq: [
-    ['Is PR Sift free?', 'Yes. Free and open source under the MIT license.'],
+    ['Is PR Sift free?', 'Yes, for everyone, including at work. The source code is public under the PolyForm Shield license.'],
     ['Does it send my code anywhere?', 'No. It only talks to GitHub. Notes go to your clipboard when you copy them.'],
     ['Do I need a GitHub token?', 'No. A token is only used to post a note as a review comment.'],
     [
@@ -213,7 +223,7 @@ export const guides = [
       [
         'bot',
         'Send the notes back to your AI',
-        'Open Notes and copy them for Claude, ChatGPT or Gemini. Each note carries its file, lines and code.',
+        'Open Notes and copy them for Claude Code, Codex, Cursor or ChatGPT. Each note carries its file, lines and code.',
       ],
       [
         'circle-check',
@@ -278,14 +288,22 @@ export const guides = [
   {
     slug: 'send-code-review-notes-to-ai',
     short: 'Send notes to AI',
-    title: 'Send code review notes to Claude, ChatGPT or Gemini',
+    title: 'Send code review notes to Claude Code, Codex, Cursor or ChatGPT',
     description: 'Turn private notes into one prompt with the code attached.',
     video: 'claude',
     sections: [
       ['notebook-pen', 'Write notes', 'Drag from the + next to a line to cover several lines, then write your question.'],
       ['message-square-text', 'Open Notes', 'Every open note, by file. Resolved notes stay out of the prompt.'],
-      ['bot', 'Pick the assistant', 'Use the arrow next to Copy: Claude, ChatGPT, Gemini or clipboard only.'],
-      ['clipboard-check', 'Paste', 'The prompt is copied with file, lines and code, and the assistant opens in a new tab.'],
+      [
+        'bot',
+        'Pick the assistant',
+        'Use the arrow next to Copy: a coding agent (Claude Code, Codex, Cursor, GitHub Copilot), a chat (Claude, ChatGPT) or clipboard only.',
+      ],
+      [
+        'clipboard-check',
+        'Paste',
+        'The prompt is copied with file, lines and code. Paste it into your agent; Claude and ChatGPT open in a new tab.',
+      ],
     ],
   },
 ]
@@ -297,7 +315,7 @@ export const brand = {
     ['One line', 'Review large GitHub pull requests without the noise.'],
     [
       'Short',
-      'PR Sift is a free, open-source Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude, ChatGPT or Gemini.',
+      'PR Sift is a free Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude Code, Codex, Cursor or ChatGPT.',
     ],
   ],
   colors: [
