@@ -82,3 +82,21 @@ no server, account or analytics. A GitHub token is optional. Details in [PRIVACY
 ## License
 
 [PolyForm Shield 1.0.0](LICENSE): free to use, including at work. You may not sell PR Sift or publish a copy or a competing product. Not affiliated with GitHub.
+
+Copyright © 2026 Haytham A. Salama.
+
+## Author
+
+<a href="https://haythamasalama.me/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="media/brand/haythamasalama-signature-white.svg" />
+    <img src="media/brand/haythamasalama-signature-black.svg" alt="Haytham A. Salama" width="120" />
+  </picture>
+</a>
+
+Made by **Haytham A. Salama**, senior software engineer.
+
+- 🌐 [haythamasalama.me](https://haythamasalama.me/)
+- 𝕏 [@haythamasalama](https://x.com/haythamasalama)
+- 💼 [LinkedIn](https://www.linkedin.com/in/haythamasalama)
+- 🐙 [GitHub](https://github.com/haythamasalama)
