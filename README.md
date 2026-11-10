@@ -1,3 +1,5 @@
+<p align="center"><img src="icons/logo.svg" alt="Review Lens" width="72" /></p>
+
 # Review Lens
 
 A Chrome extension that makes reviewing large GitHub pull requests fast. It opens a review workspace on top of any

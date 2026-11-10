@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
-import { GitPullRequest } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../composables/useGithubRefreshSignal'
 import { useTheme } from '../composables/useTheme'
 import { portalTargetKey } from '../lib/portal'
@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
       Review Lens was updated — reload the page
     </Button>
     <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
-      <GitPullRequest /> Review Lens
+      <BrandMark /> Review Lens
       <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
     </Button>
     <ReviewPanel

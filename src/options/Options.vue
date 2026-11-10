@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
-import { ChevronDown, Columns2, Eye, EyeOff, Rows2 } from '@lucide/vue'
+import { CircleAlert, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Rows2 } from '@lucide/vue'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import BrandMark from '../components/BrandMark.vue'
 import { useTheme } from '../composables/useTheme'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, Settings } from '../lib/types'
@@ -99,119 +101,143 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="rl-root min-h-screen bg-background text-sm text-foreground" :class="{ dark }">
-    <main class="mx-auto flex max-w-2xl flex-col gap-8 px-6 py-10">
-      <header class="flex flex-col gap-1">
-        <h1 class="text-2xl font-semibold tracking-tight">Review Lens</h1>
-        <p class="text-muted-foreground">Settings for reviewing pull requests on GitHub. Everything is stored in this browser only.</p>
+  <div class="rl-root min-h-screen bg-background text-foreground" :class="{ dark }">
+    <main class="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+      <header class="flex items-center gap-3">
+        <div class="flex size-10 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
+          <BrandMark />
+        </div>
+        <div class="flex flex-col">
+          <h1 class="text-xl font-semibold">Review Lens</h1>
+          <p class="text-sm text-muted-foreground">Review big pull requests faster. Settings stay in this browser.</p>
+        </div>
       </header>
 
-      <section class="flex flex-col gap-3 rounded-lg border bg-card p-5 shadow-xs">
-        <div>
-          <h2 class="font-medium">GitHub token</h2>
-          <p class="text-xs text-muted-foreground">
-            Optional. Review Lens reads pull requests with your GitHub login. The token is used only to post a private note as a comment on
-            the pull request, and as a fallback if reading fails.
-          </p>
-        </div>
-        <div class="flex gap-2">
-          <Input
-            v-model="token"
-            :type="showToken ? 'text' : 'password'"
-            autocomplete="off"
-            placeholder="github_pat_…"
-            class="font-mono text-xs md:text-xs"
-            aria-label="GitHub token"
-          />
-          <Button variant="outline" size="icon" :aria-label="showToken ? 'Hide token' : 'Show token'" @click="showToken = !showToken">
-            <EyeOff v-if="showToken" /><Eye v-else />
-          </Button>
-          <Button v-if="token" variant="ghost" @click="token = ''">Clear</Button>
-        </div>
-      </section>
-
-      <section class="flex flex-col gap-4 rounded-lg border bg-card p-5 shadow-xs">
-        <div>
-          <h2 class="font-medium">Hidden files</h2>
-          <p class="text-xs text-muted-foreground">
-            Files matching these rules stay out of the list until you turn on “Hidden” in the review.
-          </p>
-        </div>
-        <div class="flex flex-col gap-2">
-          <Label for="hide">Path patterns, one per line</Label>
-          <Textarea id="hide" v-model="hide" rows="6" spellcheck="false" class="font-mono text-xs md:text-xs" placeholder="**/*.lock" />
-          <p class="text-xs text-muted-foreground">
-            Use <code>*</code> inside a folder and <code>**</code> across folders, e.g. <code>**/*.min.js</code>.
-          </p>
-        </div>
-        <Separator />
-        <div class="flex flex-col gap-3">
-          <Label>Hide by change type</Label>
-          <div class="grid grid-cols-2 gap-2">
-            <div v-for="s in STATUSES" :key="s.value" class="flex items-center gap-2">
-              <Checkbox
-                :id="`status-${s.value}`"
-                :model-value="hideStatuses.includes(s.value)"
-                @update:model-value="(v) => toggleStatus(s.value, v === true)"
+      <Card>
+        <CardHeader>
+          <CardTitle>GitHub token</CardTitle>
+          <CardDescription>
+            Optional. Used only to post a private note as a comment on the pull request, and as a fallback if reading fails.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Field>
+            <FieldLabel for="token">Personal access token</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                id="token"
+                v-model="token"
+                :type="showToken ? 'text' : 'password'"
+                autocomplete="off"
+                placeholder="github_pat_…"
               />
-              <Label :for="`status-${s.value}`" class="font-normal">{{ s.label }}</Label>
-            </div>
-          </div>
-        </div>
-      </section>
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton :aria-label="showToken ? 'Hide token' : 'Show token'" size="icon-xs" @click="showToken = !showToken">
+                  <EyeOff v-if="showToken" /><Eye v-else />
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+          </Field>
+        </CardContent>
+      </Card>
 
-      <section class="flex flex-col gap-4 rounded-lg border bg-card p-5 shadow-xs">
-        <h2 class="font-medium">Defaults</h2>
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <Label for="review-mode">Hide viewed files</Label>
-            <p class="text-xs text-muted-foreground">Files disappear from the list as soon as you mark them viewed.</p>
-          </div>
-          <Switch id="review-mode" v-model="reviewMode" />
-        </div>
-        <Separator />
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <Label>Diff view</Label>
-            <p class="text-xs text-muted-foreground">Split view needs a wide window and falls back to unified on small ones.</p>
-          </div>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            :model-value="diffView"
-            aria-label="Diff view"
-            @update:model-value="(v) => v && (diffView = v as DiffMode)"
-          >
-            <ToggleGroupItem value="unified"><Rows2 /> Unified</ToggleGroupItem>
-            <ToggleGroupItem value="split"><Columns2 /> Split</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Hidden files</CardTitle>
+          <CardDescription>These stay out of the list until you turn on “Hidden” in the review.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field>
+              <FieldLabel for="hide">Path patterns</FieldLabel>
+              <Textarea id="hide" v-model="hide" rows="6" spellcheck="false" placeholder="**/*.lock" />
+              <FieldDescription>One per line. Use * inside a folder and ** across folders.</FieldDescription>
+            </Field>
+            <FieldSet>
+              <FieldLegend variant="label">Hide by change type</FieldLegend>
+              <FieldGroup class="gap-3">
+                <Field v-for="s in STATUSES" :key="s.value" orientation="horizontal">
+                  <Checkbox
+                    :id="`status-${s.value}`"
+                    :model-value="hideStatuses.includes(s.value)"
+                    @update:model-value="(v) => toggleStatus(s.value, v === true)"
+                  />
+                  <FieldLabel :for="`status-${s.value}`" class="font-normal">{{ s.label }}</FieldLabel>
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+          </FieldGroup>
+        </CardContent>
+      </Card>
 
-      <Collapsible v-model:open="advancedOpen" class="rounded-lg border bg-card shadow-xs">
-        <CollapsibleTrigger as-child>
-          <button type="button" class="flex w-full items-center justify-between px-5 py-4 text-left font-medium">
-            Presets (advanced)
-            <ChevronDown class="size-4 transition-transform" :class="advancedOpen ? 'rotate-180' : ''" />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent class="flex flex-col gap-2 px-5 pb-5">
-          <p class="text-xs text-muted-foreground">
-            Named sets of path patterns that appear as a picker in the review. Example:
-            <code>[{ "name": "Backend", "include": ["src/**"] }]</code>
-          </p>
-          <Textarea v-model="presets" rows="10" spellcheck="false" class="font-mono text-xs md:text-xs" aria-label="Presets JSON" />
-        </CollapsibleContent>
-      </Collapsible>
+      <Card>
+        <CardHeader>
+          <CardTitle>Defaults</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel for="review-mode">Hide viewed files</FieldLabel>
+                <FieldDescription>Files disappear from the list as soon as you mark them viewed.</FieldDescription>
+              </FieldContent>
+              <Switch id="review-mode" v-model="reviewMode" />
+            </Field>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel>Diff view</FieldLabel>
+                <FieldDescription>Split falls back to unified on small windows.</FieldDescription>
+              </FieldContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                :model-value="diffView"
+                aria-label="Diff view"
+                @update:model-value="(v) => v && (diffView = v as DiffMode)"
+              >
+                <ToggleGroupItem value="unified"><Rows2 /> Unified</ToggleGroupItem>
+                <ToggleGroupItem value="split"><Columns2 /> Split</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
 
-      <footer class="sticky bottom-0 -mx-6 flex items-center gap-3 border-t bg-background/90 px-6 py-3 backdrop-blur">
+      <Card>
+        <Collapsible v-model:open="advancedOpen">
+          <CardHeader>
+            <CardTitle>Presets</CardTitle>
+            <CardDescription>Named sets of path patterns shown as a picker in the review.</CardDescription>
+            <CollapsibleTrigger as-child>
+              <Button variant="outline" size="sm" class="w-fit">
+                {{ advancedOpen ? 'Hide' : 'Edit' }} JSON
+                <ChevronDown />
+              </Button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <Field>
+                <FieldLabel for="presets">Presets JSON</FieldLabel>
+                <Textarea id="presets" v-model="presets" rows="10" spellcheck="false" />
+                <FieldDescription>Example: [{ "name": "Backend", "include": ["src/**"] }]</FieldDescription>
+              </Field>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+
+      <Alert v-if="message" :variant="message.ok ? 'default' : 'destructive'">
+        <CircleCheck v-if="message.ok" /><CircleAlert v-else />
+        <AlertDescription>{{ message.text }}</AlertDescription>
+      </Alert>
+
+      <div class="flex gap-2">
         <Button @click="save">Save</Button>
-        <Button :variant="confirmReset ? 'destructive' : 'outline'" @click="reset">{{
-          confirmReset ? 'Click again to reset' : 'Reset to defaults'
-        }}</Button>
-        <span v-if="message" role="status" :class="message.ok ? 'text-success' : 'text-destructive'">{{ message.text }}</span>
-      </footer>
+        <Button :variant="confirmReset ? 'destructive' : 'outline'" @click="reset">
+          {{ confirmReset ? 'Click again to reset' : 'Reset to defaults' }}
+        </Button>
+      </div>
     </main>
   </div>
 </template>
