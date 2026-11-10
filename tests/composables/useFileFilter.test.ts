@@ -18,6 +18,17 @@ function setup(files: PrFile[], overrides: Partial<Settings> = {}, viewed: strin
 
 const names = (list: PrFile[]) => list.map((f) => f.filename)
 
+describe('progress', () => {
+  it('counts every visible-by-rules file, whatever the search or chips are', async () => {
+    const { filter } = setup([file('src/a.php'), file('src/b.ts'), file('docs/readme.md'), file('composer.lock')], {}, ['src/a.php'])
+    const before = filter.progress.value
+    expect(before).toEqual({ total: 3, done: 1, left: 2 })
+    filter.query.value = 'readme'
+    await filter.toggleChip('.ts')
+    expect(filter.progress.value).toEqual(before)
+  })
+})
+
 describe('files with notes', () => {
   it('offers a chip that shows only the files that have notes', async () => {
     installChrome()

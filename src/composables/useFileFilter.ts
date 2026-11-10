@@ -69,15 +69,14 @@ export function useFileFilter(
     }),
   )
 
-  const isHidden = computed(() => {
+  const hiddenByRules = computed(() => {
     const byGlob = matcher(settings.value.hide)
     const statuses = new Set(settings.value.hideStatuses)
     const presetShowsHidden = activePreset.value?.includeHidden ?? false
-    return (f: PrFile) => {
-      if (presetShowsHidden || shownOnly.value.some((k) => matchesChip(f, k, openNotes.value))) return false
-      return byGlob(f.filename) || statuses.has(f.status)
-    }
+    return (f: PrFile) => !presetShowsHidden && (byGlob(f.filename) || statuses.has(f.status))
   })
+
+  const isHidden = computed(() => (f: PrFile) => !shownOnly.value.some((k) => matchesChip(f, k, openNotes.value)) && hiddenByRules.value(f))
 
   const hiddenCount = computed(() => byChip.value.filter(isHidden.value).length)
   const candidates = computed(() => (showHidden.value ? byChip.value : byChip.value.filter((f) => !isHidden.value(f))))
@@ -87,8 +86,9 @@ export function useFileFilter(
   const scopedAll = computed(() => (scopes.value.length ? candidates.value.filter(inScopeKeys) : candidates.value))
   const viewedInView = computed(() => scopedAll.value.filter(isViewed))
   const progress = computed(() => {
-    const total = candidates.value.length
-    const done = candidates.value.filter(isViewed).length
+    const all = showHidden.value ? files.value : files.value.filter((f) => !hiddenByRules.value(f))
+    const total = all.length
+    const done = all.filter(isViewed).length
     return { total, done, left: total - done }
   })
 
