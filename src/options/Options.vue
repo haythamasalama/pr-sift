@@ -6,15 +6,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
+import PalettePreview from './PalettePreview.vue'
 import { isDark, useAppearance } from '../composables/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, Palette, Settings, ThemeMode } from '../lib/types'
+
+const PALETTES: { value: Palette; label: string }[] = [
+  { value: 'github', label: 'GitHub' },
+  { value: 'basic', label: 'Basic' },
+]
 
 const STATUSES = [
   { value: 'added', label: 'Added files' },
@@ -172,22 +179,21 @@ onMounted(load)
                 <ToggleGroupItem value="dark"><Moon /> Dark</ToggleGroupItem>
               </ToggleGroup>
             </Field>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel>Diff colors</FieldLabel>
-                <FieldDescription>GitHub matches the pull request page. Basic follows the extension's neutral theme.</FieldDescription>
-              </FieldContent>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                :model-value="palette"
-                aria-label="Diff colors"
-                @update:model-value="(v) => v && (palette = v as Palette)"
-              >
-                <ToggleGroupItem value="github">GitHub</ToggleGroupItem>
-                <ToggleGroupItem value="basic">Basic</ToggleGroupItem>
-              </ToggleGroup>
-            </Field>
+            <FieldSet>
+              <FieldLegend variant="label">Diff colors</FieldLegend>
+              <FieldDescription>GitHub matches the pull request page. Basic follows the extension's neutral theme.</FieldDescription>
+              <RadioGroup :model-value="palette" class="grid grid-cols-2 gap-3" @update:model-value="(v) => (palette = v as Palette)">
+                <FieldLabel v-for="option in PALETTES" :key="option.value" :for="`palette-${option.value}`">
+                  <Field orientation="vertical">
+                    <div class="flex items-center justify-between">
+                      <FieldTitle>{{ option.label }}</FieldTitle>
+                      <RadioGroupItem :id="`palette-${option.value}`" :value="option.value" />
+                    </div>
+                    <PalettePreview :palette="option.value" :dark="dark" />
+                  </Field>
+                </FieldLabel>
+              </RadioGroup>
+            </FieldSet>
           </FieldGroup>
         </CardContent>
       </Card>
