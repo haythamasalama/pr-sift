@@ -1,6 +1,7 @@
 # Contributing
 
-Thanks for helping. A few rules keep the project easy to maintain.
+Thanks for helping. A few rules keep the project easy to maintain. By sending a pull request, you agree that your
+contribution is licensed under the project's [license](LICENSE).
 
 ## Setup
 

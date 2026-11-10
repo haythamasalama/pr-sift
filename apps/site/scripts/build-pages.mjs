@@ -198,7 +198,7 @@ function footer() {
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <div class="flex flex-wrap items-center justify-between gap-2 border-t border-line py-6 text-sm text-muted">
-        <span>© ${YEAR} PR Sift. MIT license.</span>
+        <span>© ${YEAR} PR Sift. <a href="${REPO_URL}/blob/main/LICENSE" class="hover:text-ink">PolyForm Shield license</a>.</span>
         <span>Made by <a href="${AUTHOR.url}" class="text-ink hover:underline">${AUTHOR.name}</a></span>
       </div>
     </div>
@@ -279,7 +279,7 @@ const appLd = {
   downloadUrl: INSTALL_URL,
   softwareHelp: SITE_URL + 'guides/',
   releaseNotes: SITE_URL + 'changelog/',
-  license: 'https://opensource.org/licenses/MIT',
+  license: 'https://polyformproject.org/licenses/shield/1.0.0',
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   image: SITE_URL + 'media/og.png',
@@ -414,7 +414,7 @@ function homePage() {
       <div class="mt-12">${shot('launcher', 'The PR Sift button on a real GitHub pull request')}</div>`,
     ],
     [
-      'open-source',
+      'source-code',
       `<div class="grid gap-12 lg:grid-cols-12">
         <div class="lg:col-span-5">
           ${iconBox('github')}${h2(h.openSource.title, 'mt-5')}${lead(h.openSource.text)}
@@ -819,7 +819,7 @@ ${home.features.map((f) => `- ${f.title}. ${f.text}`).join('\n')}
 
 ## Facts
 
-- Price: free. License: MIT. Source: ${REPO_URL}
+- Price: free, including at work. License: PolyForm Shield 1.0.0 (public source code; no resale and no competing copies). Source: ${REPO_URL}
 - Browsers: Chrome, Edge, Brave, Arc, Dia, Opera, Vivaldi and other Chromium browsers.
 - Privacy: no server, no account, no analytics. Data stays in the browser. Talks only to GitHub.
 - A GitHub token is optional and only used to post a note as a review comment.

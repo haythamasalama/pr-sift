@@ -6,7 +6,7 @@ export const AUTHOR = { name: 'Haytham Salama', url: 'https://haythamasalama.me/
 export const home = {
   title: 'PR Sift: review large GitHub pull requests without the noise',
   description:
-    'Free, open-source Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude, ChatGPT or Gemini.',
+    'Free Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude, ChatGPT or Gemini.',
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
     cta: 'Install PR Sift',
@@ -160,7 +160,7 @@ export const home = {
   },
   openSource: {
     title: 'Built in the open',
-    text: 'MIT licensed. Read the code, report a bug or send a pull request.',
+    text: 'The source code is public. Read it, report a bug or send a pull request.',
     links: [
       ['github', 'Source code', REPO_URL],
       ['bug', 'Report a bug', `${REPO_URL}/issues/new?template=bug_report.yml`],
@@ -180,7 +180,7 @@ export const home = {
     text: 'No server, no account, no analytics. PR Sift only talks to GitHub.',
   },
   faq: [
-    ['Is PR Sift free?', 'Yes. Free and open source under the MIT license.'],
+    ['Is PR Sift free?', 'Yes, for everyone, including at work. The source code is public under the PolyForm Shield license.'],
     ['Does it send my code anywhere?', 'No. It only talks to GitHub. Notes go to your clipboard when you copy them.'],
     ['Do I need a GitHub token?', 'No. A token is only used to post a note as a review comment.'],
     [
@@ -297,7 +297,7 @@ export const brand = {
     ['One line', 'Review large GitHub pull requests without the noise.'],
     [
       'Short',
-      'PR Sift is a free, open-source Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude, ChatGPT or Gemini.',
+      'PR Sift is a free Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude, ChatGPT or Gemini.',
     ],
   ],
   colors: [

@@ -37,7 +37,7 @@ Read it your way
 • Unified or split diffs, for every file or just one.
 • Light, dark or system theme with GitHub's diff colors.
 
-Free and open source (MIT). No account, no server, no analytics. PR Sift only talks to GitHub.
+Free, with public source code. No account, no server, no analytics. PR Sift only talks to GitHub.
 
 Not affiliated with GitHub.
 ```
