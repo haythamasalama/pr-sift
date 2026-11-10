@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef } from 'vue'
+import { onMounted, shallowRef } from 'vue'
 import { CircleAlert, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
 import PalettePreview from './PalettePreview.vue'
-import { isDark, useAppearance } from '../composables/useAppearance'
+import { useAppearance } from '../composables/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, Palette, Settings, ThemeMode } from '../lib/types'
 
@@ -30,10 +30,7 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed files' },
 ]
 
-const { systemDark } = useAppearance()
-const theme = shallowRef<ThemeMode>(DEFAULTS.theme)
-const palette = shallowRef<Palette>(DEFAULTS.palette)
-const dark = computed(() => isDark(theme.value, systemDark.value))
+const { theme, palette, dark, setTheme, setPalette } = useAppearance()
 const token = shallowRef('')
 const showToken = shallowRef(false)
 const hide = shallowRef('')
@@ -50,8 +47,6 @@ function fill(settings: Settings) {
   hideStatuses.value = [...settings.hideStatuses]
   reviewMode.value = settings.reviewMode
   diffView.value = settings.diffView
-  theme.value = settings.theme
-  palette.value = settings.palette
   presets.value = JSON.stringify(settings.presets, null, 2)
 }
 
@@ -92,8 +87,6 @@ async function save() {
     hideStatuses: hideStatuses.value,
     reviewMode: reviewMode.value,
     diffView: diffView.value,
-    theme: theme.value,
-    palette: palette.value,
   }
   await chrome.storage.local.set({ token: token.value.trim(), settings })
   flash(true, 'Saved')
@@ -158,7 +151,7 @@ onMounted(load)
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
-          <CardDescription>You can also change these from the palette button inside a review.</CardDescription>
+          <CardDescription>Applied immediately. You can also change them from the palette button inside a review.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
@@ -172,7 +165,7 @@ onMounted(load)
                 variant="outline"
                 :model-value="theme"
                 aria-label="Theme"
-                @update:model-value="(v) => v && (theme = v as ThemeMode)"
+                @update:model-value="(v) => v && setTheme(v as ThemeMode)"
               >
                 <ToggleGroupItem value="system"><Monitor /> System</ToggleGroupItem>
                 <ToggleGroupItem value="light"><Sun /> Light</ToggleGroupItem>
@@ -182,7 +175,7 @@ onMounted(load)
             <FieldSet>
               <FieldLegend variant="label">Diff colors</FieldLegend>
               <FieldDescription>GitHub matches the pull request page. Basic follows the extension's neutral theme.</FieldDescription>
-              <RadioGroup :model-value="palette" class="grid grid-cols-2 gap-3" @update:model-value="(v) => (palette = v as Palette)">
+              <RadioGroup :model-value="palette" class="grid grid-cols-2 gap-3" @update:model-value="(v) => setPalette(v as Palette)">
                 <FieldLabel v-for="option in PALETTES" :key="option.value" :for="`palette-${option.value}`">
                   <Field orientation="vertical">
                     <div class="flex items-center justify-between">

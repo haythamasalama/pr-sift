@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { AlertCircle, CheckCircle2, FolderTree, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -21,7 +21,7 @@ import { hasToken } from '../../lib/github'
 import { githubLineUrl } from '../../lib/notes'
 import { postReviewComment } from '../../lib/review'
 import { buildTree } from '../../lib/tree'
-import { DEFAULTS, getSettings, saveSetting } from '../../lib/settings'
+import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
 import { prKey, type DiffMode, type PrRef, type Settings } from '../../lib/types'
 import FileList from './FileList.vue'
 import FileTree from './FileTree.vue'
@@ -32,6 +32,8 @@ import Toolbar from './Toolbar.vue'
 
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
+let stopWatchingSettings = () => {}
+onBeforeUnmount(() => stopWatchingSettings())
 
 const settings = shallowRef<Settings>(DEFAULTS)
 const { files, info, status, error, load, hasUpdate, refresh } = usePullRequest()
@@ -145,6 +147,7 @@ function addExtension(raw: string) {
 const removeExtension = (ext: string) => setCustomExtensions(settings.value.customExtensions.filter((e) => e !== ext))
 
 onMounted(async () => {
+  stopWatchingSettings = onSettingsChange((next) => (settings.value = next))
   settings.value = await getSettings()
   tokenAvailable.value = await hasToken()
   filter.loadHiddenTypes(settings.value.hiddenTypes)

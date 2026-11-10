@@ -1,5 +1,5 @@
 import { computed, shallowRef } from 'vue'
-import { DEFAULTS, getSettings, saveSetting } from '../lib/settings'
+import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../lib/settings'
 import type { Palette, Settings, ThemeMode } from '../lib/types'
 
 const theme = shallowRef<ThemeMode>(DEFAULTS.theme)
@@ -20,13 +20,7 @@ function start() {
     media.addEventListener('change', (e) => (systemDark.value = e.matches))
   }
   getSettings().then(apply, () => {})
-  try {
-    chrome.storage?.onChanged?.addListener((changes, area) => {
-      if (area === 'local' && changes.settings) apply(changes.settings.newValue ?? {})
-    })
-  } catch {
-    // the extension context is gone after an update; the page keeps its last theme
-  }
+  onSettingsChange(apply)
 }
 
 export const isDark = (mode: ThemeMode, system: boolean) => (mode === 'system' ? system : mode === 'dark')

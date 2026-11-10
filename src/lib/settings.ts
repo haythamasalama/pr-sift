@@ -24,6 +24,19 @@ export async function saveSetting<K extends keyof Settings>(key: K, value: Setti
   await storageSet({ settings: { ...(settings ?? {}), [key]: value } })
 }
 
+export function onSettingsChange(callback: (settings: Settings) => void): () => void {
+  try {
+    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area === 'local' && changes.settings)
+        callback({ ...DEFAULTS, ...((changes.settings.newValue as Partial<Settings> | undefined) ?? {}) })
+    }
+    chrome.storage?.onChanged?.addListener(listener)
+    return () => chrome.storage?.onChanged?.removeListener(listener)
+  } catch {
+    return () => {}
+  }
+}
+
 export function globToRegex(glob: string): RegExp {
   let re = ''
   for (let i = 0; i < glob.length; i++) {
