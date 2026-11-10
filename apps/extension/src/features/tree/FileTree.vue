@@ -59,7 +59,6 @@ const rootState = computed(() => {
       :class="selected === '' ? 'bg-primary/15 text-primary' : ''"
     >
       <Checkbox
-        class="transition-opacity data-[state=unchecked]:opacity-0 group-hover:data-[state=unchecked]:opacity-100"
         title="Mark everything in the tree as viewed"
         :model-value="rootState === 'all' ? true : rootState === 'some' ? 'indeterminate' : false"
         @update:model-value="(value) => emit('toggleViewed', '', value === true)"
