@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 
 const SIZES = [16, 32, 48, 128]
 const SUPERSAMPLE = 4
-const BLUE = [9, 105, 218]
+const BLUE = [23, 23, 23]
 const WHITE = [255, 255, 255]
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {
