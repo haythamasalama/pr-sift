@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, shallowRef } from 'vue'
+import { computed, provide, shallowRef, watch } from 'vue'
 import { ChevronsDownUp, ChevronsUpDown, Layers } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -9,8 +9,14 @@ import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
 import TreeNodeView from './TreeNode.vue'
 
-const { tree, selected, isViewed } = defineProps<{
+const {
+  tree,
+  selected,
+  isViewed,
+  search = '',
+} = defineProps<{
   tree: TreeNode
+  search?: string
   selected: string
   isViewed: (f: PrFile) => boolean
 }>()
@@ -26,6 +32,13 @@ const emit = defineEmits<{
 const expand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(treeExpandKey, expand)
 const setAll = (open: boolean) => (expand.value = { open, n: expand.value.n + 1 })
+
+watch(
+  () => search.trim(),
+  (query) => {
+    if (query) setAll(true)
+  },
+)
 
 function showAll() {
   emit('selectFolder', '')

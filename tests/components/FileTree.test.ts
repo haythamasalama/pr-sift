@@ -42,6 +42,14 @@ describe('FileTree', () => {
     expect(fileRows(wrapper)).toHaveLength(1)
   })
 
+  it('opens every folder while a search is active', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
+    expect(fileRows(wrapper)).toHaveLength(1)
+    await wrapper.setProps({ search: 'A.php' })
+    expect(fileRows(wrapper)).toHaveLength(4)
+  })
+
   it('opens a folder and asks to jump to it when its name is clicked', async () => {
     const wrapper = mountTree()
     await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')

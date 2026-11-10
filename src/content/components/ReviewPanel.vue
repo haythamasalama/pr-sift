@@ -255,6 +255,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           <TabsContent value="tree" class="min-h-0 flex-1">
             <FileTree
               :tree="tree"
+              :search="filter.query.value"
               :selected="filter.selectedFolder.value"
               :is-viewed="isViewed"
               @select-folder="selectFolder"
