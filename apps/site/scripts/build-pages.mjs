@@ -442,9 +442,9 @@ function homePage() {
 
   const body = `
     <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
-      <div class="min-w-0">
+      <div class="@container min-w-0">
         <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 text-xs font-medium text-paper">New</span>Send notes to ChatGPT or Gemini${icon('chevron-right', 'size-3.5 text-muted')}</a>
-        <h1 class="mt-7 font-mono text-[clamp(1.35rem,2.6vw,2.15rem)] leading-[1.25] font-medium tracking-tight">
+        <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
         </h1>

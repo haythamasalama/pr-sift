@@ -109,3 +109,8 @@ html[data-theme='dark'] [data-theme-mode='dark'] {
     transition: none;
   }
 }
+
+/* One line per diff row: 27 monospace characters plus the row padding and gap. */
+.hero-diff {
+  font-size: min(2.15rem, calc((100cqi - 40px) / 16));
+}

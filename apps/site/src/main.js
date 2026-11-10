@@ -36,6 +36,8 @@ for (const root of document.querySelectorAll('[data-playground]')) {
   const summary = root.querySelector('[data-summary]')
   const hint = summary.textContent
   const state = new Map()
+  const list = files[0].parentElement
+  list.style.minHeight = `${list.offsetHeight}px`
 
   const matches = (file, key) => (key.startsWith('status:') ? file.dataset.status === key.slice(7) : file.dataset.type === key)
 
