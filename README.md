@@ -2,7 +2,7 @@
 
 # PR Sift
 
-A Chrome extension that makes reviewing large GitHub pull requests fast. It opens a review workspace on top of any
+Review large GitHub pull requests without the noise. PR Sift is a Chrome extension that makes reviewing them fast. It opens a review workspace on top of any
 pull request page, so you can filter by file type or folder, mark files as viewed in bulk, keep private notes, and
 carry on from where you stopped.
 
@@ -40,13 +40,13 @@ pnpm install
 pnpm build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked** and select this folder. After
+Then open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked** and select the `apps/extension` folder. After
 rebuilding, reload the extension and refresh the GitHub tab.
 
 ### Packaging for the Chrome Web Store
 
 ```bash
-pnpm package   # builds and creates pr-sift-<version>.zip
+pnpm package   # builds and creates apps/extension/pr-sift-<version>.zip
 ```
 
 ## Usage
@@ -74,18 +74,8 @@ Open the extension options (click the toolbar icon). A GitHub token is optional.
 Use a fine-grained token limited to the repositories you need, with **Pull requests: Read and write**. If your
 organization requires approval for tokens, an admin must approve it first.
 
-The JSON editor accepts:
-
-| Key                | Meaning                                                              |
-| ------------------ | -------------------------------------------------------------------- |
-| `presets`          | Named shortcuts: `{ "name": "Orders", "include": ["src/Order/**"] }` |
-| `hide`             | Glob patterns hidden by default (lock files, minified files…)        |
-| `hideStatuses`     | Statuses hidden by default, e.g. `["removed"]`                       |
-| `customExtensions` | Extra compound suffixes, e.g. `[".blade.php"]`                       |
-| `hiddenTypes`      | Types you always hide (Shift-click a chip), e.g. `[".json"]`         |
-| `reviewMode`       | Hide viewed files immediately                                        |
-| `diffView`         | `"unified"` or `"split"`                                             |
-| `sidebarWidth`     | Sidebar width in pixels                                              |
+The options page lets you choose the theme (system, light or dark), the files hidden by default (path patterns and
+change types), the default diff view, and named presets. Changes reach open reviews immediately.
 
 ## Privacy
 
@@ -95,8 +85,7 @@ Everything stays in your browser. See [PRIVACY.md](PRIVACY.md).
 
 ```bash
 pnpm test            # unit and component tests (Vitest)
-pnpm test:coverage   # with coverage for src/lib and src/composables
-pnpm typecheck       # vue-tsc
+pnpm typecheck       # vue-tsc and tsc
 pnpm lint            # ESLint
 pnpm format          # Prettier
 pnpm check           # typecheck + lint + format check + tests
@@ -106,15 +95,21 @@ Stack: Vue 3, TypeScript, Vite, Tailwind CSS 4, [shadcn-vue](https://www.shadcn-
 highlight.js. The interface renders inside a shadow root so it never interferes with GitHub's styles.
 
 ```
-src/
-  background/     service worker (GitHub API and cross-origin reads)
-  content/        the in-page app (App.vue, components/)
-  composables/    state: filters, viewed marks, notes, updates, resizing
-  lib/            pure logic: diff parsing, scopes, tree, highlighting, GitHub access
-  options/        the options page
-  components/ui/  generated shadcn-vue components
-tests/            mirrors src/
+apps/
+  extension/            the Chrome extension
+    src/
+      background/       service worker (GitHub API and cross-origin reads)
+      content/          the in-page entry (App.vue, main.ts)
+      options/          the options page
+      features/         one folder per feature: diff, tree, filters, notes, review, appearance
+      components/       shared components (ui/ holds the generated shadcn-vue ones)
+      lib/              shared infrastructure: storage, settings, portal, types
+    tests/              mirrors src/
+packages/
+  core/                 pure review logic with no DOM or browser APIs: diff, tree, scopes, notes, ranges
 ```
+
+Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 

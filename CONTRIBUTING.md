@@ -7,19 +7,20 @@ Thanks for helping. A few rules keep the project easy to maintain.
 ```bash
 pnpm install
 pnpm check      # must pass before you open a pull request
-pnpm build      # load the folder as an unpacked extension to try changes
+pnpm build      # then load apps/extension as an unpacked extension to try changes
 ```
 
 ## Guidelines
 
-- **Tests.** Add or update tests with every behavior change. Pure logic goes in `src/lib` and `src/composables`
-  with unit tests; interface behavior gets a component test in `tests/components`.
+- **Tests.** Add or update tests with every behavior change. Pure logic goes in `packages/core` with unit tests;
+  feature state lives in `apps/extension/src/features/<feature>`; interface behavior gets a component test next to it
+  in `apps/extension/tests/features/<feature>`.
 - **Types.** No `any`. Keep functions small and typed.
-- **Components.** Prefer the shadcn-vue components in `src/components/ui` (add new ones with
-  `pnpm dlx shadcn-vue@latest add <name>`) over hand-made controls. Use semantic color tokens (`bg-muted`,
+- **Components.** Prefer the shadcn-vue components in `apps/extension/src/components/ui` (add new ones from
+  `apps/extension` with `pnpm dlx shadcn-vue@latest add <name>`, see `.claude/skills/add-ui-component`) over hand-made controls. Use semantic color tokens (`bg-muted`,
   `text-muted-foreground`), not raw colors.
 - **Shadow DOM.** The UI lives in a shadow root. Overlays must teleport into the shadow root (see
-  `src/lib/portal.ts`), and global CSS from GitHub must not be assumed.
+  `apps/extension/src/lib/portal.ts`), and global CSS from GitHub must not be assumed.
 - **Comments.** Only explain _why_ when it is not obvious.
 - **Scope.** One change per pull request, with a short description of what and why.
 
