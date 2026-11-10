@@ -108,3 +108,11 @@ describe('multi-line notes', () => {
     expect(await githubLineUrl(PR, { file: 'src/a.php', side: 'new', line: 4, startLine: 2 })).toMatch(/R2-R4$/)
   })
 })
+
+describe('resolved notes', () => {
+  it('are left out of the Claude prompt', () => {
+    const prompt = buildClaudePrompt(PR, 'T', [note({ text: 'open one' }), note({ id: '2', text: 'done one', resolved: true })], [])
+    expect(prompt).toContain('open one')
+    expect(prompt).not.toContain('done one')
+  })
+})

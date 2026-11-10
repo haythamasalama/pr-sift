@@ -75,4 +75,5 @@ export interface Note {
   text: string
   createdAt: number
   postedUrl?: string
+  resolved?: boolean
 }

@@ -12,6 +12,7 @@ export function notesContext(overrides: Partial<NotesContext> = {}, notes: Note[
     remove: vi.fn(async () => {}),
     post: vi.fn(async () => {}),
     canPost: shallowRef(false),
+    showResolved: shallowRef(false),
     openOnGithub: vi.fn(async () => {}),
     ...overrides,
   }

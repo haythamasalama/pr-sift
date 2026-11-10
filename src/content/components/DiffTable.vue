@@ -45,7 +45,7 @@ const rowAt = computed(() => {
 const notesByRow = computed(() => {
   const map = new Map<number, Note[]>()
   for (const n of ctx.notes.value) {
-    if (n.file !== filename) continue
+    if (n.file !== filename || (n.resolved && !ctx.showResolved.value)) continue
     const i = rowAt.value.get(`${n.side}:${n.line}`)
     if (i !== undefined) map.set(i, [...(map.get(i) ?? []), n])
   }

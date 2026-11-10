@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue'
-import { ExternalLink, Lock, Pencil, Send, Trash2 } from '@lucide/vue'
+import { CircleCheck, ExternalLink, Lock, Pencil, RotateCcw, Send, Trash2 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -73,7 +73,11 @@ async function post() {
     @cancel="stopEditing"
     @open-github="ctx.openOnGithub(note)"
   />
-  <div v-else class="flex items-start gap-2 border-y border-amber-500/50 bg-amber-500/10 px-3 py-2 font-sans">
+  <div
+    v-else
+    class="flex items-start gap-2 border-y border-amber-500/50 bg-amber-500/10 px-3 py-2 font-sans"
+    :class="note.resolved ? 'opacity-60' : ''"
+  >
     <Lock class="mt-0.5 size-3.5 shrink-0 text-amber-600" />
     <div class="min-w-0 flex-1">
       <p
@@ -112,6 +116,15 @@ async function post() {
     <Button variant="ghost" size="icon-xs" aria-label="Open on GitHub" title="Open this line on GitHub" @click="ctx.openOnGithub(note)"
       ><ExternalLink
     /></Button>
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      :aria-label="note.resolved ? 'Reopen note' : 'Mark note as resolved'"
+      :title="note.resolved ? 'Reopen this note' : 'Resolved — hide it from the diff'"
+      @click="ctx.update(note.id, { resolved: !note.resolved })"
+    >
+      <RotateCcw v-if="note.resolved" /><CircleCheck v-else />
+    </Button>
     <Button variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEditing"><Pencil /></Button>
     <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="ctx.remove(note.id)"><Trash2 /></Button>
   </div>

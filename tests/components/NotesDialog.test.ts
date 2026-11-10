@@ -25,6 +25,6 @@ describe('NotesDialog', () => {
     area.dispatchEvent(new Event('input'))
     await wrapper.vm.$nextTick()
     ;[...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Save')!.click()
-    expect(wrapper.emitted('update')).toEqual([['n1', 'new text']])
+    expect(wrapper.emitted('update')).toEqual([['n1', { text: 'new text' }]])
   })
 })

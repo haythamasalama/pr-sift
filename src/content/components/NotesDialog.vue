@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
-import { Check, ClipboardCopy, Lock, Pencil, Trash2 } from '@lucide/vue'
+import { Check, CircleCheck, ClipboardCopy, Lock, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import type { NotePatch } from '../../composables/useNotes'
 import { buildClaudePrompt } from '../../lib/notes'
 import { describeLines, startOf } from '../../lib/range'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from './ui/Modal.vue'
 
 const { pr, title, notes, files } = defineProps<{ pr: PrRef; title: string; notes: Note[]; files: PrFile[] }>()
-const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; update: [id: string, text: string]; clear: [] }>()
+const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; update: [id: string, patch: NotePatch]; clear: [] }>()
+const showResolved = defineModel<boolean>('showResolved', { default: false })
 
 const editingId = shallowRef('')
 const draft = shallowRef('')
@@ -22,7 +26,7 @@ function startEdit(n: Note) {
 }
 
 function saveEdit() {
-  if (draft.value.trim()) emit('update', editingId.value, draft.value.trim())
+  if (draft.value.trim()) emit('update', editingId.value, { text: draft.value.trim() })
   editingId.value = ''
 }
 
@@ -72,10 +76,17 @@ function clear() {
           @click="emit('jump', file)"
           >{{ file }}</Button
         >
-        <div v-for="n in list" :key="n.id" class="flex min-w-0 items-start gap-2 rounded-md border bg-muted px-2.5 py-2">
+        <div
+          v-for="n in list"
+          :key="n.id"
+          class="flex min-w-0 items-start gap-2 rounded-md border bg-muted px-2.5 py-2"
+          :class="n.resolved ? 'opacity-60' : ''"
+        >
           <Lock class="mt-0.5 size-3 shrink-0 text-amber-600" />
           <div class="min-w-0 flex-1 text-xs">
-            <p class="text-muted-foreground">{{ describeLines(n) }} · {{ n.side === 'new' ? 'new' : 'removed' }}</p>
+            <p class="text-muted-foreground">
+              {{ describeLines(n) }} · {{ n.side === 'new' ? 'new' : 'removed' }}{{ n.resolved ? ' · resolved' : '' }}
+            </p>
             <p v-if="n.quote" class="truncate font-mono text-[11px] text-muted-foreground" :title="n.quote">“{{ n.quote }}”</p>
             <div v-if="editingId === n.id" class="mt-1 flex flex-col gap-1.5">
               <Textarea
@@ -93,12 +104,25 @@ function clear() {
             </div>
             <p v-else class="break-words whitespace-pre-wrap text-foreground">{{ n.text }}</p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            :aria-label="n.resolved ? 'Reopen note' : 'Mark note as resolved'"
+            :title="n.resolved ? 'Reopen this note' : 'Resolved — hide it from the diff'"
+            @click="emit('update', n.id, { resolved: !n.resolved })"
+          >
+            <RotateCcw v-if="n.resolved" /><CircleCheck v-else />
+          </Button>
           <Button v-if="editingId !== n.id" variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEdit(n)"><Pencil /></Button>
           <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
         </div>
       </section>
 
       <Separator />
+      <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from Copy for Claude">
+        <Switch id="show-resolved" v-model="showResolved" />
+        <Label for="show-resolved" class="text-xs font-normal">Show resolved notes in the diff</Label>
+      </div>
       <div class="flex items-center gap-2">
         <Button @click="copy">
           <Check v-if="copied" />

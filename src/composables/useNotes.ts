@@ -4,7 +4,7 @@ import type { Note } from '../lib/types'
 
 export type NewNote = Omit<Note, 'id' | 'createdAt'>
 
-export type NotePatch = Partial<Pick<Note, 'text' | 'line' | 'startLine' | 'lineText'>>
+export type NotePatch = Partial<Pick<Note, 'text' | 'line' | 'startLine' | 'lineText' | 'resolved'>>
 
 export interface NotesContext {
   notes: Ref<Note[]>
@@ -13,6 +13,7 @@ export interface NotesContext {
   remove: (id: string) => Promise<void>
   post: (note: Note) => Promise<void>
   canPost: Ref<boolean>
+  showResolved: Ref<boolean>
   openOnGithub: (note: Pick<Note, 'file' | 'side' | 'line' | 'startLine'>) => Promise<void>
 }
 

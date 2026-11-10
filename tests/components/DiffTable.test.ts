@@ -16,6 +16,27 @@ const mountTable = (mode: 'unified' | 'split', notes: Note[] = [], context = not
 }
 
 describe('DiffTable', () => {
+  it('hides resolved notes unless asked to show them', async () => {
+    const resolved = {
+      id: 'r',
+      file: 'a.php',
+      side: 'new',
+      line: 1,
+      lineText: '',
+      quote: '',
+      text: 'done',
+      createdAt: 0,
+      resolved: true,
+    } as Note
+    const context = notesContext({}, [resolved])
+    const { wrapper } = mountTable('unified', [resolved], context)
+    expect(wrapper.text()).not.toContain('done')
+    context.showResolved.value = true
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('done')
+    expect(wrapper.find('[aria-label="Reopen note"]').exists()).toBe(true)
+  })
+
   it('selects several lines by dragging from the gutter button', async () => {
     const { wrapper, context } = mountTable('unified')
     const buttons = wrapper.findAll('[aria-label="Add a private note"]')

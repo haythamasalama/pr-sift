@@ -60,10 +60,12 @@ const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpa
 
 const notesStore = useNotes(computed(() => prKey(pr)))
 const tokenAvailable = shallowRef(false)
+const showResolved = shallowRef(false)
 
 provide(notesKey, {
   notes: notesStore.notes,
   canPost: tokenAvailable,
+  showResolved,
   post: async (note) => {
     await notesStore.markPosted(note.id, await postReviewComment(pr, note))
   },
@@ -297,13 +299,14 @@ watch(diffMode, (value) => saveSetting('diffView', value))
 
     <NotesDialog
       v-if="notesOpen"
+      v-model:show-resolved="showResolved"
       :pr="pr"
       :title="info?.title ?? ''"
       :notes="notesStore.notes.value"
       :files="files"
       @close="notesOpen = false"
       @remove="notesStore.remove"
-      @update="(id, text) => notesStore.update(id, { text })"
+      @update="notesStore.update"
       @clear="notesStore.clear"
       @jump="
         (file) => {
