@@ -13,7 +13,7 @@ const PR_URL = `https://github.com/${PR.owner}/${PR.repo}/pull/${PR.number}/file
 const KEY = `${PR.owner}/${PR.repo}#${PR.number}`
 const only = process.argv.slice(2)
 const WALLPAPERS = process.env.PR_SIFT_WALLPAPERS ?? `${process.env.HOME}/Pictures/Cap Wallpapers/1 Waves`
-const WALLPAPER = { light: 'Tahoe Light.jpg', dark: 'Tahoe Dark.jpg' }
+const WALLPAPER = { light: 'Tahoe Light.jpg', dark: 'Tahoe Light.jpg' }
 const FALLBACK = { light: 'linear-gradient(135deg, #f5f5f5, #d4d4d4)', dark: 'linear-gradient(135deg, #262626, #0a0a0a)' }
 const backgrounds = {}
 
@@ -69,7 +69,7 @@ const NOTES = [
 
 const githubPage = (
   title,
-) => `<!doctype html><html><head><meta charset="utf-8"><title>${title} by octo · Pull Request #${PR.number} · ${PR.owner}/${PR.repo}</title>
+) => `<!doctype html><html><head><meta charset="utf-8"><title>${title} by haythamasalama · Pull Request #${PR.number} · ${PR.owner}/${PR.repo}</title>
 <style>
   body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1f2328; background: #fff; }
   .top { height: 64px; background: #f6f8fa; border-bottom: 1px solid #d1d9e0; display: flex; align-items: center; padding: 0 32px; gap: 12px; color: #59636e; }
@@ -86,7 +86,7 @@ const githubPage = (
 <div class="top"><b>${PR.owner} / ${PR.repo}</b> · Pull requests</div>
 <main>
   <h1 class="js-issue-title">${title}</h1>
-  <div><span class="state">Open</span> octo wants to merge 12 commits into <code>main</code></div>
+  <div><span class="state">Open</span> haythamasalama wants to merge 12 commits into <code>main</code></div>
   <div class="tabs"><span>Conversation</span><span>Commits 12</span><span>Checks</span><span class="on">Files changed 41</span></div>
   ${Array.from({ length: 6 }, (_, i) => `<section class="file"><header>src/Domain/Billing/File${i + 1}.php</header><div></div></section>`).join('')}
 </main></body></html>`
@@ -195,7 +195,7 @@ async function glide(page, locator, { click = true, steps = 18 } = {}) {
   if (click) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
 }
 
-async function framed(browser, rawPath, name, { theme = 'light' } = {}) {
+async function framed(browser, rawPath, name, { theme = 'light', url = `github.com/${PR.owner}/${PR.repo}/pull/${PR.number}/files` } = {}) {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1060 }, deviceScaleFactor: 2 })
   const img = readFileSync(rawPath).toString('base64')
   const dark = theme === 'dark'
@@ -207,7 +207,7 @@ async function framed(browser, rawPath, name, { theme = 'light' } = {}) {
         <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span>
         <span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span>
         <span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
-        <span style="margin:0 auto;padding:4px 14px;border-radius:6px;background:${dark ? '#0d1117' : '#fff'}">github.com/${PR.owner}/${PR.repo}/pull/${PR.number}/files</span>
+        <span style="margin:0 auto;padding:4px 14px;border-radius:6px;background:${dark ? '#0d1117' : '#fff'}">${url}</span>
       </div>
       <img src="data:image/png;base64,${img}" style="display:block;width:1440px">
     </div>
@@ -239,64 +239,96 @@ async function shot(browser, name, prepare, options = {}) {
 
 async function clip(browser, name, play, options = {}) {
   if (only.length && !only.includes(name)) return
-  const { context, page } = await openDemo(browser, { ...options, video: true })
-  await page.mouse.move(1100, 700)
+  const big = { width: VIEWPORT.width * 2, height: VIEWPORT.height * 2 }
+  const context = await browser.newContext({
+    viewport: big,
+    deviceScaleFactor: 1,
+    colorScheme: options.theme ?? 'light',
+    recordVideo: { dir: `${OUT}/raw`, size: big },
+  })
+  await context.addInitScript(() => {
+    const zoom = () => (document.documentElement.style.zoom = '2')
+    if (document.documentElement) zoom()
+    document.addEventListener('DOMContentLoaded', zoom)
+  })
+  const started = Date.now()
+  const store = { settings: { theme: options.theme ?? 'light', assistant: 'claude' }, [`notes:${KEY}`]: NOTES }
+  await context.addInitScript(chromeMock, { store })
+  await context.addInitScript(cursorScript)
+  await context.route('https://github.com/**', (route) =>
+    route.request().url().endsWith('.diff')
+      ? route.fulfill({ status: 200, contentType: 'text/plain', body: DIFF })
+      : route.fulfill({ status: 200, contentType: 'text/html', body: githubPage(TITLE) }),
+  )
+  const page = await context.newPage()
+  await page.goto(PR_URL)
+  await page.addScriptTag({ path: CONTENT })
+  await openReview(page)
+  if (options.setup) await options.setup(page)
+  await page.mouse.move(2000, 1200)
+  await page.waitForTimeout(600)
+  const trim = (Date.now() - started) / 1000
   await play(page)
-  await page.waitForTimeout(800)
+  await page.waitForTimeout(1200)
   const video = page.video()
   await context.close()
   const raw = `${OUT}/raw/${name}.webm`
   renameSync(await video.path(), raw)
-  execFileSync(ffmpeg, [
-    '-y',
-    '-loglevel',
-    'error',
-    '-i',
-    raw,
-    '-vf',
-    'scale=1440:-2',
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-crf',
-    '24',
-    '-movflags',
-    '+faststart',
-    `${OUT}/videos/${name}.mp4`,
-  ])
-  execFileSync(ffmpeg, [
-    '-y',
-    '-loglevel',
-    'error',
-    '-i',
-    raw,
-    '-vf',
-    'fps=10,scale=860:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle',
-    `${OUT}/videos/${name}.gif`,
-  ])
+  const mp4 = `${OUT}/videos/${name}.mp4`
   execFileSync(ffmpeg, [
     '-y',
     '-loglevel',
     'error',
     '-ss',
-    '4',
+    String(trim),
     '-i',
-    `${OUT}/videos/${name}.mp4`,
-    '-frames:v',
-    '1',
-    '-q:v',
-    '3',
-    `${OUT}/videos/${name}.jpg`,
+    raw,
+    '-vf',
+    'scale=1920:-2:flags=lanczos',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'slow',
+    '-crf',
+    '18',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    mp4,
   ])
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-i',
+    mp4,
+    '-vf',
+    'fps=12,scale=1000:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle',
+    `${OUT}/videos/${name}.gif`,
+  ])
+  execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
   console.log('video', name)
 }
 
 const browser = await chromium.launch()
 
-await shot(browser, 'launcher', async (page) => {
+async function launcherShot() {
+  if (only.length && !only.includes('launcher')) return
+  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: 'light', bypassCSP: true })
+  await context.addInitScript(chromeMock, { store: { settings: { theme: 'light' } } })
+  const page = await context.newPage()
+  await page.goto('https://github.com/haythamasalama/pr-sift/pull/6/files', { waitUntil: 'load', timeout: 60000 })
+  await page.waitForTimeout(4000)
+  await page.addScriptTag({ path: CONTENT })
   await launcher(page).hover()
-})
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: `${OUT}/raw/launcher.png` })
+  await context.close()
+  await framed(browser, `${OUT}/raw/launcher.png`, 'launcher', { url: 'github.com/haythamasalama/pr-sift/pull/6/files' })
+}
+
+await launcherShot()
 
 await shot(browser, 'review', async (page) => {
   await openReview(page)
@@ -355,70 +387,102 @@ await shot(
   { theme: 'dark' },
 )
 
-await clip(browser, 'filters-demo', async (page) => {
-  await glide(page, launcher(page))
-  await page.getByText('src/Domain/Billing/Actions/GenerateInvoice.php').first().waitFor()
-  await page.waitForTimeout(900)
-  await glide(page, page.getByRole('button', { name: /^\.php/ }))
-  await page.waitForTimeout(900)
-  await glide(page, page.getByRole('button', { name: /^added \d/ }))
-  await page.waitForTimeout(900)
-  await glide(page, page.getByRole('button', { name: /^added \d/ }))
-  await glide(page, page.getByRole('button', { name: /^\.php/ }))
-  await page.waitForTimeout(500)
-  await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
-  await page.waitForTimeout(1200)
-  await glide(page, page.getByRole('tab', { name: /Tree/ }))
-  await glide(page, page.getByRole('textbox', { name: 'Search files' }))
-  await page.keyboard.type('Usage', { delay: 110 })
-  await page.waitForTimeout(1500)
+const pause = (page, ms = 900) => page.waitForTimeout(ms)
+const chip = (page, name) => page.getByRole('button', { name: new RegExp(`^${name.replace('.', '\\.')} \\d+$`) })
+
+await clip(browser, 'filters', async (page) => {
+  await glide(page, chip(page, '.php'))
+  await pause(page, 1300)
+  await glide(page, chip(page, 'added'))
+  await pause(page, 1500)
+  await glide(page, chip(page, 'added'))
+  await glide(page, chip(page, '.php'))
+  await pause(page)
+  const md = chip(page, '.md')
+  await glide(page, md, { click: false })
+  await page.keyboard.down('Shift')
+  await md.click()
+  await page.keyboard.up('Shift')
+  await pause(page, 1200)
+  await glide(page, page.getByRole('button', { name: /type$/ }))
+  await page.keyboard.type('.test.ts', { delay: 90 })
+  await page.keyboard.press('Enter')
+  await pause(page, 600)
+  await glide(page, chip(page, '.test.ts'))
+  await pause(page, 1500)
+  await glide(page, page.getByRole('button', { name: /Reset filters/ }))
 })
 
-await clip(browser, 'notes-demo', async (page) => {
-  await glide(page, launcher(page))
-  await page.getByText('src/Domain/Billing/Actions/GenerateInvoice.php').first().waitFor()
+await clip(browser, 'smart-filters', async (page) => {
+  await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
+  await pause(page, 1200)
+  await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
+  await pause(page, 1500)
+  await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
+  await glide(page, page.getByRole('tab', { name: /Tree/ }))
+  await pause(page, 700)
+  const src = page
+    .locator('div.group')
+    .filter({ has: page.locator('span.truncate', { hasText: /^src$/ }) })
+    .first()
+  await glide(page, src, { click: false })
+  await glide(page, src.getByRole('button', { name: 'Collapse folder tree' }))
+  await pause(page)
+  await glide(page, src.getByRole('button', { name: 'Expand folder tree' }))
+  await pause(page)
+  await glide(page, page.getByRole('textbox', { name: 'Search files' }))
+  await page.keyboard.type('Usage', { delay: 110 })
+  await pause(page, 1600)
+})
+
+await clip(browser, 'review', async (page) => {
+  for (let i = 0; i < 2; i++) {
+    await glide(page, page.getByLabel('Viewed').first())
+    await pause(page, 800)
+  }
+  await glide(page, folderViewed(page, 'lang'))
+  await pause(page, 1200)
+  await glide(page, folderViewed(page, 'database'))
+  await pause(page, 1400)
+})
+
+await clip(browser, 'notes', async (page) => {
   const file = 'src/Domain/Billing/Usage/UsageMeter.php'
   await card(page, file).scrollIntoViewIfNeeded()
-  await page.waitForTimeout(600)
+  await pause(page, 500)
   await glide(page, row(page, file, 16), { click: false })
   const plus = row(page, file, 16).getByRole('button', { name: 'Add a private note' })
   const from = await plus.boundingBox()
   await page.mouse.move(from.x + 6, from.y + 6, { steps: 10 })
   await page.mouse.down()
   const to = await row(page, file, 21).boundingBox()
-  await page.mouse.move(to.x + 40, to.y + to.height / 2, { steps: 24 })
+  await page.mouse.move(to.x + 60, to.y + to.height / 2, { steps: 30 })
   await page.mouse.up()
-  await page.waitForTimeout(400)
-  await page.keyboard.type('Filter zero quantities in SQL instead of in PHP.', { delay: 45 })
+  await pause(page, 500)
+  await page.keyboard.type('Filter zero quantities in SQL, not in PHP.', { delay: 45 })
   await glide(page, page.getByRole('button', { name: 'Save note' }))
-  await page.waitForTimeout(700)
+  await pause(page, 900)
   await glide(page, page.getByRole('button', { name: /Notes/ }))
-  await page.waitForTimeout(900)
+  await pause(page, 1100)
   await glide(page, page.getByRole('button', { name: 'Choose the assistant' }))
-  await page.waitForTimeout(500)
-  await glide(page, page.getByRole('menuitemradio', { name: 'ChatGPT' }))
-  await page.waitForTimeout(400)
-  await glide(page, page.getByRole('button', { name: /Copy for ChatGPT/ }))
-  await page.waitForTimeout(1500)
+  await pause(page, 700)
+  await glide(page, page.getByRole('menuitemradio', { name: 'Claude' }))
+  await pause(page, 400)
+  await glide(page, page.getByRole('button', { name: /Copy for Claude/ }))
+  await pause(page, 1600)
 })
 
-await clip(browser, 'review-demo', async (page) => {
-  await glide(page, launcher(page))
-  await page.getByText('src/Domain/Billing/Actions/GenerateInvoice.php').first().waitFor()
-  await page.waitForTimeout(800)
-  for (let i = 0; i < 3; i++) {
-    await glide(page, page.getByLabel('Viewed').first())
-    await page.waitForTimeout(700)
-  }
-  await glide(page, folderViewed(page, 'lang'))
-  await page.waitForTimeout(1000)
-  await glide(page, page.getByRole('button', { name: 'Collapse folder tree' }).first(), { click: false })
-  await page.getByRole('button', { name: 'Collapse folder tree' }).first().click()
-  await page.waitForTimeout(800)
-  await glide(page, page.getByRole('button', { name: 'Expand folder tree' }).first())
-  await page.waitForTimeout(800)
+await clip(browser, 'views', async (page) => {
+  await glide(page, page.getByLabel('Split', { exact: true }))
+  await pause(page, 1600)
+  await glide(page, page.getByLabel('Unified', { exact: true }))
+  await pause(page, 800)
   await glide(page, page.getByRole('button', { name: 'Show this file as split' }).first())
-  await page.waitForTimeout(1500)
+  await pause(page, 1500)
+  await glide(page, page.getByRole('button', { name: 'Copy' }).first())
+  await pause(page, 900)
+  await glide(page, page.getByRole('menuitem', { name: /Copy diff/ }))
+  await pause(page, 900)
 })
 
 async function socialImage() {

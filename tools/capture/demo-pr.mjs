@@ -1,6 +1,6 @@
 import { added, diffText, modified, removed } from './fixture.mjs'
 
-export const PR = { owner: 'acme', repo: 'shipyard', number: 4821 }
+export const PR = { owner: 'haythamasalama', repo: 'storefront', number: 482 }
 export const TITLE = 'feat(billing): usage-based invoices for the business portal'
 
 modified('src/Domain/Billing/Actions/GenerateInvoice.php', [
