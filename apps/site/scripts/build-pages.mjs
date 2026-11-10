@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, MORE_APPS, REPO_URL, SITE_URL, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SUPPORTED_BY, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/pr-sift/'
@@ -156,14 +156,26 @@ const NAV = [
   ['Changelog', 'changelog/'],
 ]
 
+const navHref = (href) => (href.startsWith('#') ? link() + href : link(href))
+
 const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur-xl">
     <nav class="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6" aria-label="Main">
-      <a href="${link()}" class="flex items-center gap-2 font-semibold tracking-tight">${logo()}PR Sift</a>
+      <a href="${link()}" class="flex shrink-0 items-center gap-2 font-semibold tracking-tight whitespace-nowrap">${logo()}PR Sift</a>
       <div class="hidden items-center gap-6 text-sm text-muted md:flex">
-        ${NAV.map(([label, href]) => `<a href="${href.startsWith('#') ? link() + href : link(href)}" class="hover:text-ink">${label}</a>`).join('')}
+        ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="whitespace-nowrap hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <div role="group" aria-label="Theme" class="flex items-center gap-0.5 rounded-md border border-line p-0.5">
+      <a href="${REPO_URL}" class="inline-flex shrink-0 items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="hidden sm:inline">Star</span><span data-stars class="text-muted"></span></a>
+      <details data-menu class="relative md:hidden">
+        <summary aria-label="Menu" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-line text-muted hover:text-ink [&::-webkit-details-marker]:hidden">${icon('menu', 'size-4')}</summary>
+        <div class="absolute right-0 top-full mt-2 flex w-48 flex-col rounded-lg border border-line bg-paper p-1.5 shadow-lg">
+          ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="rounded-md px-3 py-2 text-sm hover:bg-raised">${label}</a>`).join('')}
+        </div>
+      </details>
+    </nav>
+  </header>`
+
+const themePicker = () => `<div role="group" aria-label="Theme" class="flex items-center gap-0.5 rounded-full bg-raised p-[3px]">
         ${[
           ['system', 'monitor', 'System'],
           ['light', 'sun', 'Light'],
@@ -171,13 +183,15 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
         ]
           .map(
             ([mode, ic, label]) =>
-              `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex size-7 items-center justify-center rounded text-muted transition-colors hover:text-ink">${icon(ic, 'size-4')}</button>`,
+              `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex h-[26px] w-[30px] items-center justify-center rounded-full text-muted transition-colors hover:text-ink">${icon(ic, 'size-[15px]')}</button>`,
           )
           .join('')}
-      </div>
-      <a href="${REPO_URL}" class="inline-flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="hidden sm:inline">Star</span><span data-stars class="text-muted"></span></a>
-    </nav>
-  </header>`
+      </div>`
+
+const appLogo = (slug) =>
+  readFileSync(here(`assets/apps/${slug}.svg`), 'utf8').replace('<svg ', '<svg class="size-9 shrink-0" aria-hidden="true" ')
+
+const appName = (app) => (app.logo === 'easyshoot' ? 'Easy<span class="text-[#1a63d6] dark:text-[#8cc4ff]">Shoot</span>' : esc(app.name))
 
 const SIGNATURE = readFileSync(here('assets/haythamasalama-signature.svg'), 'utf8').replace('<svg ', '<svg class="h-[22px] w-11" ')
 
@@ -186,8 +200,8 @@ function footer() {
     `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul></div>`
   const legal = 'px-3 leading-none text-ink/80 hover:text-ink'
   return `<footer class="border-t border-line">
-    <div class="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-4 py-14 sm:px-6 md:grid-cols-3 lg:grid-cols-[1.3fr_repeat(5,1fr)]">
-      <div class="col-span-2 md:col-span-3 lg:col-span-1">
+    <div class="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
+      <div class="col-span-2 md:col-span-1">
         <a href="${link()}" class="flex items-center gap-2 font-semibold">${logo('size-6')}PR Sift</a>
         <p class="mt-4 max-w-56 text-sm leading-relaxed text-muted">Review large GitHub pull requests without the noise.</p>
       </div>
@@ -207,14 +221,17 @@ function footer() {
         ['Brand', link('brand/')],
         ['Sitemap', link('sitemap.xml')],
       ])}
-      <div>
-        <p class="text-sm font-medium">More apps</p>
-        <ul class="mt-4 flex flex-col gap-3 text-sm">
-          ${MORE_APPS.map((app) => `<li><a href="${app.url}" class="group flex flex-col gap-0.5"><span class="text-muted group-hover:text-ink">${esc(app.name)}</span><span class="text-xs text-muted/80">${esc(app.about)}</span></a></li>`).join('')}
-        </ul>
-      </div>
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
+      <div class="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 border-t border-line py-8">
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+          <p class="w-full text-sm text-muted sm:w-auto">Supported by</p>
+          <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
+            ${SUPPORTED_BY.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+          </ul>
+        </div>
+        ${themePicker()}
+      </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
         <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
         <nav aria-label="Legal" class="-ml-3 flex items-center">

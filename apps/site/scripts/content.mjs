@@ -3,12 +3,13 @@ export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
 
-export const MORE_APPS = [
-  { name: 'EasyShoot', about: 'Screenshot app for Mac', url: 'https://easyshoot.app/' },
+export const SUPPORTED_BY = [
+  { logo: 'easyshoot', name: 'EasyShoot', about: 'Screenshot app for Mac', url: 'https://easyshoot.app/' },
   {
+    logo: 'whatsapp-business-monitor',
     name: 'WhatsApp Business Monitor',
     about: 'Open-source WhatsApp dashboard',
-    url: 'https://github.com/haythamasalama/whatsapp-business-monitor',
+    url: 'https://wbm.haythamasalama.me/',
   },
 ]
 
