@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SUPPORTED_BY, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SAME_MAKER_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/pr-sift/'
@@ -225,9 +225,9 @@ function footer() {
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <div class="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 border-t border-line py-8">
         <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-          <p class="w-full text-sm text-muted sm:w-auto">Supported by</p>
+          <p class="w-full text-sm text-muted sm:w-auto">From the same maker</p>
           <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
-            ${SUPPORTED_BY.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+            ${SAME_MAKER_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
           </ul>
         </div>
         ${themePicker()}
