@@ -27,3 +27,7 @@ shadow.appendChild(mountPoint)
 document.documentElement.appendChild(host)
 
 createApp(App).mount(mountPoint)
+
+setInterval(() => {
+  if (!host.isConnected) document.documentElement.appendChild(host)
+}, 1000)
