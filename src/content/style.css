@@ -54,16 +54,16 @@
 }
 
 @layer base {
-  .rl-root *,
-  .rl-root ::before,
-  .rl-root ::after,
-  .rl-root ::backdrop {
+  .ps-root *,
+  .ps-root ::before,
+  .ps-root ::after,
+  .ps-root ::backdrop {
     border-color: var(--border);
     outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
   }
 }
 
-.rl-root {
+.ps-root {
   --background: #ffffff;
   --foreground: #1f2328;
   --card: #ffffff;
@@ -102,7 +102,7 @@
   color: var(--foreground);
 }
 
-.rl-root.dark {
+.ps-root.dark {
   --background: #0d1117;
   --foreground: #f0f6fc;
   --card: #0d1117;
@@ -135,59 +135,59 @@
   --hl-tag: #7ee787;
 }
 
-.rl-root .hljs-keyword,
-.rl-root .hljs-selector-tag,
-.rl-root .hljs-template-tag,
-.rl-root .hljs-template-variable.hljs-keyword {
+.ps-root .hljs-keyword,
+.ps-root .hljs-selector-tag,
+.ps-root .hljs-template-tag,
+.ps-root .hljs-template-variable.hljs-keyword {
   color: var(--hl-keyword);
 }
 
-.rl-root .hljs-title,
-.rl-root .hljs-title.class_,
-.rl-root .hljs-title.function_,
-.rl-root .hljs-type,
-.rl-root .hljs-built_in,
-.rl-root .hljs-selector-class,
-.rl-root .hljs-selector-id,
-.rl-root .hljs-section {
+.ps-root .hljs-title,
+.ps-root .hljs-title.class_,
+.ps-root .hljs-title.function_,
+.ps-root .hljs-type,
+.ps-root .hljs-built_in,
+.ps-root .hljs-selector-class,
+.ps-root .hljs-selector-id,
+.ps-root .hljs-section {
   color: var(--hl-entity);
 }
 
-.rl-root .hljs-literal,
-.rl-root .hljs-number,
-.rl-root .hljs-attr,
-.rl-root .hljs-attribute,
-.rl-root .hljs-property,
-.rl-root .hljs-meta,
-.rl-root .hljs-symbol,
-.rl-root .hljs-bullet,
-.rl-root .hljs-selector-attr,
-.rl-root .hljs-selector-pseudo {
+.ps-root .hljs-literal,
+.ps-root .hljs-number,
+.ps-root .hljs-attr,
+.ps-root .hljs-attribute,
+.ps-root .hljs-property,
+.ps-root .hljs-meta,
+.ps-root .hljs-symbol,
+.ps-root .hljs-bullet,
+.ps-root .hljs-selector-attr,
+.ps-root .hljs-selector-pseudo {
   color: var(--hl-constant);
 }
 
-.rl-root .hljs-string,
-.rl-root .hljs-regexp,
-.rl-root .hljs-link,
-.rl-root .hljs-meta .hljs-string {
+.ps-root .hljs-string,
+.ps-root .hljs-regexp,
+.ps-root .hljs-link,
+.ps-root .hljs-meta .hljs-string {
   color: var(--hl-string);
 }
 
-.rl-root .hljs-comment,
-.rl-root .hljs-quote,
-.rl-root .hljs-doctag {
+.ps-root .hljs-comment,
+.ps-root .hljs-quote,
+.ps-root .hljs-doctag {
   color: var(--hl-comment);
 }
 
-.rl-root .hljs-name,
-.rl-root .hljs-tag {
+.ps-root .hljs-name,
+.ps-root .hljs-tag {
   color: var(--hl-tag);
 }
 
-.rl-root .hljs-emphasis {
+.ps-root .hljs-emphasis {
   font-style: italic;
 }
 
-.rl-root .hljs-strong {
+.ps-root .hljs-strong {
   font-weight: 700;
 }

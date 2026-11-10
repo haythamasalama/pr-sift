@@ -57,12 +57,20 @@ const distanceToSegment = (px, py, ax, ay, bx, by) => {
   return Math.hypot(px - (ax + t * (bx - ax)), py - (ay + t * (by - ay)))
 }
 
-function isGlyph(x, y, withCheck) {
-  const ring = Math.abs(Math.hypot(x - 0.45, y - 0.45) - 0.25) <= 0.045
-  const handle = distanceToSegment(x, y, 0.63, 0.63, 0.78, 0.78) <= 0.05
-  const check =
-    withCheck && (distanceToSegment(x, y, 0.35, 0.46, 0.42, 0.53) <= 0.03 || distanceToSegment(x, y, 0.42, 0.53, 0.56, 0.37) <= 0.03)
-  return ring || handle || check
+const FUNNEL = [
+  [0.22, 0.28],
+  [0.78, 0.28],
+  [0.57, 0.53],
+  [0.57, 0.73],
+  [0.43, 0.66],
+  [0.43, 0.53],
+]
+
+function isGlyph(x, y) {
+  return FUNNEL.some((from, i) => {
+    const to = FUNNEL[(i + 1) % FUNNEL.length]
+    return distanceToSegment(x, y, from[0], from[1], to[0], to[1]) <= 0.04
+  })
 }
 
 function render(size) {
@@ -77,7 +85,7 @@ function render(size) {
           const y = (py + (sy + 0.5) / SUPERSAMPLE) / size
           if (!roundedRect(x, y, 0.22)) continue
           covered++
-          if (isGlyph(x, y, size >= 32)) glyph++
+          if (isGlyph(x, y)) glyph++
         }
       }
       const total = SUPERSAMPLE * SUPERSAMPLE

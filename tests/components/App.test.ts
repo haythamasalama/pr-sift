@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/content/App.vue'
 import { installChrome } from '../helpers/chrome'
 
-const launcher = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('button').find((b) => b.text().includes('Review Lens'))
+const launcher = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('button').find((b) => b.text().includes('PR Sift'))
 const closeButton = (wrapper: ReturnType<typeof mount>) => wrapper.find('[aria-label="Close"]')
 
 describe('App launcher', () => {

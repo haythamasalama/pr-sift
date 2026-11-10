@@ -1,6 +1,6 @@
-<p align="center"><img src="icons/logo.svg" alt="Review Lens" width="72" /></p>
+<p align="center"><img src="icons/logo.svg" alt="PR Sift" width="72" /></p>
 
-# Review Lens
+# PR Sift
 
 A Chrome extension that makes reviewing large GitHub pull requests fast. It opens a review workspace on top of any
 pull request page, so you can filter by file type or folder, mark files as viewed in bulk, keep private notes, and
@@ -46,12 +46,12 @@ rebuilding, reload the extension and refresh the GitHub tab.
 ### Packaging for the Chrome Web Store
 
 ```bash
-pnpm package   # builds and creates review-lens-<version>.zip
+pnpm package   # builds and creates pr-sift-<version>.zip
 ```
 
 ## Usage
 
-Open any pull request on github.com and press the **Review Lens** button at the bottom right.
+Open any pull request on github.com and press the **PR Sift** button at the bottom right.
 
 | Action                     | How                                                          |
 | -------------------------- | ------------------------------------------------------------ |

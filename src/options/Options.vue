@@ -101,15 +101,15 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="rl-root min-h-screen bg-background text-foreground" :class="{ dark }">
+  <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }">
     <main class="mx-auto flex max-w-2xl flex-col gap-6 p-6">
       <header class="flex items-center gap-3">
         <div class="flex size-10 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
           <BrandMark />
         </div>
         <div class="flex flex-col">
-          <h1 class="text-xl font-semibold">Review Lens</h1>
-          <p class="text-sm text-muted-foreground">Review big pull requests faster. Settings stay in this browser.</p>
+          <h1 class="text-xl font-semibold">PR Sift</h1>
+          <p class="text-sm text-muted-foreground">Review big pull requests without the noise. Settings stay in this browser.</p>
         </div>
       </header>
 

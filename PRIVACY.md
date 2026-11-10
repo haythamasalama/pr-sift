@@ -1,6 +1,6 @@
 # Privacy
 
-Review Lens does not collect, transmit or sell any data. It has no server, analytics or tracking.
+PR Sift does not collect, transmit or sell any data. It has no server, analytics or tracking.
 
 ## What it stores
 
@@ -21,7 +21,7 @@ Uninstalling the extension deletes all of it.
 | `patch-diff.githubusercontent.com` | GitHub redirects some `.diff` downloads here                              |
 | `api.github.com`                   | Only when you add a token: fallback reading and posting notes as comments |
 
-Review Lens never sends your notes, code or token anywhere else. Notes are posted to GitHub only when you press
+PR Sift never sends your notes, code or token anywhere else. Notes are posted to GitHub only when you press
 **Post to GitHub** and confirm.
 
 ## Permissions

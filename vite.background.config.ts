@@ -4,6 +4,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: false,
-    lib: { entry: 'src/background/index.ts', formats: ['iife'], name: 'ReviewLensBackground', fileName: () => 'background.js' },
+    lib: { entry: 'src/background/index.ts', formats: ['iife'], name: 'PrSiftBackground', fileName: () => 'background.js' },
   },
 })

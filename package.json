@@ -1,5 +1,5 @@
 {
-  "name": "review-lens",
+  "name": "pr-sift",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -49,6 +49,6 @@
     "vue-tsc": "^3.3.14"
   },
   "license": "MIT",
-  "description": "Fast, customizable pull request review on top of GitHub.",
+  "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
   "packageManager": "pnpm@10.12.1"
 }

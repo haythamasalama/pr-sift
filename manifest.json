@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Review Lens",
+  "name": "PR Sift",
   "version": "0.1.0",
-  "description": "Fast, customizable pull request review on top of GitHub.",
+  "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
   "permissions": ["storage"],
   "host_permissions": ["https://api.github.com/*", "https://github.com/*", "https://patch-diff.githubusercontent.com/*"],
   "background": {
@@ -23,6 +23,6 @@
     "128": "icons/icon-128.png"
   },
   "action": {
-    "default_title": "Review Lens settings"
+    "default_title": "PR Sift settings"
   }
 }

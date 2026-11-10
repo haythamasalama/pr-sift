@@ -56,12 +56,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="rl-root" :class="{ dark }">
+  <div ref="root" class="ps-root" :class="{ dark }">
     <Button v-if="dead && pr" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="reload">
-      Review Lens was updated — reload the page
+      PR Sift was updated — reload the page
     </Button>
     <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
-      <BrandMark /> Review Lens
+      <BrandMark /> PR Sift
       <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
     </Button>
     <ReviewPanel

@@ -16,6 +16,6 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     cssCodeSplit: false,
-    lib: { entry: 'src/content/main.ts', formats: ['iife'], name: 'ReviewLens', fileName: () => 'content.js' },
+    lib: { entry: 'src/content/main.ts', formats: ['iife'], name: 'PrSift', fileName: () => 'content.js' },
   },
 })

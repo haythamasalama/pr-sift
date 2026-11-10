@@ -14,7 +14,7 @@ if (properties.length) {
 }
 
 const host = document.createElement('div')
-host.id = 'review-lens-host'
+host.id = 'pr-sift-host'
 isolateKeyboard(host)
 const shadow = host.attachShadow({ mode: 'open' })
 
