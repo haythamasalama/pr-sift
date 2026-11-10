@@ -227,10 +227,10 @@ function footer() {
       )}
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-      <div class="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-line py-8">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line py-6">
         <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
-        <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
-          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+        <ul class="-mx-2.5 flex flex-wrap items-center gap-2 sm:mx-0">
+          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="flex items-center gap-3 rounded-xl py-2 pr-4 pl-2.5 transition-colors hover:bg-raised">${appLogo(app.logo)}<span class="flex flex-col"><span class="leading-tight font-semibold tracking-tight">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
         </ul>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
