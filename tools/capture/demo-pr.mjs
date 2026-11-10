@@ -1,4 +1,4 @@
-import { added, diffText, modified, removed } from './fixture.mjs'
+import { added, diffFor, diffText, modified, removed } from './fixture.mjs'
 
 export const PR = { owner: 'haythamasalama', repo: 'storefront', number: 482 }
 export const TITLE = 'feat(billing): usage-based invoices for the business portal'
@@ -494,3 +494,17 @@ modified('pnpm-lock.yaml', [
 ])
 
 export const DIFF = diffText()
+
+export const SMALL_FILES = [
+  'src/Domain/Billing/Actions/GenerateInvoice.php',
+  'src/Domain/Billing/Usage/UsageMeter.php',
+  'src/Domain/Billing/Usage/UsageRepository.php',
+  'src/Presentation/Business/Controllers/InvoiceController.php',
+  'resources/js/pages/billing/InvoiceList.vue',
+  'tests/Feature/Billing/GenerateInvoiceTest.php',
+  'tests/Feature/Billing/UsageMeterTest.php',
+  'lang/en/billing.php',
+  'docs/billing/usage.md',
+  'composer.lock',
+]
+export const SMALL_DIFF = diffFor(SMALL_FILES)

@@ -43,3 +43,4 @@ export function modified(path, hunks, kind = 'modified', from) {
 
 export const diffText = () => files.join('\n') + '\n'
 export const fileCount = () => files.length
+export const diffFor = (paths) => files.filter((file) => paths.some((path) => file.split('\n')[0].endsWith(` b/${path}`))).join('\n') + '\n'

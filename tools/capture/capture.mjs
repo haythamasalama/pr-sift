@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:f
 import { fileURLToPath } from 'node:url'
 import ffmpeg from 'ffmpeg-static'
 import { chromium } from 'playwright'
-import { DIFF, PR, TITLE } from './demo-pr.mjs'
+import { DIFF, PR, SMALL_DIFF, TITLE } from './demo-pr.mjs'
 
 const root = (path) => fileURLToPath(new URL(`../../${path}`, import.meta.url))
 const CONTENT = root('apps/extension/dist/content.js')
@@ -189,8 +189,16 @@ async function openReview(page) {
 }
 
 async function glide(page, locator, { click = true, steps = 18 } = {}) {
-  const box = await locator.boundingBox()
+  let box = await locator.boundingBox()
   if (!box) throw new Error('No box for ' + locator)
+  const view = page.viewportSize()
+  const margin = 60
+  const outside = box.x < margin || box.y < margin || box.x + box.width > view.width - margin || box.y + box.height > view.height - margin
+  if (outside && (await page.evaluate(() => Boolean(document.getElementById('pr-sift-host')?.__camera)))) {
+    const zoom = await page.evaluate(() => document.getElementById('pr-sift-host').__camera.zoom)
+    await camera(page, locator, Math.max(zoom, 1.4))
+    box = await locator.boundingBox()
+  }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps })
   if (click) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
 }
@@ -237,77 +245,177 @@ async function shot(browser, name, prepare, options = {}) {
   await framed(browser, `${OUT}/raw/${name}.png`, name, options)
 }
 
+const SCALE = 2
+const README_GIFS = ['filters', 'review', 'notes']
+
+function videoCursor() {
+  const add = () => {
+    const dot = document.createElement('div')
+    Object.assign(dot.style, {
+      position: 'fixed',
+      left: '0px',
+      top: '0px',
+      width: '44px',
+      height: '44px',
+      marginLeft: '-8px',
+      marginTop: '-4px',
+      zIndex: '2147483647',
+      pointerEvents: 'none',
+      transition: 'transform 0.12s ease',
+      background:
+        "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.7L4 20z' fill='black' stroke='white' stroke-width='1.6' stroke-linejoin='round'/></svg>\") no-repeat center / contain",
+    })
+    document.documentElement.appendChild(dot)
+    addEventListener(
+      'mousemove',
+      (e) => {
+        dot.style.left = e.clientX + 'px'
+        dot.style.top = e.clientY + 'px'
+      },
+      true,
+    )
+    addEventListener(
+      'mousedown',
+      (e) => {
+        dot.style.transform = 'scale(0.85)'
+        const ring = document.createElement('div')
+        Object.assign(ring.style, {
+          position: 'fixed',
+          left: e.clientX - 28 + 'px',
+          top: e.clientY - 28 + 'px',
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          border: '4px solid rgba(0,0,0,0.35)',
+          zIndex: '2147483646',
+          pointerEvents: 'none',
+          transition: 'transform 0.45s ease, opacity 0.45s ease',
+        })
+        document.documentElement.appendChild(ring)
+        requestAnimationFrame(() => {
+          ring.style.transform = 'scale(1.8)'
+          ring.style.opacity = '0'
+        })
+        setTimeout(() => ring.remove(), 500)
+      },
+      true,
+    )
+    addEventListener('mouseup', () => (dot.style.transform = ''), true)
+  }
+  if (document.readyState === 'loading') addEventListener('DOMContentLoaded', add)
+  else add()
+}
+
+async function camera(page, target, zoom = 1.7) {
+  const box = target ? await target.boundingBox() : null
+  await page.evaluate(
+    ({ box, zoom, scale, width, height }) => {
+      const host = document.getElementById('pr-sift-host')
+      const current = host.__camera ?? { x: 0, y: 0, zoom: 1 }
+      let next = { x: 0, y: 0, zoom: 1 }
+      if (box) {
+        const cx = (box.x + box.width / 2 - current.x) / (scale * current.zoom)
+        const cy = (box.y + box.height / 2 - current.y) / (scale * current.zoom)
+        const fullW = width * scale
+        const fullH = height * scale
+        const x = fullW / 2 - cx * scale * zoom
+        const y = fullH / 2 - cy * scale * zoom
+        next = {
+          x: Math.min(0, Math.max(fullW - fullW * zoom, x)),
+          y: Math.min(0, Math.max(fullH - fullH * zoom, y)),
+          zoom,
+        }
+      }
+      host.__camera = next
+      host.style.transform = `translate(${next.x}px, ${next.y}px) scale(${scale * next.zoom})`
+    },
+    { box, zoom, scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
+  )
+  await page.waitForTimeout(950)
+}
+
 async function clip(browser, name, play, options = {}) {
   if (only.length && !only.includes(name)) return
-  const big = { width: VIEWPORT.width * 2, height: VIEWPORT.height * 2 }
-  const context = await browser.newContext({
-    viewport: big,
-    deviceScaleFactor: 1,
-    colorScheme: options.theme ?? 'light',
-    recordVideo: { dir: `${OUT}/raw`, size: big },
-  })
-  await context.addInitScript(() => {
-    const zoom = () => (document.documentElement.style.zoom = '2')
-    if (document.documentElement) zoom()
-    document.addEventListener('DOMContentLoaded', zoom)
-  })
+  const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
+  const theme = options.theme ?? 'light'
+  const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
   const started = Date.now()
-  const store = { settings: { theme: options.theme ?? 'light', assistant: 'claude' }, [`notes:${KEY}`]: NOTES }
+  const store = {
+    settings: { theme, assistant: 'claude', reviewMode: options.reviewMode ?? true },
+    [`notes:${KEY}`]: options.notes ?? NOTES,
+  }
   await context.addInitScript(chromeMock, { store })
-  await context.addInitScript(cursorScript)
+  await context.addInitScript(videoCursor)
   await context.route('https://github.com/**', (route) =>
     route.request().url().endsWith('.diff')
-      ? route.fulfill({ status: 200, contentType: 'text/plain', body: DIFF })
+      ? route.fulfill({ status: 200, contentType: 'text/plain', body: options.diff ?? DIFF })
       : route.fulfill({ status: 200, contentType: 'text/html', body: githubPage(TITLE) }),
   )
   const page = await context.newPage()
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
+  await page.evaluate(
+    ({ scale, width, height }) => {
+      Object.assign(document.getElementById('pr-sift-host').style, {
+        position: 'fixed',
+        left: '0px',
+        top: '0px',
+        width: width + 'px',
+        height: height + 'px',
+        transformOrigin: '0 0',
+        transform: `scale(${scale})`,
+        transition: 'transform 0.9s cubic-bezier(0.45, 0, 0.2, 1)',
+        zIndex: '2147483000',
+      })
+    },
+    { scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
+  )
   await openReview(page)
   if (options.setup) await options.setup(page)
-  await page.mouse.move(2000, 1200)
-  await page.waitForTimeout(600)
+  await page.mouse.move(big.width * 0.62, big.height * 0.6)
+  await page.waitForTimeout(700)
   const trim = (Date.now() - started) / 1000
   await play(page)
-  await page.waitForTimeout(1200)
+  const length = (Date.now() - started) / 1000 - trim
+  await camera(page, null)
+  await page.waitForTimeout(900)
   const video = page.video()
   await context.close()
   const raw = `${OUT}/raw/${name}.webm`
   renameSync(await video.path(), raw)
   const mp4 = `${OUT}/videos/${name}.mp4`
-  execFileSync(ffmpeg, [
-    '-y',
-    '-loglevel',
-    'error',
+  const encode = (args) => execFileSync(ffmpeg, ['-y', '-loglevel', 'error', ...args])
+  encode([
     '-ss',
     String(trim),
     '-i',
     raw,
     '-vf',
-    'scale=1920:-2:flags=lanczos',
+    'scale=1600:-2:flags=lanczos,fps=30',
     '-c:v',
     'libx264',
     '-preset',
     'slow',
     '-crf',
-    '18',
+    '27',
+    '-tune',
+    'animation',
     '-pix_fmt',
     'yuv420p',
     '-movflags',
     '+faststart',
     mp4,
   ])
-  execFileSync(ffmpeg, [
-    '-y',
-    '-loglevel',
-    'error',
-    '-i',
-    mp4,
-    '-vf',
-    'fps=12,scale=1000:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle',
-    `${OUT}/videos/${name}.gif`,
-  ])
-  execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
+  if (README_GIFS.includes(name)) {
+    encode([
+      '-i',
+      mp4,
+      '-vf',
+      'fps=10,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
+      `${OUT}/videos/${name}.gif`,
+    ])
+  }
+  encode(['-ss', (length * (options.poster ?? 0.5)).toFixed(2), '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
   console.log('video', name)
 }
 
@@ -389,100 +497,220 @@ await shot(
 
 const pause = (page, ms = 900) => page.waitForTimeout(ms)
 const chip = (page, name) => page.getByRole('button', { name: new RegExp(`^${name.replace('.', '\\.')} \\d+$`) })
+const folderRow = (page, name) =>
+  page
+    .locator('div.group')
+    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name}$`) }) })
+    .first()
+const filterBar = (page) => chip(page, '.php').locator('xpath=ancestor::div[2]')
+
+async function dragNote(page, file, from, to, text) {
+  await card(page, file).scrollIntoViewIfNeeded()
+  await camera(
+    page,
+    row(page, file, Math.round((from + to) / 2))
+      .locator('td')
+      .nth(2),
+    1.8,
+  )
+  await glide(page, row(page, file, from).locator('td').nth(3), { click: false })
+  const plus = await row(page, file, from).getByRole('button', { name: 'Add a private note' }).boundingBox()
+  await page.mouse.move(plus.x + plus.width / 2, plus.y + plus.height / 2, { steps: 10 })
+  await page.mouse.down()
+  const end = await row(page, file, to).locator('td').nth(3).boundingBox()
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 28 })
+  await page.mouse.up()
+  await pause(page, 500)
+  await camera(page, page.locator('textarea'), 1.9)
+  await page.keyboard.type(text, { delay: 40 })
+  await pause(page, 300)
+  await glide(page, page.getByRole('button', { name: 'Save note' }))
+  await pause(page, 800)
+}
+
+await clip(
+  browser,
+  'tour',
+  async (page) => {
+    await pause(page, 900)
+    const doc = card(page, 'docs/billing/usage.md')
+    await doc.scrollIntoViewIfNeeded()
+    await camera(page, doc.getByText('Viewed'), 2)
+    await glide(page, doc.getByLabel('Viewed'))
+    await pause(page, 700)
+    await camera(page, page.getByLabel('Hide viewed'), 2)
+    await glide(page, page.getByLabel('Hide viewed'))
+    await pause(page, 1100)
+    await camera(page, null)
+    await camera(page, page.getByRole('tab', { name: /Smart filters/ }), 1.8)
+    await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
+    await pause(page, 600)
+    await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
+    await pause(page, 1300)
+    await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
+    await glide(page, page.getByRole('tab', { name: /Tree/ }))
+    await camera(page, chip(page, 'modified'), 2)
+    await glide(page, chip(page, 'modified'))
+    await pause(page, 1200)
+    await dragNote(page, 'src/Domain/Billing/Actions/GenerateInvoice.php', 20, 22, 'Check that discounts still apply to usage lines.')
+    await camera(page, null)
+    await glide(page, page.getByRole('button', { name: /Notes/ }))
+    await pause(page, 700)
+    await camera(page, page.getByRole('button', { name: /Copy for Claude/ }), 1.9)
+    await glide(page, page.getByRole('button', { name: /Copy for Claude/ }))
+    await pause(page, 1500)
+  },
+  { diff: SMALL_DIFF, notes: [], reviewMode: false },
+)
 
 await clip(browser, 'filters', async (page) => {
+  await camera(page, filterBar(page), 1.9)
   await glide(page, chip(page, '.php'))
+  await pause(page, 1100)
+  await glide(page, chip(page, 'added'))
   await pause(page, 1300)
   await glide(page, chip(page, 'added'))
-  await pause(page, 1500)
-  await glide(page, chip(page, 'added'))
   await glide(page, chip(page, '.php'))
-  await pause(page)
+  await pause(page, 600)
   const md = chip(page, '.md')
   await glide(page, md, { click: false })
   await page.keyboard.down('Shift')
   await md.click()
   await page.keyboard.up('Shift')
-  await pause(page, 1200)
+  await pause(page, 1100)
   await glide(page, page.getByRole('button', { name: /type$/ }))
   await page.keyboard.type('.test.ts', { delay: 90 })
   await page.keyboard.press('Enter')
-  await pause(page, 600)
+  await pause(page, 500)
   await glide(page, chip(page, '.test.ts'))
-  await pause(page, 1500)
+  await pause(page, 1300)
   await glide(page, page.getByRole('button', { name: /Reset filters/ }))
+  await pause(page, 600)
+})
+
+await clip(browser, 'folders', async (page) => {
+  await camera(page, folderRow(page, 'src'), 1.8)
+  const src = folderRow(page, 'src')
+  await glide(page, src, { click: false })
+  await glide(page, src.getByRole('button', { name: 'Collapse folder tree' }))
+  await pause(page, 900)
+  await glide(page, src.getByRole('button', { name: 'Expand folder tree' }))
+  await pause(page, 900)
+  const domain = folderRow(page, 'Domain')
+  await glide(page, domain.getByRole('button', { name: /^(Collapse|Expand)$/ }))
+  await pause(page, 800)
+  await glide(page, domain.getByRole('button', { name: /^(Collapse|Expand)$/ }))
+  await pause(page, 800)
+  await glide(page, page.getByRole('button', { name: 'Collapse all folders' }))
+  await pause(page, 900)
+  await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
+  await pause(page, 900)
+  await glide(page, page.getByRole('textbox', { name: 'Search files' }))
+  await page.keyboard.type('Usage', { delay: 110 })
+  await pause(page, 1500)
 })
 
 await clip(browser, 'smart-filters', async (page) => {
+  await camera(page, page.getByRole('tab', { name: /Smart filters/ }), 1.7)
   await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
-  await pause(page, 1200)
-  await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
-  await pause(page, 1500)
-  await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
-  await glide(page, page.getByRole('tab', { name: /Tree/ }))
-  await pause(page, 700)
-  const src = page
-    .locator('div.group')
-    .filter({ has: page.locator('span.truncate', { hasText: /^src$/ }) })
-    .first()
-  await glide(page, src, { click: false })
-  await glide(page, src.getByRole('button', { name: 'Collapse folder tree' }))
-  await pause(page)
-  await glide(page, src.getByRole('button', { name: 'Expand folder tree' }))
-  await pause(page)
-  await glide(page, page.getByRole('textbox', { name: 'Search files' }))
-  await page.keyboard.type('Usage', { delay: 110 })
-  await pause(page, 1600)
+  await pause(page, 1000)
+  for (const name of [/^Tests/, /^Migrations/, /^Translations/]) {
+    await glide(page, page.getByRole('button', { name }).first())
+    await pause(page, 1100)
+    await glide(page, page.getByRole('button', { name }).first())
+  }
+  await pause(page, 500)
 })
 
 await clip(browser, 'review', async (page) => {
-  for (let i = 0; i < 2; i++) {
-    await glide(page, page.getByLabel('Viewed').first())
-    await pause(page, 800)
-  }
+  await camera(page, page.getByLabel('Viewed').first(), 1.9)
+  await glide(page, page.getByLabel('Viewed').first())
+  await pause(page, 800)
+  await glide(page, page.getByLabel('Viewed').first())
+  await pause(page, 800)
+  await camera(page, folderRow(page, 'lang'), 1.8)
   await glide(page, folderViewed(page, 'lang'))
-  await pause(page, 1200)
+  await pause(page, 1000)
   await glide(page, folderViewed(page, 'database'))
-  await pause(page, 1400)
+  await pause(page, 900)
+  await camera(page, page.getByText(/left$/).first(), 2.2)
+  await pause(page, 1300)
 })
 
 await clip(browser, 'notes', async (page) => {
-  const file = 'src/Domain/Billing/Usage/UsageMeter.php'
-  await card(page, file).scrollIntoViewIfNeeded()
-  await pause(page, 500)
-  await glide(page, row(page, file, 16), { click: false })
-  const plus = row(page, file, 16).getByRole('button', { name: 'Add a private note' })
-  const from = await plus.boundingBox()
-  await page.mouse.move(from.x + 6, from.y + 6, { steps: 10 })
-  await page.mouse.down()
-  const to = await row(page, file, 21).boundingBox()
-  await page.mouse.move(to.x + 60, to.y + to.height / 2, { steps: 30 })
-  await page.mouse.up()
-  await pause(page, 500)
-  await page.keyboard.type('Filter zero quantities in SQL, not in PHP.', { delay: 45 })
-  await glide(page, page.getByRole('button', { name: 'Save note' }))
+  await dragNote(page, 'src/Domain/Billing/Usage/UsageMeter.php', 16, 19, 'Filter zero quantities in SQL, not in PHP.')
   await pause(page, 900)
-  await glide(page, page.getByRole('button', { name: /Notes/ }))
-  await pause(page, 1100)
-  await glide(page, page.getByRole('button', { name: 'Choose the assistant' }))
-  await pause(page, 700)
-  await glide(page, page.getByRole('menuitemradio', { name: 'Claude' }))
-  await pause(page, 400)
-  await glide(page, page.getByRole('button', { name: /Copy for Claude/ }))
-  await pause(page, 1600)
 })
 
+await clip(browser, 'resolve', async (page) => {
+  const note = page.getByText('Usage lines are merged after subscriptions').first()
+  await camera(page, note, 1.9)
+  await glide(page, page.getByRole('button', { name: 'Mark note as resolved' }).first())
+  await pause(page, 1100)
+  await camera(page, null)
+  await glide(page, page.getByRole('button', { name: /Notes/ }))
+  await pause(page, 700)
+  await camera(page, page.getByText('Show resolved in the diff'), 1.8)
+  await glide(page, page.getByLabel('Show resolved in the diff'))
+  await pause(page, 900)
+  await page.keyboard.press('Escape')
+  await camera(page, page.getByRole('button', { name: 'Reopen note' }).first(), 1.9)
+  await glide(page, page.getByRole('button', { name: 'Reopen note' }).first())
+  await pause(page, 1100)
+})
+
+await clip(browser, 'claude', async (page) => {
+  await glide(page, page.getByRole('button', { name: /Notes/ }))
+  await pause(page, 700)
+  const choose = page.getByRole('button', { name: 'Choose the assistant' })
+  await camera(page, choose, 1.8)
+  for (const name of ['ChatGPT', 'Gemini', 'Claude']) {
+    await glide(page, choose)
+    await pause(page, 500)
+    await glide(page, page.getByRole('menuitemradio', { name }))
+    await pause(page, 400)
+    await glide(page, page.getByRole('button', { name: new RegExp(`Copy for ${name}`) }))
+    await pause(page, 1100)
+  }
+})
+
+await clip(
+  browser,
+  'theme',
+  async (page) => {
+    const button = page.getByRole('button', { name: 'Theme' })
+    await camera(page, button, 1.6)
+    for (const name of ['Dark', 'Light', 'System']) {
+      await glide(page, button)
+      await pause(page, 450)
+      await glide(page, page.getByRole('menuitemradio', { name }))
+      await camera(page, null)
+      await pause(page, 1200)
+      if (name !== 'System') await camera(page, button, 1.6)
+    }
+  },
+  { poster: 0.71 },
+)
+
 await clip(browser, 'views', async (page) => {
+  await camera(page, page.getByLabel('Split', { exact: true }), 1.6)
   await glide(page, page.getByLabel('Split', { exact: true }))
-  await pause(page, 1600)
+  await camera(page, null)
+  await pause(page, 1300)
   await glide(page, page.getByLabel('Unified', { exact: true }))
+  await pause(page, 600)
+  const perFile = page.getByRole('button', { name: 'Show this file as split' }).first()
+  await camera(page, perFile, 1.8)
+  await glide(page, perFile)
+  await pause(page, 600)
+  await camera(page, null)
+  await pause(page, 1000)
+  const copy = page.getByRole('button', { name: 'Copy' }).first()
+  await camera(page, copy, 1.9)
+  await glide(page, copy)
   await pause(page, 800)
-  await glide(page, page.getByRole('button', { name: 'Show this file as split' }).first())
-  await pause(page, 1500)
-  await glide(page, page.getByRole('button', { name: 'Copy' }).first())
-  await pause(page, 900)
   await glide(page, page.getByRole('menuitem', { name: /Copy diff/ }))
-  await pause(page, 900)
+  await pause(page, 700)
 })
 
 async function socialImage() {
