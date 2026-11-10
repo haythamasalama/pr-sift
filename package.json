@@ -23,8 +23,18 @@
     "eslint-plugin-vue": "^10.12.0",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
     "vue-eslint-parser": "^10.4.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "eslint>minimatch": "^11.0.6",
+      "js-beautify>glob": "^14.0.4",
+      "@eslint/config-array>minimatch": "^11.0.6",
+      "vite>stylus": "-",
+      "@typescript-eslint/typescript-estree>minimatch": "^11.0.6",
+      "editorconfig>minimatch": "^11.0.6"
+    }
   }
 }

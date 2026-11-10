@@ -4,3 +4,4 @@ coverage
 pnpm-lock.yaml
 .playwright-mcp
 apps/extension/src/components/ui
+apps/extension/src/content/shadcn.css
