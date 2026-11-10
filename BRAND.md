@@ -85,6 +85,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `accent`              | `#eaeef2`             | `#262c36`                            |
 | `border` / `input`    | `#d1d9e0`             | `#3d444d`                            |
 | `ring` (focus)        | `#0969da`             | `#1f6feb`                            |
+| `emphasis` (blue)     | `#0969da`             | `#1f6feb`                            |
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
@@ -96,6 +97,8 @@ Syntax colours also follow GitHub (keyword `#cf222e` / `#ff7b72`, entity `#8250d
 `#79c0ff`, string `#0a3069` / `#a5d6ff`, comment `#6e7781` / `#8b949e`, tag `#116329` / `#7ee787`).
 
 In extension code use the shadcn-vue semantic tokens (`bg-background`, `text-muted-foreground`), never raw colours.
+`primary` is neutral to match the brand. GitHub's blue (`emphasis`, the Button `emphasis` variant) is kept for the
+places GitHub itself uses blue: the add-note button on a diff line and the sidebar resize handle.
 
 ### Social cards
 

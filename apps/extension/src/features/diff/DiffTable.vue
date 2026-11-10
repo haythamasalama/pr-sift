@@ -202,6 +202,7 @@ function cellClass(index: number | null, side: 'left' | 'right') {
             <td class="w-6 px-0.5 text-center select-none">
               <Button
                 v-if="anchorOf(row)"
+                variant="emphasis"
                 size="icon-xs"
                 class="size-4 invisible group-hover:visible"
                 title="Add a private note"
@@ -266,6 +267,7 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               <span :class="row.left !== null ? 'group-hover/l:invisible' : ''">{{ row.left !== null ? rows[row.left]!.oldNo : '' }}</span>
               <Button
                 v-if="row.left !== null"
+                variant="emphasis"
                 size="icon-xs"
                 class="size-4 invisible absolute inset-y-0 right-1 my-auto group-hover/l:visible"
                 title="Add a private note"
@@ -296,6 +298,7 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               }}</span>
               <Button
                 v-if="row.right !== null"
+                variant="emphasis"
                 size="icon-xs"
                 class="size-4 invisible absolute inset-y-0 right-1 my-auto group-hover/r:visible"
                 title="Add a private note"
