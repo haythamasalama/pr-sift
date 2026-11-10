@@ -97,6 +97,62 @@ for (const root of document.querySelectorAll('[data-playground]')) {
   })
 }
 
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+const onScreen = new IntersectionObserver(
+  (entries) => {
+    for (const { target, isIntersecting } of entries) {
+      if (isIntersecting) target.play().catch(() => undefined)
+      else target.pause()
+    }
+  },
+  { threshold: 0.35 },
+)
+for (const video of document.querySelectorAll('video[data-autoplay]')) {
+  if (reducedMotion) video.controls = true
+  else onScreen.observe(video)
+}
+
+for (const demo of document.querySelectorAll('[data-demo]')) {
+  const tabs = [...demo.querySelectorAll('[data-video]')]
+  const video = demo.querySelector('[data-demo-video]')
+  const select = (tab) => {
+    for (const other of tabs) other.setAttribute('aria-selected', String(other === tab))
+    const name = tab.dataset.video
+    video.poster = video.poster.replace(/[^/]+\.jpg$/, `${name}.jpg`)
+    const source = video.querySelector('source')
+    source.src = source.src.replace(/[^/]+\.mp4$/, `${name}.mp4`)
+    video.setAttribute('aria-label', tab.textContent.trim())
+    video.load()
+    if (!reducedMotion) video.play().catch(() => undefined)
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab))
+    tab.addEventListener('keydown', (e) => {
+      const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key]
+      if (!step) return
+      e.preventDefault()
+      const next = tabs[(i + step + tabs.length) % tabs.length]
+      next.focus()
+      select(next)
+    })
+  })
+}
+
+for (const bar of document.querySelectorAll('[data-areas]')) {
+  const chips = [...bar.querySelectorAll('[data-area]')]
+  const items = [...document.querySelectorAll('li[data-area]')]
+  for (const chip of chips) {
+    chip.addEventListener('click', () => {
+      const area = chip.dataset.area
+      for (const other of chips) other.setAttribute('aria-pressed', String(other === chip))
+      for (const item of items) item.hidden = Boolean(area) && item.dataset.area !== area
+      for (const section of document.querySelectorAll('article section')) {
+        section.hidden = ![...section.querySelectorAll('li[data-area]')].some((item) => !item.hidden)
+      }
+    })
+  }
+}
+
 fetch('https://api.github.com/repos/haythamasalama/pr-sift')
   .then((res) => (res.ok ? res.json() : null))
   .then((repo) => {

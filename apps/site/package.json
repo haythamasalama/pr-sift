@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "The PR Sift website: a static, SEO-friendly landing page in English and Arabic.",
+  "description": "The PR Sift website: a static, SEO-friendly site for GitHub Pages.",
   "scripts": {
     "pages": "node scripts/build-pages.mjs",
     "dev": "node scripts/build-pages.mjs && vite",
