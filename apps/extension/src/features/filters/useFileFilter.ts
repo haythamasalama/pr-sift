@@ -61,10 +61,19 @@ export function useFileFilter(
     return [...extChips, ...statusChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
   })
 
+  const shownGroups = computed(() => {
+    const groups = new Map<string, string[]>()
+    for (const key of shownOnly.value) {
+      const group = key.includes(':') ? key.slice(0, key.indexOf(':')) : 'type'
+      groups.set(group, [...(groups.get(group) ?? []), key])
+    }
+    return [...groups.values()]
+  })
+
   const byChip = computed(() =>
     presetFiles.value.filter((f) => {
       if (alwaysHidden.value.some((k) => matchesChip(f, k, openNotes.value))) return false
-      return !shownOnly.value.length || shownOnly.value.some((k) => matchesChip(f, k, openNotes.value))
+      return shownGroups.value.every((keys) => keys.some((k) => matchesChip(f, k, openNotes.value)))
     }),
   )
 

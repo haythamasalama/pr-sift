@@ -16,7 +16,7 @@ const emit = defineEmits<{ select: []; toggle: [value: boolean] }>()
       @update:model-value="(value) => emit('toggle', value === true)"
     />
     <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 text-left" :title="file.filename" @click="emit('select')">
-      <FileStatusIcon :status="file.status" class="size-4" />
+      <FileStatusIcon :status="file.status" decorative class="size-4" />
       <span class="truncate">{{ file.filename.split('/').pop() }}</span>
     </button>
   </div>

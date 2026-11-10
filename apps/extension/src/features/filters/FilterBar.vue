@@ -149,7 +149,7 @@ const chipClass = (chip: ExtChip) => [
           @contextmenu.prevent="emit('toggleExtension', c.ext, true)"
         >
           <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-amber-600 dark:text-amber-400" />
-          <FileStatusIcon v-else :status="c.ext.slice(7)" class="size-3.5" />
+          <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>
       </template>

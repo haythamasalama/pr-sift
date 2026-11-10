@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r test",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "capture": "pnpm build && pnpm --filter @pr-sift/capture capture"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -35,6 +36,9 @@
       "vite>stylus": "-",
       "@typescript-eslint/typescript-estree>minimatch": "^11.0.6",
       "editorconfig>minimatch": "^11.0.6"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "ffmpeg-static"
+    ]
   }
 }
