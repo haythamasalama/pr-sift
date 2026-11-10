@@ -12,6 +12,24 @@ const VIEWPORT = { width: 1440, height: 900 }
 const PR_URL = `https://github.com/${PR.owner}/${PR.repo}/pull/${PR.number}/files`
 const KEY = `${PR.owner}/${PR.repo}#${PR.number}`
 const only = process.argv.slice(2)
+const WALLPAPERS = process.env.PR_SIFT_WALLPAPERS ?? `${process.env.HOME}/Pictures/Cap Wallpapers/1 Waves`
+const WALLPAPER = { light: 'Tahoe Light.jpg', dark: 'Tahoe Dark.jpg' }
+const FALLBACK = { light: 'linear-gradient(135deg, #f5f5f5, #d4d4d4)', dark: 'linear-gradient(135deg, #262626, #0a0a0a)' }
+const backgrounds = {}
+
+function background(theme) {
+  if (backgrounds[theme]) return backgrounds[theme]
+  const source = `${WALLPAPERS}/${WALLPAPER[theme]}`
+  const target = `${OUT}/raw/wallpaper-${theme}.jpg`
+  try {
+    execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-i', source, '-vf', 'scale=2000:-1', '-q:v', '4', target])
+    backgrounds[theme] = `url(data:image/jpeg;base64,${readFileSync(target).toString('base64')}) center / cover`
+  } catch {
+    console.warn(`No wallpaper at ${source}, using a plain gradient`)
+    backgrounds[theme] = FALLBACK[theme]
+  }
+  return backgrounds[theme]
+}
 
 for (const dir of ['screenshots', 'videos', 'raw']) mkdirSync(`${OUT}/${dir}`, { recursive: true })
 
@@ -183,9 +201,7 @@ async function framed(browser, rawPath, name, { theme = 'light' } = {}) {
   const dark = theme === 'dark'
   await page.setContent(`<!doctype html><html><body style="margin:0">
   <div id="shot" style="width:1600px;height:1060px;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 20% 15%, ${dark ? '#1e3a5f' : '#7ee0b0'} 0%, transparent 55%),
-               radial-gradient(circle at 85% 90%, ${dark ? '#3b1f5f' : '#3fb67f'} 0%, transparent 55%),
-               linear-gradient(135deg, ${dark ? '#0b1220, #111827' : '#1f9d6a, #2bb383'});">
+    background:${background(theme)};">
     <div style="width:1440px;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.08);background:${dark ? '#0d1117' : '#fff'}">
       <div style="height:38px;display:flex;align-items:center;gap:8px;padding:0 14px;background:${dark ? '#161b22' : '#f3f4f6'};border-bottom:1px solid ${dark ? '#30363d' : '#e5e7eb'};font:12px -apple-system,sans-serif;color:${dark ? '#9198a1' : '#6b7280'}">
         <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span>
@@ -258,6 +274,20 @@ async function clip(browser, name, play, options = {}) {
     '-vf',
     'fps=10,scale=860:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle',
     `${OUT}/videos/${name}.gif`,
+  ])
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-ss',
+    '4',
+    '-i',
+    `${OUT}/videos/${name}.mp4`,
+    '-frames:v',
+    '1',
+    '-q:v',
+    '3',
+    `${OUT}/videos/${name}.jpg`,
   ])
   console.log('video', name)
 }
@@ -398,14 +428,14 @@ async function socialImage() {
   const logo = readFileSync(root('apps/extension/icons/logo.svg')).toString('base64')
   await page.setContent(`<!doctype html><html><body style="margin:0">
   <div id="og" style="width:1200px;height:630px;display:flex;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;
-    background:linear-gradient(135deg,#1f9d6a,#2bb383);color:#fff">
+    background:#fff;color:#0a0a0a">
     <div style="width:470px;padding:64px 0 64px 64px;display:flex;flex-direction:column;justify-content:center;gap:20px">
       <img src="data:image/svg+xml;base64,${logo}" style="width:64px;height:64px;border-radius:14px">
       <div style="font-size:56px;font-weight:700;letter-spacing:-1px">PR Sift</div>
       <div style="font-size:30px;line-height:1.25;font-weight:600">Review large GitHub pull requests without the noise.</div>
-      <div style="font-size:19px;opacity:.9">Smart filters · viewed tracking · private notes for Claude, ChatGPT or Gemini</div>
+      <div style="font-size:19px;color:#525252">Smart filters · viewed tracking · private notes for Claude, ChatGPT or Gemini</div>
     </div>
-    <img src="data:image/png;base64,${shotData}" style="width:900px;margin:60px -200px 0 30px;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <img src="data:image/png;base64,${shotData}" style="width:900px;margin:60px -200px 0 30px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18)">
   </div></body></html>`)
   await page.locator('#og').screenshot({ path: `${OUT}/og.png` })
   await page.close()

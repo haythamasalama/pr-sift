@@ -5,6 +5,8 @@ PR Sift is a pnpm workspace with one app and one package.
 ```
 packages/core        pure TypeScript, no DOM, no chrome.*, no Vue
 apps/extension       the Chrome extension (Vue 3, Vite, Tailwind 4, shadcn-vue)
+apps/site            the static website (English and Arabic), deployed to GitHub Pages
+tools/capture        Playwright script that records every screenshot and video from a demo pull request
 ```
 
 ## Dependency rule

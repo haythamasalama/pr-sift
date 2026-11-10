@@ -24,6 +24,12 @@ pnpm build      # then load apps/extension as an unpacked extension to try chang
 - **Comments.** Only explain _why_ when it is not obvious.
 - **Scope.** One change per pull request, with a short description of what and why.
 
+## Screenshots and videos
+
+Everything in `media/` is generated. After a visible change, run `pnpm capture` (it builds the extension, opens a demo
+pull request in Playwright and records each screen) and commit the new files. Install the browser once with
+`pnpm --filter @pr-sift/capture exec playwright install chromium`.
+
 ## Reporting bugs and ideas
 
 Use the issue forms. They ask for the details we need.
