@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Columns2, Monitor, Moon, NotebookPen, PanelLeft, Palette as PaletteIcon, Rows2, Search, Sun, X } from '@lucide/vue'
+import { Bug, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Palette as PaletteIcon, Rows2, Search, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
+import { openReport } from '../../lib/report'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
@@ -117,6 +118,17 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <Button
+      variant="outline"
+      size="icon-sm"
+      class="hidden shrink-0 sm:inline-flex"
+      aria-label="Report a problem"
+      title="Report a problem or suggest an idea"
+      @click="openReport('bug')"
+    >
+      <Bug />
+    </Button>
 
     <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
       <NotebookPen /><span class="hidden xl:inline">Notes</span>

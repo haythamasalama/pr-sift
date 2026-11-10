@@ -77,6 +77,11 @@ organization requires approval for tokens, an admin must approve it first.
 The options page lets you choose the theme (system, light or dark), the files hidden by default (path patterns and
 change types), the default diff view, and named presets. Changes reach open reviews immediately.
 
+## Feedback
+
+Found a bug or have an idea? Use **Report a problem** or **Suggest an idea** in the extension options, or open an
+[issue](../../issues/new/choose). Please do not include your token or private code.
+
 ## Privacy
 
 Everything stays in your browser. See [PRIVACY.md](PRIVACY.md).

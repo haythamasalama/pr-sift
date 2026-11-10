@@ -24,7 +24,11 @@ pnpm build      # then load apps/extension as an unpacked extension to try chang
 - **Comments.** Only explain _why_ when it is not obvious.
 - **Scope.** One change per pull request, with a short description of what and why.
 
-## Reporting bugs
+## Reporting bugs and ideas
+
+Use the issue forms. They ask for the details we need.
+
+### Bugs
 
 Include the browser, whether you used a token, the pull request size (number of files), and the console output of
 the GitHub tab. Do not paste your token.

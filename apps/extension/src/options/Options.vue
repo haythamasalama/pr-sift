@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
-import { CircleAlert, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
+import { Bug, CircleAlert, Lightbulb, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
+import { openReport } from '../lib/report'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, Settings, ThemeMode } from '../lib/types'
@@ -253,6 +254,17 @@ onMounted(load)
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Help</CardTitle>
+          <CardDescription>Reports open a GitHub issue form. Nothing from your pull requests is sent.</CardDescription>
+        </CardHeader>
+        <CardContent class="flex flex-wrap gap-2">
+          <Button variant="outline" @click="openReport('bug')"><Bug /> Report a problem</Button>
+          <Button variant="outline" @click="openReport('idea')"><Lightbulb /> Suggest an idea</Button>
+        </CardContent>
       </Card>
 
       <Alert v-if="message" :variant="message.ok ? 'default' : 'destructive'">
