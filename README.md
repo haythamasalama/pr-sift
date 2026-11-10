@@ -1,4 +1,4 @@
-<p align="center"><img src="icons/logo.svg" alt="PR Sift" width="72" /></p>
+<p align="center"><img src="apps/extension/icons/logo.svg" alt="PR Sift" width="72" /></p>
 
 # PR Sift
 
