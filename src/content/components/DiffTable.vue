@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { MessageSquarePlus, Plus } from '@lucide/vue'
 import { useNotesContext } from '../../composables/useNotes'
 import { buildSplitRows, parsePatch } from '../../lib/diff'
@@ -66,6 +66,14 @@ const active = shallowRef<Span | null>(null)
 const drag = shallowRef<{ from: number } | null>(null)
 const floating = shallowRef<{ x: number; y: number; from: number; to: number; quote: string } | null>(null)
 const root = useTemplateRef<HTMLElement>('root')
+const viewport = shallowRef('100%')
+let resizeObserver: ResizeObserver | undefined
+onMounted(() => {
+  if (!root.value || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver(() => (viewport.value = `${root.value?.clientWidth ?? 0}px`))
+  resizeObserver.observe(root.value)
+})
+onBeforeUnmount(() => resizeObserver?.disconnect())
 
 const draftHere = (...indexes: (number | null)[]) => draft.value !== null && indexes.includes(draft.value.at)
 
@@ -209,21 +217,25 @@ function cellClass(index: number | null, side: 'left' | 'right') {
           </tr>
           <tr v-for="n in notesFor(i)" :key="n.id">
             <td colspan="5" class="p-0">
-              <NoteBox :note="n" :rows="rows" @range="active = $event ? { side: n.side, ...$event } : null" />
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <NoteBox :note="n" :rows="rows" @range="active = $event ? { side: n.side, ...$event } : null" />
+              </div>
             </td>
           </tr>
           <tr v-if="draftHere(i) && draft">
             <td colspan="5" class="p-0">
-              <NoteEditor
-                :quote="draft.quote"
-                :rows="rows"
-                :side="draft.side"
-                :range="{ start: draft.start, end: draft.end }"
-                @range="active = { side: draft.side, ...$event }"
-                @save="saveDraft"
-                @cancel="closeDraft"
-                @open-github="draftAnchor() && ctx.openOnGithub(draftAnchor()!)"
-              />
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <NoteEditor
+                  :quote="draft.quote"
+                  :rows="rows"
+                  :side="draft.side"
+                  :range="{ start: draft.start, end: draft.end }"
+                  @range="active = { side: draft.side, ...$event }"
+                  @save="saveDraft"
+                  @cancel="closeDraft"
+                  @open-github="draftAnchor() && ctx.openOnGithub(draftAnchor()!)"
+                />
+              </div>
             </td>
           </tr>
         </template>
@@ -300,21 +312,25 @@ function cellClass(index: number | null, side: 'left' | 'right') {
           </tr>
           <tr v-for="n in notesFor(row.left, row.right)" :key="n.id">
             <td colspan="4" class="p-0">
-              <NoteBox :note="n" :rows="rows" @range="active = $event ? { side: n.side, ...$event } : null" />
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <NoteBox :note="n" :rows="rows" @range="active = $event ? { side: n.side, ...$event } : null" />
+              </div>
             </td>
           </tr>
           <tr v-if="draftHere(row.left, row.right) && draft">
             <td colspan="4" class="p-0">
-              <NoteEditor
-                :quote="draft.quote"
-                :rows="rows"
-                :side="draft.side"
-                :range="{ start: draft.start, end: draft.end }"
-                @range="active = { side: draft.side, ...$event }"
-                @save="saveDraft"
-                @cancel="closeDraft"
-                @open-github="draftAnchor() && ctx.openOnGithub(draftAnchor()!)"
-              />
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <NoteEditor
+                  :quote="draft.quote"
+                  :rows="rows"
+                  :side="draft.side"
+                  :range="{ start: draft.start, end: draft.end }"
+                  @range="active = { side: draft.side, ...$event }"
+                  @save="saveDraft"
+                  @cancel="closeDraft"
+                  @open-github="draftAnchor() && ctx.openOnGithub(draftAnchor()!)"
+                />
+              </div>
             </td>
           </tr>
         </template>
