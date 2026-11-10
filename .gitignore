@@ -4,3 +4,7 @@ coverage
 *.zip
 .playwright-mcp
 .DS_Store
+
+apps/site/public/
+
+apps/site/pages/

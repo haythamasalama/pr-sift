@@ -37,4 +37,13 @@ describe('isolateKeyboard', () => {
     expect(event.defaultPrevented).toBe(false)
     done()
   })
+
+  it('still lets the extension cancel its own key presses', () => {
+    const { input, done } = setup()
+    input.addEventListener('keydown', (e) => e.preventDefault())
+    const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true, composed: true })
+    input.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    done()
+  })
 })

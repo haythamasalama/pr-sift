@@ -50,4 +50,14 @@ describe('useViewed', () => {
     await viewed.clearAll()
     expect(list.some(viewed.isViewed)).toBe(false)
   })
+
+  it('keeps viewed marks set from two tabs on the same pull request', async () => {
+    const { store } = installChrome()
+    const first = useViewed(shallowRef('o/r#1'))
+    const second = useViewed(shallowRef('o/r#1'))
+    await flushPromises()
+    await first.setViewed(file('a.php', { hash: 'h1' }), true)
+    await second.setViewed(file('b.php', { hash: 'h2' }), true)
+    expect(store['viewed2:o/r#1']).toEqual({ 'a.php': 'h1', 'b.php': 'h2' })
+  })
 })

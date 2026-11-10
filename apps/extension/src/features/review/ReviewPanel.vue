@@ -104,10 +104,15 @@ async function doRefresh() {
 
 const allReviewed = computed(() => filter.inScope.value.length === 0 && filter.viewedInView.value.length > 0)
 
+function setReviewMode(value: boolean) {
+  filter.reviewMode.value = value
+  return saveSetting('reviewMode', value)
+}
+
 async function goToFile(name: string) {
   const shown = () => filter.inScope.value.some((f) => f.filename === name)
   if (!shown()) {
-    await filter.resetFilters()
+    await filter.resetFilters({ persist: false })
     if (!shown()) {
       filter.reviewMode.value = false
       filter.showHidden.value = true
@@ -156,7 +161,6 @@ onMounted(async () => {
   emit('refreshed')
 })
 
-watch(filter.reviewMode, (value) => saveSetting('reviewMode', value))
 watch(diffMode, (value) => saveSetting('diffView', value))
 </script>
 
@@ -182,13 +186,14 @@ watch(diffMode, (value) => saveSetting('diffView', value))
 
     <FilterBar
       v-if="status === 'ready'"
-      v-model:review-mode="filter.reviewMode.value"
       v-model:show-hidden="filter.showHidden.value"
+      :review-mode="filter.reviewMode.value"
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view-count="filter.viewedInView.value.length"
+      @update:review-mode="setReviewMode"
       @toggle-extension="filter.toggleChip"
       @reset-filters="filter.resetFilters"
       @add-extension="addExtension"

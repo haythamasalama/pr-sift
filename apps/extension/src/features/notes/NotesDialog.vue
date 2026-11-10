@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
-import { Check, CircleCheck, ClipboardCopy, FileText, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
+import { computed, onMounted, shallowRef } from 'vue'
+import { Check, ChevronDown, CircleCheck, ClipboardCopy, FileText, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { NotePatch } from './useNotes'
-import { buildClaudePrompt, describeLines, startOf } from '@pr-sift/core'
+import { buildReviewPrompt, describeLines, startOf } from '@pr-sift/core'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from '../../components/Modal.vue'
+import { getSettings, saveSetting } from '../../lib/settings'
+import { ASSISTANTS, assistantById, type AssistantId } from './assistants'
 
 const { pr, title, notes, files } = defineProps<{ pr: PrRef; title: string; notes: Note[]; files: PrFile[] }>()
 const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; update: [id: string, patch: NotePatch]; clear: [] }>()
@@ -50,10 +61,19 @@ const grouped = computed(() => {
   return [...map]
 })
 
+const assistant = shallowRef(assistantById('claude'))
+onMounted(async () => (assistant.value = assistantById((await getSettings()).assistant)))
+
+function chooseAssistant(id: AssistantId) {
+  assistant.value = assistantById(id)
+  return saveSetting('assistant', id)
+}
+
 async function copy() {
-  await navigator.clipboard.writeText(buildClaudePrompt(pr, title, notes, files))
+  await navigator.clipboard.writeText(buildReviewPrompt(pr, title, notes, files))
   copied.value = true
   setTimeout(() => (copied.value = false), 2500)
+  if (assistant.value.url) window.open(assistant.value.url, '_blank', 'noopener')
 }
 
 function clear() {
@@ -147,7 +167,7 @@ function clear() {
 
     <template v-if="notes.length" #footer>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from Copy for Claude">
+        <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from the copied prompt">
           <Switch id="show-resolved" v-model="showResolved" />
           <Label for="show-resolved" class="text-xs font-normal">Show resolved in the diff</Label>
         </div>
@@ -155,11 +175,42 @@ function clear() {
         <Button :variant="confirmClear ? 'destructive' : 'ghost'" size="sm" @click="clear">
           <Trash2 /> {{ confirmClear ? 'Click again to delete all' : 'Delete all' }}
         </Button>
-        <Button size="sm" :disabled="!counts.open" title="Copies the open notes only" @click="copy">
-          <Check v-if="copied" />
-          <ClipboardCopy v-else />
-          {{ copied ? 'Copied — paste it into Claude' : 'Copy for Claude' }}
-        </Button>
+        <div class="flex">
+          <Button
+            size="sm"
+            class="rounded-r-none"
+            :disabled="!counts.open"
+            :title="assistant.url ? `Copies the open notes and opens ${assistant.label}` : 'Copies the open notes'"
+            @click="copy"
+          >
+            <Check v-if="copied" />
+            <ClipboardCopy v-else />
+            {{
+              copied
+                ? assistant.url
+                  ? `Copied, paste it into ${assistant.label}`
+                  : 'Copied'
+                : assistant.url
+                  ? `Copy for ${assistant.label}`
+                  : 'Copy prompt'
+            }}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button size="icon-sm" class="rounded-l-none border-l border-primary-foreground/20" aria-label="Choose the assistant">
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-44">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Send notes to</DropdownMenuLabel>
+                <DropdownMenuRadioGroup :model-value="assistant.id" @update:model-value="(v) => chooseAssistant(v as AssistantId)">
+                  <DropdownMenuRadioItem v-for="a in ASSISTANTS" :key="a.id" :value="a.id">{{ a.label }}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </template>
   </Modal>

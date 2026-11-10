@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-const { status } = defineProps<{ status: string }>()
+const { status, decorative = false } = defineProps<{ status: string; decorative?: boolean }>()
 
 const FRAME =
   'M2.75 1h10.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1ZM2.5 2.75v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25H2.75a.25.25 0 0 0-.25.25Z'
@@ -23,8 +23,16 @@ const kind = computed(() => kinds[status] ?? { path: '', class: 'text-muted-fore
 </script>
 
 <template>
-  <svg viewBox="0 0 16 16" fill="currentColor" class="shrink-0" :class="kind.class" role="img" :aria-label="status">
-    <title>{{ status }}</title>
+  <svg
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    class="shrink-0"
+    :class="kind.class"
+    role="img"
+    :aria-label="decorative ? undefined : status"
+    :aria-hidden="decorative || undefined"
+  >
+    <title v-if="!decorative">{{ status }}</title>
     <path :d="FRAME" />
     <path v-if="kind.path" :d="kind.path" />
   </svg>

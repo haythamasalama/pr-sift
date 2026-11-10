@@ -11,6 +11,7 @@ export const DEFAULTS: Settings = {
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',
+  assistant: 'claude',
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -18,9 +19,14 @@ export async function getSettings(): Promise<Settings> {
   return { ...DEFAULTS, ...(settings ?? {}) }
 }
 
-export async function saveSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
-  const settings = await storageGet<Partial<Settings>>('settings')
-  await storageSet({ settings: { ...(settings ?? {}), [key]: value } })
+let writing = Promise.resolve()
+
+export function saveSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
+  writing = writing.then(async () => {
+    const settings = await storageGet<Partial<Settings>>('settings')
+    await storageSet({ settings: { ...(settings ?? {}), [key]: value } })
+  })
+  return writing
 }
 
 export function onSettingsChange(callback: (settings: Settings) => void): () => void {

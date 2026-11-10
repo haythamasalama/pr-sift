@@ -5,7 +5,18 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['**/dist', '**/node_modules', '**/coverage', '.playwright-mcp', 'apps/extension/src/components/ui/**'] },
+  {
+    ignores: [
+      '**/dist',
+      'media',
+      'apps/site/pages',
+      'apps/site/public',
+      '**/node_modules',
+      '**/coverage',
+      '.playwright-mcp',
+      'apps/extension/src/components/ui/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/recommended'],
@@ -27,5 +38,8 @@ export default tseslint.config(
     rules: { 'vue/no-v-html': 'off' },
   },
   { files: ['**/*.config.{js,ts}', '**/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
+  { files: ['apps/site/src/**/*.js'], languageOptions: { globals: globals.browser } },
+  { files: ['apps/site/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
+  { files: ['tools/**/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   prettier,
 )

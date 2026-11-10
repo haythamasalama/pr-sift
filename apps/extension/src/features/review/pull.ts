@@ -30,7 +30,6 @@ async function loadViaSession(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const base = basePath(pr)
   const [diffText, pageRes] = await Promise.all([fetchDiff(base, true), fetch(base, { credentials: 'same-origin' }).catch(() => null)])
   const files = parseDiff(diffText, base)
-  if (!files.length) throw new Error('the diff was empty')
   const doc = new DOMParser().parseFromString(pageRes?.ok ? await pageRes.text() : '', 'text/html')
   const title = doc.querySelector('.js-issue-title')?.textContent?.trim() || document.title.split(' by ')[0] || ''
   return { info: { title }, files, signature: hashText(diffText) }
@@ -55,8 +54,14 @@ interface ApiFile {
 async function loadViaApi(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const api = `/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`
   const data = await gh<ApiPull>(api)
-  const pages = Math.max(1, Math.ceil(data.changed_files / 100))
-  const chunks = await Promise.all(Array.from({ length: pages }, (_, i) => gh<ApiFile[]>(`${api}/files?per_page=100&page=${i + 1}`)))
+  const pages = Math.min(30, Math.max(1, Math.ceil(data.changed_files / 100)))
+  const chunks = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      i === 0
+        ? gh<ApiFile[]>(`${api}/files?per_page=100&page=1`)
+        : gh<ApiFile[]>(`${api}/files?per_page=100&page=${i + 1}`).catch(() => []),
+    ),
+  )
   const files = chunks.flat().map<PrFile>((f) => ({
     filename: f.filename,
     status: f.status,

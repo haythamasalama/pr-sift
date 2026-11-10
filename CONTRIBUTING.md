@@ -23,6 +23,15 @@ pnpm build      # then load apps/extension as an unpacked extension to try chang
   `apps/extension/src/lib/portal.ts`), and global CSS from GitHub must not be assumed.
 - **Comments.** Only explain _why_ when it is not obvious.
 - **Scope.** One change per pull request, with a short description of what and why.
+- **Commits.** [Conventional Commits](https://www.conventionalcommits.org): `feat(notes): add resolve button`. See
+  `.claude/skills/commit/SKILL.md` for types and scopes.
+
+## Screenshots and videos
+
+Everything in `media/` is generated. After a visible change, run `pnpm capture` (it builds the extension, opens a demo
+pull request in Playwright, records each screen, then renders the social image and the store images) and commit the new
+files. Install the browser once with
+`pnpm --filter @pr-sift/capture exec playwright install chromium`.
 
 ## Reporting bugs and ideas
 

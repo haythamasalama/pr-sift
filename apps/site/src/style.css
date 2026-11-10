@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-add: var(--add);
+  --color-add-bg: var(--add-bg);
+  --color-del: var(--del);
+  --color-del-bg: var(--del-bg);
+}
+
+:root {
+  --paper: #ffffff;
+  --raised: #f6f8fa;
+  --ink: #000000;
+  --muted: #57606a;
+  --line: #d0d7de;
+  --add: #1a7f37;
+  --add-bg: #dafbe1;
+  --del: #cf222e;
+  --del-bg: #ffebe9;
+}
+
+.dark {
+  --paper: #161618;
+  --raised: #1e1e21;
+  --ink: #ececee;
+  --muted: #a0a0a8;
+  --line: #2e2e33;
+  --add: #5cc77a;
+  --add-bg: rgb(92 199 122 / 0.14);
+  --del: #f07a72;
+  --del-bg: rgb(240 122 114 / 0.14);
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* Keyed on the html attribute set in <head>, so the active option shows before main.js runs. */
+html[data-theme='system'] [data-theme-mode='system'],
+html[data-theme='light'] [data-theme-mode='light'],
+html[data-theme='dark'] [data-theme-mode='dark'] {
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+[data-file] {
+  max-height: 2.75rem;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.25s ease,
+    margin 0.35s ease,
+    padding 0.35s ease;
+}
+
+[data-file].is-hidden {
+  max-height: 0;
+  opacity: 0;
+  margin-block: 0;
+  padding-block: 0;
+  border-width: 0;
+}
+
+.chip[data-state='include'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.chip[data-state='exclude'] {
+  color: var(--del);
+  border-color: var(--del);
+  text-decoration: line-through;
+}
+
+.chip.is-pressing {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-file],
+  .chip {
+    transition: none;
+  }
+}

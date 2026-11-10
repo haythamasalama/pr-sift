@@ -15,10 +15,6 @@ The Chrome Web Store has a publishing API. To use it from the workflow you need 
 a refresh token stored as repository secrets. Add that step after the release is created and keep manual upload as the
 fallback.
 
-## Store listing checklist
+## Store listing
 
-- Title: `PR Sift: review large GitHub pull requests faster`
-- Short description: the `description` in `manifest.json`
-- Screenshots (1280x800), a short demo video, and the privacy policy link (`PRIVACY.md`)
-- Justification for each permission: `storage`, and the `github.com`, `api.github.com` and
-  `patch-diff.githubusercontent.com` hosts
+The text, images and privacy answers for the dashboard are in [STORE_LISTING.md](STORE_LISTING.md).

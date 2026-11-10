@@ -19,6 +19,24 @@ export async function storageSet(values: Record<string, unknown>): Promise<void>
   }
 }
 
+export function onStorageKey<T>(key: string, callback: (value: T | undefined) => void): () => void {
+  const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+    if (area === 'local' && key in changes) callback(changes[key]!.newValue as T | undefined)
+  }
+  try {
+    chrome.storage?.onChanged?.addListener(listener)
+  } catch {
+    return () => undefined
+  }
+  return () => {
+    try {
+      chrome.storage?.onChanged?.removeListener(listener)
+    } catch {
+      return
+    }
+  }
+}
+
 export function ignoreInvalidatedContext() {
   const matches = (value: unknown) => /Extension context invalidated/i.test(value instanceof Error ? value.message : String(value ?? ''))
   window.addEventListener('unhandledrejection', (e) => {

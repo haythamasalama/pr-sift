@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anchorOf, buildClaudePrompt, githubLineUrl } from '../src/notes'
+import { anchorOf, buildReviewPrompt, githubLineUrl } from '../src/notes'
 import { parsePatch } from '../src/diff'
 import type { Note } from '../src/types'
 import { PR, file } from '../src/testing'
@@ -33,12 +33,12 @@ describe('anchorOf', () => {
   })
 })
 
-describe('buildClaudePrompt', () => {
+describe('buildReviewPrompt', () => {
   const patch = '@@ -1,3 +1,3 @@\n a\n-b\n+c\n d'
   const files = [file('src/a.php', { patch })]
 
   it('lists the pull request and every note with its code context', () => {
-    const prompt = buildClaudePrompt(PR, 'My title', [note({ line: 2, quote: 'c', text: 'Rename this' })], files)
+    const prompt = buildReviewPrompt(PR, 'My title', [note({ line: 2, quote: 'c', text: 'Rename this' })], files)
     expect(prompt).toContain('https://github.com/o/r/pull/7')
     expect(prompt).toContain('"My title"')
     expect(prompt).toContain('## src/a.php')
@@ -50,7 +50,7 @@ describe('buildClaudePrompt', () => {
   })
 
   it('orders notes by file and line', () => {
-    const prompt = buildClaudePrompt(
+    const prompt = buildReviewPrompt(
       PR,
       't',
       [
@@ -65,12 +65,12 @@ describe('buildClaudePrompt', () => {
   })
 
   it('falls back to the stored line when the patch is unavailable', () => {
-    const prompt = buildClaudePrompt(PR, 't', [note({ lineText: 'fallback code' })], [file('src/a.php', { patch: undefined })])
+    const prompt = buildReviewPrompt(PR, 't', [note({ lineText: 'fallback code' })], [file('src/a.php', { patch: undefined })])
     expect(prompt).toContain('fallback code')
   })
 
   it('labels removed code', () => {
-    const prompt = buildClaudePrompt(PR, 't', [note({ side: 'old', line: 2 })], files)
+    const prompt = buildReviewPrompt(PR, 't', [note({ side: 'old', line: 2 })], files)
     expect(prompt).toContain('removed code')
     expect(prompt).toContain('-b')
   })
@@ -99,7 +99,7 @@ describe('multi-line notes', () => {
   const files = [file('src/a.php', { patch })]
 
   it('labels the range and includes every selected line', () => {
-    const prompt = buildClaudePrompt(PR, 'T', [note({ line: 4, startLine: 2 })], files)
+    const prompt = buildReviewPrompt(PR, 'T', [note({ line: 4, startLine: 2 })], files)
     expect(prompt).toContain('### Lines 2–4 (new code)')
     expect(prompt).toContain(' b\n c\n d')
   })
@@ -110,8 +110,8 @@ describe('multi-line notes', () => {
 })
 
 describe('resolved notes', () => {
-  it('are left out of the Claude prompt', () => {
-    const prompt = buildClaudePrompt(PR, 'T', [note({ text: 'open one' }), note({ id: '2', text: 'done one', resolved: true })], [])
+  it('are left out of the review prompt', () => {
+    const prompt = buildReviewPrompt(PR, 'T', [note({ text: 'open one' }), note({ id: '2', text: 'done one', resolved: true })], [])
     expect(prompt).toContain('open one')
     expect(prompt).not.toContain('done one')
   })

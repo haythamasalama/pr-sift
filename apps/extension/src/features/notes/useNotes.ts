@@ -1,5 +1,5 @@
-import { shallowRef, watch, type InjectionKey, type Ref, inject } from 'vue'
-import { storageGet, storageSet } from '../../lib/extension'
+import { inject, onScopeDispose, shallowRef, watch, type InjectionKey, type Ref } from 'vue'
+import { onStorageKey, storageGet, storageSet } from '../../lib/extension'
 import type { Note } from '../../lib/types'
 
 export type NewNote = Omit<Note, 'id' | 'createdAt'>
@@ -27,30 +27,46 @@ export function useNotesContext(): NotesContext {
 
 export function useNotes(key: Ref<string>) {
   const notes = shallowRef<Note[]>([])
-  let writes = 0
+  let pending = 0
+  let stopListening = () => {}
+  let queue = Promise.resolve()
 
   watch(
     key,
     async (k) => {
-      const writesAtStart = writes
+      stopListening()
+      stopListening = onStorageKey<Note[]>('notes:' + k, (value) => (notes.value = value ?? []))
       const stored = (await storageGet<Note[]>('notes:' + k)) ?? []
-      if (writes === writesAtStart) notes.value = stored
+      if (!pending) notes.value = stored
     },
     { immediate: true },
   )
+  onScopeDispose(() => stopListening())
 
-  async function persist(next: Note[]) {
-    writes++
-    notes.value = next
-    await storageSet({ ['notes:' + key.value]: next })
+  function mutate(change: (list: Note[]) => Note[]) {
+    notes.value = change(notes.value)
+    const storageKey = 'notes:' + key.value
+    pending++
+    queue = queue
+      .then(async () => {
+        const fresh = (await storageGet<Note[]>(storageKey)) ?? []
+        await storageSet({ [storageKey]: change(fresh) })
+      })
+      .finally(() => pending--)
+    return queue
   }
+
+  const patch = (id: string, values: Partial<Note>) => mutate((list) => list.map((n) => (n.id === id ? { ...n, ...values } : n)))
 
   return {
     notes,
-    add: (note: NewNote) => persist([...notes.value, { ...note, id: crypto.randomUUID(), createdAt: Date.now() }]),
-    update: (id: string, patch: NotePatch) => persist(notes.value.map((n) => (n.id === id ? { ...n, ...patch } : n))),
-    remove: (id: string) => persist(notes.value.filter((n) => n.id !== id)),
-    markPosted: (id: string, url: string) => persist(notes.value.map((n) => (n.id === id ? { ...n, postedUrl: url } : n))),
-    clear: () => persist([]),
+    add: (note: NewNote) => {
+      const created: Note = { ...note, id: crypto.randomUUID(), createdAt: Date.now() }
+      return mutate((list) => [...list, created])
+    },
+    update: (id: string, values: NotePatch) => patch(id, values),
+    remove: (id: string) => mutate((list) => list.filter((n) => n.id !== id)),
+    markPosted: (id: string, url: string) => patch(id, { postedUrl: url }),
+    clear: () => mutate(() => []),
   }
 }

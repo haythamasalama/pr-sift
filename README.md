@@ -1,136 +1,99 @@
-<p align="center"><img src="apps/extension/icons/logo.svg" alt="PR Sift" width="72" /></p>
+<p align="center">
+  <img src="apps/extension/icons/logo.svg" alt="" width="72" />
+</p>
 
-# PR Sift
+<h1 align="center">PR Sift</h1>
+
+<p align="center"><strong>Review large GitHub pull requests without the noise.</strong></p>
+
+<p align="center">
+  <a href="https://haythamasalama.github.io/pr-sift/">Website</a> ·
+  <a href="#install">Install</a> ·
+  <a href="docs/USAGE.md">Guide</a> ·
+  <a href="https://github.com/haythamasalama/pr-sift/issues/new/choose">Report a problem</a>
+</p>
 
 <p align="center">
   <a href="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml"><img src="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-black.svg" alt="MIT license" /></a>
 </p>
 
-Review large GitHub pull requests without the noise. PR Sift is a Chrome extension that makes reviewing them fast. It opens a review workspace on top of any
-pull request page, so you can filter by file type or folder, mark files as viewed in bulk, keep private notes, and
-carry on from where you stopped.
+![PR Sift on a 41-file pull request](media/screenshots/review.webp)
 
-It reads the pull request with your existing GitHub login. No account, server or token is required for reviewing.
+Pull requests keep getting bigger, and AI agents now open them with hundreds of files. GitHub shows everything in one
+long list, so the ten files that matter hide between lock files, translations and renames. PR Sift is a free,
+open-source Chrome extension that turns that list into a focused review.
 
-## Features
+## What it does
 
-- **Smart filters, generated from the pull request.** File types (`.php`, `.blade.php`, `.d.ts`…), change status
-  (added, deleted, renamed), quick categories (tests, docs, migrations, translations, config, CI), folders that
-  repeat in several places, and folders grouped by parent. Click a type to show only it, click again to undo.
-  Shift-click (or right-click) a type to always hide it; that choice is remembered. **Reset filters** clears everything.
-- **Review mode.** Files disappear from the list and the tree the moment you mark them viewed. A progress ring
-  shows how much is left. Viewed marks are stored per file _content_, so a file that changes after a new push comes
-  back as "Updated since viewed".
-- **Folder navigation.** A resizable tree with expand/collapse all, folder-level viewed checkboxes, and
-  click-to-jump. Works on narrow windows with a drawer.
-- **Unified and split diffs**, globally or per file, with GitHub-style syntax highlighting.
-- **Private notes.** Select code or press `+` on a line to write a note only you can see. Copy all notes as a
-  ready-to-paste prompt for an AI assistant, or post any note to GitHub as a line comment when you want your team
-  to see it (needs a token).
-- **Live updates.** When new commits are pushed, a banner offers a refresh that keeps your filters and view, and
-  resets only the files that changed.
-- **Copy helpers** for each file: name, full path, diff, or added lines.
-- **Fast on big pull requests.** Diffs are rendered lazily and unmounted when far from the viewport; the list is
-  built progressively.
+### Show exactly the files you want
+
+Chips come from the pull request itself. Click `.php` to see only PHP, add `added` to see only new PHP files,
+shift-click `.lock` to hide lock files for good. Add your own types such as `.blade.php` or `.test.ts`.
+
+![Filtering by type and change status](media/videos/filters.gif)
+
+### Never read the same file twice
+
+Mark a file or a whole folder as viewed and it leaves the list. A ring shows what is left. Marks follow the file
+content, so a file that changes after a new push comes back by itself. Collapse or expand any folder and everything
+inside it.
+
+![Marking folders as viewed](media/videos/review.gif)
+
+### Private notes, sent to the AI you use
+
+Drag over lines to write a note only you can see. Resolve notes as you go, post one to GitHub when it is worth it, or
+copy them all with their code as a ready prompt for **Claude, ChatGPT or Gemini**.
+
+![Writing a private note and sending it to an assistant](media/videos/notes.gif)
+
+### And the small things
+
+| Smart filters                                          | Split one file, copy anything               |
+| ------------------------------------------------------ | ------------------------------------------- |
+| ![Smart filters](media/screenshots/smart-filters.webp) | ![Split view](media/screenshots/split.webp) |
+| **Choose your assistant**                              | **Light and dark**                          |
+| ![Notes export](media/screenshots/ai-export.webp)      | ![Dark mode](media/screenshots/dark.webp)   |
 
 ## Install
 
-### From source
-
-Requirements: Node.js 22+ and pnpm 10+.
+PR Sift is on its way to the Chrome Web Store. Until then, install it from source:
 
 ```bash
+git clone https://github.com/haythamasalama/pr-sift.git
+cd pr-sift
 pnpm install
 pnpm build
 ```
 
-Then open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked** and select the `apps/extension` folder. After
-rebuilding, reload the extension and refresh the GitHub tab.
+Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `apps/extension`. Then
+open any pull request on github.com and press **PR Sift** at the bottom right.
 
-### Packaging for the Chrome Web Store
-
-```bash
-pnpm package   # builds and creates apps/extension/pr-sift-<version>.zip
-```
-
-## Usage
-
-Open any pull request on github.com and press the **PR Sift** button at the bottom right.
-
-| Action                     | How                                                          |
-| -------------------------- | ------------------------------------------------------------ |
-| Filter by type             | Click a chip under **Types**; click again to exclude         |
-| Add an unknown type        | **+ type**, or type `.blade.php` in the file search          |
-| Filter by folder           | **Smart filters** tab; or the search box above the list      |
-| Jump to a file or folder   | Click it in the tree                                         |
-| Widen the sidebar          | Drag its edge; double-click to reset                         |
-| Write a private note       | Select code, or hover a line and press `+`                   |
-| Send notes to an assistant | **Notes** → **Copy for Claude**                              |
-| Post a note to GitHub      | **Post to GitHub** on the note (confirm with a second click) |
-
-## Settings
-
-Open the extension options (click the toolbar icon). A GitHub token is optional. It is only used to:
-
-- read a pull request when your browser session cannot (fallback), and
-- post notes as GitHub comments.
-
-Use a fine-grained token limited to the repositories you need, with **Pull requests: Read and write**. If your
-organization requires approval for tokens, an admin must approve it first.
-
-The options page lets you choose the theme (system, light or dark), the files hidden by default (path patterns and
-change types), the default diff view, and named presets. Changes reach open reviews immediately.
-
-## Feedback
-
-Found a bug or have an idea? Use **Report a problem** or **Suggest an idea** in the extension options, or open an
-[issue](https://github.com/haythamasalama/pr-sift/issues/new/choose). Please do not include your token or private code.
+Works in Chrome and Chromium browsers such as Edge, Brave, Arc and Dia. See the [guide](docs/USAGE.md) for every
+action and setting.
 
 ## Privacy
 
-Everything stays in your browser. See [PRIVACY.md](PRIVACY.md).
+Your code stays in your browser. PR Sift talks only to GitHub, stores filters, viewed marks and notes locally, and has
+no server, account or analytics. A GitHub token is optional. Details in [PRIVACY.md](PRIVACY.md).
 
-## Development
+## Contributing
 
-```bash
-pnpm test            # unit and component tests (Vitest)
-pnpm typecheck       # vue-tsc and tsc
-pnpm lint            # ESLint
-pnpm format          # Prettier
-pnpm check           # typecheck + lint + format check + tests
-```
+Ideas, bug reports and pull requests are welcome, and small ones count.
 
-Stack: Vue 3, TypeScript, Vite, Tailwind CSS 4, [shadcn-vue](https://www.shadcn-vue.com) components (Reka UI),
-highlight.js. The interface renders inside a shadow root so it never interferes with GitHub's styles.
+- **Found a bug or have an idea?** [Open an issue](https://github.com/haythamasalama/pr-sift/issues/new/choose).
+- **Want to code?** Read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), then
+  run `pnpm check`. The pure logic lives in `packages/core` and is the easiest place to start.
+- **Using an AI coding agent?** [AGENTS.md](AGENTS.md) and the skills in `.claude/skills` explain the project's rules.
 
 ```
-apps/
-  extension/            the Chrome extension
-    src/
-      background/       service worker (GitHub API and cross-origin reads)
-      content/          the in-page entry (App.vue, main.ts)
-      options/          the options page
-      features/         one folder per feature: diff, tree, filters, notes, review, appearance
-      components/       shared components (ui/ holds the generated shadcn-vue ones)
-      lib/              shared infrastructure: storage, settings, portal, types
-    tests/              mirrors src/
-packages/
-  core/                 pure review logic with no DOM or browser APIs: diff, tree, scopes, notes, ranges
+apps/extension    the Chrome extension (Vue 3, Vite, Tailwind, shadcn-vue)
+apps/site         the website
+packages/core     diff parsing, file tree, smart filters, notes. No browser APIs
+tools/capture     regenerates every screenshot and video in this README
 ```
-
-Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
-
-## Limitations
-
-- Reading uses GitHub's `.diff` endpoint. Very large pull requests may be refused by GitHub; the token fallback uses
-  the API instead.
-- The "Refresh" detection looks for GitHub's own refresh control on the page, which GitHub may change. Periodic
-  checking is the fallback.
-- GitHub Enterprise Server is not supported yet (the extension only runs on `github.com`).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Not affiliated with GitHub.

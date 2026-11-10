@@ -48,4 +48,14 @@ describe('useNotes', () => {
     await notes.clear()
     expect(notes.notes.value).toEqual([])
   })
+
+  it('keeps notes written from two tabs on the same pull request', async () => {
+    const { store } = installChrome()
+    const first = useNotes(shallowRef('o/r#1'))
+    const second = useNotes(shallowRef('o/r#1'))
+    await flushPromises()
+    await first.add({ ...draft, text: 'from tab one' })
+    await second.add({ ...draft, text: 'from tab two' })
+    expect((store['notes:o/r#1'] as { text: string }[]).map((n) => n.text)).toEqual(['from tab one', 'from tab two'])
+  })
 })

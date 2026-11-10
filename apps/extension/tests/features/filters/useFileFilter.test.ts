@@ -180,4 +180,22 @@ describe('useFileFilter', () => {
     filter.setScopes(['path:src', 'path:docs'])
     expect(filter.selectedFolder.value).toBe('')
   })
+
+  it('combines a type with a status: only added PHP files', async () => {
+    const { filter } = setup([
+      file('src/new.php', { status: 'added' }),
+      file('src/old.php', { status: 'modified' }),
+      file('src/new.ts', { status: 'added' }),
+    ])
+    await filter.toggleChip('.php')
+    await filter.toggleChip('status:added')
+    expect(names(filter.candidates.value)).toEqual(['src/new.php'])
+  })
+
+  it('still shows either type when two types are chosen', async () => {
+    const { filter } = setup([file('a.php'), file('b.ts'), file('c.md')])
+    await filter.toggleChip('.php')
+    await filter.toggleChip('.ts')
+    expect(names(filter.candidates.value)).toEqual(['a.php', 'b.ts'])
+  })
 })

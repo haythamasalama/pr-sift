@@ -26,4 +26,11 @@ describe('settings storage', () => {
     await expect(saveSetting('sidebarWidth', 300)).resolves.toBeUndefined()
     expect(await getSettings()).toEqual(DEFAULTS)
   })
+
+  it('keeps both values when two settings are saved at the same time', async () => {
+    await Promise.all([saveSetting('sidebarWidth', 400), saveSetting('reviewMode', false)])
+    const settings = await getSettings()
+    expect(settings.sidebarWidth).toBe(400)
+    expect(settings.reviewMode).toBe(false)
+  })
 })
