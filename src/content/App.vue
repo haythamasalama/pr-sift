@@ -15,7 +15,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark, palette } = useAppearance()
+const { dark } = useAppearance()
 const rootEl = useTemplateRef<HTMLElement>('root')
 provide(portalTargetKey, rootEl)
 const githubRefresh = useGithubRefreshSignal()
@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="rl-root" :class="[{ dark }, `palette-${palette}`]">
+  <div ref="root" class="rl-root" :class="{ dark }">
     <Button v-if="dead && pr" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="reload">
       Review Lens was updated — reload the page
     </Button>

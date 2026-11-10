@@ -6,22 +6,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
-import PalettePreview from './PalettePreview.vue'
 import { useAppearance } from '../composables/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
-import type { DiffMode, Palette, Settings, ThemeMode } from '../lib/types'
-
-const PALETTES: { value: Palette; label: string }[] = [
-  { value: 'github', label: 'GitHub' },
-  { value: 'basic', label: 'Basic' },
-]
+import type { DiffMode, Settings, ThemeMode } from '../lib/types'
 
 const STATUSES = [
   { value: 'added', label: 'Added files' },
@@ -30,7 +23,7 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed files' },
 ]
 
-const { theme, palette, dark, setTheme, setPalette } = useAppearance()
+const { theme, dark, setTheme } = useAppearance()
 const token = shallowRef('')
 const showToken = shallowRef(false)
 const hide = shallowRef('')
@@ -108,7 +101,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="rl-root min-h-screen bg-background text-foreground" :class="[{ dark }, `palette-${palette}`]">
+  <div class="rl-root min-h-screen bg-background text-foreground" :class="{ dark }">
     <main class="mx-auto flex max-w-2xl flex-col gap-6 p-6">
       <header class="flex items-center gap-3">
         <div class="flex size-10 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
@@ -150,8 +143,8 @@ onMounted(load)
 
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>Applied immediately. You can also change them from the palette button inside a review.</CardDescription>
+          <CardTitle>Theme</CardTitle>
+          <CardDescription>Applied immediately. You can also change it from the palette button inside a review.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
@@ -172,21 +165,6 @@ onMounted(load)
                 <ToggleGroupItem value="dark"><Moon /> Dark</ToggleGroupItem>
               </ToggleGroup>
             </Field>
-            <FieldSet>
-              <FieldLegend variant="label">Diff colors</FieldLegend>
-              <FieldDescription>GitHub matches the pull request page. Basic follows the extension's neutral theme.</FieldDescription>
-              <RadioGroup :model-value="palette" class="grid grid-cols-2 gap-3" @update:model-value="(v) => setPalette(v as Palette)">
-                <FieldLabel v-for="option in PALETTES" :key="option.value" :for="`palette-${option.value}`">
-                  <Field orientation="vertical">
-                    <div class="flex items-center justify-between">
-                      <FieldTitle>{{ option.label }}</FieldTitle>
-                      <RadioGroupItem :id="`palette-${option.value}`" :value="option.value" />
-                    </div>
-                    <PalettePreview :palette="option.value" :dark="dark" />
-                  </Field>
-                </FieldLabel>
-              </RadioGroup>
-            </FieldSet>
           </FieldGroup>
         </CardContent>
       </Card>

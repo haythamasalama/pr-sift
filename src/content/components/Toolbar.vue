@@ -9,13 +9,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../../composables/useAppearance'
-import type { DiffMode, Palette, Preset, ThemeMode } from '../../lib/types'
+import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -33,7 +32,7 @@ defineProps<{
 const query = defineModel<string>('query', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
-const { theme, palette, setTheme, setPalette } = useAppearance()
+const { theme, setTheme } = useAppearance()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 </script>
@@ -103,7 +102,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Appearance" title="Theme and colors">
+        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Theme" title="Theme">
           <PaletteIcon />
         </Button>
       </DropdownMenuTrigger>
@@ -114,14 +113,6 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
             <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Diff colors</DropdownMenuLabel>
-          <DropdownMenuRadioGroup :model-value="palette" @update:model-value="(v) => setPalette(v as Palette)">
-            <DropdownMenuRadioItem value="github">GitHub</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="basic">Basic</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
       </DropdownMenuContent>
