@@ -5,6 +5,6 @@ coverage
 .playwright-mcp
 .DS_Store
 
-apps/site/index.html
-apps/site/ar/
 apps/site/public/
+
+apps/site/pages/

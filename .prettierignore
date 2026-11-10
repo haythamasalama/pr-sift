@@ -5,7 +5,6 @@ pnpm-lock.yaml
 .playwright-mcp
 apps/extension/src/components/ui
 apps/extension/src/content/shadcn.css
-apps/site/index.html
-apps/site/ar
 apps/site/public
 media
+apps/site/pages

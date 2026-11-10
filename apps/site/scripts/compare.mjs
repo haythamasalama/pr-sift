@@ -1,0 +1,205 @@
+const CHECKED = '10 November 2026'
+
+const ours = {
+  price: 'Free',
+  source: 'Yes, MIT',
+  browsers: 'Chrome and Chromium browsers (Edge, Brave, Arc, Dia, Opera, Vivaldi)',
+  extension: 'Yes, including your own endings like .blade.php',
+  status: 'Yes: added, modified, deleted, renamed, with notes',
+  combine: 'Yes, type and change together',
+  remember: 'Yes, across every pull request',
+  categories: 'Yes: tests, migrations, translations, config, CI, busiest folders',
+  tree: 'Yes, with search',
+  folders: 'Yes, any folder and everything inside it',
+  viewed: 'Yes, files and whole folders',
+  progress: 'Yes, files left in a ring',
+  reset: 'Yes, by file content',
+  notes: 'Yes, private, multi-line, kept in your browser',
+  ai: 'Yes: Claude, ChatGPT or Gemini',
+  split: 'Yes, for all files or one file',
+  account: 'No account. Token optional, only to post comments',
+}
+
+const row = (label, key, theirs) => [label, ours[key], theirs]
+
+export const compare = [
+  {
+    slug: 'github-files-changed',
+    name: 'GitHub Files changed',
+    title: 'PR Sift vs the GitHub Files changed page',
+    summary: 'What PR Sift adds on top of the review page GitHub already gives you.',
+    description:
+      'GitHub’s Files changed page already lets you filter by extension and mark files as viewed. Here is what PR Sift adds for large pull requests, and what only GitHub does.',
+    checked: CHECKED,
+    rows: [
+      row('Price', 'price', 'Included with GitHub'),
+      row('Filter by file extension', 'extension', 'Yes, hide files by extension'),
+      row('Filter by change', 'status', 'Only hide deleted files'),
+      row('Combine type and change', 'combine', 'Not listed'),
+      row('Remember hidden types across pull requests', 'remember', 'Not listed'),
+      row('Smart categories', 'categories', 'Not listed. Filters for files you or your team own'),
+      row('File tree', 'tree', 'Yes, resizable, with markers for comments and errors'),
+      row('Collapse or expand a folder subtree', 'folders', 'Not listed'),
+      row('Mark as viewed', 'viewed', 'Yes, one file at a time'),
+      row('Progress', 'progress', 'Yes, a bar in the header'),
+      row('Viewed resets when the file changes', 'reset', 'Yes'),
+      row('Private notes', 'notes', 'Pending review comments, visible only to you until you submit'),
+      row('Send notes to an AI assistant', 'ai', 'Not listed. Copilot Chat can take the pull request as context'),
+      row('Split or unified per file', 'split', 'Global setting only'),
+    ],
+    choosePrSift: [
+      'Your pull requests have hundreds of files and you want to cut the noise first.',
+      'You want type and change filters together, remembered on every pull request.',
+      'You keep private notes and ask Claude, ChatGPT or Gemini about them.',
+      'You want to mark a whole folder of translations or migrations as viewed.',
+    ],
+    chooseThem: ['You want to review commit by commit.', 'You filter by code ownership.', 'You do not want to install anything.'],
+    together: 'PR Sift runs on top of the GitHub page. Your viewed marks and review comments on GitHub stay as they are.',
+    faq: [
+      [
+        'Does PR Sift replace the GitHub review?',
+        'No. It opens over the Files changed page. You still approve, request changes and submit comments on GitHub.',
+      ],
+      [
+        'Are my PR Sift viewed marks the same as GitHub’s?',
+        'No. PR Sift keeps its own marks in your browser, tied to each file’s content.',
+      ],
+      ['Can I post a PR Sift note as a GitHub comment?', 'Yes. Add a token in the options and press Post to GitHub on the note.'],
+    ],
+    sources: [
+      'https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request',
+      'https://github.blog/changelog/2021-09-27-improved-pull-request-file-filtering/',
+      'https://github.blog/changelog/2025-12-11-review-commit-by-commit-improved-filtering-and-more-in-the-pull-request-files-changed-public-preview/',
+      'https://github.blog/changelog/2026-01-22-improved-pull-request-files-changed-page-on-by-default/',
+    ],
+  },
+  {
+    slug: 'refined-github',
+    name: 'Refined GitHub',
+    title: 'PR Sift vs Refined GitHub',
+    summary: 'A focused review tool next to a broad GitHub interface upgrade.',
+    description:
+      'Refined GitHub improves the whole GitHub interface. PR Sift focuses on one job: reviewing large pull requests. Here is how they differ, and why you might use both.',
+    checked: CHECKED,
+    rows: [
+      row('Price', 'price', 'Free, sponsorships welcome'),
+      row('Open source', 'source', 'Yes, MIT'),
+      row('Browsers', 'browsers', 'Chrome, Chromium browsers, Firefox and Safari'),
+      row('Filter by file extension', 'extension', 'Not listed'),
+      row('Filter by change', 'status', 'Not listed'),
+      row('Smart categories', 'categories', 'Not listed'),
+      row('Mark as viewed', 'viewed', 'Yes, a range of files with shift-click'),
+      row('Jump to the next unviewed file', 'progress', 'Yes, from GitHub’s progress bar'),
+      row('Private notes', 'notes', 'Not listed'),
+      row('Send notes to an AI assistant', 'ai', 'Not listed'),
+      row('Split or unified per file', 'split', 'Uses unified where split is not useful'),
+      ['Changes beyond pull request files', 'No, pull request files only', 'Yes, across GitHub: conversations, repositories, profiles'],
+      ['Users', 'New', '100,000 on the Chrome Web Store'],
+    ],
+    choosePrSift: [
+      'You need to filter large pull requests by type, change and folder.',
+      'You want private multi-line notes and a prompt for your AI assistant.',
+      'You want to mark whole folders as viewed and see what is left.',
+    ],
+    chooseThem: [
+      'You want many small improvements all over GitHub.',
+      'You use Firefox or Safari.',
+      'You want keyboard shortcuts across conversations.',
+    ],
+    together:
+      'They do different jobs and work together: Refined GitHub improves GitHub itself, PR Sift opens a focused review on top of it.',
+    faq: [
+      [
+        'Can I use PR Sift and Refined GitHub together?',
+        'Yes. PR Sift draws its own review panel, so it does not conflict with Refined GitHub’s changes.',
+      ],
+      ['Is PR Sift a fork of Refined GitHub?', 'No. It is a separate project focused on the Files changed tab.'],
+    ],
+    sources: [
+      'https://github.com/refined-github/refined-github',
+      'https://chromewebstore.google.com/detail/refined-github/hlepfoohegkhhmjieoechaddaejaokhf',
+    ],
+  },
+  {
+    slug: 'octotree',
+    name: 'Octotree',
+    title: 'PR Sift vs Octotree',
+    summary: 'Free pull request filters and notes next to a code tree with a paid PR mode.',
+    description:
+      'Octotree adds an IDE-like code tree to GitHub, with a pull request tree in its paid plan. PR Sift is free and built only for reviewing large pull requests.',
+    checked: CHECKED,
+    rows: [
+      row('Price', 'price', 'Free; Pro $35 a year; the pull request tree is a Pro feature'),
+      row('Open source', 'source', 'Not listed'),
+      row('Browsers', 'browsers', 'Chrome, Firefox, Opera, Edge and Safari'),
+      row('Filter by file extension', 'extension', 'Not listed. Search by file name'),
+      row('Filter by change', 'status', 'Not listed. Shows lines added and removed per file'),
+      row('Smart categories', 'categories', 'Not listed'),
+      row('Pull request file tree', 'tree', 'Yes, in Pro'),
+      row('Collapse or expand folders', 'folders', 'Yes'),
+      row('Mark as viewed', 'viewed', 'Shows files you marked on GitHub, in Pro'),
+      row('Private notes', 'notes', 'Not listed'),
+      row('Send notes to an AI assistant', 'ai', 'Not listed'),
+      row('Account', 'account', 'Free account for search, bookmarks and caching'),
+      ['Users', 'New', 'About 200,000 on the Chrome Web Store'],
+    ],
+    choosePrSift: [
+      'You want pull request filters and a changed-files tree for free.',
+      'You want to filter by type and change, and hide noise for good.',
+      'You keep private notes and send them to an AI assistant.',
+    ],
+    chooseThem: [
+      'You browse repository code a lot and want an IDE-like tree.',
+      'You use GitHub Enterprise or several accounts.',
+      'You want bookmarks and a pull request list by review state.',
+    ],
+    faq: [
+      [
+        'Is PR Sift a free Octotree alternative for pull requests?',
+        'For reviewing pull requests, yes: the file tree, filters, viewed tracking and notes are all free. PR Sift does not browse repository code.',
+      ],
+      ['Do I need an account?', 'No. PR Sift has no account. A GitHub token is optional.'],
+    ],
+    sources: [
+      'https://www.octotree.io/features',
+      'https://www.octotree.io/pricing',
+      'https://chromewebstore.google.com/detail/octotree-github-code-tree/bkhaagjahfmjljalopjnoealnfndnagc',
+    ],
+  },
+  {
+    slug: 'file-tree-filter-for-github',
+    name: 'File Tree Filter for GitHub',
+    title: 'PR Sift vs File Tree Filter for GitHub',
+    summary: 'Combined filters, notes and progress next to single glob patterns.',
+    description:
+      'File Tree Filter for GitHub filters GitHub’s file tree with one pattern at a time for a one-time fee. PR Sift combines filters, tracks progress and adds private notes, for free.',
+    checked: CHECKED,
+    rows: [
+      row('Price', 'price', '$4.99 one time'),
+      row('Open source', 'source', 'Not listed'),
+      row('Filter by file extension', 'extension', 'Yes'),
+      row('Glob patterns', 'extension', 'Yes, for example src/**/*.test.js'),
+      row('Filter by change', 'status', 'Not listed'),
+      row('Combine filters', 'combine', 'No, one pattern at a time'),
+      row('Remember hidden types', 'remember', 'Not listed'),
+      row('Mark as viewed and progress', 'viewed', 'Not listed'),
+      row('Private notes', 'notes', 'Not listed'),
+      row('Send notes to an AI assistant', 'ai', 'Not listed'),
+      ['Works outside pull requests', 'No, pull requests only', 'Yes, repository and gist file trees too'],
+    ],
+    choosePrSift: [
+      'You want several filters at once, like added PHP files.',
+      'You want viewed tracking, progress and private notes in the same place.',
+      'You prefer free and open source.',
+    ],
+    chooseThem: ['You want glob patterns in GitHub’s own tree.', 'You also filter repository and gist file trees.'],
+    faq: [
+      [
+        'Does PR Sift support glob patterns?',
+        'Yes, in the options page for files hidden by default, for example **/*.lock. Chips handle file endings in the review itself.',
+      ],
+      ['Is PR Sift free?', 'Yes, free and open source under the MIT license.'],
+    ],
+    sources: ['https://chromewebstore.google.com/detail/file-tree-filter-for-gith/higmaiifhbjeblmbopjjaknlpmghkcik'],
+  },
+]

@@ -1,18 +1,16 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Arabic', Tahoma, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html {
   scroll-behavior: smooth;
-}
-
-.backdrop {
-  background:
-    radial-gradient(60% 60% at 20% 10%, #ffffff 0%, transparent 70%), radial-gradient(50% 60% at 90% 90%, #e5e5e5 0%, transparent 70%),
-    linear-gradient(180deg, #f5f5f5, #e7e7e7);
+  font-feature-settings: 'cv11', 'ss01';
 }
 
 .reveal {
@@ -26,6 +24,36 @@ html {
 .reveal.shown {
   opacity: 1;
   transform: none;
+}
+
+[data-file].is-hidden {
+  opacity: 0;
+  max-height: 0;
+  padding-block: 0;
+  margin-block: 0;
+  box-shadow: none;
+}
+
+[data-file] {
+  max-height: 3rem;
+}
+
+.chip[data-state='include'] {
+  background: var(--color-neutral-950);
+  border-color: var(--color-neutral-950);
+  color: white;
+}
+
+.dark .chip[data-state='include'] {
+  background: white;
+  border-color: white;
+  color: var(--color-neutral-950);
+}
+
+.chip[data-state='exclude'] {
+  color: var(--color-red-600);
+  border-color: color-mix(in oklab, var(--color-red-600) 40%, transparent);
+  text-decoration: line-through;
 }
 
 @media (prefers-reduced-motion: reduce) {

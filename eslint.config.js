@@ -9,8 +9,7 @@ export default tseslint.config(
     ignores: [
       '**/dist',
       'media',
-      'apps/site/index.html',
-      'apps/site/ar',
+      'apps/site/pages',
       'apps/site/public',
       '**/node_modules',
       '**/coverage',

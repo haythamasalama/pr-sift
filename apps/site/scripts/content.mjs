@@ -1,301 +1,256 @@
 export const SITE_URL = 'https://haythamasalama.github.io/pr-sift/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
+export const AUTHOR = { name: 'Haytham Salama', url: 'https://haythamasalama.me/' }
 
-export const content = {
-  en: {
-    lang: 'en',
-    dir: 'ltr',
-    path: '',
-    title: 'PR Sift: review large GitHub pull requests without the noise',
-    description:
-      'PR Sift is a free, open-source Chrome extension for reviewing large GitHub pull requests: filter files by type, status and folder, hide what you have viewed, and keep private notes you can send to Claude, ChatGPT or Gemini.',
-    nav: { features: 'Features', how: 'How it works', faq: 'FAQ', switch: 'العربية', star: 'Star on GitHub' },
-    hero: {
-      eyebrow: 'Free and open source · Chrome extension',
-      title: 'Review large pull requests without the noise.',
-      lead: 'PR Sift turns a 200-file GitHub pull request into a focused review. Filter by type, status and folder, hide what you have already read, and keep private notes you can hand to your AI assistant.',
-      cta: 'Install PR Sift',
-      secondary: 'View on GitHub',
-      note: 'Works on github.com in Chrome, Edge, Brave, Arc and Dia. Nothing leaves your browser.',
-    },
-    problem: {
-      eyebrow: 'The problem',
-      title: 'Pull requests got bigger. Reviews did not get easier.',
-      lead: 'AI agents and big refactors now open pull requests with hundreds of files. GitHub shows them as one long list, so the files that matter hide between lock files, translations and renames.',
-      cards: [
-        ['Noise everywhere', 'Lock files, generated code, moved files and translations bury the ten files that carry the real change.'],
-        ['You lose your place', 'After a new push or a break you scroll again, unsure which files you already read.'],
-        [
-          'Thoughts you are not ready to post',
-          'You want to note a doubt or ask an AI about a line without commenting in front of the whole team.',
-        ],
-      ],
-    },
-    features: [
-      {
-        id: 'filters',
-        eyebrow: 'Include and exclude',
-        title: 'Show exactly the files you want.',
-        text: 'Chips are generated from the pull request itself. Click .php to show only PHP, add "added" to see only new PHP files, shift-click .lock to hide lock files for good. Types combine with status, so the filter reads like a sentence.',
-        points: [
-          ['Any extension.', 'Add your own types such as .blade.php, .test.ts or .d.ts.'],
-          ['By change.', 'Added, modified, deleted, renamed, or files that have your notes.'],
-          ['Remembered.', 'Hidden types stay hidden on every pull request until you reset.'],
-        ],
-        image: 'filters',
-        alt: 'PR Sift showing only the added PHP files of a pull request',
-      },
-      {
-        id: 'smart',
-        eyebrow: 'Smart filters',
-        title: 'See where the change actually is.',
-        text: 'PR Sift groups the files into categories such as tests, migrations, translations, config and CI, shows the folders that changed the most, and lets you jump into any of them with one click.',
-        points: [
-          ['Most changed folders.', 'Find the heart of the pull request in a second.'],
-          ['Categories.', 'Review all tests, then all migrations, then the rest.'],
-          ['Search.', 'Type part of a path and the tree opens to the matching files.'],
-        ],
-        image: 'smart-filters',
-        alt: 'Smart filters grouping files into categories and busy folders',
-      },
-      {
-        id: 'progress',
-        eyebrow: 'Review mode',
-        title: 'Never read the same file twice.',
-        text: 'Mark a file or a whole folder as viewed and it leaves the list. A progress ring shows what is left. Marks follow the file content, so a file that changes after a new push comes back by itself.',
-        points: [
-          ['Folder by folder.', 'Collapse or expand any folder and everything inside it.'],
-          ['Mark all.', 'Clear a whole category of mechanical changes at once.'],
-          ['Two tabs.', 'Open the same pull request twice and nothing is lost.'],
-        ],
-        video: 'review-demo',
-        image: 'review',
-        alt: 'Marking folders as viewed in PR Sift',
-      },
-      {
-        id: 'notes',
-        eyebrow: 'Private notes',
-        title: 'Think out loud. Nobody sees it.',
-        text: 'Drag over any lines to write a note that stays in your browser. Edit the range, resolve notes as you go, and post one to GitHub only when you decide it is worth it.',
-        points: [
-          ['Multi-line.', 'Drag from the + like on GitHub, or adjust the start and end lines.'],
-          ['Resolve.', 'Resolved notes step out of the diff and out of the prompt.'],
-          ['Post when ready.', 'Turn a note into a real review comment with one click.'],
-        ],
-        video: 'notes-demo',
-        image: 'notes',
-        alt: 'Writing a multi-line private note in PR Sift',
-      },
-      {
-        id: 'ai',
-        eyebrow: 'Your AI, your choice',
-        title: 'Send your notes to Claude, ChatGPT or Gemini.',
-        text: 'One click copies every open note with its file, lines and surrounding code as a ready-made prompt, and opens the assistant you picked. Your code never goes into a link or a server.',
-        points: [
-          ['Pick the model.', 'Claude, ChatGPT, Gemini, or just the clipboard.'],
-          ['Context included.', 'Each note carries the lines it refers to.'],
-          ['Private by design.', 'The prompt goes to your clipboard and nowhere else.'],
-        ],
-        image: 'ai-export',
-        alt: 'Choosing Claude, ChatGPT or Gemini for the notes prompt',
-      },
-      {
-        id: 'views',
-        eyebrow: 'Your way of reading',
-        title: 'Split, unified, and every copy you need.',
-        text: 'Switch the whole review between unified and split, or flip a single file without touching the rest. Copy a file name, its full path, the diff or only the added lines.',
-        points: [
-          ['Per file.', 'One file side by side, the others unified.'],
-          ['Copy menu.', 'Name, path, diff or added lines, ready to paste.'],
-          ['Light and dark.', 'Follows your device, or pick one.'],
-        ],
-        image: 'split',
-        alt: 'A single file shown side by side while the rest stay unified',
-      },
-    ],
-    gallery: { eyebrow: 'In the dark too', title: 'Easy on the eyes, at any hour.', image: 'dark', alt: 'PR Sift in dark mode' },
-    how: {
-      eyebrow: 'How it works',
-      title: 'Three steps. No account.',
-      steps: [
-        ['Install', 'Add PR Sift to your browser. It only runs on github.com.'],
-        ['Open a pull request', 'Go to the Files changed tab of any pull request.'],
-        ['Press PR Sift', 'The review opens on top of GitHub, with your filters and notes.'],
-      ],
-    },
-    privacy: {
-      eyebrow: 'Privacy',
-      title: 'Your code stays in your browser.',
-      text: 'PR Sift reads pull requests with your existing GitHub login. Filters, viewed marks and notes are stored locally. There is no server, no account, no analytics. A GitHub token is optional and only used to post a note as a comment.',
-    },
-    faq: {
-      title: 'Questions',
-      items: [
-        ['Is PR Sift free?', 'Yes. It is free and open source under the MIT license.'],
-        [
-          'Does it send my code anywhere?',
-          'No. It talks only to GitHub. Notes are copied to your clipboard when you ask, and nothing is sent to an AI service by the extension.',
-        ],
-        [
-          'Do I need a GitHub token?',
-          'No. A token is only needed to post a private note as a review comment, or as a fallback when GitHub refuses to load a very large diff.',
-        ],
-        [
-          'How is it different from GitHub’s file filter?',
-          'GitHub can hide some file types and viewed files. PR Sift combines types with change status, remembers hidden types, groups files into smart categories, tracks viewed files by content, and adds private multi-line notes.',
-        ],
-        ['Which browsers are supported?', 'Chrome and Chromium browsers such as Edge, Brave, Arc and Dia.'],
-        [
-          'Does it work with private repositories?',
-          'Yes, anything you can open on github.com. GitHub Enterprise Server is not supported yet.',
-        ],
-      ],
-    },
-    cta: { title: 'Make your next big review the easy one.', button: 'Install PR Sift', contribute: 'Contribute on GitHub' },
-    footer: { made: 'Open source under the MIT license.', disclaimer: 'Not affiliated with GitHub.', report: 'Report a problem' },
+export const home = {
+  title: 'PR Sift: review large GitHub pull requests without the noise',
+  description:
+    'PR Sift is a free, open-source Chrome extension for reviewing large GitHub pull requests. Filter files by type and change, hide what you have viewed, and send private notes to Claude, ChatGPT or Gemini.',
+  hero: {
+    eyebrow: 'Free and open source',
+    title: 'Review large pull requests without the noise.',
+    lead: 'PR Sift turns a 200-file GitHub pull request into a focused review. Filter by type and change, hide what you have read, and keep private notes you can hand to your AI.',
+    cta: 'Install PR Sift',
+    secondary: 'Star on GitHub',
   },
-  ar: {
-    lang: 'ar',
-    dir: 'rtl',
-    path: 'ar/',
-    title: 'PR Sift: راجع طلبات الدمج الكبيرة على GitHub بدون ضجيج',
-    description:
-      'PR Sift إضافة مجانية ومفتوحة المصدر لمتصفح Chrome لمراجعة طلبات الدمج الكبيرة على GitHub: فلترة الملفات حسب النوع والحالة والمجلد، إخفاء ما راجعته، وملاحظات خاصة ترسلها إلى Claude أو ChatGPT أو Gemini.',
-    nav: { features: 'المزايا', how: 'طريقة العمل', faq: 'الأسئلة', switch: 'English', star: 'نجمة على GitHub' },
-    hero: {
-      eyebrow: 'مجانية ومفتوحة المصدر · إضافة Chrome',
-      title: 'راجع طلبات الدمج الكبيرة بدون ضجيج.',
-      lead: 'PR Sift يحوّل طلب دمج فيه 200 ملف إلى مراجعة مركّزة. فلتر حسب النوع والحالة والمجلد، أخفِ الملفات اللي قرأتها، واكتب ملاحظات خاصة تسلّمها لمساعد الذكاء الاصطناعي.',
-      cta: 'ثبّت PR Sift',
-      secondary: 'افتح على GitHub',
-      note: 'تعمل على github.com في Chrome وEdge وBrave وArc وDia. لا شيء يخرج من متصفحك.',
-    },
-    problem: {
-      eyebrow: 'المشكلة',
-      title: 'طلبات الدمج صارت أكبر، والمراجعة ما صارت أسهل.',
-      lead: 'وكلاء الذكاء الاصطناعي وإعادة الهيكلة الكبيرة صاروا يفتحون طلبات دمج بمئات الملفات. GitHub يعرضها كقائمة طويلة، فتضيع الملفات المهمة بين ملفات القفل والترجمات وإعادة التسمية.',
-      cards: [
-        ['ضجيج في كل مكان', 'ملفات القفل والكود المولّد والملفات المنقولة والترجمات تدفن الملفات العشرة اللي فيها التغيير الحقيقي.'],
-        ['تضيع وين وصلت', 'بعد push جديد أو استراحة ترجع تمرّر من الأول، ومش متأكد أي ملف قرأته.'],
-        ['أفكار مش جاهز تنشرها', 'بدك تسجّل شك أو تسأل الذكاء الاصطناعي عن سطر، بدون ما تعلّق قدام كل الفريق.'],
+  problem: {
+    title: 'Pull requests got bigger. Reviewing them did not get easier.',
+    lead: 'AI agents and big refactors open pull requests with hundreds of files. GitHub shows them in one long list, so the files that matter hide between lock files, translations and renames.',
+    cards: [
+      ['layers', 'Noise everywhere', 'Lock files, generated code, moved files and translations bury the few files that carry the change.'],
+      ['search', 'You lose your place', 'After a new push or a break you scroll again, unsure which files you already read.'],
+      [
+        'lock',
+        'Thoughts you are not ready to post',
+        'You want to note a doubt or ask an AI about a line without commenting in front of the team.',
       ],
-    },
-    features: [
-      {
-        id: 'filters',
-        eyebrow: 'إظهار وإخفاء',
-        title: 'اعرض بالضبط الملفات اللي بدك إياها.',
-        text: 'الفلاتر تتولّد من طلب الدمج نفسه. اضغط ‎.php لتعرض PHP فقط، أضف "added" لترى ملفات PHP الجديدة فقط، واضغط Shift على ‎.lock لتخفي ملفات القفل دائماً. النوع يجتمع مع الحالة، فيصير الفلتر جملة واضحة.',
-        points: [
-          ['أي امتداد.', 'أضف أنواعك مثل ‎.blade.php و‎.test.ts و‎.d.ts.'],
-          ['حسب التغيير.', 'مضاف، معدّل، محذوف، معاد تسميته، أو الملفات اللي عليها ملاحظاتك.'],
-          ['محفوظ.', 'الأنواع المخفية تبقى مخفية بكل طلب دمج لحد ما تعيد الضبط.'],
-        ],
-        image: 'filters',
-        alt: 'PR Sift يعرض ملفات PHP المضافة فقط من طلب الدمج',
-      },
-      {
-        id: 'smart',
-        eyebrow: 'فلاتر ذكية',
-        title: 'شوف وين التغيير الحقيقي.',
-        text: 'يجمع PR Sift الملفات في فئات مثل الاختبارات والـ migrations والترجمات والإعدادات وCI، ويعرض المجلدات الأكثر تعديلاً، وتدخل لأي منها بضغطة.',
-        points: [
-          ['أكثر المجلدات تعديلاً.', 'لاقِ قلب طلب الدمج بثانية.'],
-          ['فئات.', 'راجع كل الاختبارات، ثم كل الـ migrations، ثم الباقي.'],
-          ['بحث.', 'اكتب جزءاً من المسار والشجرة تنفتح على الملفات المطابقة.'],
-        ],
-        image: 'smart-filters',
-        alt: 'الفلاتر الذكية تجمع الملفات في فئات ومجلدات',
-      },
-      {
-        id: 'progress',
-        eyebrow: 'وضع المراجعة',
-        title: 'لا تقرأ نفس الملف مرتين.',
-        text: 'علّم ملفاً أو مجلداً كاملاً كمراجَع فيختفي من القائمة، وحلقة التقدم تبيّن الباقي. العلامة مرتبطة بمحتوى الملف، فإذا تغيّر الملف بعد push جديد يرجع لحاله.',
-        points: [
-          ['مجلد مجلد.', 'افتح أو سكّر أي مجلد وكل ما بداخله.'],
-          ['علّم الكل.', 'خلّص فئة كاملة من التغييرات الآلية مرة وحدة.'],
-          ['تبويبان.', 'افتح نفس طلب الدمج مرتين وما يضيع شي.'],
-        ],
-        video: 'review-demo',
-        image: 'review',
-        alt: 'تعليم المجلدات كمراجَعة في PR Sift',
-      },
-      {
-        id: 'notes',
-        eyebrow: 'ملاحظات خاصة',
-        title: 'فكّر بصوت عالٍ، وما حدا بيشوف.',
-        text: 'اسحب على أي أسطر واكتب ملاحظة تبقى بمتصفحك. عدّل المدى، علّم الملاحظة كمحلولة، وانشرها على GitHub فقط لما تقرر إنها تستاهل.',
-        points: [
-          ['عدة أسطر.', 'اسحب من زر + مثل GitHub، أو عدّل سطر البداية والنهاية.'],
-          ['حلّها.', 'الملاحظات المحلولة تختفي من الـ diff ومن الـ prompt.'],
-          ['انشر لما تجهز.', 'حوّل الملاحظة لتعليق مراجعة حقيقي بضغطة.'],
-        ],
-        video: 'notes-demo',
-        image: 'notes',
-        alt: 'كتابة ملاحظة خاصة على عدة أسطر في PR Sift',
-      },
-      {
-        id: 'ai',
-        eyebrow: 'ذكاؤك الاصطناعي، اختيارك',
-        title: 'أرسل ملاحظاتك إلى Claude أو ChatGPT أو Gemini.',
-        text: 'بضغطة يُنسخ كل ملاحظاتك المفتوحة مع الملف والأسطر والكود المحيط كـ prompt جاهز، ويفتح المساعد اللي اخترته. الكود ما بيدخل رابط ولا سيرفر.',
-        points: [
-          ['اختر النموذج.', 'Claude أو ChatGPT أو Gemini، أو الحافظة فقط.'],
-          ['مع السياق.', 'كل ملاحظة تحمل الأسطر اللي تشير لها.'],
-          ['خصوصية بالتصميم.', 'الـ prompt يروح لحافظتك وبس.'],
-        ],
-        image: 'ai-export',
-        alt: 'اختيار Claude أو ChatGPT أو Gemini لإرسال الملاحظات',
-      },
-      {
-        id: 'views',
-        eyebrow: 'طريقتك بالقراءة',
-        title: 'Split وUnified، وكل أنواع النسخ.',
-        text: 'بدّل المراجعة كلها بين unified وsplit، أو اقلب ملفاً واحداً بدون ما تأثر على الباقي. انسخ اسم الملف، أو مساره الكامل، أو الـ diff، أو الأسطر المضافة فقط.',
-        points: [
-          ['لكل ملف.', 'ملف واحد جنب بعض، والباقي unified.'],
-          ['قائمة النسخ.', 'الاسم أو المسار أو الـ diff أو الأسطر المضافة.'],
-          ['فاتح وداكن.', 'يتبع جهازك، أو اختر بنفسك.'],
-        ],
-        image: 'split',
-        alt: 'ملف واحد معروض جنب بعض والباقي unified',
-      },
     ],
-    gallery: { eyebrow: 'بالوضع الداكن كمان', title: 'مريح للعين بأي ساعة.', image: 'dark', alt: 'PR Sift بالوضع الداكن' },
-    how: {
-      eyebrow: 'طريقة العمل',
-      title: 'ثلاث خطوات، بدون حساب.',
-      steps: [
-        ['ثبّت', 'أضف PR Sift لمتصفحك. يعمل على github.com فقط.'],
-        ['افتح طلب دمج', 'روح لتبويب Files changed بأي طلب دمج.'],
-        ['اضغط PR Sift', 'المراجعة تنفتح فوق GitHub مع فلاترك وملاحظاتك.'],
-      ],
-    },
-    privacy: {
-      eyebrow: 'الخصوصية',
-      title: 'كودك يبقى بمتصفحك.',
-      text: 'PR Sift يقرأ طلبات الدمج بتسجيل دخولك الحالي على GitHub. الفلاتر وعلامات المراجعة والملاحظات محفوظة محلياً. لا سيرفر، لا حساب، لا تتبّع. الـ token اختياري ويُستخدم فقط لنشر ملاحظة كتعليق.',
-    },
-    faq: {
-      title: 'أسئلة',
-      items: [
-        ['هل PR Sift مجاني؟', 'نعم، مجاني ومفتوح المصدر بترخيص MIT.'],
-        [
-          'هل يرسل الكود لأي مكان؟',
-          'لا. يتعامل مع GitHub فقط. الملاحظات تُنسخ لحافظتك لما تطلب، والإضافة لا ترسل شيئاً لأي خدمة ذكاء اصطناعي.',
-        ],
-        ['هل أحتاج GitHub token؟', 'لا. الـ token مطلوب فقط لنشر ملاحظة كتعليق مراجعة، أو كبديل لما GitHub يرفض تحميل diff كبير جداً.'],
-        [
-          'شو الفرق عن فلتر الملفات في GitHub؟',
-          'GitHub يقدر يخفي بعض الأنواع والملفات المراجَعة. PR Sift يجمع النوع مع حالة التغيير، ويتذكر الأنواع المخفية، ويقسّم الملفات لفئات ذكية، ويتتبّع المراجعة حسب المحتوى، ويضيف ملاحظات خاصة على عدة أسطر.',
-        ],
-        ['أي متصفحات مدعومة؟', 'Chrome ومتصفحات Chromium مثل Edge وBrave وArc وDia.'],
-        ['هل يعمل مع المستودعات الخاصة؟', 'نعم، أي شيء تقدر تفتحه على github.com. GitHub Enterprise Server غير مدعوم حالياً.'],
-      ],
-    },
-    cta: { title: 'خلّي المراجعة الكبيرة الجاية هي الأسهل.', button: 'ثبّت PR Sift', contribute: 'ساهم على GitHub' },
-    footer: { made: 'مفتوح المصدر بترخيص MIT.', disclaimer: 'غير تابع لـ GitHub.', report: 'بلّغ عن مشكلة' },
   },
+  features: [
+    {
+      id: 'filters',
+      icon: 'funnel',
+      eyebrow: 'Include and exclude',
+      title: 'Show exactly the files you want.',
+      text: 'Chips are generated from the pull request. Click .php to show only PHP, add added to see only new PHP files, shift-click .lock to hide lock files for good.',
+      points: [
+        ['funnel', 'Type and change together', 'Pick .php and added: only new PHP files.'],
+        ['eye-off', 'Hide forever', 'Shift-click a type. It stays hidden on every pull request.'],
+        ['file-diff', 'Your own types', 'Add .blade.php, .test.ts, .d.ts or any ending you use.'],
+      ],
+      video: 'filters',
+    },
+    {
+      id: 'smart',
+      icon: 'sparkles',
+      eyebrow: 'Smart filters and tree',
+      title: 'Find where the change really is.',
+      text: 'Files are grouped into tests, migrations, translations, config and CI, with the busiest folders first. Collapse or expand any folder and everything inside it.',
+      points: [
+        ['sparkles', 'Categories', 'Review all tests, then migrations, then the rest.'],
+        ['folder-tree', 'Folder by folder', 'Expand or collapse one folder and its children.'],
+        ['search', 'Search', 'Type part of a path and the tree opens to it.'],
+      ],
+      video: 'smart-filters',
+    },
+    {
+      id: 'progress',
+      icon: 'list-checks',
+      eyebrow: 'Review mode',
+      title: 'Never read the same file twice.',
+      text: 'Mark a file or a whole folder as viewed and it leaves the list. A ring shows what is left. Marks follow the content, so a file that changes after a new push comes back.',
+      points: [
+        ['check-check', 'Mark a folder', 'Clear every translation or migration in one click.'],
+        ['circle-check', 'Progress', 'Always know how many files are left.'],
+        ['git-compare', 'Changed again', 'Files edited after you viewed them return by themselves.'],
+      ],
+      video: 'review',
+    },
+    {
+      id: 'notes',
+      icon: 'notebook-pen',
+      eyebrow: 'Private notes',
+      title: 'Think out loud. Nobody sees it.',
+      text: 'Drag over any lines to write a note that stays in your browser. Adjust the range, resolve notes as you go, and post one to GitHub only when it is worth it.',
+      points: [
+        ['notebook-pen', 'Many lines', 'Drag from + like on GitHub, then fine-tune start and end.'],
+        ['circle-check', 'Resolve', 'Resolved notes leave the diff and the prompt.'],
+        ['message-square-text', 'Post when ready', 'Turn a note into a review comment in one click.'],
+      ],
+      video: 'notes',
+    },
+    {
+      id: 'views',
+      icon: 'columns-2',
+      eyebrow: 'Your way of reading',
+      title: 'Split, unified, and every copy you need.',
+      text: 'Switch the whole review between unified and split, or flip one file without touching the rest. Copy a file name, its full path, the diff or only the added lines.',
+      points: [
+        ['columns-2', 'Per file', 'One file side by side, the others unified.'],
+        ['copy', 'Copy menu', 'Name, path, diff or added lines.'],
+        ['sun-moon', 'Light and dark', 'Follows your device, or pick one.'],
+      ],
+      video: 'views',
+    },
+  ],
+  ai: {
+    eyebrow: 'Notes to AI',
+    title: 'Send your review notes to Claude, ChatGPT or Gemini.',
+    lead: 'Your notes become one prompt with the file, the lines and the surrounding code. PR Sift copies it and opens the assistant you choose. Nothing goes through a server or into a link.',
+    steps: [
+      ['notebook-pen', 'Write notes', 'Drag over lines and write what worries you. Notes stay in your browser.'],
+      ['message-square-text', 'Open Notes', 'Every open note, grouped by file, with its line range.'],
+      ['bot', 'Pick your assistant', 'Claude, ChatGPT, Gemini, or the clipboard only. PR Sift remembers it.'],
+      ['copy', 'Copy and paste', 'The prompt is on your clipboard and the assistant is open. Paste and ask.'],
+    ],
+    image: 'ai-export',
+  },
+  how: {
+    title: 'Three steps. No account.',
+    steps: [
+      ['download', 'Install', 'Add PR Sift to your browser. It only runs on github.com.'],
+      ['github', 'Open a pull request', 'Go to Files changed on any pull request you can see.'],
+      ['funnel', 'Press PR Sift', 'The review opens on top of GitHub with your filters and notes.'],
+    ],
+  },
+  privacy: {
+    title: 'Your code stays in your browser.',
+    text: 'PR Sift reads pull requests with your GitHub login. Filters, viewed marks and notes are stored locally. No server, no account, no analytics. A GitHub token is optional and only posts a note as a comment.',
+  },
+  faq: [
+    ['Is PR Sift free?', 'Yes. It is free and open source under the MIT license.'],
+    [
+      'Does it send my code anywhere?',
+      'No. It talks only to GitHub. Notes are copied to your clipboard when you ask, and the extension never sends anything to an AI service.',
+    ],
+    [
+      'Do I need a GitHub token?',
+      'No. A token is only used to post a private note as a review comment, or as a fallback when GitHub will not load a very large diff.',
+    ],
+    [
+      'How is it different from the GitHub file filter?',
+      'GitHub can hide some file types and viewed files. PR Sift combines types with the change status, remembers hidden types, groups files into smart categories, tracks viewed files by content and adds private multi-line notes.',
+    ],
+    ['Which browsers does it support?', 'Chrome and Chromium browsers such as Edge, Brave, Arc, Dia, Opera and Vivaldi.'],
+    ['Does it work with private repositories?', 'Yes, anything you can open on github.com. GitHub Enterprise Server is not supported yet.'],
+  ],
+}
+
+export const guides = [
+  {
+    slug: 'review-large-pull-requests',
+    short: 'Review a large pull request',
+    title: 'How to review a large pull request on GitHub',
+    description:
+      'A practical method for reviewing pull requests with hundreds of files: triage the noise, review in passes, and track what you have read.',
+    sections: [
+      [
+        'Start with the description, not file one',
+        'Read the pull request description and the commit list first. Decide which part of the system changes and what the risk is. A 200-file pull request usually has ten files that carry the decision and many that follow from it.',
+      ],
+      [
+        'Split the files into three piles',
+        'Core logic, supporting changes such as tests and translations, and mechanical noise such as lock files, generated code and renames. In PR Sift, shift-click .lock and the generated types to hide them, then open Smart filters to see the categories and the busiest folders.',
+      ],
+      [
+        'Review in passes',
+        'Read the core logic first for correctness. Then read the tests and check they cover what changed. Finish with the supporting files, quickly. Short sessions catch more than one long one.',
+      ],
+      [
+        'Mark what you have read',
+        'Tick Viewed on each file, or on a whole folder of translations. With Hide viewed on, the list shrinks as you go and the ring shows what is left. If the author pushes again, the files they changed come back.',
+      ],
+      [
+        'Keep your doubts private until they are worth posting',
+        'Write private notes on the lines you are unsure about. Ask your AI assistant about them in one go, then post only the comments that still matter.',
+      ],
+    ],
+  },
+  {
+    slug: 'hide-lock-and-generated-files',
+    short: 'Hide lock and generated files',
+    title: 'Hide lock files and generated files in a GitHub pull request',
+    description:
+      'Keep pnpm-lock.yaml, composer.lock, minified files and other generated output out of your review, and keep them hidden on every pull request.',
+    sections: [
+      [
+        'Why they get in the way',
+        'Lock files and generated output change in hundreds of lines and are not meant to be read. They also hold your viewed progress back, because you have to open each one to tick it.',
+      ],
+      [
+        'Hide a type with one click',
+        'In PR Sift, shift-click or right-click a chip such as .lock. It turns red and those files leave the list. The choice is remembered on every pull request until you press Reset filters.',
+      ],
+      [
+        'Hide paths by rule',
+        'In the options page, add path patterns such as **/*.lock, **/*.min.js or **/generated/**. Files that match stay out of the list and the progress count until you tick Hidden.',
+      ],
+      ['Bring them back for a moment', 'Tick Hidden in the toolbar to see the hidden files without changing your rules.'],
+    ],
+  },
+  {
+    slug: 'filter-pull-request-files-by-type-and-status',
+    short: 'Filter by type and change',
+    title: 'Filter pull request files by extension and change type',
+    description:
+      'Show only new PHP files, only deleted tests or only renamed files in a GitHub pull request by combining type and status filters.',
+    sections: [
+      [
+        'Types and changes are separate groups',
+        'PR Sift builds a chip for every file ending in the pull request (.php, .vue, .test.ts) and one for each kind of change: added, modified, deleted, renamed, and files that have your notes.',
+      ],
+      [
+        'Combine them like a sentence',
+        'Inside a group, chips add up: .php and .ts shows both. Across groups they narrow down: .php and added shows only new PHP files.',
+      ],
+      [
+        'Add your own endings',
+        'Press + type and enter an ending such as .blade.php, .spec.ts or Controller.php. It becomes a chip for every pull request.',
+      ],
+      ['Undo everything', 'Reset filters clears the chips, the search and the selected folders in one click.'],
+    ],
+  },
+  {
+    slug: 'send-code-review-notes-to-ai',
+    short: 'Send notes to AI',
+    title: 'Send code review notes to Claude, ChatGPT or Gemini',
+    description:
+      'Collect your questions about a pull request as private notes and send them to your AI assistant as one prompt with the code attached.',
+    sections: [
+      [
+        'Write the notes where the code is',
+        'Hover a line and drag from the + to select several lines, or select code and press Add note. Write the question as you would ask a colleague.',
+      ],
+      [
+        'Open Notes',
+        'The Notes button lists every open note by file with its lines. Resolve the ones you answered yourself; resolved notes are left out of the prompt.',
+      ],
+      [
+        'Choose the assistant',
+        'Use the arrow next to Copy to pick Claude, ChatGPT, Gemini or the clipboard only. PR Sift remembers your choice.',
+      ],
+      [
+        'Copy and paste',
+        'Press Copy. The prompt lists each note with its file, line range and surrounding code, and the assistant opens in a new tab. Paste it and ask. Nothing is sent by the extension itself.',
+      ],
+    ],
+  },
+]
+
+export const brand = {
+  title: 'Brand and press kit',
+  description: 'The PR Sift logo, colors, name, descriptions and screenshots for articles, posts and talks.',
+  descriptions: [
+    ['One line', 'Review large GitHub pull requests without the noise.'],
+    [
+      'Short',
+      'PR Sift is a free, open-source Chrome extension that turns large GitHub pull requests into a focused review: smart file filters, viewed tracking and private notes you can send to Claude, ChatGPT or Gemini.',
+    ],
+  ],
+  colors: [
+    ['Black', '#0a0a0a'],
+    ['White', '#ffffff'],
+    ['Gray', '#737373'],
+  ],
 }
