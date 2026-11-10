@@ -713,28 +713,6 @@ await clip(browser, 'views', async (page) => {
   await pause(page, 700)
 })
 
-async function socialImage() {
-  if (only.length && !only.includes('og')) return
-  const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 2 })
-  const shotData = readFileSync(`${OUT}/raw/review.framed.png`).toString('base64')
-  const logo = readFileSync(root('apps/extension/icons/logo.svg')).toString('base64')
-  await page.setContent(`<!doctype html><html><body style="margin:0">
-  <div id="og" style="width:1200px;height:630px;display:flex;overflow:hidden;font-family:-apple-system,'Segoe UI',sans-serif;
-    background:#fff;color:#0a0a0a">
-    <div style="width:470px;padding:64px 0 64px 64px;display:flex;flex-direction:column;justify-content:center;gap:20px">
-      <img src="data:image/svg+xml;base64,${logo}" style="width:64px;height:64px;border-radius:14px">
-      <div style="font-size:56px;font-weight:700;letter-spacing:-1px">PR Sift</div>
-      <div style="font-size:30px;line-height:1.25;font-weight:600">Review large GitHub pull requests without the noise.</div>
-      <div style="font-size:19px;color:#525252">Smart filters · viewed tracking · private notes for Claude, ChatGPT or Gemini</div>
-    </div>
-    <img src="data:image/png;base64,${shotData}" style="width:900px;margin:60px -200px 0 30px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.18)">
-  </div></body></html>`)
-  await page.locator('#og').screenshot({ path: `${OUT}/og.png` })
-  await page.close()
-  console.log('social image')
-}
-
-await socialImage()
 await browser.close()
 for (const f of readdirSync(`${OUT}/raw`)) rmSync(`${OUT}/raw/${f}`)
 rmSync(`${OUT}/raw`, { recursive: true })

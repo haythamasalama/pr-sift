@@ -29,7 +29,8 @@ pnpm build      # then load apps/extension as an unpacked extension to try chang
 ## Screenshots and videos
 
 Everything in `media/` is generated. After a visible change, run `pnpm capture` (it builds the extension, opens a demo
-pull request in Playwright and records each screen) and commit the new files. Install the browser once with
+pull request in Playwright, records each screen, then renders the social image and the store images) and commit the new
+files. Install the browser once with
 `pnpm --filter @pr-sift/capture exec playwright install chromium`.
 
 ## Reporting bugs and ideas
