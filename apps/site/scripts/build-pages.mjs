@@ -46,9 +46,6 @@ const video = (name, label) =>
     <video class="block h-auto w-full" autoplay muted loop playsinline preload="metadata" width="1920" height="1200" poster="${media(`videos/${name}.jpg`)}" aria-label="${esc(label)}"><source src="${media(`videos/${name}.mp4`)}" type="video/mp4" /></video>
   </figure>`
 
-const eyebrow = (text, iconName) =>
-  `<p class="inline-flex items-center gap-2 text-sm font-medium text-muted">${iconName ? icon(iconName, 'size-4') : ''}${esc(text)}</p>`
-
 const BROWSERS = [
   ['googlechrome', 'Chrome'],
   ['brave', 'Brave'],
