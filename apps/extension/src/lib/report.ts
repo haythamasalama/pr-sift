@@ -1,4 +1,4 @@
-export const REPO_URL = 'https://github.com/pr-sift/pr-sift'
+export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 
 export type ReportKind = 'bug' | 'idea'
 

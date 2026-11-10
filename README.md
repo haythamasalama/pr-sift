@@ -2,6 +2,11 @@
 
 # PR Sift
 
+<p align="center">
+  <a href="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml"><img src="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
+</p>
+
 Review large GitHub pull requests without the noise. PR Sift is a Chrome extension that makes reviewing them fast. It opens a review workspace on top of any
 pull request page, so you can filter by file type or folder, mark files as viewed in bulk, keep private notes, and
 carry on from where you stopped.
@@ -80,7 +85,7 @@ change types), the default diff view, and named presets. Changes reach open revi
 ## Feedback
 
 Found a bug or have an idea? Use **Report a problem** or **Suggest an idea** in the extension options, or open an
-[issue](../../issues/new/choose). Please do not include your token or private code.
+[issue](https://github.com/haythamasalama/pr-sift/issues/new/choose). Please do not include your token or private code.
 
 ## Privacy
 
