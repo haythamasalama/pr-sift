@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { shallowRef } from 'vue'
-import { diffModeKey } from '../../src/composables/diffMode'
-import { notesKey, type NotesContext } from '../../src/composables/useNotes'
+import { diffModeKey } from '../../src/features/diff/diffMode'
+import { notesKey, type NotesContext } from '../../src/features/notes/useNotes'
 import type { DiffMode, Note } from '../../src/lib/types'
 
 export function notesContext(overrides: Partial<NotesContext> = {}, notes: Note[] = []): NotesContext {

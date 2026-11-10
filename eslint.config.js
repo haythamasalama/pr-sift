@@ -5,7 +5,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', '.playwright-mcp', 'apps/extension/src/components/ui/**'] },
+  { ignores: ['**/dist', '**/node_modules', '**/coverage', '.playwright-mcp', 'apps/extension/src/components/ui/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/recommended'],

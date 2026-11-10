@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
-import { useAppearance } from '../composables/useAppearance'
+import { useAppearance } from '../features/appearance/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, Settings, ThemeMode } from '../lib/types'
 

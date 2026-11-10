@@ -3,11 +3,11 @@ import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateR
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
-import { useGithubRefreshSignal } from '../composables/useGithubRefreshSignal'
-import { useAppearance } from '../composables/useAppearance'
+import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
+import { useAppearance } from '../features/appearance/useAppearance'
 import { portalTargetKey } from '../lib/portal'
 import { prKey, type PrRef } from '../lib/types'
-import ReviewPanel from './components/ReviewPanel.vue'
+import ReviewPanel from '../features/review/ReviewPanel.vue'
 
 const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/
 
