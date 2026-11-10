@@ -41,7 +41,11 @@ const filter = useFileFilter(
   files,
   settings,
   isViewed,
-  computed(() => new Set(notesStore.notes.value.map((n) => n.file))),
+  computed(() => {
+    const counts = new Map<string, number>()
+    for (const n of notesStore.notes.value) if (!n.resolved) counts.set(n.file, (counts.get(n.file) ?? 0) + 1)
+    return counts
+  }),
 )
 const tree = computed(() => buildTree(filter.pool.value))
 const notesOpen = shallowRef(false)
@@ -152,7 +156,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
       :in-view="filter.inScope.value.length"
-      :note-count="notesStore.notes.value.length"
+      :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
       :split-disabled="narrow"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"

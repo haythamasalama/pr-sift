@@ -44,7 +44,7 @@ export function matchesExtension(filename: string, ext: string): boolean {
 
 export const NOTES_CHIP = 'has:notes'
 
-export function matchesChip(file: PrFile, key: string, noted: ReadonlySet<string> = new Set()): boolean {
-  if (key === NOTES_CHIP) return noted.has(file.filename)
+export function matchesChip(file: PrFile, key: string, noted: ReadonlyMap<string, number> = new Map()): boolean {
+  if (key === NOTES_CHIP) return (noted.get(file.filename) ?? 0) > 0
   return key.startsWith('status:') ? file.status === key.slice(7) : matchesExtension(file.filename, key)
 }

@@ -10,7 +10,7 @@ export function useFileFilter(
   files: Ref<PrFile[]>,
   settings: Ref<Settings>,
   isViewed: (f: PrFile) => boolean,
-  notedFiles: Ref<ReadonlySet<string>> = shallowRef(new Set<string>()),
+  openNotes: Ref<ReadonlyMap<string, number>> = shallowRef(new Map<string, number>()),
 ) {
   const presetName = shallowRef('')
   const scopes = shallowRef<string[]>([])
@@ -55,7 +55,7 @@ export function useFileFilter(
     const notesChip = {
       ext: NOTES_CHIP,
       label: 'with notes',
-      count: presetFiles.value.filter((f) => notedFiles.value.has(f.filename)).length,
+      count: presetFiles.value.reduce((sum, f) => sum + (openNotes.value.get(f.filename) ?? 0), 0),
       state: stateOf(NOTES_CHIP),
       custom: false,
     }
@@ -64,8 +64,8 @@ export function useFileFilter(
 
   const byChip = computed(() =>
     presetFiles.value.filter((f) => {
-      if (alwaysHidden.value.some((k) => matchesChip(f, k, notedFiles.value))) return false
-      return !shownOnly.value.length || shownOnly.value.some((k) => matchesChip(f, k, notedFiles.value))
+      if (alwaysHidden.value.some((k) => matchesChip(f, k, openNotes.value))) return false
+      return !shownOnly.value.length || shownOnly.value.some((k) => matchesChip(f, k, openNotes.value))
     }),
   )
 
@@ -74,7 +74,7 @@ export function useFileFilter(
     const statuses = new Set(settings.value.hideStatuses)
     const presetShowsHidden = activePreset.value?.includeHidden ?? false
     return (f: PrFile) => {
-      if (presetShowsHidden || shownOnly.value.some((k) => matchesChip(f, k, notedFiles.value))) return false
+      if (presetShowsHidden || shownOnly.value.some((k) => matchesChip(f, k, openNotes.value))) return false
       return byGlob(f.filename) || statuses.has(f.status)
     }
   })

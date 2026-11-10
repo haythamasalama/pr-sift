@@ -7,12 +7,17 @@ const emit = defineEmits<{ close: [] }>()
 
 <template>
   <Dialog :open="true" @update:open="(open) => !open && emit('close')">
-    <DialogContent class="max-h-[90vh] w-[calc(100vw-2rem)] grid-cols-[minmax(0,1fr)] gap-3 overflow-x-hidden overflow-y-auto sm:max-w-xl">
-      <DialogHeader>
-        <DialogTitle class="truncate pr-6 text-sm">{{ title }}</DialogTitle>
-        <DialogDescription class="sr-only">{{ description ?? title }}</DialogDescription>
+    <DialogContent class="flex max-h-[85vh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+      <DialogHeader class="gap-1 border-b px-6 py-4 pr-12 text-left">
+        <DialogTitle class="truncate text-base">{{ title }}</DialogTitle>
+        <DialogDescription class="text-xs">{{ description ?? title }}</DialogDescription>
       </DialogHeader>
-      <slot />
+      <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-4">
+        <slot />
+      </div>
+      <div v-if="$slots.footer" class="border-t bg-muted/40 px-6 py-3">
+        <slot name="footer" />
+      </div>
     </DialogContent>
   </Dialog>
 </template>

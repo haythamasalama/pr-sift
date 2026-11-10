@@ -22,12 +22,12 @@ describe('files with notes', () => {
   it('offers a chip that shows only the files that have notes', async () => {
     installChrome()
     const files = shallowRef([file('src/a.php'), file('src/b.php')])
-    const noted = shallowRef<ReadonlySet<string>>(new Set(['src/b.php']))
+    const noted = shallowRef<ReadonlyMap<string, number>>(new Map([['src/b.php', 2]]))
     const filter = useFileFilter(files, shallowRef<Settings>({ ...DEFAULTS }), () => false, noted)
     filter.reviewMode.value = false
 
     const chip = filter.chips.value.find((c) => c.ext === 'has:notes')
-    expect(chip).toMatchObject({ label: 'with notes', count: 1 })
+    expect(chip).toMatchObject({ label: 'with notes', count: 2 })
 
     await filter.toggleChip('has:notes')
     expect(filter.candidates.value.map((f) => f.filename)).toEqual(['src/b.php'])

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
-import { Check, CircleCheck, ClipboardCopy, Lock, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
+import { Check, CircleCheck, ClipboardCopy, FileText, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { NotePatch } from '../../composables/useNotes'
@@ -33,6 +33,16 @@ function saveEdit() {
 const copied = shallowRef(false)
 const confirmClear = shallowRef(false)
 
+const counts = computed(() => {
+  const resolved = notes.filter((n) => n.resolved).length
+  return { open: notes.length - resolved, resolved }
+})
+
+const splitPath = (file: string) => {
+  const i = file.lastIndexOf('/')
+  return { dir: i === -1 ? '' : file.slice(0, i + 1), name: file.slice(i + 1) }
+}
+
 const grouped = computed(() => {
   const map = new Map<string, Note[]>()
   for (const n of [...notes].sort((a, b) => a.file.localeCompare(b.file) || startOf(a) - startOf(b))) {
@@ -59,7 +69,11 @@ function clear() {
 </script>
 
 <template>
-  <Modal :title="`Private notes (${notes.length})`" description="Notes only you can see, grouped by file" @close="emit('close')">
+  <Modal
+    title="Private notes"
+    :description="`${counts.open} open · ${counts.resolved} resolved · only you can see these`"
+    @close="emit('close')"
+  >
     <Empty v-if="!notes.length" class="border-0 p-4">
       <EmptyHeader>
         <EmptyTitle class="text-sm">No notes yet</EmptyTitle>
@@ -67,73 +81,93 @@ function clear() {
       </EmptyHeader>
     </Empty>
 
-    <div v-else class="flex flex-col gap-4">
-      <section v-for="[file, list] in grouped" :key="file" class="flex flex-col gap-1.5">
-        <Button
-          variant="link"
-          size="xs"
-          class="h-auto max-w-full justify-start p-0 text-left font-mono break-all whitespace-normal"
-          @click="emit('jump', file)"
-          >{{ file }}</Button
-        >
-        <div
+    <div v-else class="flex flex-col gap-5">
+      <section v-for="[file, list] in grouped" :key="file" class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="flex min-w-0 flex-1 items-center gap-1.5 text-left font-mono text-xs hover:underline"
+            :title="file"
+            @click="emit('jump', file)"
+          >
+            <FileText class="size-3.5 shrink-0 text-muted-foreground" />
+            <span class="min-w-0 break-all"
+              ><span class="text-muted-foreground">{{ splitPath(file).dir }}</span
+              ><span class="font-medium">{{ splitPath(file).name }}</span></span
+            >
+          </button>
+          <Badge variant="secondary" class="tabular-nums">{{ list.length }}</Badge>
+        </div>
+
+        <article
           v-for="n in list"
           :key="n.id"
-          class="flex min-w-0 items-start gap-2 rounded-md border bg-muted px-2.5 py-2"
+          class="flex min-w-0 flex-col gap-2 rounded-lg border bg-card p-3 text-card-foreground shadow-xs"
           :class="n.resolved ? 'opacity-60' : ''"
         >
-          <Lock class="mt-0.5 size-3 shrink-0 text-amber-600" />
-          <div class="min-w-0 flex-1 text-xs">
-            <p class="text-muted-foreground">
-              {{ describeLines(n) }} · {{ n.side === 'new' ? 'new' : 'removed' }}{{ n.resolved ? ' · resolved' : '' }}
-            </p>
-            <p v-if="n.quote" class="truncate font-mono text-[11px] text-muted-foreground" :title="n.quote">“{{ n.quote }}”</p>
-            <div v-if="editingId === n.id" class="mt-1 flex flex-col gap-1.5">
-              <Textarea
-                v-model="draft"
-                rows="3"
-                class="min-h-16 bg-background text-xs md:text-xs"
-                @keydown.enter.ctrl.prevent="saveEdit"
-                @keydown.enter.meta.prevent="saveEdit"
-                @keydown.esc.stop="editingId = ''"
-              />
-              <div class="flex gap-1.5">
-                <Button size="xs" :disabled="!draft.trim()" @click="saveEdit">Save</Button>
-                <Button size="xs" variant="outline" @click="editingId = ''">Cancel</Button>
-              </div>
-            </div>
-            <p v-else class="break-words whitespace-pre-wrap text-foreground">{{ n.text }}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            :aria-label="n.resolved ? 'Reopen note' : 'Mark note as resolved'"
-            :title="n.resolved ? 'Reopen this note' : 'Resolved — hide it from the diff'"
-            @click="emit('update', n.id, { resolved: !n.resolved })"
-          >
-            <RotateCcw v-if="n.resolved" /><CircleCheck v-else />
-          </Button>
-          <Button v-if="editingId !== n.id" variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEdit(n)"><Pencil /></Button>
-          <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
-        </div>
-      </section>
+          <header class="flex items-center gap-1.5">
+            <Badge variant="outline" class="font-mono">{{ describeLines(n) }}</Badge>
+            <Badge variant="secondary">{{ n.side === 'new' ? 'new code' : 'removed code' }}</Badge>
+            <Badge v-if="n.resolved" variant="outline" class="border-success/40 text-success"><Check /> Resolved</Badge>
+            <span class="flex-1" />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              :aria-label="n.resolved ? 'Reopen note' : 'Mark note as resolved'"
+              :title="n.resolved ? 'Reopen this note' : 'Resolved — hide it from the diff'"
+              @click="emit('update', n.id, { resolved: !n.resolved })"
+            >
+              <RotateCcw v-if="n.resolved" /><CircleCheck v-else />
+            </Button>
+            <Button v-if="editingId !== n.id" variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEdit(n)"
+              ><Pencil
+            /></Button>
+            <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
+          </header>
 
-      <Separator />
-      <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from Copy for Claude">
-        <Switch id="show-resolved" v-model="showResolved" />
-        <Label for="show-resolved" class="text-xs font-normal">Show resolved notes in the diff</Label>
-      </div>
-      <div class="flex items-center gap-2">
-        <Button @click="copy">
+          <blockquote
+            v-if="n.quote"
+            class="line-clamp-2 rounded-md border-l-2 border-amber-500 bg-muted px-2 py-1 font-mono text-[11px] break-all text-muted-foreground"
+            :title="n.quote"
+          >
+            {{ n.quote }}
+          </blockquote>
+
+          <div v-if="editingId === n.id" class="flex flex-col gap-2">
+            <Textarea
+              v-model="draft"
+              rows="3"
+              class="min-h-16 bg-background text-sm"
+              @keydown.enter.ctrl.prevent="saveEdit"
+              @keydown.enter.meta.prevent="saveEdit"
+              @keydown.esc.stop="editingId = ''"
+            />
+            <div class="flex gap-2">
+              <Button size="sm" :disabled="!draft.trim()" @click="saveEdit">Save</Button>
+              <Button size="sm" variant="outline" @click="editingId = ''">Cancel</Button>
+            </div>
+          </div>
+          <p v-else class="text-sm break-words whitespace-pre-wrap">{{ n.text }}</p>
+        </article>
+      </section>
+    </div>
+
+    <template v-if="notes.length" #footer>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from Copy for Claude">
+          <Switch id="show-resolved" v-model="showResolved" />
+          <Label for="show-resolved" class="text-xs font-normal">Show resolved in the diff</Label>
+        </div>
+        <span class="flex-1" />
+        <Button :variant="confirmClear ? 'destructive' : 'ghost'" size="sm" @click="clear">
+          <Trash2 /> {{ confirmClear ? 'Click again to delete all' : 'Delete all' }}
+        </Button>
+        <Button size="sm" :disabled="!counts.open" title="Copies the open notes only" @click="copy">
           <Check v-if="copied" />
           <ClipboardCopy v-else />
           {{ copied ? 'Copied — paste it into Claude' : 'Copy for Claude' }}
         </Button>
-        <span class="flex-1" />
-        <Button :variant="confirmClear ? 'destructive' : 'ghost'" @click="clear">{{
-          confirmClear ? 'Click again to delete all' : 'Delete all'
-        }}</Button>
       </div>
-    </div>
+    </template>
   </Modal>
 </template>
