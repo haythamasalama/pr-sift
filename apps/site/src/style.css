@@ -54,33 +54,12 @@ html.dark {
   color-scheme: dark;
 }
 
-/* Keyed on the html attribute set in <head>, so the right mode shows before main.js runs. */
-[data-theme-show] {
-  display: none;
-}
-
-html[data-theme='system'] [data-theme-show='system'],
-html[data-theme='light'] [data-theme-show='light'],
-html[data-theme='dark'] [data-theme-show='dark'] {
-  display: inline-flex;
-}
-
-html[data-theme-animate] [data-theme-icon] {
-  animation: theme-spin 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes theme-spin {
-  from {
-    transform: rotate(-120deg) scale(0.6);
-    opacity: 0;
-  }
-}
-
-/* The new theme is revealed by a circle drawn in main.js, so the default cross-fade is turned off. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
+/* Keyed on the html attribute set in <head>, so the active option shows before main.js runs. */
+html[data-theme='system'] [data-theme-mode='system'],
+html[data-theme='light'] [data-theme-mode='light'],
+html[data-theme='dark'] [data-theme-mode='dark'] {
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  color: var(--ink);
 }
 
 /* His brand allows the signature only in pure black or pure white, so it skips the ink token. */

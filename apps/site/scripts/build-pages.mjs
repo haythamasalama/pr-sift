@@ -175,8 +175,7 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
     </nav>
   </header>`
 
-const themeToggle =
-  () => `<button type="button" data-theme-toggle aria-label="Change theme" class="inline-flex h-9 items-center rounded-full bg-raised px-3.5 text-sm text-ink/80 transition-colors hover:text-ink">
+const themePicker = () => `<div role="group" aria-label="Theme" class="inline-flex items-center gap-0.5 rounded-full bg-raised p-[3px]">
           ${[
             ['system', 'monitor', 'System'],
             ['light', 'sun', 'Light'],
@@ -184,10 +183,10 @@ const themeToggle =
           ]
             .map(
               ([mode, ic, label]) =>
-                `<span data-theme-show="${mode}" class="items-center gap-2"><span data-theme-icon class="flex">${icon(ic, 'size-4')}</span>${label}</span>`,
+                `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex h-[26px] w-[30px] items-center justify-center rounded-full text-muted transition-colors hover:text-ink">${icon(ic, 'size-[15px]')}</button>`,
             )
             .join('')}
-        </button>`
+        </div>`
 
 const appLogo = (slug) =>
   readFileSync(here(`assets/apps/${slug}.svg`), 'utf8').replace('<svg ', '<svg class="size-9 shrink-0" aria-hidden="true" ')
@@ -197,8 +196,8 @@ const appName = (app) => (app.logo === 'easyshoot' ? 'Easy<span class="text-[#1a
 const SIGNATURE = readFileSync(here('assets/haythamasalama-signature.svg'), 'utf8').replace('<svg ', '<svg class="h-[22px] w-11" ')
 
 function footer() {
-  const column = (title, items) =>
-    `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul></div>`
+  const column = (title, items, extra = '') =>
+    `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul>${extra}</div>`
   const legal = 'px-3 leading-none text-ink/80 hover:text-ink'
   return `<footer class="border-t border-line">
     <div class="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
@@ -216,22 +215,23 @@ function footer() {
         guides.map((g) => [g.short, link(`guides/${g.slug}/`)]),
       )}
       ${column('Compare', [...compare.map((c) => [`vs ${c.name}`, link(`compare/${c.slug}/`)]), ['All tools', link('compare/')]])}
-      ${column('Resources', [
-        ['GitHub', REPO_URL],
-        ['Report a bug', `${REPO_URL}/issues/new/choose`],
-        ['Brand', link('brand/')],
-        ['Sitemap', link('sitemap.xml')],
-      ])}
+      ${column(
+        'Resources',
+        [
+          ['GitHub', REPO_URL],
+          ['Report a bug', `${REPO_URL}/issues/new/choose`],
+          ['Brand', link('brand/')],
+          ['Sitemap', link('sitemap.xml')],
+        ],
+        `<div class="mt-6">${themePicker()}</div>`,
+      )}
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-      <div class="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 border-t border-line py-8">
-        <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-          <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
-          <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
-            ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
-          </ul>
-        </div>
-        ${themeToggle()}
+      <div class="flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-line py-8">
+        <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
+        <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
+          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+        </ul>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
         <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
