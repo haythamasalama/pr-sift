@@ -18,6 +18,28 @@ function setup(files: PrFile[], overrides: Partial<Settings> = {}, viewed: strin
 
 const names = (list: PrFile[]) => list.map((f) => f.filename)
 
+describe('files with notes', () => {
+  it('offers a chip that shows only the files that have notes', async () => {
+    installChrome()
+    const files = shallowRef([file('src/a.php'), file('src/b.php')])
+    const noted = shallowRef<ReadonlySet<string>>(new Set(['src/b.php']))
+    const filter = useFileFilter(files, shallowRef<Settings>({ ...DEFAULTS }), () => false, noted)
+    filter.reviewMode.value = false
+
+    const chip = filter.chips.value.find((c) => c.ext === 'has:notes')
+    expect(chip).toMatchObject({ label: 'with notes', count: 1 })
+
+    await filter.toggleChip('has:notes')
+    expect(filter.candidates.value.map((f) => f.filename)).toEqual(['src/b.php'])
+  })
+
+  it('has no chip when nothing has a note', () => {
+    installChrome()
+    const filter = useFileFilter(shallowRef([file('a.php')]), shallowRef<Settings>({ ...DEFAULTS }), () => false)
+    expect(filter.chips.value.some((c) => c.ext === 'has:notes')).toBe(false)
+  })
+})
+
 describe('useFileFilter', () => {
   const files = [file('src/a.php'), file('src/b.ts'), file('docs/readme.md'), file('composer.lock'), file('app.min.js')]
 

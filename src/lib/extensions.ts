@@ -42,6 +42,9 @@ export function matchesExtension(filename: string, ext: string): boolean {
   return ext === '(none)' ? !base.includes('.') : base.endsWith(ext)
 }
 
-export function matchesChip(file: PrFile, key: string): boolean {
+export const NOTES_CHIP = 'has:notes'
+
+export function matchesChip(file: PrFile, key: string, noted: ReadonlySet<string> = new Set()): boolean {
+  if (key === NOTES_CHIP) return noted.has(file.filename)
   return key.startsWith('status:') ? file.status === key.slice(7) : matchesExtension(file.filename, key)
 }

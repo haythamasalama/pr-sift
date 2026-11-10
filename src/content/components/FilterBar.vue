@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
-import { CheckCheck, ChevronsDownUp, ChevronsUpDown, Plus, RotateCcw, Undo2, X } from '@lucide/vue'
+import { CheckCheck, MessageSquareText, ChevronsDownUp, ChevronsUpDown, Plus, RotateCcw, Undo2, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { NOTES_CHIP } from '../../lib/extensions'
 import type { ExtChip } from '../../lib/types'
 import FileStatusIcon from './FileStatusIcon.vue'
 
@@ -32,8 +33,8 @@ const emit = defineEmits<{
   collapseCards: []
 }>()
 
-const extensionChips = computed(() => chips.filter((c) => !c.ext.startsWith('status:')))
-const statusChips = computed(() => chips.filter((c) => c.ext.startsWith('status:')))
+const extensionChips = computed(() => chips.filter((c) => !c.ext.includes(':')))
+const statusChips = computed(() => chips.filter((c) => c.ext.includes(':')))
 
 const adding = shallowRef(false)
 const draft = shallowRef('')
@@ -72,7 +73,7 @@ const chipTitle = (chip: ExtChip) =>
 const isHideGesture = (e: MouseEvent) => e.shiftKey || e.altKey || e.metaKey || e.ctrlKey
 const chipClass = (chip: ExtChip) => [
   'h-[22px] gap-1 rounded-full px-2.5 text-[11px] font-medium shadow-none',
-  chip.ext.startsWith('status:') ? '' : 'font-mono',
+  chip.ext.includes(':') ? '' : 'font-mono',
   chip.state === 'exclude' ? 'border-destructive/40 text-destructive line-through' : '',
 ]
 </script>
@@ -147,7 +148,8 @@ const chipClass = (chip: ExtChip) => [
           @click="(e: MouseEvent) => emit('toggleExtension', c.ext, isHideGesture(e))"
           @contextmenu.prevent="emit('toggleExtension', c.ext, true)"
         >
-          <FileStatusIcon :status="c.ext.slice(7)" class="size-3" />
+          <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-amber-600 dark:text-amber-400" />
+          <FileStatusIcon v-else :status="c.ext.slice(7)" class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>
       </template>

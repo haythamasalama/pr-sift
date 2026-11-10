@@ -101,7 +101,7 @@ defineExpose({ reveal, flash, el })
         <Checkbox :id="`viewed-${file.filename}`" :model-value="viewed" @update:model-value="(value) => emit('viewed', value === true)" />
         <Label :for="`viewed-${file.filename}`" class="text-xs font-normal text-muted-foreground">Viewed</Label>
       </div>
-      <FileStatusIcon :status="file.status" />
+      <FileStatusIcon :status="file.status" class="size-4" />
       <button type="button" class="min-w-0 flex-1 truncate text-left font-mono text-xs" @click="collapsed = !collapsed">
         {{ file.filename }}
       </button>

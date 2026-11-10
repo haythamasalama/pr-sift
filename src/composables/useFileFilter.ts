@@ -1,12 +1,17 @@
 import { computed, shallowRef, type Ref } from 'vue'
-import { extensionsOf, matchesChip } from '../lib/extensions'
+import { extensionsOf, matchesChip, NOTES_CHIP } from '../lib/extensions'
 import { buildSmartScopes, matchesScope } from '../lib/scopes'
 import { matcher, saveSetting } from '../lib/settings'
 import type { ExtChip, PrFile, Settings } from '../lib/types'
 
 const STATUS_LABELS: Record<string, string> = { added: 'added', modified: 'modified', removed: 'deleted', renamed: 'renamed' }
 
-export function useFileFilter(files: Ref<PrFile[]>, settings: Ref<Settings>, isViewed: (f: PrFile) => boolean) {
+export function useFileFilter(
+  files: Ref<PrFile[]>,
+  settings: Ref<Settings>,
+  isViewed: (f: PrFile) => boolean,
+  notedFiles: Ref<ReadonlySet<string>> = shallowRef(new Set<string>()),
+) {
   const presetName = shallowRef('')
   const scopes = shallowRef<string[]>([])
   const query = shallowRef('')
@@ -34,7 +39,7 @@ export function useFileFilter(files: Ref<PrFile[]>, settings: Ref<Settings>, isV
       for (const ext of extensionsOf(f.filename, custom)) counts.set(ext, (counts.get(ext) ?? 0) + 1)
     }
     const active = [...shownOnly.value, ...alwaysHidden.value]
-    for (const c of [...custom, ...active.filter((k) => !k.startsWith('status:'))]) if (!counts.has(c)) counts.set(c, 0)
+    for (const c of [...custom, ...active.filter((k) => !k.startsWith('status:') && k !== NOTES_CHIP)]) if (!counts.has(c)) counts.set(c, 0)
     const extChips = [...counts]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([ext, count]) => ({ ext, label: ext, count, state: stateOf(ext), custom: custom.includes(ext) }))
@@ -47,13 +52,20 @@ export function useFileFilter(files: Ref<PrFile[]>, settings: Ref<Settings>, isV
         custom: false,
       }))
       .filter((c) => c.count > 0 || c.state)
-    return [...extChips, ...statusChips]
+    const notesChip = {
+      ext: NOTES_CHIP,
+      label: 'with notes',
+      count: presetFiles.value.filter((f) => notedFiles.value.has(f.filename)).length,
+      state: stateOf(NOTES_CHIP),
+      custom: false,
+    }
+    return [...extChips, ...statusChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
   })
 
   const byChip = computed(() =>
     presetFiles.value.filter((f) => {
-      if (alwaysHidden.value.some((k) => matchesChip(f, k))) return false
-      return !shownOnly.value.length || shownOnly.value.some((k) => matchesChip(f, k))
+      if (alwaysHidden.value.some((k) => matchesChip(f, k, notedFiles.value))) return false
+      return !shownOnly.value.length || shownOnly.value.some((k) => matchesChip(f, k, notedFiles.value))
     }),
   )
 
@@ -62,7 +74,7 @@ export function useFileFilter(files: Ref<PrFile[]>, settings: Ref<Settings>, isV
     const statuses = new Set(settings.value.hideStatuses)
     const presetShowsHidden = activePreset.value?.includeHidden ?? false
     return (f: PrFile) => {
-      if (presetShowsHidden || shownOnly.value.some((k) => matchesChip(f, k))) return false
+      if (presetShowsHidden || shownOnly.value.some((k) => matchesChip(f, k, notedFiles.value))) return false
       return byGlob(f.filename) || statuses.has(f.status)
     }
   })

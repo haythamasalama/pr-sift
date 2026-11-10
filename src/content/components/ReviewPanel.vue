@@ -36,7 +36,13 @@ const emit = defineEmits<{ close: []; refreshed: [] }>()
 const settings = shallowRef<Settings>(DEFAULTS)
 const { files, info, status, error, load, hasUpdate, refresh } = usePullRequest()
 const { viewed, isViewed, setViewed, setMany, clearAll } = useViewed(computed(() => prKey(pr)))
-const filter = useFileFilter(files, settings, isViewed)
+const notesStore = useNotes(computed(() => prKey(pr)))
+const filter = useFileFilter(
+  files,
+  settings,
+  isViewed,
+  computed(() => new Set(notesStore.notes.value.map((n) => n.file))),
+)
 const tree = computed(() => buildTree(filter.pool.value))
 const notesOpen = shallowRef(false)
 const sidebar = shallowRef<'smart' | 'tree'>('tree')
@@ -58,7 +64,6 @@ const cardsExpand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(cardsExpandKey, cardsExpand)
 const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpand.value.n + 1 })
 
-const notesStore = useNotes(computed(() => prKey(pr)))
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
 
