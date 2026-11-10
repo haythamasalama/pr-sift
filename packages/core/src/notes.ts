@@ -28,7 +28,7 @@ function contextFor(patch: string | undefined, note: Note): string {
     .join('\n')
 }
 
-export function buildClaudePrompt(pr: PrRef, title: string, notes: Note[], files: PrFile[]): string {
+export function buildReviewPrompt(pr: PrRef, title: string, notes: Note[], files: PrFile[]): string {
   const byFile = new Map<string, Note[]>()
   for (const n of [...notes].filter((n) => !n.resolved).sort((a, b) => a.file.localeCompare(b.file) || startOf(a) - startOf(b))) {
     byFile.set(n.file, [...(byFile.get(n.file) ?? []), n])

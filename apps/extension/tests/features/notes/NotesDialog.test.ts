@@ -5,11 +5,13 @@ import NotesDialog from '../../../src/features/notes/NotesDialog.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
 import type { Note } from '../../../src/lib/types'
 import { PR } from '@pr-sift/core/testing'
+import { installChrome } from '../../helpers/chrome'
 
 const note: Note = { id: 'n1', file: 'a.php', side: 'new', line: 3, lineText: '', quote: '', text: 'old text', createdAt: 0 }
 
 describe('NotesDialog', () => {
   it('edits a note text in place', async () => {
+    installChrome()
     const target = document.createElement('div')
     document.body.appendChild(target)
     const wrapper = mount(NotesDialog, {

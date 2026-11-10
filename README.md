@@ -66,7 +66,7 @@ Open any pull request on github.com and press the **PR Sift** button at the bott
 | Jump to a file or folder   | Click it in the tree                                         |
 | Widen the sidebar          | Drag its edge; double-click to reset                         |
 | Write a private note       | Select code, or hover a line and press `+`                   |
-| Send notes to an assistant | **Notes** → **Copy for Claude**                              |
+| Send notes to an assistant | **Notes** → **Copy for Claude**, or pick ChatGPT or Gemini   |
 | Post a note to GitHub      | **Post to GitHub** on the note (confirm with a second click) |
 
 ## Settings
