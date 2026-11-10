@@ -36,6 +36,9 @@ export interface Preset {
   includeHidden?: boolean
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark'
+export type Palette = 'github' | 'basic'
+
 export interface Settings {
   presets: Preset[]
   hide: string[]
@@ -45,6 +48,8 @@ export interface Settings {
   reviewMode: boolean
   diffView: DiffMode
   sidebarWidth: number
+  theme: ThemeMode
+  palette: Palette
 }
 
 export interface DiffRow {

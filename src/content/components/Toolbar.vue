@@ -1,10 +1,21 @@
 <script setup lang="ts">
-import { Columns2, NotebookPen, PanelLeft, Rows2, Search, X } from '@lucide/vue'
+import { Columns2, Monitor, Moon, NotebookPen, PanelLeft, Palette as PaletteIcon, Rows2, Search, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import type { DiffMode, Preset } from '../../lib/types'
+import { useAppearance } from '../../composables/useAppearance'
+import type { DiffMode, Palette, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -21,6 +32,8 @@ defineProps<{
 
 const query = defineModel<string>('query', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
+
+const { theme, palette, setTheme, setPalette } = useAppearance()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 </script>
@@ -87,6 +100,32 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         ><Columns2 /><span class="hidden xl:inline">Split</span></ToggleGroupItem
       >
     </ToggleGroup>
+
+    <DropdownMenu>
+      <DropdownMenuTrigger as-child>
+        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Appearance" title="Theme and colors">
+          <PaletteIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" class="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Theme</DropdownMenuLabel>
+          <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
+            <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Diff colors</DropdownMenuLabel>
+          <DropdownMenuRadioGroup :model-value="palette" @update:model-value="(v) => setPalette(v as Palette)">
+            <DropdownMenuRadioItem value="github">GitHub</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="basic">Basic</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
 
     <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
       <NotebookPen /><span class="hidden xl:inline">Notes</span>

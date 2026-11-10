@@ -191,3 +191,27 @@
 .rl-root .hljs-strong {
   font-weight: 700;
 }
+
+.rl-root.palette-basic {
+  --success: oklch(0.6 0.15 160);
+  --add-bg: color-mix(in oklab, oklch(0.7 0.17 160) 14%, var(--background));
+  --del-bg: color-mix(in oklab, var(--destructive) 12%, var(--background));
+  --add-fg: oklch(0.5 0.14 160);
+  --del-fg: var(--destructive);
+  --hunk: var(--muted);
+  --hl-keyword: var(--foreground);
+  --hl-entity: var(--foreground);
+  --hl-constant: var(--muted-foreground);
+  --hl-string: var(--muted-foreground);
+  --hl-comment: color-mix(in oklab, var(--muted-foreground) 70%, var(--background));
+  --hl-tag: var(--foreground);
+}
+
+.rl-root.palette-basic.dark {
+  --add-fg: oklch(0.75 0.16 160);
+}
+
+.rl-root.palette-basic .hljs-keyword,
+.rl-root.palette-basic .hljs-selector-tag {
+  font-weight: 600;
+}

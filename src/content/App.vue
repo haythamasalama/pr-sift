@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../composables/useGithubRefreshSignal'
-import { useTheme } from '../composables/useTheme'
+import { useAppearance } from '../composables/useAppearance'
 import { portalTargetKey } from '../lib/portal'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from './components/ReviewPanel.vue'
@@ -15,7 +15,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const dark = useTheme()
+const { dark, palette } = useAppearance()
 const rootEl = useTemplateRef<HTMLElement>('root')
 provide(portalTargetKey, rootEl)
 const githubRefresh = useGithubRefreshSignal()
@@ -55,7 +55,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="rl-root" :class="{ dark }">
+  <div ref="root" class="rl-root" :class="[{ dark }, `palette-${palette}`]">
     <Button v-if="dead && pr" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="reload">
       Review Lens was updated — reload the page
     </Button>

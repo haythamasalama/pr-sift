@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, shallowRef } from 'vue'
-import { CircleAlert, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Rows2 } from '@lucide/vue'
+import { computed, onMounted, shallowRef } from 'vue'
+import { CircleAlert, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,9 +12,9 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
-import { useTheme } from '../composables/useTheme'
+import { isDark, useAppearance } from '../composables/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
-import type { DiffMode, Settings } from '../lib/types'
+import type { DiffMode, Palette, Settings, ThemeMode } from '../lib/types'
 
 const STATUSES = [
   { value: 'added', label: 'Added files' },
@@ -23,7 +23,10 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed files' },
 ]
 
-const dark = useTheme()
+const { systemDark } = useAppearance()
+const theme = shallowRef<ThemeMode>(DEFAULTS.theme)
+const palette = shallowRef<Palette>(DEFAULTS.palette)
+const dark = computed(() => isDark(theme.value, systemDark.value))
 const token = shallowRef('')
 const showToken = shallowRef(false)
 const hide = shallowRef('')
@@ -40,6 +43,8 @@ function fill(settings: Settings) {
   hideStatuses.value = [...settings.hideStatuses]
   reviewMode.value = settings.reviewMode
   diffView.value = settings.diffView
+  theme.value = settings.theme
+  palette.value = settings.palette
   presets.value = JSON.stringify(settings.presets, null, 2)
 }
 
@@ -80,6 +85,8 @@ async function save() {
     hideStatuses: hideStatuses.value,
     reviewMode: reviewMode.value,
     diffView: diffView.value,
+    theme: theme.value,
+    palette: palette.value,
   }
   await chrome.storage.local.set({ token: token.value.trim(), settings })
   flash(true, 'Saved')
@@ -101,7 +108,7 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="rl-root min-h-screen bg-background text-foreground" :class="{ dark }">
+  <div class="rl-root min-h-screen bg-background text-foreground" :class="[{ dark }, `palette-${palette}`]">
     <main class="mx-auto flex max-w-2xl flex-col gap-6 p-6">
       <header class="flex items-center gap-3">
         <div class="flex size-10 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
@@ -138,6 +145,50 @@ onMounted(load)
               </InputGroupAddon>
             </InputGroup>
           </Field>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>You can also change these from the palette button inside a review.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel>Theme</FieldLabel>
+                <FieldDescription>System follows your device.</FieldDescription>
+              </FieldContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                :model-value="theme"
+                aria-label="Theme"
+                @update:model-value="(v) => v && (theme = v as ThemeMode)"
+              >
+                <ToggleGroupItem value="system"><Monitor /> System</ToggleGroupItem>
+                <ToggleGroupItem value="light"><Sun /> Light</ToggleGroupItem>
+                <ToggleGroupItem value="dark"><Moon /> Dark</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel>Diff colors</FieldLabel>
+                <FieldDescription>GitHub matches the pull request page. Basic follows the extension's neutral theme.</FieldDescription>
+              </FieldContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                :model-value="palette"
+                aria-label="Diff colors"
+                @update:model-value="(v) => v && (palette = v as Palette)"
+              >
+                <ToggleGroupItem value="github">GitHub</ToggleGroupItem>
+                <ToggleGroupItem value="basic">Basic</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+          </FieldGroup>
         </CardContent>
       </Card>
 
