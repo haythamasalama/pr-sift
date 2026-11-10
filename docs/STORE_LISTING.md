@@ -30,7 +30,7 @@ Track what you read
 Private notes
 • Write notes on one or many lines while you review. They stay in your browser.
 • Self-review code your AI wrote, or keep side notes during a team review.
-• Copy all open notes for Claude, ChatGPT or Gemini as one prompt with the code.
+• Copy all open notes as one prompt with the code for Claude Code, Codex, Cursor, GitHub Copilot, Claude or ChatGPT.
 • Post a note to GitHub as a review comment only when you choose.
 
 Read it your way

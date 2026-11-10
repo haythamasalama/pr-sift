@@ -38,7 +38,7 @@ Mark files or whole folders as viewed. A new push brings changed files back.
 
 ### Private notes for your AI
 
-Notes only you see. Copy them for Claude, ChatGPT or Gemini, or post one to GitHub.
+Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post one to GitHub.
 
 ![Writing a private note and sending it to an assistant](media/videos/notes.gif)
 
@@ -47,7 +47,7 @@ Notes only you see. Copy them for Claude, ChatGPT or Gemini, or post one to GitH
 - 🧩 Smart filters for tests, migrations, translations, config and CI
 - 🪟 Split or unified diffs, for every file or just one
 - 📋 Copy a file's name, path, diff or added lines
-- 🤖 Pick Claude, ChatGPT or Gemini
+- 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
 - 🌓 Light, dark or system theme
 
 See them all on the [website](https://haythamasalama.github.io/pr-sift/).

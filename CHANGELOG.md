@@ -10,7 +10,7 @@ Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Vi
 - Notes: Resolve notes to hide them from the diff and from the prompt.
 - Notes: Edit and delete notes from the diff or from the Notes list.
 - Notes: Post any note to GitHub as a review comment, with a token.
-- AI: Send open notes to Claude, ChatGPT or Gemini as one prompt with the code.
+- AI: Copy open notes as one prompt with the code for Claude Code, Codex, Cursor, GitHub Copilot, Claude or ChatGPT.
 - Filters: Combine type and change filters, for example only new PHP files.
 - Filters: Shift-click a type to hide it on every pull request.
 - Filters: Add your own endings such as .blade.php or .test.ts.

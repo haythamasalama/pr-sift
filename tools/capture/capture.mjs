@@ -153,7 +153,7 @@ async function openDemo(browser, { theme = 'light', notes = true, video = null }
     colorScheme: theme,
     ...(video ? { recordVideo: { dir: `${OUT}/raw`, size: VIEWPORT } } : {}),
   })
-  const store = { settings: { theme, assistant: 'claude' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
+  const store = { settings: { theme, assistant: 'claude-code' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
   await context.addInitScript(chromeMock, { store })
   if (video) await context.addInitScript(cursorScript)
   await context.route('https://github.com/**', (route) => {
@@ -341,7 +341,7 @@ async function clip(browser, name, play, options = {}) {
   const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
   const started = Date.now()
   const store = {
-    settings: { theme, assistant: 'claude', reviewMode: options.reviewMode ?? true },
+    settings: { theme, assistant: 'claude-code', reviewMode: options.reviewMode ?? true },
     [`notes:${KEY}`]: options.notes ?? NOTES,
   }
   await context.addInitScript(chromeMock, { store })
@@ -664,12 +664,12 @@ await clip(browser, 'claude', async (page) => {
   await pause(page, 700)
   const choose = page.getByRole('button', { name: 'Choose the assistant' })
   await camera(page, choose, 1.8)
-  for (const name of ['ChatGPT', 'Gemini', 'Claude']) {
+  for (const name of ['Codex', 'Cursor', 'Claude Code']) {
     await glide(page, choose)
     await pause(page, 500)
-    await glide(page, page.getByRole('menuitemradio', { name }))
+    await glide(page, page.getByRole('menuitemradio', { name, exact: true }))
     await pause(page, 400)
-    await glide(page, page.getByRole('button', { name: new RegExp(`Copy for ${name}`) }))
+    await glide(page, page.getByRole('button', { name: `Copy for ${name}` }))
     await pause(page, 1100)
   }
 })
