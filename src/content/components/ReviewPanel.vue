@@ -303,6 +303,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       :files="files"
       @close="notesOpen = false"
       @remove="notesStore.remove"
+      @update="(id, text) => notesStore.update(id, { text })"
       @clear="notesStore.clear"
       @jump="
         (file) => {

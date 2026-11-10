@@ -1,16 +1,30 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
-import { Check, ClipboardCopy, Lock, Trash2 } from '@lucide/vue'
+import { Check, ClipboardCopy, Lock, Pencil, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import { buildClaudePrompt } from '../../lib/notes'
 import { describeLines, startOf } from '../../lib/range'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from './ui/Modal.vue'
 
 const { pr, title, notes, files } = defineProps<{ pr: PrRef; title: string; notes: Note[]; files: PrFile[] }>()
-const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; clear: [] }>()
+const emit = defineEmits<{ close: []; jump: [file: string]; remove: [id: string]; update: [id: string, text: string]; clear: [] }>()
+
+const editingId = shallowRef('')
+const draft = shallowRef('')
+
+function startEdit(n: Note) {
+  editingId.value = n.id
+  draft.value = n.text
+}
+
+function saveEdit() {
+  if (draft.value.trim()) emit('update', editingId.value, draft.value.trim())
+  editingId.value = ''
+}
 
 const copied = shallowRef(false)
 const confirmClear = shallowRef(false)
@@ -63,8 +77,23 @@ function clear() {
           <div class="min-w-0 flex-1 text-xs">
             <p class="text-muted-foreground">{{ describeLines(n) }} · {{ n.side === 'new' ? 'new' : 'removed' }}</p>
             <p v-if="n.quote" class="truncate font-mono text-[11px] text-muted-foreground" :title="n.quote">“{{ n.quote }}”</p>
-            <p class="break-words whitespace-pre-wrap text-foreground">{{ n.text }}</p>
+            <div v-if="editingId === n.id" class="mt-1 flex flex-col gap-1.5">
+              <Textarea
+                v-model="draft"
+                rows="3"
+                class="min-h-16 bg-background text-xs md:text-xs"
+                @keydown.enter.ctrl.prevent="saveEdit"
+                @keydown.enter.meta.prevent="saveEdit"
+                @keydown.esc.stop="editingId = ''"
+              />
+              <div class="flex gap-1.5">
+                <Button size="xs" :disabled="!draft.trim()" @click="saveEdit">Save</Button>
+                <Button size="xs" variant="outline" @click="editingId = ''">Cancel</Button>
+              </div>
+            </div>
+            <p v-else class="break-words whitespace-pre-wrap text-foreground">{{ n.text }}</p>
           </div>
+          <Button v-if="editingId !== n.id" variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEdit(n)"><Pencil /></Button>
           <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
         </div>
       </section>
