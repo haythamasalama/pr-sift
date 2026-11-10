@@ -8,7 +8,8 @@
   "license": "PolyForm-Shield-1.0.0",
   "scripts": {
     "capture": "node capture.mjs && node cards.mjs",
-    "cards": "node cards.mjs"
+    "cards": "node cards.mjs",
+    "icons": "node icons.mjs"
   },
   "devDependencies": {
     "ffmpeg-static": "^5.3.0",

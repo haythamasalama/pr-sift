@@ -44,9 +44,10 @@ A rounded square tile with a funnel drawn as one stroke.
 | `public/brand/pr-sift-logo.svg` (generated)                 | Black tile `#000000`, white funnel | Light backgrounds, press kit                          |
 | `public/brand/pr-sift-logo-light.svg` (generated)           | White tile, black funnel           | Dark backgrounds, press kit                           |
 | `public/favicon.svg` (generated)                            | Black tile, white funnel           | Browser tab                                           |
-| `apps/extension/icons/logo.svg` and `icon-16/32/48/128.png` | Tile `#171717`, white funnel       | Chrome toolbar, extensions page, store                |
+| `apps/extension/icons/logo.svg` and `icon-16/32/48/128.png` | Black tile `#000000`, white funnel | Chrome toolbar, extensions page, store                |
 | Site header and footer (inline)                             | Tile in `ink`, funnel in `paper`   | Follows the theme: black in light, near white in dark |
 
+- The extension PNGs are rendered from `logo.svg` by `pnpm --filter @pr-sift/capture icons`. Edit the SVG, then run it.
 - On the social cards the logo flips to a white tile with a black funnel, because the card is black.
 - Keep clear space of at least a quarter of the tile around it. Smallest size 16 px.
 - Don't recolour it, add a gradient, outline it, rotate it or put it on a busy picture.
