@@ -122,14 +122,14 @@ export function useFileFilter(
 
   const loadHiddenTypes = (keys: string[]) => (alwaysHidden.value = [...keys])
 
-  function resetFilters() {
+  function resetFilters(options: { persist?: boolean } = {}) {
     shownOnly.value = []
     scopes.value = []
     query.value = ''
     presetName.value = ''
     showHidden.value = false
     alwaysHidden.value = []
-    return saveSetting('hiddenTypes', [])
+    return options.persist === false ? Promise.resolve() : saveSetting('hiddenTypes', [])
   }
 
   function toggleScope(key: string) {

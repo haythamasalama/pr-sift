@@ -80,3 +80,24 @@ describe('buildSplitRows', () => {
     expect(buildSplitRows(rows)[1]).toEqual({ full: null, left: null, right: 1 })
   })
 })
+
+describe('unusual file names and binary files', () => {
+  it('reads names that git quotes because of non-ASCII characters', () => {
+    const text =
+      'diff --git "a/docs/caf\\303\\251.md" "b/docs/caf\\303\\251.md"\nindex 1..2 100644\n--- "a/docs/caf\\303\\251.md"\n+++ "b/docs/caf\\303\\251.md"\n@@ -1 +1 @@\n-a\n+b\n'
+    expect(parseDiff(text, '/o/r/pull/1')[0]!.filename).toBe('docs/café.md')
+  })
+
+  it('takes the new name of a renamed file', () => {
+    const text = 'diff --git a/old.md b/new.md\nsimilarity index 100%\nrename from old.md\nrename to new.md\n'
+    expect(parseDiff(text, '/o/r/pull/1')[0]).toMatchObject({ filename: 'new.md', status: 'renamed' })
+  })
+
+  it('marks a binary file as changed when its content changes', () => {
+    const binary = (index: string) =>
+      `diff --git a/logo.png b/logo.png\nindex ${index} 100644\nBinary files a/logo.png and b/logo.png differ\n`
+    const first = parseDiff(binary('111..222'), '/o/r/pull/1')[0]!
+    const second = parseDiff(binary('111..333'), '/o/r/pull/1')[0]!
+    expect(first.hash).not.toBe(second.hash)
+  })
+})

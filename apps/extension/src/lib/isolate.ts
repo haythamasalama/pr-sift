@@ -5,7 +5,11 @@ export function isolateKeyboard(host: HTMLElement) {
     window.addEventListener(
       type,
       (e) => {
-        if (e.composedPath().includes(host)) e.preventDefault = () => {}
+        if (!e.composedPath().includes(host)) return
+        const cancel = e.preventDefault.bind(e)
+        e.preventDefault = () => {
+          if (e.currentTarget !== window && e.currentTarget !== document) cancel()
+        }
       },
       true,
     )

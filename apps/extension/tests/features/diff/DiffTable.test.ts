@@ -116,4 +116,10 @@ describe('DiffTable', () => {
       .trigger('click')
     expect(wrapper.findAll('tbody tr')).toHaveLength(601)
   })
+
+  it('shows a note on an unchanged line once in split view', () => {
+    const note: Note = { id: 'n1', file: 'a.php', side: 'new', line: 1, lineText: 'ctx', quote: '', text: 'only once', createdAt: 0 }
+    const { wrapper } = mountTable('split', [note])
+    expect(wrapper.text().split('only once')).toHaveLength(2)
+  })
 })

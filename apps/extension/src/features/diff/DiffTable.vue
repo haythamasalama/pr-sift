@@ -11,6 +11,7 @@ import NoteEditor from '../notes/NoteEditor.vue'
 import { Button } from '@/components/ui/button'
 
 const { filename, patch, mode } = defineProps<{ filename: string; patch: string; mode: DiffMode }>()
+const emit = defineEmits<{ editing: [value: boolean] }>()
 const ctx = useNotesContext()
 
 const LIMIT = 500
@@ -51,7 +52,7 @@ const notesByRow = computed(() => {
 })
 
 const notesFor = (...indexes: (number | null)[]) =>
-  indexes.filter((i): i is number => i !== null).flatMap((i) => notesByRow.value.get(i) ?? [])
+  [...new Set(indexes)].filter((i): i is number => i !== null).flatMap((i) => notesByRow.value.get(i) ?? [])
 
 interface Span {
   side: Note['side']
@@ -61,6 +62,10 @@ interface Span {
 
 const draft = shallowRef<(Span & { at: number; quote: string }) | null>(null)
 const active = shallowRef<Span | null>(null)
+watch(
+  () => active.value !== null || draft.value !== null,
+  (value) => emit('editing', value),
+)
 const drag = shallowRef<{ from: number } | null>(null)
 const floating = shallowRef<{ x: number; y: number; from: number; to: number; quote: string } | null>(null)
 const root = useTemplateRef<HTMLElement>('root')

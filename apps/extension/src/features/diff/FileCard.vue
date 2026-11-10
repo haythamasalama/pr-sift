@@ -23,6 +23,7 @@ watch(globalMode, () => (override.value = null))
 const el = useTemplateRef<HTMLElement>('el')
 const body = useTemplateRef<HTMLElement>('body')
 const seen = shallowRef(false)
+const editing = shallowRef(false)
 const measuredHeight = shallowRef(0)
 const collapsed = shallowRef(viewed)
 const expandCommand = useExpandCommand(cardsExpandKey)
@@ -61,7 +62,7 @@ onMounted(() => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
           seen.value = true
-        } else if (seen.value) {
+        } else if (seen.value && !editing.value) {
           measuredHeight.value = body.value?.offsetHeight ?? measuredHeight.value
           seen.value = false
         }
@@ -147,7 +148,7 @@ defineExpose({ reveal, flash, el })
 
     <template v-if="!collapsed">
       <div v-if="seen" ref="body">
-        <DiffTable v-if="file.patch" :filename="file.filename" :patch="file.patch" :mode="mode" />
+        <DiffTable v-if="file.patch" :filename="file.filename" :patch="file.patch" :mode="mode" @editing="editing = $event" />
         <p v-else class="p-4 text-xs text-muted-foreground">No inline diff available (binary, renamed without changes, or too large).</p>
       </div>
       <div v-else :style="{ height: (measuredHeight || estimatedHeight) + 'px' }" />

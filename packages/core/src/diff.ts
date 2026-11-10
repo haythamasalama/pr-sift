@@ -1,13 +1,52 @@
 import { hashText } from './hash'
 import type { DiffRow, PrFile } from './types'
 
+export function unquotePath(path: string): string {
+  if (!path.startsWith('"') || !path.endsWith('"')) return path
+  const bytes: number[] = []
+  const body = path.slice(1, -1)
+  const simple: Record<string, number> = { n: 10, t: 9, '"': 34, '\\': 92 }
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i]!
+    if (ch !== '\\') {
+      bytes.push(...new TextEncoder().encode(ch))
+      continue
+    }
+    const next = body[i + 1] ?? ''
+    if (/[0-7]/.test(next)) {
+      bytes.push(parseInt(body.slice(i + 1, i + 4), 8))
+      i += 3
+    } else {
+      bytes.push(simple[next] ?? next.charCodeAt(0))
+      i += 1
+    }
+  }
+  return new TextDecoder().decode(new Uint8Array(bytes))
+}
+
+function filenameOf(part: string): string {
+  const at = part.indexOf('\n@@')
+  const header = at === -1 ? part : part.slice(0, at)
+  const line = (pattern: RegExp) => {
+    const m = pattern.exec(header)
+    return m ? unquotePath(m[1]!.trim()) : null
+  }
+  const renamed = line(/^rename to (.+)$/m)
+  if (renamed) return renamed
+  const after = line(/^\+\+\+ (.+)$/m)
+  if (after && after !== '/dev/null') return after.replace(/^b\//, '')
+  const before = line(/^--- (.+)$/m)
+  if (before && before !== '/dev/null') return before.replace(/^a\//, '')
+  const first = header.split('\n')[0] ?? ''
+  const plain = /^a\/(.+?) b\/(.+)$/.exec(first)
+  return plain ? plain[2]! : first
+}
+
 export function parseDiff(text: string, base: string): PrFile[] {
   return text
     .split(/^diff --git /m)
     .slice(1)
     .map((part) => {
-      const firstLine = part.split('\n')[0] ?? ''
-      const head = /^a\/(.+?) b\/(.+)$/.exec(firstLine)
       const at = part.indexOf('\n@@')
       const patch = at === -1 ? '' : part.slice(at + 1).replace(/\n$/, '')
       let additions = 0
@@ -24,12 +63,12 @@ export function parseDiff(text: string, base: string): PrFile[] {
             ? 'renamed'
             : 'modified'
       return {
-        filename: head ? head[2]! : firstLine,
+        filename: filenameOf(part),
         status,
         additions,
         deletions,
         patch: patch || undefined,
-        hash: hashText(patch || `${status}:${additions}:${deletions}`),
+        hash: hashText(patch || (/^index (\S+)/m.exec(part)?.[1] ?? `${status}:${additions}:${deletions}`)),
         blob_url: base + '/files',
       }
     })
