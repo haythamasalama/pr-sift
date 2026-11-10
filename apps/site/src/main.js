@@ -2,12 +2,34 @@ import './style.css'
 
 const html = document.documentElement
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
-const themeButtons = document.querySelectorAll('[data-theme-mode]')
+const reduceMotionQuery = matchMedia('(prefers-reduced-motion: reduce)')
+const themeToggle = document.querySelector('[data-theme-toggle]')
+const THEMES = ['system', 'light', 'dark']
+const THEME_NAMES = { system: 'System', light: 'Light', dark: 'Dark' }
+const nextTheme = (mode) => THEMES[(THEMES.indexOf(mode) + 1) % THEMES.length]
 
 function applyTheme(mode) {
   html.dataset.theme = mode
   html.classList.toggle('dark', mode === 'dark' || (mode === 'system' && systemDark.matches))
-  for (const button of themeButtons) button.setAttribute('aria-pressed', String(button.dataset.themeMode === mode))
+  themeToggle?.setAttribute('aria-label', `Theme: ${THEME_NAMES[mode]}. Switch to ${THEME_NAMES[nextTheme(mode)]}`)
+}
+
+function revealTheme(mode, x, y) {
+  const change = () => {
+    saveTheme(mode)
+    applyTheme(mode)
+  }
+  if (reduceMotionQuery.matches || !document.startViewTransition) return change()
+  html.dataset.themeAnimate = ''
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
+  const transition = document.startViewTransition(change)
+  transition.ready.then(() =>
+    html.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+      { duration: 650, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', pseudoElement: '::view-transition-new(root)' },
+    ),
+  )
+  transition.finished.finally(() => delete html.dataset.themeAnimate)
 }
 
 function saveTheme(mode) {
@@ -23,12 +45,10 @@ applyTheme(html.dataset.theme || 'system')
 systemDark.addEventListener('change', () => {
   if (html.dataset.theme === 'system') applyTheme('system')
 })
-for (const button of themeButtons) {
-  button.addEventListener('click', () => {
-    saveTheme(button.dataset.themeMode)
-    applyTheme(button.dataset.themeMode)
-  })
-}
+themeToggle?.addEventListener('click', () => {
+  const box = themeToggle.getBoundingClientRect()
+  revealTheme(nextTheme(html.dataset.theme), box.left + box.width / 2, box.top + box.height / 2)
+})
 
 const menu = document.querySelector('[data-menu]')
 if (menu) {

@@ -3,7 +3,7 @@ export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
 
-export const SAME_MAKER_APPS = [
+export const SIBLING_APPS = [
   { logo: 'easyshoot', name: 'EasyShoot', about: 'Screenshot app for Mac', url: 'https://easyshoot.app/' },
   {
     logo: 'whatsapp-business-monitor',

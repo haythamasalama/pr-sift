@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SAME_MAKER_APPS, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/pr-sift/'
@@ -175,18 +175,19 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
     </nav>
   </header>`
 
-const themePicker = () => `<div role="group" aria-label="Theme" class="flex items-center gap-0.5 rounded-full bg-raised p-[3px]">
-        ${[
-          ['system', 'monitor', 'System'],
-          ['light', 'sun', 'Light'],
-          ['dark', 'moon', 'Dark'],
-        ]
-          .map(
-            ([mode, ic, label]) =>
-              `<button type="button" data-theme-mode="${mode}" aria-pressed="false" aria-label="${label} theme" title="${label}" class="flex h-[26px] w-[30px] items-center justify-center rounded-full text-muted transition-colors hover:text-ink">${icon(ic, 'size-[15px]')}</button>`,
-          )
-          .join('')}
-      </div>`
+const themeToggle =
+  () => `<button type="button" data-theme-toggle aria-label="Change theme" class="inline-flex h-9 items-center rounded-full bg-raised px-3.5 text-sm text-ink/80 transition-colors hover:text-ink">
+          ${[
+            ['system', 'monitor', 'System'],
+            ['light', 'sun', 'Light'],
+            ['dark', 'moon', 'Dark'],
+          ]
+            .map(
+              ([mode, ic, label]) =>
+                `<span data-theme-show="${mode}" class="items-center gap-2"><span data-theme-icon class="flex">${icon(ic, 'size-4')}</span>${label}</span>`,
+            )
+            .join('')}
+        </button>`
 
 const appLogo = (slug) =>
   readFileSync(here(`assets/apps/${slug}.svg`), 'utf8').replace('<svg ', '<svg class="size-9 shrink-0" aria-hidden="true" ')
@@ -225,12 +226,12 @@ function footer() {
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <div class="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 border-t border-line py-8">
         <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-          <p class="w-full text-sm text-muted sm:w-auto">From the same maker</p>
+          <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
           <ul class="flex flex-wrap items-center gap-x-8 gap-y-4">
-            ${SAME_MAKER_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+            ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3">${appLogo(app.logo)}<span class="flex flex-col"><span class="font-semibold leading-tight tracking-tight group-hover:underline group-hover:underline-offset-4">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
           </ul>
         </div>
-        ${themePicker()}
+        ${themeToggle()}
       </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
         <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
