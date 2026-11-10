@@ -241,18 +241,18 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           aria-orientation="vertical"
           aria-label="Resize sidebar"
           title="Drag to resize · double-click to reset"
-          class="absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize transition-colors hover:bg-primary/30"
-          :class="sidebarSize.dragging.value ? 'bg-primary/40' : ''"
+          class="group/resize absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize transition-colors hover:bg-emphasis/25"
+          :class="sidebarSize.dragging.value ? 'bg-emphasis/35' : ''"
           @pointerdown.prevent="sidebarSize.start"
           @dblclick="sidebarSize.set(DEFAULTS.sidebarWidth)"
-        />
+        >
+          <span
+            class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
+          />
+        </div>
         <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="p-2">
-            <TabsList class="w-full">
-              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
-            </TabsList>
-            <div class="relative mt-2 flex items-center">
+          <div class="flex flex-col gap-2 p-2">
+            <div class="relative flex items-center">
               <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
               <Input
                 v-model="filter.query.value"
@@ -271,6 +271,10 @@ watch(diffMode, (value) => saveSetting('diffView', value))
                 <X />
               </Button>
             </div>
+            <TabsList class="w-full">
+              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
+              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
+            </TabsList>
           </div>
           <TabsContent value="tree" class="min-h-0 flex-1">
             <FileTree
