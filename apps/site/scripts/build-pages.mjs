@@ -165,7 +165,7 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
         ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="whitespace-nowrap hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <a href="${REPO_URL}" class="inline-flex shrink-0 items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="hidden sm:inline">Star</span><span data-stars class="text-muted"></span></a>
+      <a href="${REPO_URL}" aria-label="Star PR Sift on GitHub" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span>Star</span><span data-stars class="text-muted empty:hidden"></span></a>
       <details data-menu class="relative md:hidden">
         <summary aria-label="Menu" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-line text-muted hover:text-ink [&::-webkit-details-marker]:hidden">${icon('menu', 'size-4')}</summary>
         <div class="absolute right-0 top-full mt-2 flex w-48 flex-col rounded-lg border border-line bg-paper p-1.5 shadow-lg">
