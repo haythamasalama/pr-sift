@@ -10,6 +10,18 @@ pnpm check      # must pass before you open a pull request
 pnpm build      # then load apps/extension as an unpacked extension to try changes
 ```
 
+## Project layout
+
+```
+apps/extension    the Chrome extension (Vue 3, Vite, Tailwind, shadcn-vue)
+apps/site         the website
+packages/core     diff parsing, file tree, smart filters, notes. No browser APIs
+tools/capture     screenshots, videos, social image and store images
+```
+
+Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). `packages/core` is the easiest place to begin. Using an AI
+coding agent? [AGENTS.md](AGENTS.md) and `.claude/skills` hold the project's rules.
+
 ## Guidelines
 
 - **Tests.** Add or update tests with every behavior change. Pure logic goes in `packages/core` with unit tests;
