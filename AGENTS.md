@@ -16,9 +16,9 @@ pnpm build      # builds apps/extension/dist; load apps/extension as an unpacked
 - Feature code goes in `apps/extension/src/features/<feature>` with tests in `apps/extension/tests/features/<feature>`.
 - Use shadcn-vue components and semantic color tokens. No raw colors, no `space-y-*`.
 - Comments only for a non-obvious reason. No comments that restate the code.
-- Never add Claude, Co-Authored-By or generated-by lines to commits or pull requests.
+- Commits follow Conventional Commits (`.claude/skills/commit`). Short subjects, no AI attribution lines.
 - Do not send data to third-party hosts. No remote fonts, analytics or CDNs (see `PRIVACY.md`).
 
 ## Skills
 
-Task guides live in `.claude/skills/`: `add-ui-component`, `add-feature`, `shadow-dom-rules`, `release`.
+Task guides live in `.claude/skills/`: `commit`, `add-ui-component`, `add-feature`, `shadow-dom-rules`, `release`.
