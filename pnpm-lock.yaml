@@ -7,10 +7,43 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^10.0.1
+        version: 10.0.1(eslint@10.14.0(jiti@2.7.0))
+      eslint:
+        specifier: ^10.14.0
+        version: 10.14.0(jiti@2.7.0)
+      eslint-config-prettier:
+        specifier: ^10.1.8
+        version: 10.1.8(eslint@10.14.0(jiti@2.7.0))
+      eslint-plugin-vue:
+        specifier: ^10.12.0
+        version: 10.12.0(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3))(eslint@10.14.0(jiti@2.7.0))(vue-eslint-parser@10.4.2(eslint@10.14.0(jiti@2.7.0)))
+      globals:
+        specifier: ^17.14.0
+        version: 17.14.0
+      prettier:
+        specifier: ^3.9.10
+        version: 3.9.10
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.72.1
+        version: 8.72.1(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)
+      vue-eslint-parser:
+        specifier: ^10.4.2
+        version: 10.4.2(eslint@10.14.0(jiti@2.7.0))
+
+  apps/extension:
     dependencies:
       '@lucide/vue':
         specifier: ^1.70.0
         version: 1.70.0(vue@3.5.45(typescript@5.9.3))
+      '@pr-sift/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@vueuse/core':
         specifier: ^15.0.0
         version: 15.0.0(vue@3.5.45(typescript@5.9.3))
@@ -36,9 +69,6 @@ importers:
         specifier: ^3.5.45
         version: 3.5.45(typescript@5.9.3)
     devDependencies:
-      '@eslint/js':
-        specifier: ^10.0.1
-        version: 10.0.1(eslint@10.14.0(jiti@2.7.0))
       '@tailwindcss/vite':
         specifier: ^4.3.5
         version: 4.3.5(vite@8.3.6(@types/node@26.6.6)(jiti@2.7.0)(stylus@0.57.0))
@@ -57,45 +87,30 @@ importers:
       '@vue/test-utils':
         specifier: ^2.5.1
         version: 2.5.1(@vue/compiler-dom@3.5.45)(@vue/server-renderer@3.5.45)(vue@3.5.45(typescript@5.9.3))
-      eslint:
-        specifier: ^10.14.0
-        version: 10.14.0(jiti@2.7.0)
-      eslint-config-prettier:
-        specifier: ^10.1.8
-        version: 10.1.8(eslint@10.14.0(jiti@2.7.0))
-      eslint-plugin-vue:
-        specifier: ^10.12.0
-        version: 10.12.0(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3))(eslint@10.14.0(jiti@2.7.0))(vue-eslint-parser@10.4.2(eslint@10.14.0(jiti@2.7.0)))
-      globals:
-        specifier: ^17.14.0
-        version: 17.14.0
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
-      prettier:
-        specifier: ^3.9.10
-        version: 3.9.10
       tailwindcss:
         specifier: ^4.3.5
         version: 4.3.5
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.72.1
-        version: 8.72.1(eslint@10.14.0(jiti@2.7.0))(typescript@5.9.3)
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@26.6.6)(jiti@2.7.0)(stylus@0.57.0)
       vitest:
         specifier: ^5.1.0
         version: 5.1.0(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(happy-dom@21.0.4)(vite@8.3.6(@types/node@26.6.6)(jiti@2.7.0)(stylus@0.57.0))
-      vue-eslint-parser:
-        specifier: ^10.4.2
-        version: 10.4.2(eslint@10.14.0(jiti@2.7.0))
       vue-tsc:
         specifier: ^3.3.14
         version: 3.3.14(typescript@5.9.3)
+
+  packages/core:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(@vitest/coverage-v8@5.1.0)(happy-dom@21.0.4)(vite@8.3.6(@types/node@26.6.6)(jiti@2.7.0)(stylus@0.57.0))
 
 packages:
 

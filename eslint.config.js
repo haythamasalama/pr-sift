@@ -5,7 +5,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', '.playwright-mcp', 'src/components/ui/**'] },
+  { ignores: ['dist', 'node_modules', 'coverage', '.playwright-mcp', 'apps/extension/src/components/ui/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...vue.configs['flat/recommended'],
@@ -23,9 +23,9 @@ export default tseslint.config(
   },
   {
     // highlight.js escapes the code it returns, so rendering it with v-html is safe here.
-    files: ['src/content/components/DiffTable.vue'],
+    files: ['**/DiffTable.vue'],
     rules: { 'vue/no-v-html': 'off' },
   },
-  { files: ['*.config.{js,ts}', 'scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
+  { files: ['**/*.config.{js,ts}', '**/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
   prettier,
 )
