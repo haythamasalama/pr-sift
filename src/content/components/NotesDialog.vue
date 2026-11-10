@@ -125,13 +125,7 @@ function clear() {
             <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
           </header>
 
-          <blockquote
-            v-if="n.quote"
-            class="line-clamp-2 rounded-md border-l-2 border-amber-500 bg-muted px-2 py-1 font-mono text-[11px] break-all text-muted-foreground"
-            :title="n.quote"
-          >
-            {{ n.quote }}
-          </blockquote>
+          <p v-if="n.quote" class="truncate font-mono text-xs text-muted-foreground" :title="n.quote">{{ n.quote }}</p>
 
           <div v-if="editingId === n.id" class="flex flex-col gap-2">
             <Textarea

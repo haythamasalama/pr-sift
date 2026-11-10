@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { AlertCircle, CheckCircle2, FolderTree, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -103,6 +103,20 @@ async function doRefresh() {
 }
 
 const allReviewed = computed(() => filter.inScope.value.length === 0 && filter.viewedInView.value.length > 0)
+
+async function goToFile(name: string) {
+  const shown = () => filter.inScope.value.some((f) => f.filename === name)
+  if (!shown()) {
+    await filter.resetFilters()
+    if (!shown()) {
+      filter.reviewMode.value = false
+      filter.showHidden.value = true
+    }
+    await nextTick()
+  }
+  await nextTick()
+  await list.value?.scrollTo(name)
+}
 
 function jumpToFolder(path: string) {
   if (path) list.value?.scrollToFolder(path)
@@ -267,7 +281,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
               "
               @select-file="
                 (name) => {
-                  list?.scrollTo(name)
+                  goToFile(name)
                   sidebarOpen = false
                 }
               "
@@ -321,7 +335,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @jump="
         (file) => {
           notesOpen = false
-          list?.scrollTo(file)
+          goToFile(file)
         }
       "
     />
