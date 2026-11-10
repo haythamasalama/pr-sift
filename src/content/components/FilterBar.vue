@@ -153,48 +153,58 @@ const chipClass = (chip: ExtChip) => [
       </template>
     </div>
 
-    <div class="ml-auto flex flex-wrap items-center gap-1">
-      <Button variant="ghost" size="icon-sm" title="Expand all files" aria-label="Expand all files" @click="emit('expandCards')"
-        ><ChevronsUpDown
-      /></Button>
-      <Button variant="ghost" size="icon-sm" title="Collapse all files" aria-label="Collapse all files" @click="emit('collapseCards')"
-        ><ChevronsDownUp
-      /></Button>
-      <Separator orientation="vertical" class="mx-1 h-5" />
-      <div class="mr-2 flex items-center gap-2" title="Show files hidden by your rules (lock files, minified files…)">
-        <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
-        <Label for="show-hidden" class="text-xs font-normal whitespace-nowrap text-muted-foreground">Hidden ({{ hiddenCount }})</Label>
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2 text-xs">
+      <div class="flex items-center">
+        <Button variant="ghost" size="icon-xs" title="Expand all files" aria-label="Expand all files" @click="emit('expandCards')"
+          ><ChevronsUpDown
+        /></Button>
+        <Button variant="ghost" size="icon-xs" title="Collapse all files" aria-label="Collapse all files" @click="emit('collapseCards')"
+          ><ChevronsDownUp
+        /></Button>
       </div>
-      <div class="mr-1 flex items-center gap-2" title="Files disappear from the list and the tree as soon as you mark them viewed">
-        <Switch id="hide-viewed" v-model="reviewMode" />
-        <Label for="hide-viewed" class="text-xs font-normal whitespace-nowrap">Hide viewed</Label>
+      <Separator orientation="vertical" class="hidden h-4 sm:block" />
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5" title="Show files hidden by your rules (lock files, minified files…)">
+          <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
+          <Label for="show-hidden" class="text-xs font-normal whitespace-nowrap text-muted-foreground">Hidden ({{ hiddenCount }})</Label>
+        </div>
+        <div class="flex items-center gap-1.5" title="Files disappear from the list and the tree as soon as you mark them viewed">
+          <Switch id="hide-viewed" v-model="reviewMode" />
+          <Label for="hide-viewed" class="text-xs font-normal whitespace-nowrap">Hide viewed</Label>
+        </div>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        :title="`Mark the ${listedCount} files in this view as viewed`"
-        :disabled="!listedCount"
-        @click="emit('markListed')"
-      >
-        <CheckCheck /> Mark all
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        :title="`Bring back the ${viewedInViewCount} viewed files in this view`"
-        :disabled="!viewedInViewCount"
-        @click="emit('unmarkViewed')"
-      >
-        <Undo2 /> Restore {{ viewedInViewCount || '' }}
-      </Button>
-      <Button
-        :variant="confirmClear ? 'destructive' : 'ghost'"
-        size="sm"
-        title="Clear every viewed mark in this pull request"
-        @click="clearAll"
-      >
-        <RotateCcw /> {{ confirmClear ? 'Click again' : 'Clear viewed' }}
-      </Button>
+      <Separator orientation="vertical" class="hidden h-4 sm:block" />
+      <div class="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="xs"
+          class="h-7 px-2 text-xs"
+          :title="`Mark the ${listedCount} files in this view as viewed`"
+          :disabled="!listedCount"
+          @click="emit('markListed')"
+        >
+          <CheckCheck /> Mark all
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          class="h-7 px-2 text-xs"
+          :title="`Bring back the ${viewedInViewCount} viewed files in this view`"
+          :disabled="!viewedInViewCount"
+          @click="emit('unmarkViewed')"
+        >
+          <Undo2 /> Restore{{ viewedInViewCount ? ` ${viewedInViewCount}` : '' }}
+        </Button>
+        <Button
+          :variant="confirmClear ? 'destructive' : 'ghost'"
+          size="xs"
+          class="h-7 px-2 text-xs"
+          title="Clear every viewed mark in this pull request"
+          @click="clearAll"
+        >
+          <RotateCcw /> {{ confirmClear ? 'Click again' : 'Clear viewed' }}
+        </Button>
+      </div>
     </div>
   </div>
 </template>
