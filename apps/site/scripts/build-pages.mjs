@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, MORE_APPS, REPO_URL, SITE_URL, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/pr-sift/'
@@ -179,12 +179,15 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
     </nav>
   </header>`
 
+const SIGNATURE = readFileSync(here('assets/haythamasalama-signature.svg'), 'utf8').replace('<svg ', '<svg class="h-[22px] w-11" ')
+
 function footer() {
   const column = (title, items) =>
     `<div><p class="text-sm font-medium">${title}</p><ul class="mt-4 flex flex-col gap-2.5 text-sm text-muted">${items.map(([label, href]) => `<li><a href="${href}" class="hover:text-ink">${esc(label)}</a></li>`).join('')}</ul></div>`
+  const legal = 'px-3 leading-none text-ink/80 hover:text-ink'
   return `<footer class="border-t border-line">
-    <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(4,1fr)]">
-      <div>
+    <div class="mx-auto grid max-w-6xl grid-cols-2 gap-10 px-4 py-14 sm:px-6 md:grid-cols-3 lg:grid-cols-[1.3fr_repeat(5,1fr)]">
+      <div class="col-span-2 md:col-span-3 lg:col-span-1">
         <a href="${link()}" class="flex items-center gap-2 font-semibold">${logo('size-6')}PR Sift</a>
         <p class="mt-4 max-w-56 text-sm leading-relaxed text-muted">Review large GitHub pull requests without the noise.</p>
       </div>
@@ -192,7 +195,6 @@ function footer() {
         ['Private notes', link() + '#notes'],
         ['Features', link() + '#features'],
         ['Changelog', link('changelog/')],
-        ['Privacy', link('privacy/')],
       ])}
       ${column(
         'Guides',
@@ -205,11 +207,22 @@ function footer() {
         ['Brand', link('brand/')],
         ['Sitemap', link('sitemap.xml')],
       ])}
+      <div>
+        <p class="text-sm font-medium">More apps</p>
+        <ul class="mt-4 flex flex-col gap-3 text-sm">
+          ${MORE_APPS.map((app) => `<li><a href="${app.url}" class="group flex flex-col gap-0.5"><span class="text-muted group-hover:text-ink">${esc(app.name)}</span><span class="text-xs text-muted/80">${esc(app.about)}</span></a></li>`).join('')}
+        </ul>
+      </div>
     </div>
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-t border-line py-6 text-sm text-muted">
-        <span>© ${YEAR} PR Sift. <a href="${REPO_URL}/blob/main/LICENSE" class="hover:text-ink">PolyForm Shield license</a>.</span>
-        <span>Made by <a href="${AUTHOR.url}" class="text-ink hover:underline">${AUTHOR.name}</a></span>
+      <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
+        <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
+        <nav aria-label="Legal" class="-ml-3 flex items-center">
+          <a href="${link('privacy/')}" class="${legal}">Privacy Policy</a>
+          <a href="${REPO_URL}/blob/main/LICENSE" class="border-l border-line ${legal}">License</a>
+          <a href="${AUTHOR.x}" aria-label="${AUTHOR.name} on X" title="X" class="ml-2 flex size-8 items-center justify-center rounded-full bg-raised text-ink/80 hover:text-ink">${brandIcon('x', 'size-3.5')}</a>
+          <a href="${AUTHOR.url}" rel="author" aria-label="${AUTHOR.name}" title="${AUTHOR.name}" class="signature ml-4">${SIGNATURE}</a>
+        </nav>
       </div>
     </div>
   </footer>`

@@ -62,6 +62,15 @@ html[data-theme='dark'] [data-theme-mode='dark'] {
   color: var(--ink);
 }
 
+/* His brand allows the signature only in pure black or pure white, so it skips the ink token. */
+.signature {
+  color: #000;
+}
+
+.dark .signature {
+  color: #fff;
+}
+
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;

@@ -1,7 +1,16 @@
 export const SITE_URL = 'https://haythamasalama.github.io/pr-sift/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
-export const AUTHOR = { name: 'Haytham Salama', url: 'https://haythamasalama.me/' }
+export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
+
+export const MORE_APPS = [
+  { name: 'EasyShoot', about: 'Screenshot app for Mac', url: 'https://easyshoot.app/' },
+  {
+    name: 'WhatsApp Business Monitor',
+    about: 'Open-source WhatsApp dashboard',
+    url: 'https://github.com/haythamasalama/whatsapp-business-monitor',
+  },
+]
 
 export const home = {
   title: 'PR Sift: review large GitHub pull requests without the noise',
