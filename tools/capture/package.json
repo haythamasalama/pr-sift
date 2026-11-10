@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Generates the screenshots, videos, social image and store images from a demo pull request.",
+  "author": "Haytham A. Salama (https://haythamasalama.me/)",
+  "license": "PolyForm-Shield-1.0.0",
   "scripts": {
     "capture": "node capture.mjs && node cards.mjs",
     "cards": "node cards.mjs"

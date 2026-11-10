@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Pure review logic for PR Sift: diff parsing, file tree, smart scopes, notes and line ranges. No DOM, no browser APIs.",
+  "author": "Haytham A. Salama (https://haythamasalama.me/)",
   "license": "PolyForm-Shield-1.0.0",
   "exports": {
     ".": "./src/index.ts",
