@@ -47,7 +47,7 @@ Not affiliated with GitHub.
 | Category           | Developer Tools                                                             |
 | Language           | English                                                                     |
 | Store icon         | `apps/extension/icons/icon-128.png`                                         |
-| Screenshots        | `media/store/screenshot-1-review.jpg` to `screenshot-5-dark.jpg` (1280x800) |
+| Screenshots        | `media/store/screenshot-1-review.png` to `screenshot-5-dark.png` (1280x800) |
 | Small promo tile   | `media/store/promo-small-440x280.png`                                       |
 | Marquee promo tile | `media/store/promo-marquee-1400x560.png`                                    |
 | Homepage URL       | https://pr-sift.haythamasalama.me/                                          |
