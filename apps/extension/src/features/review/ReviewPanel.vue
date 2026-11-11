@@ -251,8 +251,8 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           />
         </div>
         <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="border-b p-2">
-            <div class="relative flex items-center">
+          <div class="flex items-center gap-2 border-b p-2">
+            <div class="relative flex min-w-0 flex-1 items-center">
               <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
               <Input
                 v-model="filter.query.value"
@@ -271,11 +271,9 @@ watch(diffMode, (value) => saveSetting('diffView', value))
                 <X />
               </Button>
             </div>
-          </div>
-          <div class="p-2 pb-1">
-            <TabsList class="w-full">
-              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
+            <TabsList class="shrink-0">
+              <TabsTrigger value="tree" aria-label="Tree" title="Tree"><FolderTree /></TabsTrigger>
+              <TabsTrigger value="smart" aria-label="Smart filters" title="Smart filters"><Sparkles /></TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="tree" class="min-h-0 flex-1">
