@@ -3,7 +3,7 @@
   "name": "PR Sift",
   "version": "0.1.0",
   "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
-  "homepage_url": "https://haythamasalama.github.io/pr-sift/",
+  "homepage_url": "https://pr-sift.haythamasalama.me/",
   "permissions": ["storage"],
   "host_permissions": ["https://api.github.com/*", "https://github.com/*", "https://patch-diff.githubusercontent.com/*"],
   "background": {

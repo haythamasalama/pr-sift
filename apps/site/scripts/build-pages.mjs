@@ -5,7 +5,7 @@ import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
 import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
-const BASE = process.env.SITE_BASE ?? '/pr-sift/'
+const BASE = process.env.SITE_BASE ?? '/'
 const link = (path = '') => (/^https?:/.test(path) ? path : BASE + path)
 const media = (path) => `${BASE}media/${path}`
 const esc = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')

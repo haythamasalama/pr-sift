@@ -7,7 +7,7 @@
 <p align="center"><strong>Review large GitHub pull requests without the noise.</strong></p>
 
 <p align="center">
-  <a href="https://haythamasalama.github.io/pr-sift/">Website</a> ·
+  <a href="https://pr-sift.haythamasalama.me/">Website</a> ·
   <a href="#install">Install</a> ·
   <a href="docs/USAGE.md">Guide</a> ·
   <a href="https://github.com/haythamasalama/pr-sift/issues/new/choose">Report a problem</a>
@@ -50,7 +50,7 @@ Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post
 - 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
 - 🌓 Light, dark or system theme
 
-See them all on the [website](https://haythamasalama.github.io/pr-sift/).
+See them all on the [website](https://pr-sift.haythamasalama.me/).
 
 ## Install
 
@@ -76,7 +76,7 @@ no server, account or analytics. A GitHub token is optional. Details in [PRIVACY
 
 ## Contributing
 
-- 🌐 How it works: the [website](https://haythamasalama.github.io/pr-sift/)
+- 🌐 How it works: the [website](https://pr-sift.haythamasalama.me/)
 - 🛠️ How to help: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
