@@ -11,7 +11,7 @@ const kinds: Record<string, { path: string; class: string }> = {
     path: 'M8 4a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5A.75.75 0 0 1 8 4Z',
     class: 'text-add-fg',
   },
-  modified: { path: 'M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', class: 'text-amber-600 dark:text-amber-400' },
+  modified: { path: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z', class: 'text-amber-600 dark:text-amber-400' },
   removed: { path: 'M4.25 7.25h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5Z', class: 'text-del-fg' },
   renamed: {
     path: 'M8.47 4.97a.75.75 0 0 1 1.06 0l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 1 1-1.06-1.06l1.22-1.22H4.75a.75.75 0 0 1 0-1.5h4.94L8.47 6.03a.75.75 0 0 1 0-1.06Z',
