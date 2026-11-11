@@ -14,7 +14,7 @@ function htmlFiles(dir: string): string[] {
 
 export default defineConfig({
   root,
-  base: process.env.SITE_BASE ?? '/pr-sift/',
+  base: process.env.SITE_BASE ?? '/',
   publicDir: resolve(import.meta.dirname, 'public'),
   plugins: [tailwindcss()],
   build: {

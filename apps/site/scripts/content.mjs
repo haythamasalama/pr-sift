@@ -1,4 +1,4 @@
-export const SITE_URL = 'https://haythamasalama.github.io/pr-sift/'
+export const SITE_URL = 'https://pr-sift.haythamasalama.me/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = `${REPO_URL}#install`
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }

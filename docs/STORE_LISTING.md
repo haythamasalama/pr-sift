@@ -50,7 +50,7 @@ Not affiliated with GitHub.
 | Screenshots        | `media/store/screenshot-1-review.jpg` to `screenshot-5-dark.jpg` (1280x800) |
 | Small promo tile   | `media/store/promo-small-440x280.png`                                       |
 | Marquee promo tile | `media/store/promo-marquee-1400x560.png`                                    |
-| Homepage URL       | https://haythamasalama.github.io/pr-sift/                                   |
+| Homepage URL       | https://pr-sift.haythamasalama.me/                                          |
 | Support URL        | https://github.com/haythamasalama/pr-sift/issues                            |
 
 ## Privacy tab
@@ -76,7 +76,7 @@ Helps people review large GitHub pull requests: filter changed files, track view
 and sent only to `api.github.com`. Then tick all three certifications (not sold, not used for unrelated purposes, not
 used for creditworthiness).
 
-**Privacy policy URL:** https://haythamasalama.github.io/pr-sift/privacy/
+**Privacy policy URL:** https://pr-sift.haythamasalama.me/privacy/
 
 ## Distribution tab
 
