@@ -1,7 +1,7 @@
 {
   "name": "@pr-sift/site",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "The PR Sift website: a static, SEO-friendly site for GitHub Pages.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",

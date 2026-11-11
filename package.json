@@ -1,7 +1,7 @@
 {
   "name": "pr-sift-workspace",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",
