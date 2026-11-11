@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RefreshCw, Sparkles } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,8 +58,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="ps-root" :class="{ dark }">
-    <Button v-if="dead && pr" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="reload">
-      PR Sift was updated — reload the page
+    <Button
+      v-if="dead && pr"
+      variant="emphasis"
+      class="fixed right-5 bottom-5 z-30 h-10 gap-2.5 rounded-full pr-1.5 pl-4 shadow-lg"
+      @click="reload"
+    >
+      <Sparkles />
+      <span>A new version of PR Sift is ready</span>
+      <span class="inline-flex h-7 items-center gap-1.5 rounded-full bg-emphasis-foreground px-3 text-xs font-semibold text-emphasis">
+        <RefreshCw class="size-3.5" /> Reload
+      </span>
     </Button>
     <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
       <BrandMark /> PR Sift
