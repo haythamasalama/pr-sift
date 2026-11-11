@@ -39,7 +39,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 </script>
 
 <template>
-  <header class="flex items-center gap-2 border-b bg-muted px-3 py-2 sm:gap-3 sm:px-4">
+  <header class="flex items-center gap-2 border-b bg-sidebar px-3 py-2 sm:gap-3 sm:px-4">
     <Button
       v-if="compact"
       variant="outline"
@@ -101,6 +101,11 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       >
     </ToggleGroup>
 
+    <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
+      <NotebookPen /><span class="hidden xl:inline">Notes</span>
+      <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
+    </Button>
+
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
         <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Theme" title="Theme">
@@ -130,10 +135,6 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       <Bug />
     </Button>
 
-    <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
-      <NotebookPen /><span class="hidden xl:inline">Notes</span>
-      <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
-    </Button>
     <Button variant="ghost" size="icon-sm" class="shrink-0" aria-label="Close" @click="emit('close')"><X /></Button>
   </header>
 </template>

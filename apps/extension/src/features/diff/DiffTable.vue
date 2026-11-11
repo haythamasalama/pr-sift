@@ -16,6 +16,9 @@ const ctx = useNotesContext()
 
 const LIMIT = 500
 const rows = computed(() => parsePatch(patch))
+const hasOld = computed(() => rows.value.some((row) => row.oldNo !== ''))
+const hasNew = computed(() => rows.value.some((row) => row.newNo !== ''))
+const unifiedColumns = computed(() => 3 + Number(hasOld.value) + Number(hasNew.value))
 const splitRows = computed(() => buildSplitRows(rows.value))
 const highlighted = shallowRef<Map<number, string>>(new Map())
 let cancelIdle: (() => void) | null = null
@@ -172,7 +175,7 @@ const isActive = (index: number | null) => {
   const a = span && index !== null ? anchorOf(rows.value[index]!) : null
   return !!span && !!a && a.side === span.side && a.line >= span.start && a.line <= span.end
 }
-const lit = 'bg-amber-500/25!'
+const lit = 'diff-selected'
 
 const rowClass: Record<DiffRow['kind'], string> = {
   add: 'bg-add-bg',
@@ -185,11 +188,9 @@ const sign = { add: '+', del: '−', ctx: '', hunk: '', note: '' }
 
 function cellClass(index: number | null, side: 'left' | 'right') {
   if (index === null) return 'bg-muted'
-  if (isActive(index)) return lit
   const kind = rows.value[index]!.kind
-  if (side === 'left' && kind === 'del') return 'bg-del-bg'
-  if (side === 'right' && kind === 'add') return 'bg-add-bg'
-  return ''
+  const base = side === 'left' && kind === 'del' ? 'bg-del-bg' : side === 'right' && kind === 'add' ? 'bg-add-bg' : ''
+  return isActive(index) ? `${base} ${lit}` : base
 }
 </script>
 
@@ -199,11 +200,12 @@ function cellClass(index: number | null, side: 'left' | 'right') {
       <tbody>
         <template v-for="(row, i) in visibleRows" :key="i">
           <tr :data-i="i" class="group" :class="[rowClass[row.kind], isActive(i) ? lit : '']">
-            <td class="w-6 px-0.5 text-center select-none">
+            <td class="w-5 pr-0 pl-1 text-center select-none">
               <Button
                 v-if="anchorOf(row)"
+                variant="emphasis"
                 size="icon-xs"
-                class="size-4 invisible group-hover:visible"
+                class="size-4 rounded-full invisible group-hover:visible"
                 title="Add a private note"
                 aria-label="Add a private note"
                 @mousedown.prevent="startDrag(i)"
@@ -212,21 +214,21 @@ function cellClass(index: number | null, side: 'left' | 'right') {
                 <Plus />
               </Button>
             </td>
-            <td class="w-px min-w-10 px-2 text-right text-muted-foreground select-none">{{ row.oldNo }}</td>
-            <td class="w-px min-w-10 px-2 text-right text-muted-foreground select-none">{{ row.newNo }}</td>
+            <td v-if="hasOld" class="w-px min-w-8 px-1.5 text-right text-muted-foreground select-none">{{ row.oldNo }}</td>
+            <td v-if="hasNew" class="w-px min-w-8 px-1.5 text-right text-muted-foreground select-none">{{ row.newNo }}</td>
             <td class="w-4 text-center select-none" :class="row.kind === 'add' ? 'text-add-fg' : 'text-del-fg'">{{ sign[row.kind] }}</td>
             <td v-if="highlighted.has(i)" class="pr-3 whitespace-pre" v-html="highlighted.get(i)" />
             <td v-else class="pr-3 whitespace-pre">{{ row.text }}</td>
           </tr>
           <tr v-for="n in notesFor(i)" :key="n.id">
-            <td colspan="5" class="p-0">
+            <td :colspan="unifiedColumns" class="p-0">
               <div class="sticky left-0" :style="{ width: viewport }">
                 <NoteBox :note="n" :rows="rows" @range="active = $event ? { side: n.side, ...$event } : null" />
               </div>
             </td>
           </tr>
           <tr v-if="draftHere(i) && draft">
-            <td colspan="5" class="p-0">
+            <td :colspan="unifiedColumns" class="p-0">
               <div class="sticky left-0" :style="{ width: viewport }">
                 <NoteEditor
                   :quote="draft.quote"
@@ -266,8 +268,9 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               <span :class="row.left !== null ? 'group-hover/l:invisible' : ''">{{ row.left !== null ? rows[row.left]!.oldNo : '' }}</span>
               <Button
                 v-if="row.left !== null"
+                variant="emphasis"
                 size="icon-xs"
-                class="size-4 invisible absolute inset-y-0 right-1 my-auto group-hover/l:visible"
+                class="size-4 rounded-full invisible absolute inset-y-0 right-1 my-auto group-hover/l:visible"
                 title="Add a private note"
                 aria-label="Add a private note"
                 @mousedown.prevent="startDrag(row.left)"
@@ -296,8 +299,9 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               }}</span>
               <Button
                 v-if="row.right !== null"
+                variant="emphasis"
                 size="icon-xs"
-                class="size-4 invisible absolute inset-y-0 right-1 my-auto group-hover/r:visible"
+                class="size-4 rounded-full invisible absolute inset-y-0 right-1 my-auto group-hover/r:visible"
                 title="Add a private note"
                 aria-label="Add a private note"
                 @mousedown.prevent="startDrag(row.right)"

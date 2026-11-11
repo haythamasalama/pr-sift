@@ -173,7 +173,7 @@ const card = (page, file) => page.locator(`section[data-file="${file}"]`)
 const row = (page, file, newLine) =>
   card(page, file)
     .locator('tr[data-i]')
-    .filter({ has: page.locator('td:nth-child(3)', { hasText: new RegExp(`^${newLine}$`) }) })
+    .filter({ has: page.locator('td:nth-last-child(3)', { hasText: new RegExp(`^${newLine}$`) }) })
 
 const folderViewed = (page, name) =>
   page
@@ -506,18 +506,12 @@ const filterBar = (page) => chip(page, '.php').locator('xpath=ancestor::div[2]')
 
 async function dragNote(page, file, from, to, text) {
   await card(page, file).scrollIntoViewIfNeeded()
-  await camera(
-    page,
-    row(page, file, Math.round((from + to) / 2))
-      .locator('td')
-      .nth(2),
-    1.8,
-  )
-  await glide(page, row(page, file, from).locator('td').nth(3), { click: false })
+  await camera(page, row(page, file, Math.round((from + to) / 2)).locator('td:nth-last-child(3)'), 1.8)
+  await glide(page, row(page, file, from).locator('td:nth-last-child(2)'), { click: false })
   const plus = await row(page, file, from).getByRole('button', { name: 'Add a private note' }).boundingBox()
   await page.mouse.move(plus.x + plus.width / 2, plus.y + plus.height / 2, { steps: 10 })
   await page.mouse.down()
-  const end = await row(page, file, to).locator('td').nth(3).boundingBox()
+  const end = await row(page, file, to).locator('td:nth-last-child(2)').boundingBox()
   await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 28 })
   await page.mouse.up()
   await pause(page, 500)

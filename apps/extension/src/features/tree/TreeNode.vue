@@ -69,7 +69,6 @@ function jump() {
         <ChevronRight :size="14" class="transition-transform" :class="open ? 'rotate-90' : ''" />
       </button>
       <Checkbox
-        class="transition-opacity data-[state=unchecked]:opacity-0 group-hover:data-[state=unchecked]:opacity-100"
         title="Mark the whole folder as viewed"
         :model-value="viewedState === 'all' ? true : viewedState === 'some' ? 'indeterminate' : false"
         @click.stop

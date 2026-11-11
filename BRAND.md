@@ -85,6 +85,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `accent`              | `#eaeef2`             | `#262c36`                            |
 | `border` / `input`    | `#d1d9e0`             | `#3d444d`                            |
 | `ring` (focus)        | `#0969da`             | `#1f6feb`                            |
+| `emphasis` (blue)     | `#0969da`             | `#1f6feb`                            |
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
@@ -96,6 +97,16 @@ Syntax colours also follow GitHub (keyword `#cf222e` / `#ff7b72`, entity `#8250d
 `#79c0ff`, string `#0a3069` / `#a5d6ff`, comment `#6e7781` / `#8b949e`, tag `#116329` / `#7ee787`).
 
 In extension code use the shadcn-vue semantic tokens (`bg-background`, `text-muted-foreground`), never raw colours.
+`primary` is neutral to match the brand. GitHub's blue (`emphasis`, the Button `emphasis` variant) is kept for the
+places GitHub itself uses blue: the add-note button on a diff line, the sidebar resize handle and the progress ring
+(blue while files are left, `success` green when all are viewed).
+
+- `sidebar` (`#ffffff` light, `#010409` dark) is the panel chrome: the top bar, the filter bar and the sidebar. The
+  file list sits on `background`, so the chrome and the content read as two layers.
+- `selected` (`rgb(212 167 44 / .28)` light, `rgb(187 128 9 / .3)` dark) marks the lines of a note range. It is
+  painted over the diff colours, never instead of them.
+- The radius scale comes from `--radius` (10 px) on `:root` and `:host`. Controls use the shadcn sizes, which give
+  8 px for small buttons and toggles and 10 px for inputs and default buttons. Don't override corners per component.
 
 ### Social cards
 

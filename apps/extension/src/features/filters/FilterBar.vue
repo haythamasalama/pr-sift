@@ -79,7 +79,7 @@ const chipClass = (chip: ExtChip) => [
 </script>
 
 <template>
-  <div class="flex flex-wrap items-start gap-x-3 gap-y-2 border-b bg-background px-3 py-2 sm:px-4">
+  <div class="flex flex-wrap items-start gap-x-3 gap-y-2 border-b bg-sidebar px-3 py-2 sm:px-4">
     <div class="flex min-w-0 flex-1 basis-[22rem] flex-wrap items-center gap-1">
       <span class="mr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Types</span>
       <Button
@@ -137,7 +137,7 @@ const chipClass = (chip: ExtChip) => [
       </Button>
 
       <template v-if="statusChips.length">
-        <Separator orientation="vertical" class="mx-1.5 h-4" />
+        <Separator orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
         <Button
           v-for="c in statusChips"
           :key="c.ext"
@@ -164,7 +164,7 @@ const chipClass = (chip: ExtChip) => [
           ><ChevronsDownUp
         /></Button>
       </div>
-      <Separator orientation="vertical" class="hidden h-4 sm:block" />
+      <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-1.5" title="Show files hidden by your rules (lock files, minified files…)">
           <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
@@ -175,7 +175,7 @@ const chipClass = (chip: ExtChip) => [
           <Label for="hide-viewed" class="text-xs font-normal whitespace-nowrap">Hide viewed</Label>
         </div>
       </div>
-      <Separator orientation="vertical" class="hidden h-4 sm:block" />
+      <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
       <div class="flex items-center gap-1">
         <Button
           variant="ghost"

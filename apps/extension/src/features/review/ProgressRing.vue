@@ -23,7 +23,7 @@ const complete = computed(() => total > 0 && done === total)
       :stroke-dasharray="CIRCUMFERENCE"
       :stroke-dashoffset="offset"
       class="transition-[stroke-dashoffset] duration-300"
-      :class="complete ? 'stroke-success' : 'stroke-primary'"
+      :class="complete ? 'stroke-success' : 'stroke-emphasis'"
     />
   </svg>
 </template>

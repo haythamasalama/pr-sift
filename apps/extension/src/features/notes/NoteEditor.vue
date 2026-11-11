@@ -39,7 +39,7 @@ function save() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 border-y border-amber-500/50 bg-amber-500/10 px-3 py-2.5 font-sans">
+  <div class="flex flex-col gap-2 border-y bg-card px-3 py-2.5 font-sans shadow-[inset_3px_0_0_var(--selected-edge)]">
     <div v-if="adjustable" class="flex flex-wrap items-center gap-1.5 text-xs">
       <span class="font-medium">{{ label }}</span>
       <span class="text-muted-foreground">start</span>
