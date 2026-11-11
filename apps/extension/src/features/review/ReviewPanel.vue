@@ -232,7 +232,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
       <aside
         v-show="!compact || sidebarOpen"
-        class="min-h-0 border-r bg-muted"
+        class="min-h-0 border-r bg-sidebar"
         :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
       >
         <div
@@ -251,7 +251,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           />
         </div>
         <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="flex flex-col gap-2 p-2">
+          <div class="flex flex-col gap-2 border-b p-2">
             <div class="relative flex items-center">
               <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
               <Input

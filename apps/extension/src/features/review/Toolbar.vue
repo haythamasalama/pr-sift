@@ -39,7 +39,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 </script>
 
 <template>
-  <header class="flex items-center gap-2 border-b bg-muted px-3 py-2 sm:gap-3 sm:px-4">
+  <header class="flex items-center gap-2 border-b bg-sidebar px-3 py-2 sm:gap-3 sm:px-4">
     <Button
       v-if="compact"
       variant="outline"
