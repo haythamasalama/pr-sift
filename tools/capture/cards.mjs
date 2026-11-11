@@ -86,7 +86,7 @@ const SHOTS = [
   {
     name: 'ai-export',
     title: 'Hand your notes to your AI',
-    sub: 'One prompt with the code for Claude Code, Codex, Cursor or ChatGPT.',
+    sub: "One prompt with each note's file, lines and code, ready for your coding assistant.",
     crop: [500, 500, 2200],
   },
   {
