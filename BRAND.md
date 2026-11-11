@@ -195,7 +195,8 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 Short and plain. Say what the reviewer gets, not how it is built.
 
 - Lead with the outcome and a real number: "a 200-file change becomes the 12 files that matter".
-- Name the AI tools in this order: Claude Code, Codex, Cursor, GitHub Copilot, Claude, ChatGPT.
+- Name the AI tools in this order: Claude Code, Codex, Cursor, GitHub Copilot, Claude, ChatGPT. Never list them in the
+  Chrome Web Store description: the store rejected that list as keyword spam (Yellow Argon), so say "coding assistant".
 - Privacy is the promise and must stay true: your code stays in your browser, PR Sift talks only to GitHub, no
   account, no server, no analytics.
 - Always say "Not affiliated with GitHub" in store and press text.
