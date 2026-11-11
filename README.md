@@ -19,7 +19,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-black.svg" alt="PolyForm Shield license" /></a>
 </p>
 
-![PR Sift on a 41-file pull request](media/screenshots/review.webp)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/screenshots/review-dark.webp" />
+  <img src="media/screenshots/review.webp" alt="PR Sift on a 41-file pull request" />
+</picture>
 
 A free Chrome extension that turns a long GitHub pull request into a focused review.
 
@@ -29,19 +32,28 @@ A free Chrome extension that turns a long GitHub pull request into a focused rev
 
 Click a type or change to show it. Shift-click to hide it for good.
 
-![Filtering by type and change status](media/videos/filters.gif)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/videos/filters-dark.gif" />
+  <img src="media/videos/filters.gif" alt="Filtering by type and change status" />
+</picture>
 
 ### Never read a file twice
 
 Mark files or whole folders as viewed. A new push brings changed files back.
 
-![Marking folders as viewed](media/videos/review.gif)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/videos/review-dark.gif" />
+  <img src="media/videos/review.gif" alt="Marking folders as viewed" />
+</picture>
 
 ### Private notes for your AI
 
 Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post one to GitHub.
 
-![Writing a private note and sending it to an assistant](media/videos/notes.gif)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/videos/notes-dark.gif" />
+  <img src="media/videos/notes.gif" alt="Writing a private note and sending it to an assistant" />
+</picture>
 
 ### And the small things
 

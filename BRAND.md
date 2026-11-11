@@ -165,7 +165,10 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 | Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                             | Chrome Web Store       |
 | Store screenshots `media/store/screenshot-*.jpg` | 1280 × 800                                           | Chrome Web Store       |
 
-- Show the extension on a real-looking pull request, in light mode first, dark mode as one extra shot.
+- Show the extension on a real-looking pull request. Every screenshot, video, poster and README GIF has a light file
+  and a `-dark` file (dark ones sit on the Tahoe Dark wallpaper). The site shows the one that matches its theme and only
+  loads that one; the README picks by the reader's GitHub theme with `<picture>`. Store images stay light, plus one
+  dark screenshot.
 - Posters come from the middle of each video, so the still frame shows the feature, not an empty start.
 - Browser logos on the site are monochrome (Simple Icons), so no brand colour competes with the diff.
 
