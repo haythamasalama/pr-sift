@@ -51,11 +51,23 @@ const logoFile = (bg, fg) =>
 const button = (href, text, primary = true) =>
   `<a href="${href}" class="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] font-medium transition-colors ${primary ? 'bg-ink text-paper hover:opacity-85' : 'border border-line bg-paper text-ink hover:bg-raised'}">${text}</a>`
 
+// Each image and video exists in a light and a -dark version; only the one for the current theme is displayed, so only it loads.
+const THEMED = [
+  ['', 'block dark:hidden'],
+  ['-dark', 'hidden dark:block'],
+]
+
 const shot = (name, alt) =>
-  `<img src="${media(`screenshots/${name}.webp`)}" alt="${esc(alt)}" width="3200" height="2120" class="block h-auto w-full rounded-lg border border-line" loading="lazy" decoding="async" />`
+  THEMED.map(
+    ([suffix, display]) =>
+      `<img src="${media(`screenshots/${name}${suffix}.webp`)}" alt="${esc(alt)}" width="3200" height="2120" class="${display} h-auto w-full rounded-lg border border-line" loading="lazy" decoding="async" />`,
+  ).join('')
 
 const video = (name, label, attrs = '') =>
-  `<figure class="overflow-hidden rounded-lg border border-line bg-raised"><video class="block aspect-[16/10] h-auto w-full bg-raised" data-autoplay muted loop playsinline preload="none" width="1600" height="1000" poster="${media(`videos/${name}.jpg`)}" aria-label="${esc(label)}" ${attrs}><source src="${media(`videos/${name}.mp4`)}" type="video/mp4" /></video></figure>`
+  `<figure class="overflow-hidden rounded-lg border border-line bg-raised">${THEMED.map(
+    ([suffix, display]) =>
+      `<video class="${display} aspect-[16/10] h-auto w-full bg-raised" data-autoplay data-suffix="${suffix}" muted loop playsinline preload="none" width="1600" height="1000" poster="${media(`videos/${name}${suffix}.jpg`)}" aria-label="${esc(label)}" ${attrs}><source src="${media(`videos/${name}${suffix}.mp4`)}" type="video/mp4" /></video>`,
+  ).join('')}</figure>`
 
 const iconBox = (name, cls = 'size-9') =>
   `<span class="flex ${cls} shrink-0 items-center justify-center rounded-md border border-line bg-paper">${icon(name, 'size-[18px]')}</span>`
@@ -264,7 +276,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website' 
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta name="author" content="${AUTHOR.name}" />
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="PR Sift" />

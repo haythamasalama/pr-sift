@@ -34,11 +34,11 @@
 }
 
 .dark {
-  --paper: #111113;
-  --raised: #19191c;
-  --ink: #ececee;
-  --muted: #a0a0a8;
-  --line: #2a2a2f;
+  --paper: #000000;
+  --raised: #0a0a0a;
+  --ink: #f5f5f5;
+  --muted: #a3a3a3;
+  --line: #262626;
   --add: #4ade80;
   --add-bg: rgb(74 222 128 / 0.18);
   --del: #ff6b6b;

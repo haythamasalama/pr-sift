@@ -13,7 +13,9 @@ const PR_URL = `https://github.com/${PR.owner}/${PR.repo}/pull/${PR.number}/file
 const KEY = `${PR.owner}/${PR.repo}#${PR.number}`
 const only = process.argv.slice(2)
 const WALLPAPERS = process.env.PR_SIFT_WALLPAPERS ?? `${process.env.HOME}/Pictures/Cap Wallpapers/1 Waves`
-const WALLPAPER = { light: 'Tahoe Light.jpg', dark: 'Tahoe Light.jpg' }
+const WALLPAPER = { light: 'Tahoe Light.jpg', dark: 'Tahoe Dark.jpg' }
+const THEMES = ['light', 'dark']
+const themedName = (name, theme) => (theme === 'dark' ? `${name}-dark` : name)
 const FALLBACK = { light: 'linear-gradient(135deg, #f5f5f5, #d4d4d4)', dark: 'linear-gradient(135deg, #262626, #0a0a0a)' }
 const backgrounds = {}
 
@@ -237,18 +239,21 @@ async function framed(browser, rawPath, name, { theme = 'light', url = `github.c
 
 async function shot(browser, name, prepare, options = {}) {
   if (only.length && !only.includes(name)) return
-  const { context, page } = await openDemo(browser, options)
-  await prepare(page)
-  await page.waitForTimeout(400)
-  await page.screenshot({ path: `${OUT}/raw/${name}.png` })
-  await context.close()
-  await framed(browser, `${OUT}/raw/${name}.png`, name, options)
+  for (const theme of options.theme ? [options.theme] : THEMES) {
+    const file = options.theme ? name : themedName(name, theme)
+    const { context, page } = await openDemo(browser, { ...options, theme })
+    await prepare(page)
+    await page.waitForTimeout(400)
+    await page.screenshot({ path: `${OUT}/raw/${file}.png` })
+    await context.close()
+    await framed(browser, `${OUT}/raw/${file}.png`, file, { ...options, theme })
+  }
 }
 
 const SCALE = 2
 const README_GIFS = ['filters', 'review', 'notes']
 
-function videoCursor() {
+function videoCursor({ ringColor }) {
   const add = () => {
     const dot = document.createElement('div')
     Object.assign(dot.style, {
@@ -286,7 +291,7 @@ function videoCursor() {
           width: '56px',
           height: '56px',
           borderRadius: '50%',
-          border: '4px solid rgba(0,0,0,0.35)',
+          border: `4px solid ${ringColor}`,
           zIndex: '2147483646',
           pointerEvents: 'none',
           transition: 'transform 0.45s ease, opacity 0.45s ease',
@@ -336,8 +341,12 @@ async function camera(page, target, zoom = 1.7) {
 
 async function clip(browser, name, play, options = {}) {
   if (only.length && !only.includes(name)) return
+  for (const theme of THEMES) await record(browser, themedName(name, theme), play, { ...options, theme })
+}
+
+async function record(browser, name, play, options) {
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
-  const theme = options.theme ?? 'light'
+  const theme = options.theme
   const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
   const started = Date.now()
   const store = {
@@ -345,7 +354,7 @@ async function clip(browser, name, play, options = {}) {
     [`notes:${KEY}`]: options.notes ?? NOTES,
   }
   await context.addInitScript(chromeMock, { store })
-  await context.addInitScript(videoCursor)
+  await context.addInitScript(videoCursor, { ringColor: theme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)' })
   await context.route('https://github.com/**', (route) =>
     route.request().url().endsWith('.diff')
       ? route.fulfill({ status: 200, contentType: 'text/plain', body: options.diff ?? DIFF })
@@ -406,7 +415,7 @@ async function clip(browser, name, play, options = {}) {
     '+faststart',
     mp4,
   ])
-  if (README_GIFS.includes(name)) {
+  if (README_GIFS.includes(name.replace(/-dark$/, ''))) {
     encode([
       '-i',
       mp4,
@@ -423,17 +432,20 @@ const browser = await chromium.launch()
 
 async function launcherShot() {
   if (only.length && !only.includes('launcher')) return
-  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: 'light', bypassCSP: true })
-  await context.addInitScript(chromeMock, { store: { settings: { theme: 'light' } } })
-  const page = await context.newPage()
-  await page.goto('https://github.com/haythamasalama/pr-sift/pull/6/files', { waitUntil: 'load', timeout: 60000 })
-  await page.waitForTimeout(4000)
-  await page.addScriptTag({ path: CONTENT })
-  await launcher(page).hover()
-  await page.waitForTimeout(600)
-  await page.screenshot({ path: `${OUT}/raw/launcher.png` })
-  await context.close()
-  await framed(browser, `${OUT}/raw/launcher.png`, 'launcher', { url: 'github.com/haythamasalama/pr-sift/pull/6/files' })
+  for (const theme of THEMES) {
+    const file = themedName('launcher', theme)
+    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, colorScheme: theme, bypassCSP: true })
+    await context.addInitScript(chromeMock, { store: { settings: { theme } } })
+    const page = await context.newPage()
+    await page.goto('https://github.com/haythamasalama/pr-sift/pull/6/files', { waitUntil: 'load', timeout: 60000 })
+    await page.waitForTimeout(4000)
+    await page.addScriptTag({ path: CONTENT })
+    await launcher(page).hover()
+    await page.waitForTimeout(600)
+    await page.screenshot({ path: `${OUT}/raw/${file}.png` })
+    await context.close()
+    await framed(browser, `${OUT}/raw/${file}.png`, file, { theme, url: 'github.com/haythamasalama/pr-sift/pull/6/files' })
+  }
 }
 
 await launcherShot()
