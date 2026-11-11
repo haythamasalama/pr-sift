@@ -59,17 +59,17 @@ A rounded square tile with a funnel drawn as one stroke.
 
 | Token            | Light                 | Dark                                | Use                                              |
 | :--------------- | :-------------------- | :---------------------------------- | :----------------------------------------------- |
-| `paper`          | `#ffffff`             | `#111113`                           | Page                                             |
-| `raised`         | `#f6f8fa`             | `#19191c`                           | Panels, video frames, hover on cards and buttons |
-| `ink`            | `#000000`             | `#ececee`                           | Headings, body, primary buttons                  |
-| `muted`          | `#57606a`             | `#a0a0a8`                           | Descriptions, footer links                       |
-| `line`           | `#d0d7de`             | `#2a2a2f`                           | Borders and dividers                             |
+| `paper`          | `#ffffff`             | `#000000`                           | Page                                             |
+| `raised`         | `#f6f8fa`             | `#0a0a0a`                           | Panels, video frames, hover on cards and buttons |
+| `ink`            | `#000000`             | `#f5f5f5`                           | Headings, body, primary buttons                  |
+| `muted`          | `#57606a`             | `#a3a3a3`                           | Descriptions, footer links                       |
+| `line`           | `#d0d7de`             | `#262626`                           | Borders and dividers                             |
 | `add` / `add-bg` | `#1a7f37` / `#dafbe1` | `#4ade80` / `rgb(74 222 128 / .18)` | Added lines                                      |
 | `del` / `del-bg` | `#cf222e` / `#ffebe9` | `#ff6b6b` / `rgb(255 107 107 / .2)` | Removed lines                                    |
 
-- The browser `theme-color` is `#ffffff` in light and `#111113` in dark.
+- The browser `theme-color` is `#ffffff` in light and `#000000` in dark.
 - Primary button: `ink` background with `paper` text. Secondary: `paper` with a `line` border, `raised` on hover.
-- The dark theme is a soft near-black, deliberately not GitHub's blue-black.
+- The dark theme is the same deep black as the logo, with neutral greys and no blue tint. Sections are told apart by a `line` border, not by a different shade.
 - The press kit lists three colours: Black `#000000`, White `#ffffff`, Gray `#57606a`.
 
 ### Extension

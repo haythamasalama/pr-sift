@@ -264,7 +264,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website' 
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta name="author" content="${AUTHOR.name}" />
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="PR Sift" />
