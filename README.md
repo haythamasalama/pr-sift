@@ -15,6 +15,7 @@
 
 <p align="center">
   <a href="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml"><img src="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/haythamasalama/pr-sift/releases/latest"><img src="https://img.shields.io/github/v/release/haythamasalama/pr-sift?label=version&color=black" alt="Latest version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-black.svg" alt="PolyForm Shield license" /></a>
 </p>
 
@@ -54,7 +55,14 @@ See them all on the [website](https://pr-sift.haythamasalama.me/).
 
 ## Install
 
-PR Sift is on its way to the Chrome Web Store. Until then, install it from source:
+PR Sift is on its way to the Chrome Web Store. Until then:
+
+1. Download `pr-sift-<version>.zip` from the [latest release](https://github.com/haythamasalama/pr-sift/releases/latest)
+   and unzip it.
+2. Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select the unzipped folder.
+3. Open any pull request on github.com and press **PR Sift** at the bottom right.
+
+To build it from source instead, run the commands below and load `apps/extension` the same way:
 
 ```bash
 git clone https://github.com/haythamasalama/pr-sift.git
@@ -63,8 +71,7 @@ pnpm install
 pnpm build
 ```
 
-Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `apps/extension`. Then
-open any pull request on github.com and press **PR Sift** at the bottom right.
+What changed in each version is in the [changelog](CHANGELOG.md).
 
 Works in Chrome and Chromium browsers such as Edge, Brave, Arc and Dia. See the [guide](docs/USAGE.md) for every
 action and setting.
