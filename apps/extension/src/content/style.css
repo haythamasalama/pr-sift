@@ -55,6 +55,13 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Tailwind declares --radius-md and the rest of the scale on :root and :host, so the base must live there too.
+   Declared only on .ps-root, those variables resolve to nothing and every control using them loses its corners. */
+:root,
+:host {
+  --radius: 0.625rem;
+}
+
 @layer base {
   .ps-root *,
   .ps-root ::before,
@@ -85,7 +92,6 @@
   --ring: #0969da;
   --emphasis: #0969da;
   --emphasis-foreground: #ffffff;
-  --radius: 0.625rem;
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --success: #1f883d;
