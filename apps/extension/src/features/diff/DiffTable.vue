@@ -175,7 +175,7 @@ const isActive = (index: number | null) => {
   const a = span && index !== null ? anchorOf(rows.value[index]!) : null
   return !!span && !!a && a.side === span.side && a.line >= span.start && a.line <= span.end
 }
-const lit = 'bg-amber-500/25!'
+const lit = 'diff-selected'
 
 const rowClass: Record<DiffRow['kind'], string> = {
   add: 'bg-add-bg',
@@ -188,11 +188,9 @@ const sign = { add: '+', del: '−', ctx: '', hunk: '', note: '' }
 
 function cellClass(index: number | null, side: 'left' | 'right') {
   if (index === null) return 'bg-muted'
-  if (isActive(index)) return lit
   const kind = rows.value[index]!.kind
-  if (side === 'left' && kind === 'del') return 'bg-del-bg'
-  if (side === 'right' && kind === 'add') return 'bg-add-bg'
-  return ''
+  const base = side === 'left' && kind === 'del' ? 'bg-del-bg' : side === 'right' && kind === 'add' ? 'bg-add-bg' : ''
+  return isActive(index) ? `${base} ${lit}` : base
 }
 </script>
 

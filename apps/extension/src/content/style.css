@@ -100,6 +100,8 @@
   --add-fg: #1a7f37;
   --del-fg: #cf222e;
   --hunk: #ddf4ff;
+  --selected: rgb(212 167 44 / 0.2);
+  --selected-edge: #bf8700;
   --hl-keyword: #cf222e;
   --hl-entity: #8250df;
   --hl-constant: #0550ae;
@@ -141,12 +143,24 @@
   --add-fg: #3fb950;
   --del-fg: #f85149;
   --hunk: rgba(56, 139, 253, 0.1);
+  --selected: rgb(187 128 9 / 0.2);
+  --selected-edge: #d29922;
   --hl-keyword: #ff7b72;
   --hl-entity: #d2a8ff;
   --hl-constant: #79c0ff;
   --hl-string: #a5d6ff;
   --hl-comment: #8b949e;
   --hl-tag: #7ee787;
+}
+
+/* Painted as an image so the added and removed colours stay visible under a selected range. */
+.ps-root .diff-selected {
+  background-image: linear-gradient(var(--selected), var(--selected));
+}
+
+.ps-root tr.diff-selected > td:first-child,
+.ps-root td.diff-selected:first-child {
+  box-shadow: inset 3px 0 0 var(--selected-edge);
 }
 
 .ps-root .hljs-keyword,
