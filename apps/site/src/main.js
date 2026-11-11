@@ -145,16 +145,19 @@ for (const video of document.querySelectorAll('video[data-autoplay]')) {
 
 for (const demo of document.querySelectorAll('[data-demo]')) {
   const tabs = [...demo.querySelectorAll('[data-video]')]
-  const video = demo.querySelector('[data-demo-video]')
+  const videos = [...demo.querySelectorAll('[data-demo-video]')]
   const select = (tab) => {
     for (const other of tabs) other.setAttribute('aria-selected', String(other === tab))
     const name = tab.dataset.video
-    video.poster = video.poster.replace(/[^/]+\.jpg$/, `${name}.jpg`)
-    const source = video.querySelector('source')
-    source.src = source.src.replace(/[^/]+\.mp4$/, `${name}.mp4`)
-    video.setAttribute('aria-label', tab.textContent.trim())
-    video.load()
-    if (!reducedMotion) video.play().catch(() => undefined)
+    for (const video of videos) {
+      const file = `${name}${video.dataset.suffix}`
+      video.poster = video.poster.replace(/[^/]+\.jpg$/, `${file}.jpg`)
+      const source = video.querySelector('source')
+      source.src = source.src.replace(/[^/]+\.mp4$/, `${file}.mp4`)
+      video.setAttribute('aria-label', tab.textContent.trim())
+      video.load()
+      if (!reducedMotion && video.checkVisibility()) video.play().catch(() => undefined)
+    }
   }
   tabs.forEach((tab, i) => {
     tab.addEventListener('click', () => select(tab))
