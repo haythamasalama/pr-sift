@@ -61,13 +61,13 @@ onBeforeUnmount(() => {
     <Button
       v-if="dead && pr"
       variant="emphasis"
-      class="fixed right-5 bottom-5 z-30 h-10 gap-2.5 rounded-full pr-1.5 pl-4 shadow-lg"
+      class="fixed right-5 bottom-5 z-30 h-8 gap-2 rounded-full pr-1 pl-3 text-xs shadow-lg"
       @click="reload"
     >
-      <Sparkles />
-      <span>A new version of PR Sift is ready</span>
-      <span class="inline-flex h-7 items-center gap-1.5 rounded-full bg-emphasis-foreground px-3 text-xs font-semibold text-emphasis">
-        <RefreshCw class="size-3.5" /> Reload
+      <Sparkles class="size-3.5" />
+      <span>Update ready</span>
+      <span class="inline-flex h-6 items-center gap-1 rounded-full bg-emphasis-foreground px-2.5 text-[11px] font-semibold text-emphasis">
+        <RefreshCw class="size-3" /> Reload
       </span>
     </Button>
     <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
