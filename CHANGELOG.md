@@ -3,6 +3,12 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance or Security. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## 1.0.1 - 2026-11-12
+
+### Fixed
+
+- Tree: Clicking a folder's arrow opens the folder instead of marking it as viewed.
+
 ## 1.0.0 - 2026-11-11
 
 The first public release.
