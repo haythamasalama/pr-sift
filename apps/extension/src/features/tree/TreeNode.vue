@@ -68,8 +68,10 @@ function jump() {
       >
         <ChevronRight :size="14" class="transition-transform" :class="open ? 'rotate-90' : ''" />
       </button>
+      <!-- The default enlarged hit area covers the chevron and the rows above and below. -->
       <Checkbox
         title="Mark the whole folder as viewed"
+        class="after:inset-0"
         :model-value="viewedState === 'all' ? true : viewedState === 'some' ? 'indeterminate' : false"
         @click.stop
         @update:model-value="(value) => emit('toggleViewed', node.path, value === true)"

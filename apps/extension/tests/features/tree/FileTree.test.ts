@@ -59,6 +59,30 @@ describe('FileTree', () => {
     expect(wrapper.text()).toContain('Domain')
   })
 
+  it('opens a folder from its chevron without marking it viewed', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
+    const row = wrapper.findAll('button').find((b) => b.text().startsWith('src'))!.element.parentElement!
+    const checkbox = row.querySelector('[role=checkbox]')!
+    expect(wrapper.text()).not.toContain('Domain')
+
+    row.querySelector<HTMLElement>('[aria-label="Expand"]')!.click()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('Domain')
+    expect(wrapper.emitted('toggleViewed')).toBeUndefined()
+    expect(checkbox.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('keeps every tree checkbox hit area inside its own box', () => {
+    const boxes = mountTree().findAll('[role=checkbox]')
+    expect(boxes.length).toBeGreaterThan(1)
+    for (const box of boxes) {
+      expect(box.classes()).toContain('after:inset-0')
+      expect(box.classes()).not.toContain('after:-inset-x-3')
+    }
+  })
+
   it('does not offer a folder filter button any more', () => {
     expect(mountTree().find('[aria-label="Show only this folder"]').exists()).toBe(false)
   })
