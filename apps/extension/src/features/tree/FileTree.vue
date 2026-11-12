@@ -60,6 +60,7 @@ const rootState = computed(() => {
     >
       <Checkbox
         title="Mark everything in the tree as viewed"
+        class="after:inset-0"
         :model-value="rootState === 'all' ? true : rootState === 'some' ? 'indeterminate' : false"
         @update:model-value="(value) => emit('toggleViewed', '', value === true)"
       />
