@@ -1,6 +1,20 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
-import { Bug, CircleAlert, Lightbulb, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
+import {
+  Bug,
+  CircleAlert,
+  Lightbulb,
+  CircleCheck,
+  ChevronDown,
+  Columns2,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Monitor,
+  Moon,
+  Rows2,
+  Sun,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -138,6 +152,14 @@ onMounted(load)
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
+            <FieldDescription>
+              Create a fine-grained token with read and write access to Pull requests on the repositories you review.
+            </FieldDescription>
+            <Button as-child variant="outline" size="sm" class="w-fit">
+              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
+                <ExternalLink /> Create a token on GitHub
+              </a>
+            </Button>
           </Field>
         </CardContent>
       </Card>
