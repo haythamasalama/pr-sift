@@ -30,7 +30,7 @@ export const home = {
     ['claude', 'bot', 'Notes to AI', 'Copy your notes for Claude Code, Codex, Cursor or ChatGPT.'],
   ],
   notesStory: {
-    title: 'Notes for you, not for the whole pull request',
+    title: 'Write notes on the code. Your AI fixes them.',
     lead: 'Write on any lines while you review. Notes stay in your browser until you decide otherwise.',
     cases: [
       [
