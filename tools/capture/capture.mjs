@@ -277,6 +277,7 @@ function videoCursor({ ringColor }) {
       (e) => {
         dot.style.left = e.clientX + 'px'
         dot.style.top = e.clientY + 'px'
+        window.__cursor = { x: e.clientX, y: e.clientY }
       },
       true,
     )
@@ -312,32 +313,83 @@ function videoCursor({ ringColor }) {
   else add()
 }
 
-async function camera(page, target, zoom = 1.7) {
-  const box = !target ? null : typeof target.boundingBox === 'function' ? await target.boundingBox() : target
-  await page.evaluate(
-    ({ box, zoom, scale, width, height }) => {
+// The frame always holds the cursor and the whole target, so zoom never cuts what the viewer should read.
+async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
+  let box = !target ? null : typeof target.boundingBox === 'function' ? await target.boundingBox() : target
+  const focus = box
+  if (box && typeof target.evaluate === 'function') {
+    const around = await target.evaluate((el) => {
+      const boxes = [el.closest('[role="dialog"]'), ...el.getRootNode().querySelectorAll('[role="menu"]')]
+        .filter(Boolean)
+        .map((node) => node.getBoundingClientRect())
+        .filter((r) => r.width && r.height)
+      return boxes.map((r) => ({ x: r.x, y: r.y, width: r.width, height: r.height }))
+    })
+    for (const r of around) {
+      const x = Math.min(box.x, r.x)
+      const y = Math.min(box.y, r.y)
+      box = { x, y, width: Math.max(box.x + box.width, r.x + r.width) - x, height: Math.max(box.y + box.height, r.y + r.height) - y }
+    }
+  }
+  if (box && follow) {
+    const view = page.viewportSize()
+    const x = Math.min(view.width - 8, Math.max(8, focus.x + Math.min(focus.width / 2, 40)))
+    const y = Math.min(view.height - 8, Math.max(8, focus.y + focus.height / 2))
+    await page.mouse.move(x, y, { steps: 5 })
+  }
+  const cursor = box ? await page.evaluate(() => window.__cursor ?? null) : null
+  const before = await page.evaluate(() => window.__cursor ?? null)
+  const after = await page.evaluate(
+    ({ box, cursor, zoom, scale, width, height }) => {
       const host = document.getElementById('pr-sift-host')
       const current = host.__camera ?? { x: 0, y: 0, zoom: 1 }
       let next = { x: 0, y: 0, zoom: 1 }
       if (box) {
-        const cx = (box.x + box.width / 2 - current.x) / (scale * current.zoom)
-        const cy = (box.y + box.height / 2 - current.y) / (scale * current.zoom)
+        const k = scale * current.zoom
+        const toPage = (px, py) => [(px - current.x) / k, (py - current.y) / k]
+        let [left, top] = toPage(box.x, box.y)
+        let [right, bottom] = toPage(box.x + box.width, box.y + box.height)
+        if (cursor) {
+          const [mx, my] = toPage(cursor.x, cursor.y)
+          left = Math.min(left, mx - 16)
+          top = Math.min(top, my - 16)
+          right = Math.max(right, mx + 32)
+          bottom = Math.max(bottom, my + 40)
+        }
+        const pad = 28
+        const fit = Math.min(width / (right - left + pad * 2), height / (bottom - top + pad * 2))
+        const z = Math.max(1, Math.min(zoom, fit))
         const fullW = width * scale
         const fullH = height * scale
-        const x = fullW / 2 - cx * scale * zoom
-        const y = fullH / 2 - cy * scale * zoom
+        const x = fullW / 2 - ((left + right) / 2) * scale * z
+        const y = fullH / 2 - ((top + bottom) / 2) * scale * z
         next = {
-          x: Math.min(0, Math.max(fullW - fullW * zoom, x)),
-          y: Math.min(0, Math.max(fullH - fullH * zoom, y)),
-          zoom,
+          x: Math.min(0, Math.max(fullW - fullW * z, x)),
+          y: Math.min(0, Math.max(fullH - fullH * z, y)),
+          zoom: z,
         }
+      }
+      const point = window.__cursor
+      const moved = point && {
+        x: ((point.x - current.x) / (scale * current.zoom)) * scale * next.zoom + next.x,
+        y: ((point.y - current.y) / (scale * current.zoom)) * scale * next.zoom + next.y,
       }
       host.__camera = next
       host.style.transform = `translate(${next.x}px, ${next.y}px) scale(${scale * next.zoom})`
+      return moved
     },
-    { box, zoom, scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
+    { box, cursor, zoom, scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
   )
-  await page.waitForTimeout(950)
+  const start = Date.now()
+  for (let t = 0; t < 1; t = Math.min(1, (Date.now() - start) / 900)) {
+    if (before && after) {
+      const k = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
+      await page.mouse.move(before.x + (after.x - before.x) * k, before.y + (after.y - before.y) * k)
+    }
+    await page.waitForTimeout(16)
+  }
+  if (before && after) await page.mouse.move(after.x, after.y)
+  await page.waitForTimeout(80)
 }
 
 async function clip(browser, name, play, options = {}) {
@@ -675,8 +727,9 @@ await clip(browser, 'notes', async (page) => {
 
 await clip(browser, 'resolve', async (page) => {
   const note = page.getByText('Usage lines are merged after subscriptions').first()
-  await camera(page, note, 1.9)
-  await glide(page, page.getByRole('button', { name: 'Mark note as resolved' }).first())
+  const resolve = page.getByRole('button', { name: 'Mark note as resolved' }).first()
+  await camera(page, await around(note, resolve), 1.9)
+  await glide(page, resolve)
   await pause(page, 1100)
   await camera(page, null)
   await glide(page, page.getByRole('button', { name: /Notes/ }))
@@ -685,8 +738,9 @@ await clip(browser, 'resolve', async (page) => {
   await glide(page, page.getByLabel('Show resolved in the diff'))
   await pause(page, 900)
   await page.keyboard.press('Escape')
-  await camera(page, page.getByRole('button', { name: 'Reopen note' }).first(), 1.9)
-  await glide(page, page.getByRole('button', { name: 'Reopen note' }).first())
+  const reopen = page.getByRole('button', { name: 'Reopen note' }).first()
+  await camera(page, await around(note, reopen), 1.9)
+  await glide(page, reopen)
   await pause(page, 1100)
 })
 
@@ -811,7 +865,7 @@ async function around(...targets) {
   return { x, y, width: right - x, height: bottom - y }
 }
 
-async function recordStory(theme) {
+async function recordStory(theme, { caption }) {
   const name = themedName('before-after', theme)
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
   const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
@@ -842,7 +896,7 @@ async function recordStory(theme) {
     },
     { scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
   )
-  await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
+  if (caption) await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
   await page.mouse.move(big.width * 0.55, big.height * 0.45)
   await page.waitForTimeout(800)
   const trim = (Date.now() - started) / 1000
@@ -854,7 +908,7 @@ async function recordStory(theme) {
         const end = document.documentElement.scrollHeight * 0.55
         const t0 = performance.now()
         const step = (t) => {
-          const k = Math.min(1, (t - t0) / 1700)
+          const k = Math.min(1, (t - t0) / 1300)
           scrollTo(0, end * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2))
           if (k < 1) requestAnimationFrame(step)
           else done()
@@ -864,8 +918,11 @@ async function recordStory(theme) {
   )
   await pause(page, 200)
   await glide(page, launcher(page), { steps: 20 })
+  const clicked = (Date.now() - started) / 1000 - trim
   await page.getByRole('button', { name: 'Collapse all folders' }).waitFor()
-  await pause(page, 400)
+  await pause(page, 150)
+  const loaded = (Date.now() - started) / 1000 - trim
+  await pause(page, 300)
   await glide(page, page.getByRole('button', { name: 'Collapse all folders' }))
   await pause(page, 200)
   const allFolders = page.getByRole('button', { name: 'Collapse all folders' })
@@ -874,22 +931,27 @@ async function recordStory(theme) {
     await glide(page, folderViewed(page, folder))
     await pause(page, 300)
   }
-  await page.evaluate(() => document.getElementById('story').classList.add('done'))
+  if (caption) await page.evaluate(() => document.getElementById('story').classList.add('done'))
   const left = page.getByText(/^\d+ left$/).first()
   await camera(page, await around(left, allFolders, folderRow(page, 'src')), 1.6)
   const ring = await left.boundingBox()
   await page.mouse.move(ring.x + ring.width + 24, ring.y + ring.height / 2, { steps: 16 })
-  await pause(page, 1300)
+  await pause(page, 1000)
   await camera(page, null)
-  await pause(page, 800)
+  await pause(page, 600)
   const length = (Date.now() - started) / 1000 - trim
 
   const video = page.video()
   await context.close()
   const raw = `${OUT}/raw/${name}.webm`
   renameSync(await video.path(), raw)
-  const mp4 = `${OUT}/videos/${name}.mp4`
+  const mp4 = caption ? `${OUT}/raw/${name}.caption.mp4` : `${OUT}/videos/${name}.mp4`
   const encode = (args) => execFileSync(ffmpeg, ['-y', '-loglevel', 'error', ...args])
+  const [cutFrom, cutTo] = [clicked + 0.5, loaded - 0.1]
+  const jump =
+    cutTo - cutFrom > 0.2
+      ? `[0:v]trim=0:${cutFrom.toFixed(2)},setpts=PTS-STARTPTS[a];[0:v]trim=${cutTo.toFixed(2)},setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1,`
+      : ''
   encode([
     '-ss',
     String(trim),
@@ -897,8 +959,8 @@ async function recordStory(theme) {
     length.toFixed(2),
     '-i',
     raw,
-    '-vf',
-    'scale=1600:-2:flags=lanczos,fps=30',
+    '-filter_complex',
+    `${jump}scale=1600:-2:flags=lanczos,fps=30`,
     '-c:v',
     'libx264',
     '-preset',
@@ -913,18 +975,40 @@ async function recordStory(theme) {
     '+faststart',
     mp4,
   ])
-  encode([
-    '-i',
-    mp4,
-    '-vf',
-    'fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
-    `${OUT}/videos/${name}.gif`,
-  ])
+  if (caption) {
+    encode([
+      '-i',
+      mp4,
+      '-vf',
+      'fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
+      `${OUT}/videos/${name}.gif`,
+    ])
+    console.log('gif', name)
+    return
+  }
   encode(['-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
-  console.log('video', name, length.toFixed(1) + 's')
+  console.log('video', name, (length - Math.max(0, cutTo - cutFrom)).toFixed(1) + 's')
 }
 
-if (!only.length || only.includes('before-after')) for (const theme of THEMES) await recordStory(theme)
+if (!only.length || only.includes('before-after')) {
+  const warm = await browser.newContext({ viewport: { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE } })
+  await warm.addInitScript(chromeMock, { store: { settings: { reviewMode: true } } })
+  await warm.route('https://github.com/**', (route) =>
+    route.request().url().endsWith('.diff')
+      ? route.fulfill({ status: 200, contentType: 'text/plain', body: BIG_DIFF })
+      : route.fulfill({ status: 200, contentType: 'text/html', body: bigGithubPage('light') }),
+  )
+  const warmPage = await warm.newPage()
+  await warmPage.goto(PR_URL)
+  await warmPage.addScriptTag({ path: CONTENT })
+  await launcher(warmPage).click()
+  await warmPage.getByRole('button', { name: 'Collapse all folders' }).waitFor()
+  await warm.close()
+  for (const theme of THEMES) {
+    await recordStory(theme, { caption: false })
+    await recordStory(theme, { caption: true })
+  }
+}
 
 await browser.close()
 for (const f of readdirSync(`${OUT}/raw`)) rmSync(`${OUT}/raw/${f}`)
