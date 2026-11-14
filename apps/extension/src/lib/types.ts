@@ -30,5 +30,7 @@ export interface Settings {
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
+  treeIndent: number
+  treeGuides: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

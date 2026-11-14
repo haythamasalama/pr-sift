@@ -3,7 +3,7 @@ import { computed, provide, shallowRef, watch } from 'vue'
 import { ChevronsDownUp, ChevronsUpDown, Layers } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { treeExpandKey, type ExpandCommand } from './expandContext'
+import { treeExpandKey, treeLayoutKey, type ExpandCommand } from './expandContext'
 import { collectFiles } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
@@ -14,9 +14,13 @@ const {
   selected,
   isViewed,
   search = '',
+  indent = 6,
+  guides = true,
 } = defineProps<{
   tree: TreeNode
   search?: string
+  indent?: number
+  guides?: boolean
   selected: string
   isViewed: (f: PrFile) => boolean
 }>()
@@ -31,6 +35,10 @@ const emit = defineEmits<{
 
 const expand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(treeExpandKey, expand)
+provide(
+  treeLayoutKey,
+  computed(() => ({ indent, guides })),
+)
 const setAll = (open: boolean) => (expand.value = { open, n: expand.value.n + 1 })
 
 watch(
@@ -92,7 +100,6 @@ const rootState = computed(() => {
       :key="f.filename"
       :file="f"
       :viewed="isViewed(f)"
-      class="pl-5"
       @select="emit('selectFile', f.filename)"
       @toggle="(value) => emit('toggleFile', f, value)"
     />
