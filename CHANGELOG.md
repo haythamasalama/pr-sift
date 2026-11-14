@@ -3,12 +3,6 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance or Security. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
-## Unreleased
-
-### Fixed
-
-- Filters: Clicking a type keeps every chip in place. Reset filters now sits at the end of the row.
-
 ## 1.1.0 - 2026-11-14
 
 ### Added
