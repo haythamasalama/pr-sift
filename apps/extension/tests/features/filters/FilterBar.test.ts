@@ -75,6 +75,24 @@ describe('FilterBar', () => {
     expect(active.emitted('resetFilters')).toHaveLength(1)
   })
 
+  it('shows reset filters after every chip, so the chips do not move when it appears', () => {
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [file('a.php')],
+        hiddenCount: 1,
+        filtersActive: true,
+        reviewMode: true,
+        showHidden: false,
+      },
+    })
+    const labels = wrapper.findAll('button').map((b) => b.text())
+    const reset = labels.findIndex((t) => t.includes('Reset filters'))
+    const lastChip = labels.findIndex((t) => t.includes('deleted'))
+    expect(reset).toBeGreaterThan(lastChip)
+  })
+
   it('shows the include state with the primary variant', () => {
     expect(button(mountBar(), '.ts').attributes('data-variant')).toBe('default')
     expect(button(mountBar(), '.php').attributes('data-variant')).toBe('secondary')
