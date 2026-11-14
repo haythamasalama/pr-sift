@@ -82,16 +82,6 @@ const chipClass = (chip: ExtChip) => [
   <div class="flex flex-wrap items-start gap-x-3 gap-y-2 border-b bg-sidebar px-3 py-2 sm:px-4">
     <div class="flex min-w-0 flex-1 basis-[22rem] flex-wrap items-center gap-1">
       <span class="mr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Types</span>
-      <Button
-        v-if="filtersActive"
-        variant="outline"
-        size="xs"
-        class="mr-1 h-[22px] rounded-full px-2.5 text-[11px]"
-        title="Clear every filter and go back to the defaults"
-        @click="emit('resetFilters')"
-      >
-        <RotateCcw /> Reset filters
-      </Button>
       <span v-for="c in extensionChips" :key="c.ext" class="inline-flex items-center">
         <Button
           size="xs"
@@ -151,6 +141,20 @@ const chipClass = (chip: ExtChip) => [
           <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-amber-600 dark:text-amber-400" />
           <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
+        </Button>
+      </template>
+
+      <!-- Last in the row, so showing it never moves the chip that was just clicked. -->
+      <template v-if="filtersActive">
+        <Separator orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
+        <Button
+          variant="outline"
+          size="xs"
+          class="h-[22px] rounded-full px-2.5 text-[11px]"
+          title="Clear every filter and go back to the defaults"
+          @click="emit('resetFilters')"
+        >
+          <RotateCcw /> Reset filters
         </Button>
       </template>
     </div>
