@@ -77,7 +77,15 @@ describe('FilterBar', () => {
 
   it('shows reset filters after every chip, so the chips do not move when it appears', () => {
     const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 4, viewedInViewCount: 2, hiddenCount: 1, filtersActive: true, reviewMode: true, showHidden: false },
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [file('a.php')],
+        hiddenCount: 1,
+        filtersActive: true,
+        reviewMode: true,
+        showHidden: false,
+      },
     })
     const labels = wrapper.findAll('button').map((b) => b.text())
     const reset = labels.findIndex((t) => t.includes('Reset filters'))
