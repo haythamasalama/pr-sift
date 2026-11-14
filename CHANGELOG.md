@@ -1,7 +1,13 @@
 # Changelog
 
-Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance or Security. New work
+Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
+
+## Unreleased
+
+### Changed
+
+- License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 
 ## 1.1.0 - 2026-11-14
 

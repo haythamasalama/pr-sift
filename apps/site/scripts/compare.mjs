@@ -2,7 +2,7 @@ export const CHECKED = '10 November 2026'
 
 export const FEATURES = [
   ['price', 'badge-dollar-sign', 'Price'],
-  ['openSource', 'code', 'Public source code'],
+  ['openSource', 'code', 'Open source'],
   ['extension', 'file-code', 'Filter by file type'],
   ['status', 'git-compare', 'Filter by change'],
   ['combine', 'funnel', 'Combine filters'],
@@ -23,7 +23,7 @@ export const prSift = {
   name: 'PR Sift',
   values: {
     price: ['yes', 'Free'],
-    openSource: ['yes', 'PolyForm Shield'],
+    openSource: ['yes', 'MIT'],
     extension: ['yes', 'Including your own endings'],
     status: ['yes', 'Added, modified, deleted, renamed, with notes'],
     combine: ['yes', 'Type and change together'],
@@ -210,12 +210,12 @@ export const compare = [
     choosePrSift: [
       'Several filters at once, like added PHP files.',
       'Viewed tracking and notes in the same place.',
-      'Free, with public source code.',
+      'Free and open source under MIT.',
     ],
     chooseThem: ['Glob patterns in GitHub’s own tree.', 'Repository and gist trees too.'],
     faq: [
       ['Does PR Sift support glob patterns?', 'Yes, for hidden files in the options, for example **/*.lock.'],
-      ['Is PR Sift free?', 'Yes, free for everyone. The source code is public under the PolyForm Shield license.'],
+      ['Is PR Sift free?', 'Yes, free for everyone. PR Sift is open source under the MIT license.'],
     ],
     sources: ['https://chromewebstore.google.com/detail/file-tree-filter-for-gith/higmaiifhbjeblmbopjjaknlpmghkcik'],
   },

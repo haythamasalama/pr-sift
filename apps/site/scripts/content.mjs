@@ -171,7 +171,7 @@ export const home = {
   },
   openSource: {
     title: 'Built in the open',
-    text: 'The source code is public. Read it, report a bug or send a pull request.',
+    text: 'PR Sift is open source under MIT. Read the code, report a bug or send a pull request.',
     links: [
       ['github', 'Source code', REPO_URL],
       ['bug', 'Report a bug', `${REPO_URL}/issues/new?template=bug_report.yml`],
@@ -191,7 +191,7 @@ export const home = {
     text: 'No server, no account, no analytics. PR Sift only talks to GitHub.',
   },
   faq: [
-    ['Is PR Sift free?', 'Yes, for everyone, including at work. The source code is public under the PolyForm Shield license.'],
+    ['Is PR Sift free?', 'Yes, for everyone, including at work. PR Sift is open source under the MIT license.'],
     ['Does it send my code anywhere?', 'No. It only talks to GitHub. Notes go to your clipboard when you copy them.'],
     ['Do I need a GitHub token?', 'No. A token is only used to post a note as a review comment.'],
     [

@@ -16,7 +16,7 @@
 <p align="center">
   <a href="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml"><img src="https://github.com/haythamasalama/pr-sift/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/haythamasalama/pr-sift/releases/latest"><img src="https://img.shields.io/github/v/release/haythamasalama/pr-sift?label=version&color=black" alt="Latest version" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-black.svg" alt="PolyForm Shield license" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-black.svg" alt="MIT license" /></a>
 </p>
 
 <picture>
@@ -103,6 +103,6 @@ no server, account or analytics. A GitHub token is optional. Details in [PRIVACY
 
 ## License
 
-[PolyForm Shield 1.0.0](LICENSE): free to use, including at work. You may not sell PR Sift or publish a copy or a competing product. Not affiliated with GitHub.
+[MIT](LICENSE): free and open source. Use it, change it and share it. Not affiliated with GitHub.
 
 Copyright © 2026 [Haytham A. Salama](https://haythamasalama.me/).

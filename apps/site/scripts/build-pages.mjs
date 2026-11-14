@@ -248,7 +248,7 @@ function footer() {
         </ul>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
-        <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. All rights reserved.</p>
+        <p class="text-muted">Copyright © ${YEAR} ${AUTHOR.name}. MIT license.</p>
         <nav aria-label="Legal" class="-ml-3 flex items-center">
           <a href="${link('privacy/')}" class="${legal}">Privacy Policy</a>
           <a href="${REPO_URL}/blob/main/LICENSE" class="border-l border-line ${legal}">License</a>
@@ -340,7 +340,7 @@ const appLd = {
   softwareHelp: SITE_URL + 'guides/',
   releaseNotes: SITE_URL + 'changelog/',
   softwareVersion: VERSION,
-  license: 'https://polyformproject.org/licenses/shield/1.0.0',
+  license: 'https://opensource.org/license/mit',
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   image: SITE_URL + 'media/og.png',
@@ -976,7 +976,7 @@ ${home.features.map((f) => `- ${f.title}. ${f.text}`).join('\n')}
 
 ## Facts
 
-- Price: free, including at work. License: PolyForm Shield 1.0.0 (public source code; no resale and no competing copies). Source: ${REPO_URL}
+- Price: free, including at work. License: MIT (open source). Source: ${REPO_URL}
 - Browsers: Chrome, Edge, Brave, Arc, Dia, Opera, Vivaldi and other Chromium browsers.
 - Privacy: no server, no account, no analytics. Data stays in the browser. Talks only to GitHub.
 - A GitHub token is optional and only used to post a note as a review comment.

@@ -43,7 +43,7 @@ Make it yours
 • Light, dark or system theme with GitHub's diff colors.
 • Set the file tree indent and guide lines.
 
-Free, with public source code. No account, no server, no analytics. PR Sift only talks to GitHub.
+Free and open source (MIT). No account, no server, no analytics. PR Sift only talks to GitHub.
 
 Not affiliated with GitHub.
 ```

@@ -185,7 +185,7 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 - **Sibling apps**: the other apps by the same maker, each as a card with its own logo in its own colours. EasyShoot
   (blue tile, "Easy" in ink and "Shoot" in `#1a63d6` light / `#8cc4ff` dark) and WhatsApp Business Monitor (green
   tile). The whole card is the link, with a `raised` background on hover and no underline.
-- Bottom row: "Copyright © year Haytham A. Salama. All rights reserved.", then Privacy Policy, License, X, and the
+- Bottom row: "Copyright © year Haytham A. Salama. MIT license.", then Privacy Policy, License, X, and the
   author's signature.
 - The signature is pure black `#000` in light and pure white `#fff` in dark, 44 × 22 px, linking to
   [haythamasalama.me](https://haythamasalama.me/). It never takes the theme's ink colour or a hover colour.
@@ -206,7 +206,7 @@ Short and plain. Say what the reviewer gets, not how it is built.
 
 ## License and author
 
-- PolyForm Shield 1.0.0: free to use, including at work. No reselling, no copies, no competing product.
+- MIT: free and open source. Anyone may use, change and share it, as long as the copyright notice stays.
 - Author: Haytham A. Salama, [haythamasalama.me](https://haythamasalama.me/), X
   [@haythamasalama](https://x.com/haythamasalama).
 - Spell the name "Haytham A. Salama" everywhere: README, `package.json`, the license, the site and the store.
