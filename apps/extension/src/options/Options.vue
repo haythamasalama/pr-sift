@@ -1,6 +1,22 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
-import { Bug, CircleAlert, Lightbulb, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
+import {
+  Bug,
+  CircleAlert,
+  Lightbulb,
+  CircleCheck,
+  CircleOff,
+  ChevronDown,
+  Columns2,
+  Eye,
+  EyeOff,
+  Monitor,
+  Moon,
+  Rows2,
+  Sparkle,
+  Sparkles,
+  Sun,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,7 +31,7 @@ import BrandMark from '../components/BrandMark.vue'
 import { openReport } from '../lib/report'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
-import type { DiffMode, Settings, ThemeMode } from '../lib/types'
+import type { DiffMode, GlowMode, Settings, ThemeMode } from '../lib/types'
 
 const STATUSES = [
   { value: 'added', label: 'Added files' },
@@ -24,7 +40,7 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed files' },
 ]
 
-const { theme, dark, setTheme } = useAppearance()
+const { theme, glow, dark, setTheme, setGlow } = useAppearance()
 const token = shallowRef('')
 const showToken = shallowRef(false)
 const hide = shallowRef('')
@@ -144,8 +160,8 @@ onMounted(load)
 
       <Card>
         <CardHeader>
-          <CardTitle>Theme</CardTitle>
-          <CardDescription>Applied immediately. You can also change it from the palette button inside a review.</CardDescription>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Applied immediately. You can also change the theme from the palette button inside a review.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
@@ -164,6 +180,23 @@ onMounted(load)
                 <ToggleGroupItem value="system"><Monitor /> System</ToggleGroupItem>
                 <ToggleGroupItem value="light"><Sun /> Light</ToggleGroupItem>
                 <ToggleGroupItem value="dark"><Moon /> Dark</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel>Glow</FieldLabel>
+                <FieldDescription>A light around the PR Sift button on pull requests, so it is easy to spot.</FieldDescription>
+              </FieldContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                :model-value="glow"
+                aria-label="Glow"
+                @update:model-value="(v) => v && setGlow(v as GlowMode)"
+              >
+                <ToggleGroupItem value="off"><CircleOff /> Off</ToggleGroupItem>
+                <ToggleGroupItem value="soft"><Sparkle /> Soft</ToggleGroupItem>
+                <ToggleGroupItem value="strong"><Sparkles /> Strong</ToggleGroupItem>
               </ToggleGroup>
             </Field>
           </FieldGroup>

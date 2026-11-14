@@ -153,6 +153,46 @@
   --hl-tag: #7ee787;
 }
 
+/* A pseudo-element animated through opacity, so the shadow is painted once instead of on every frame. */
+.ps-root [data-glow]::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 var(--glow-blur) var(--glow-spread) color-mix(in oklab, var(--primary) var(--glow-strength), transparent);
+  animation: ps-glow 2.8s ease-in-out infinite;
+}
+
+.ps-root [data-glow='soft'] {
+  --glow-blur: 10px;
+  --glow-spread: 2px;
+  --glow-strength: 45%;
+}
+
+.ps-root [data-glow='strong'] {
+  --glow-blur: 18px;
+  --glow-spread: 5px;
+  --glow-strength: 70%;
+}
+
+@keyframes ps-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-root [data-glow]::before {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
 /* Painted as an image so the added and removed colours stay visible under a selected range. */
 .ps-root .diff-selected {
   background-image: linear-gradient(var(--selected), var(--selected));

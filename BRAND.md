@@ -177,6 +177,9 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 - Videos play only while on screen. With reduced motion they don't autoplay and show controls instead.
 - The demo file list filters itself in the hero, and its height is fixed so the page never jumps.
 - The theme changes instantly, with no animation.
+- The **PR Sift** button on github.com glows in `primary` and breathes slowly (2.8 s) so it is easy to find. The glow
+  is soft by default, strong or off in the settings, and holds still with reduced motion. The button follows GitHub's
+  theme, not PR Sift's: black on a light page, near white on a dark one.
 - Smooth scrolling for in-page links.
 
 ## Site footer

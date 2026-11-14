@@ -20,6 +20,8 @@ export interface Preset {
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 
+export type GlowMode = 'off' | 'soft' | 'strong'
+
 export interface Settings {
   presets: Preset[]
   hide: string[]
@@ -30,5 +32,6 @@ export interface Settings {
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
+  launcherGlow: GlowMode
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
 import { useAppearance } from '../features/appearance/useAppearance'
+import { useGithubTheme } from '../features/appearance/useGithubTheme'
 import { portalTargetKey } from '../lib/portal'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
@@ -16,7 +17,10 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark } = useAppearance()
+const { dark, glow } = useAppearance()
+const pageDark = useGithubTheme()
+// Closed, only the launcher shows, and it sits on GitHub's page, so it follows GitHub's theme to stay visible.
+const rootDark = computed(() => (open.value ? dark.value : pageDark.value))
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
 provide(portalTargetKey, portalEl)
@@ -57,7 +61,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="ps-root" :class="{ dark }">
+  <div ref="root" class="ps-root" :class="{ dark: rootDark }">
     <Button
       v-if="dead && pr"
       variant="emphasis"
@@ -70,7 +74,12 @@ onBeforeUnmount(() => {
         <RefreshCw class="size-3" /> Reload
       </span>
     </Button>
-    <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
+    <Button
+      v-else-if="pr && !open"
+      class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg"
+      :data-glow="glow === 'off' ? undefined : glow"
+      @click="open = true"
+    >
       <BrandMark /> PR Sift
       <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
     </Button>

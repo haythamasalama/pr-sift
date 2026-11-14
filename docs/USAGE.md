@@ -22,9 +22,11 @@
 
 ## Settings
 
-Open the extension options from the toolbar icon. Theme changes apply at once; other changes reach open reviews when
-you press **Save**.
+Open the extension options from the toolbar icon. Appearance changes apply at once; other changes reach open reviews
+when you press **Save**.
 
+- **Appearance.** The theme, and the glow around the **PR Sift** button on a pull request: off, soft or strong. The
+  button follows GitHub's own light or dark theme, so it stays visible on the page.
 - **GitHub token (optional).** Used only to post a note as a review comment, and as a fallback when GitHub refuses to
   load a very large diff. Use a fine-grained token limited to the repositories you need, with **Pull requests: Read
   and write**.
