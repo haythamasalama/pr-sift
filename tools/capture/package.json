@@ -1,7 +1,7 @@
 {
   "name": "@pr-sift/capture",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Generates the screenshots, videos, social image and store images from a demo pull request.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",

@@ -82,6 +82,7 @@ used for creditworthiness).
 
 Free, public, all regions.
 
-## After approval
+## Store page
 
-Replace `INSTALL_URL` in `apps/site/scripts/content.mjs` and the Install section of `README.md` with the store link.
+https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln is the `INSTALL_URL` the site's
+install buttons use, and the link in the Install section of `README.md`.

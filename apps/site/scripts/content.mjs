@@ -1,6 +1,6 @@
 export const SITE_URL = 'https://pr-sift.haythamasalama.me/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
-export const INSTALL_URL = `${REPO_URL}#install`
+export const INSTALL_URL = 'https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln'
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
 
 export const SIBLING_APPS = [

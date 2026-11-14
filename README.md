@@ -67,7 +67,10 @@ See them all on the [website](https://pr-sift.haythamasalama.me/).
 
 ## Install
 
-PR Sift is on its way to the Chrome Web Store. Until then:
+Install PR Sift from the [Chrome Web Store](https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln), then
+open any pull request on github.com and press **PR Sift** at the bottom right.
+
+To install a release by hand instead:
 
 1. Download `pr-sift-<version>.zip` from the [latest release](https://github.com/haythamasalama/pr-sift/releases/latest)
    and unzip it.
