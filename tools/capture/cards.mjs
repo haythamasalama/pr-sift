@@ -66,61 +66,101 @@ await render(
 )
 const SHOTS = [
   {
-    name: 'review',
-    title: 'Review the 12 files that matter, not all 214',
-    sub: 'A focused review on top of any GitHub pull request.',
-    crop: [160, 122, 2400],
+    name: 'before-after',
+    compare: {
+      before: { image: 'launcher', label: 'On GitHub: every changed file, one long list', crop: [200, 940, 1120] },
+      after: { image: 'hide-noise', label: 'With PR Sift: tests, lockfiles and translations out of the way', crop: [160, 198, 1120] },
+    },
   },
   {
     name: 'filters',
-    title: 'Filter the noise in one click',
-    sub: 'By file type, by change, or with smart filters for tests, migrations and config.',
-    crop: [160, 122, 2400],
+    title: 'Filter by file type and by change',
+    sub: 'Click .php and added to see only new PHP files. Shift-click a type to hide it.',
+    crop: [160, 122, 2000],
   },
   {
-    name: 'notes',
-    title: 'Private notes on any line',
-    sub: 'They stay in your browser. Post one to GitHub only when you choose.',
-    crop: [700, 775, 2340],
+    name: 'tree-viewed',
+    title: 'Mark files and folders as viewed',
+    sub: 'Tick a folder to mark every file in it. The ring shows what is left.',
+    crop: [160, 198, 2000],
   },
   {
     name: 'ai-export',
-    title: 'Hand your notes to your AI',
-    sub: "One prompt with each note's file, lines and code, ready for your coding assistant.",
+    title: 'Private notes, ready for your AI',
+    sub: 'Notes stay in your browser. Copy them as one prompt for Claude Code, Codex, Cursor or Copilot.',
     crop: [500, 500, 2200],
   },
   {
-    name: 'dark',
-    title: 'Light or dark, like GitHub',
-    sub: "System, light or dark theme with GitHub's own diff colors.",
-    crop: [160, 122, 2400],
+    name: 'split-dark',
+    title: 'Split diffs, in light or dark',
+    sub: "Unified or split, for every file or just one, with GitHub's own diff colors.",
+    crop: [800, 440, 2240],
   },
 ]
 
 const SHOT = { width: 1280, height: 800, side: 60, top: 190 }
+const webp = (name) => readFileSync(root(`media/screenshots/${name}.webp`)).toString('base64')
 
-function storeShot({ name, title, sub, crop: [x, y, w] }) {
-  const image = readFileSync(root(`media/screenshots/${name}.webp`)).toString('base64')
-  const frameWidth = SHOT.width - SHOT.side * 2
-  const scale = frameWidth / w
-  return `<!doctype html>
-<style>
+const frame = ({ image, crop: [x, y, w] }, width) => {
+  const scale = width / w
+  return `<div class="frame"><img src="data:image/webp;base64,${webp(image)}" style="left:${-x * scale}px;top:${-y * scale}px;width:${3200 * scale}px"></div>`
+}
+
+const SHOT_STYLE = `
   ${FONTS}
   * { margin: 0; box-sizing: border-box; }
   body { width: ${SHOT.width}px; height: ${SHOT.height}px; overflow: hidden; background: #000; color: #fff; font-family: Plex; position: relative; }
   header { position: absolute; left: ${SHOT.side}px; right: ${SHOT.side}px; top: 52px; display: flex; justify-content: space-between; gap: 32px; }
   h1 { font-size: 44px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; }
-  p { margin-top: 12px; font-size: 21px; font-weight: 500; color: #8b949e; }
+  header p { margin-top: 12px; font-size: 21px; font-weight: 500; color: #8b949e; }
   header svg { flex: none; width: 52px; height: 52px; }
-  .frame { position: absolute; left: ${SHOT.side}px; top: ${SHOT.top}px; width: ${frameWidth}px; bottom: -20px; overflow: hidden; border-radius: 14px; border: 1px solid #30363d; }
-  .frame img { position: absolute; left: ${-x * scale}px; top: ${-y * scale}px; width: ${3200 * scale}px; }
+  .frame { position: absolute; overflow: hidden; border-radius: 14px; border: 1px solid #30363d; }
+  .frame img { position: absolute; }`
+
+function storeShot({ title, sub, ...shot }) {
+  const width = SHOT.width - SHOT.side * 2
+  return `<!doctype html>
+<style>${SHOT_STYLE}
+  .frame { left: ${SHOT.side}px; top: ${SHOT.top}px; width: ${width}px; bottom: -20px; }
 </style>
 <header><div><h1>${title}</h1><p>${sub}</p></div>${LOGO}</header>
-<div class="frame"><img src="data:image/webp;base64,${image}"></div>`
+${frame({ image: shot.name, crop: shot.crop }, width)}`
+}
+
+function compareShot({ compare: { before, after } }) {
+  const gap = 24
+  const width = (SHOT.width - SHOT.side * 2 - gap) / 2
+  const column = (side, left, tone) => `
+  <figure style="left:${left}px;width:${width}px">
+    <figcaption><span class="sign ${tone}">${tone === 'del' ? '−' : '+'}</span>${side.label}</figcaption>
+    ${frame(side, width)}
+  </figure>`
+  return `<!doctype html>
+<style>${SHOT_STYLE}
+  .diff { font-family: PlexMono; font-size: 34px; font-weight: 500; letter-spacing: -0.01em; }
+  .diff p { display: flex; gap: 20px; padding: 8px 18px; margin: 0; color: #fff; font-size: 34px; }
+  .diff .del { background: rgb(248 81 73 / 0.17); border-radius: 10px 10px 0 0; }
+  .diff .add { background: rgb(46 160 67 / 0.2); border-radius: 0 0 10px 10px; }
+  .del .sign, .sign.del { color: #f85149; }
+  .add .sign, .sign.add { color: #3fb950; }
+  figure { position: absolute; top: 236px; bottom: 0; margin: 0; }
+  figcaption { display: flex; gap: 10px; font-size: 17px; font-weight: 500; color: #c9d1d9; white-space: nowrap; }
+  figcaption .sign { font-family: PlexMono; }
+  figure .frame { left: 0; right: 0; top: 38px; bottom: -20px; }
+</style>
+<header>
+  <div class="diff">
+    <p class="del"><span class="sign">−</span>Scroll 214 changed files.</p>
+    <p class="add"><span class="sign">+</span>Review the 12 that matter.</p>
+  </div>
+  ${LOGO}
+</header>
+${column(before, SHOT.side, 'del')}
+${column(after, SHOT.side + width + gap, 'add')}`
 }
 
 for (const [i, shot] of SHOTS.entries()) {
-  await render(storeShot(shot), SHOT, `${STORE}/screenshot-${i + 1}-${shot.name}.png`)
+  await render(shot.compare ? compareShot(shot) : storeShot(shot), SHOT, `${STORE}/screenshot-${i + 1}-${shot.name}.png`)
 }
 await browser.close()
 

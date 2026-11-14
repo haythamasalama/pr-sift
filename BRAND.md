@@ -157,13 +157,13 @@ The signature move of the brand: a headline written as a two-line diff.
 
 All media is generated from a demo pull request by `tools/capture` (`pnpm --filter @pr-sift/capture capture`).
 
-| Asset                                            | Size                                                 | Where                  |
-| :----------------------------------------------- | :--------------------------------------------------- | :--------------------- |
-| Screenshots `media/screenshots/*.webp`           | 3200 × 2120                                          | Site, README, docs     |
-| Videos `media/videos/*.mp4` with a poster `.jpg` | 1600 × 1000, recorded at 2× and zoomed on the action | Site                   |
-| Share image `media/og.png`                       | 1200 × 630 at 2×                                     | Open Graph and X cards |
-| Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                             | Chrome Web Store       |
-| Store screenshots `media/store/screenshot-*.png` | 1280 × 800, a headline over a cropped screenshot     | Chrome Web Store       |
+| Asset                                            | Size                                                                                                                  | Where                  |
+| :----------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| Screenshots `media/screenshots/*.webp`           | 3200 × 2120                                                                                                           | Site, README, docs     |
+| Videos `media/videos/*.mp4` with a poster `.jpg` | 1600 × 1000, recorded at 2× and zoomed on the action                                                                  | Site                   |
+| Share image `media/og.png`                       | 1200 × 630 at 2×                                                                                                      | Open Graph and X cards |
+| Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                                                                                              | Chrome Web Store       |
+| Store screenshots `media/store/screenshot-*.png` | 1280 × 800, a headline over a cropped screenshot; the first is the diff headline over GitHub and PR Sift side by side | Chrome Web Store       |
 
 - Show the extension on a real-looking pull request. Every screenshot, video, poster and README GIF has a light file
   and a `-dark` file (dark ones sit on the Tahoe Dark wallpaper). The site shows the one that matches its theme and only

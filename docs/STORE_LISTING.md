@@ -48,16 +48,16 @@ Free, with public source code. No account, no server, no analytics. PR Sift only
 Not affiliated with GitHub.
 ```
 
-| Field              | Value                                                                       |
-| ------------------ | --------------------------------------------------------------------------- |
-| Category           | Developer Tools                                                             |
-| Language           | English                                                                     |
-| Store icon         | `apps/extension/icons/icon-128.png`                                         |
-| Screenshots        | `media/store/screenshot-1-review.png` to `screenshot-5-dark.png` (1280x800) |
-| Small promo tile   | `media/store/promo-small-440x280.png`                                       |
-| Marquee promo tile | `media/store/promo-marquee-1400x560.png`                                    |
-| Homepage URL       | https://pr-sift.haythamasalama.me/                                          |
-| Support URL        | https://github.com/haythamasalama/pr-sift/issues                            |
+| Field              | Value                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Category           | Developer Tools                                                                                        |
+| Language           | English                                                                                                |
+| Store icon         | `apps/extension/icons/icon-128.png`                                                                    |
+| Screenshots        | `media/store/screenshot-1-before-after.png` to `screenshot-5-split-dark.png` (1280x800), in this order |
+| Small promo tile   | `media/store/promo-small-440x280.png`                                                                  |
+| Marquee promo tile | `media/store/promo-marquee-1400x560.png`                                                               |
+| Homepage URL       | https://pr-sift.haythamasalama.me/                                                                     |
+| Support URL        | https://github.com/haythamasalama/pr-sift/issues                                                       |
 
 ## Privacy tab
 
