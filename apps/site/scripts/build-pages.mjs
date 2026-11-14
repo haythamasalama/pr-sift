@@ -273,7 +273,11 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website',
     <title>${esc(title)}</title>
     <meta name="description" content="${esc(description)}" />
     <link rel="canonical" href="${url}" />
+    <link rel="icon" href="${link('favicon.ico')}" sizes="48x48" />
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
+    <link rel="icon" href="${link('favicon-96.png')}" type="image/png" sizes="96x96" />
+    <link rel="apple-touch-icon" href="${link('apple-touch-icon.png')}" />
+    <link rel="manifest" href="${link('site.webmanifest')}" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
     ${alternates.map(([type, href, label]) => `<link rel="alternate" type="${type}" title="${esc(label)}" href="${href}" />`).join('\n    ')}
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
@@ -918,6 +922,25 @@ mkdirSync(here('public/changelog'), { recursive: true })
 cpSync(fileURLToPath(new URL('../../../media', import.meta.url)), here('public/media'), { recursive: true })
 cpSync(here('assets/brands/dia-favicon.svg'), here('public/brand/dia.svg'))
 writeFileSync(here('public/favicon.svg'), logoFile('#000000', '#ffffff'))
+cpSync(here('assets/icons'), here('public'), { recursive: true })
+writeFileSync(
+  here('public/site.webmanifest'),
+  JSON.stringify(
+    {
+      name: 'PR Sift',
+      short_name: 'PR Sift',
+      icons: [
+        { src: link('icon-192.png'), sizes: '192x192', type: 'image/png' },
+        { src: link('icon-512.png'), sizes: '512x512', type: 'image/png' },
+      ],
+      theme_color: '#000000',
+      background_color: '#000000',
+      display: 'browser',
+    },
+    null,
+    2,
+  ),
+)
 writeFileSync(here('public/brand/pr-sift-logo.svg'), logoFile('#000000', '#ffffff'))
 writeFileSync(here('public/brand/pr-sift-logo-light.svg'), logoFile('#ffffff', '#000000'))
 writeFileSync(here('public/changelog/feed.xml'), changelogFeed())
