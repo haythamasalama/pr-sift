@@ -163,7 +163,7 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 | Videos `media/videos/*.mp4` with a poster `.jpg` | 1600 × 1000, recorded at 2× and zoomed on the action | Site                   |
 | Share image `media/og.png`                       | 1200 × 630 at 2×                                     | Open Graph and X cards |
 | Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                             | Chrome Web Store       |
-| Store screenshots `media/store/screenshot-*.jpg` | 1280 × 800                                           | Chrome Web Store       |
+| Store screenshots `media/store/screenshot-*.png` | 1280 × 800, a headline over a cropped screenshot     | Chrome Web Store       |
 
 - Show the extension on a real-looking pull request. Every screenshot, video, poster and README GIF has a light file
   and a `-dark` file (dark ones sit on the Tahoe Dark wallpaper). The site shows the one that matches its theme and only
@@ -195,7 +195,8 @@ All media is generated from a demo pull request by `tools/capture` (`pnpm --filt
 Short and plain. Say what the reviewer gets, not how it is built.
 
 - Lead with the outcome and a real number: "a 200-file change becomes the 12 files that matter".
-- Name the AI tools in this order: Claude Code, Codex, Cursor, GitHub Copilot, Claude, ChatGPT.
+- Name the AI tools in this order: Claude Code, Codex, Cursor, GitHub Copilot, Claude, ChatGPT. Never list them in the
+  Chrome Web Store description: the store rejected that list as keyword spam (Yellow Argon), so say "coding assistant".
 - Privacy is the promise and must stay true: your code stays in your browser, PR Sift talks only to GitHub, no
   account, no server, no analytics.
 - Always say "Not affiliated with GitHub" in store and press text.

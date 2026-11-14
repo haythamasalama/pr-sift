@@ -55,6 +55,22 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@theme {
+  --animate-soft-ping: soft-ping 2.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes soft-ping {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    55%,
+    100% {
+      transform: scale(1.7);
+      opacity: 0;
+    }
+  }
+}
+
 /* Tailwind declares --radius-md and the rest of the scale on :root and :host, so the base must live there too.
    Declared only on .ps-root, those variables resolve to nothing and every control using them loses its corners. */
 :root,

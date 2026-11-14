@@ -64,3 +64,7 @@ export async function githubLineUrl(pr: PrRef, note: Pick<Note, 'file' | 'side' 
   const hash = await sha256(note.file)
   return `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}/files#diff-${hash}${note.side === 'new' ? 'R' : 'L'}${startOf(note)}${startOf(note) < note.line ? `-${note.side === 'new' ? 'R' : 'L'}${note.line}` : ''}`
 }
+
+export async function githubFileUrl(pr: PrRef, file: string): Promise<string> {
+  return `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}/files#diff-${await sha256(file)}`
+}

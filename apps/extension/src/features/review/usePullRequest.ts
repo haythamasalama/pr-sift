@@ -15,6 +15,7 @@ export function usePullRequest() {
   const status = shallowRef<'loading' | 'ready' | 'error'>('loading')
   const error = shallowRef('')
   const signature = shallowRef('')
+  const headSha = shallowRef('')
   let current = ''
 
   async function load(pr: PrRef) {
@@ -29,6 +30,7 @@ export function usePullRequest() {
       info.value = result.info
       via.value = result.via
       signature.value = result.signature
+      headSha.value = result.headSha
       status.value = 'ready'
     } catch (e) {
       if (current !== key) return
@@ -60,11 +62,12 @@ export function usePullRequest() {
       info.value = result.info
       via.value = result.via
       signature.value = result.signature
+      headSha.value = result.headSha
       return summary
     } catch {
       return null
     }
   }
 
-  return { files, info, via, status, error, load, hasUpdate, refresh }
+  return { files, info, via, status, error, headSha, load, hasUpdate, refresh }
 }

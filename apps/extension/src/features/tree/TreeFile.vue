@@ -8,7 +8,8 @@ const emit = defineEmits<{ select: []; toggle: [value: boolean] }>()
 </script>
 
 <template>
-  <div class="group flex items-center gap-1.5 rounded px-1 py-[3px] hover:bg-border/40" :class="viewed ? 'opacity-50' : ''">
+  <div class="group flex items-center gap-1 rounded px-1 py-[3px] hover:bg-border/40" :class="viewed ? 'opacity-50' : ''">
+    <span class="w-4 shrink-0" />
     <Checkbox
       title="Mark as viewed"
       class="after:inset-0"

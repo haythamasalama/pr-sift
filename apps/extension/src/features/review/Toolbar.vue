@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { Bug, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Palette as PaletteIcon, Rows2, Search, Sun, X } from '@lucide/vue'
+import { Bug, Columns2, Lightbulb, Monitor, Moon, NotebookPen, PanelLeft, Rows2, Search, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { openReport } from '../../lib/report'
+import { openOptions } from '../../lib/extension'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
@@ -51,7 +54,16 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
     >
       <PanelLeft />
     </Button>
-    <h1 class="min-w-24 flex-1 truncate text-sm font-semibold" :title="title">{{ title }}</h1>
+    <h1 class="min-w-0 truncate text-sm font-semibold" :title="title">{{ title }}</h1>
+    <div class="flex shrink-0 items-center gap-2 border-l pl-3" :title="`${done} of ${total} files viewed · ${inView} in the current view`">
+      <ProgressRing :done="done" :total="total" />
+      <div class="leading-tight">
+        <p class="text-xs font-semibold whitespace-nowrap">{{ total - done }}<span class="hidden sm:inline"> left</span></p>
+        <p class="hidden text-[11px] whitespace-nowrap text-muted-foreground xl:block">{{ done }} of {{ total }} done</p>
+      </div>
+    </div>
+
+    <div class="flex-1" />
 
     <div v-if="presets.length" class="flex shrink-0 gap-1">
       <Button
@@ -65,7 +77,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       </Button>
     </div>
 
-    <div class="relative flex shrink-0 items-center">
+    <div v-if="compact" class="relative flex shrink-0 items-center">
       <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
       <Input
         v-model="query"
@@ -73,14 +85,6 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         placeholder="Filter files…"
         class="h-8 w-24 bg-background pl-8 text-xs sm:w-44 md:text-xs xl:w-56"
       />
-    </div>
-
-    <div class="flex shrink-0 items-center gap-2" :title="`${done} of ${total} files viewed · ${inView} in the current view`">
-      <ProgressRing :done="done" :total="total" />
-      <div class="leading-tight">
-        <p class="text-xs font-semibold whitespace-nowrap">{{ total - done }}<span class="hidden sm:inline"> left</span></p>
-        <p class="hidden text-[11px] whitespace-nowrap text-muted-foreground xl:block">{{ done }} of {{ total }} done</p>
-      </div>
     </div>
 
     <ToggleGroup
@@ -108,11 +112,11 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Theme" title="Theme">
-          <PaletteIcon />
+        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Options" title="Theme, settings and help">
+          <Settings />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-48">
+      <DropdownMenuContent align="end" class="w-52">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
           <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
@@ -121,19 +125,12 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
             <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem @select="openOptions"><Settings /> Settings</DropdownMenuItem>
+        <DropdownMenuItem @select="openReport('bug')"><Bug /> Report a problem</DropdownMenuItem>
+        <DropdownMenuItem @select="openReport('idea')"><Lightbulb /> Suggest an idea</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-
-    <Button
-      variant="outline"
-      size="icon-sm"
-      class="hidden shrink-0 sm:inline-flex"
-      aria-label="Report a problem"
-      title="Report a problem or suggest an idea"
-      @click="openReport('bug')"
-    >
-      <Bug />
-    </Button>
 
     <Button variant="ghost" size="icon-sm" class="shrink-0" aria-label="Close" @click="emit('close')"><X /></Button>
   </header>

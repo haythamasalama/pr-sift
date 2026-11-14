@@ -1,20 +1,42 @@
 <script setup lang="ts">
 import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
-import { CheckCheck, MessageSquareText, ChevronsDownUp, ChevronsUpDown, Plus, RotateCcw, Undo2, X } from '@lucide/vue'
+import {
+  CheckCheck,
+  ChevronDown,
+  Eye,
+  FileText,
+  MessageSquareText,
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Plus,
+  RotateCcw,
+  Undo2,
+  X,
+} from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { NOTES_CHIP } from '@pr-sift/core'
-import type { ExtChip } from '../../lib/types'
+import type { ExtChip, PrFile } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
 
 const { chips } = defineProps<{
   chips: ExtChip[]
   listedCount: number
-  viewedInViewCount: number
+  viewedInView: PrFile[]
   hiddenCount: number
   filtersActive: boolean
 }>()
@@ -28,6 +50,7 @@ const emit = defineEmits<{
   removeExtension: [ext: string]
   markListed: []
   unmarkViewed: []
+  unmarkFile: [file: PrFile]
   clearAll: []
   expandCards: []
   collapseCards: []
@@ -53,8 +76,12 @@ function submitExtension() {
   adding.value = false
 }
 
-function clearAll() {
+const baseName = (path: string) => path.split('/').pop() ?? path
+const folderOf = (path: string) => path.split('/').slice(0, -1).join('/')
+
+function clearAll(e: Event) {
   if (!confirmClear.value) {
+    e.preventDefault()
     confirmClear.value = true
     setTimeout(() => (confirmClear.value = false), 3000)
     return
@@ -187,25 +214,44 @@ const chipClass = (chip: ExtChip) => [
         >
           <CheckCheck /> Mark all
         </Button>
-        <Button
-          variant="ghost"
-          size="xs"
-          class="h-7 px-2 text-xs"
-          :title="`Bring back the ${viewedInViewCount} viewed files in this view`"
-          :disabled="!viewedInViewCount"
-          @click="emit('unmarkViewed')"
-        >
-          <Undo2 /> Restore{{ viewedInViewCount ? ` ${viewedInViewCount}` : '' }}
-        </Button>
-        <Button
-          :variant="confirmClear ? 'destructive' : 'ghost'"
-          size="xs"
-          class="h-7 px-2 text-xs"
-          title="Clear every viewed mark in this pull request"
-          @click="clearAll"
-        >
-          <RotateCcw /> {{ confirmClear ? 'Click again' : 'Clear viewed' }}
-        </Button>
+        <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
+          <DropdownMenuTrigger as-child>
+            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: restore one, restore all, or clear">
+              <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span
+              ><ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" class="w-80">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Restore a file</DropdownMenuLabel>
+              <div v-if="viewedInView.length" class="max-h-64 overflow-y-auto">
+                <DropdownMenuItem v-for="f in viewedInView" :key="f.filename" :title="f.filename" @select="emit('unmarkFile', f)">
+                  <FileText />
+                  <span class="max-w-[65%] shrink-0 truncate">{{ baseName(f.filename) }}</span>
+                  <DropdownMenuShortcut class="min-w-0 truncate tracking-normal" dir="rtl">{{ folderOf(f.filename) }}</DropdownMenuShortcut>
+                </DropdownMenuItem>
+              </div>
+              <DropdownMenuItem v-else disabled>No viewed files</DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                :disabled="!viewedInView.length"
+                title="Unmark every viewed file in the current view"
+                @select="emit('unmarkViewed')"
+              >
+                <Undo2 /> Restore all in view
+                <DropdownMenuShortcut class="tracking-normal">{{ viewedInView.length }}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem variant="destructive" title="Remove every viewed mark in this pull request" @select="clearAll">
+                <RotateCcw /> {{ confirmClear ? 'Click again to confirm' : 'Clear all in PR' }}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   </div>

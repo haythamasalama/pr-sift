@@ -11,6 +11,8 @@ export const DEFAULTS: Settings = {
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',
+  treeIndent: 6,
+  treeGuides: true,
   assistant: 'claude-code',
 }
 
