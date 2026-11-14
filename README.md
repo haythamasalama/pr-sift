@@ -20,8 +20,8 @@
 </p>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="media/screenshots/review-dark.webp" />
-  <img src="media/screenshots/review.webp" alt="PR Sift on a 41-file pull request" />
+  <source media="(prefers-color-scheme: dark)" srcset="media/videos/before-after-dark.gif" />
+  <img src="media/videos/before-after.gif" alt="A 214-file pull request cut down to the 12 files that matter" />
 </picture>
 
 A free Chrome extension that turns a long GitHub pull request into a focused review.
