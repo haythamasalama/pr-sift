@@ -262,7 +262,7 @@ function footer() {
 
 const THEME_SCRIPT = `<script>(function(){var m='system';try{m=localStorage.getItem('theme')||m}catch(e){}if(m!=='light'&&m!=='dark')m='system';var r=document.documentElement;r.dataset.theme=m;if(m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))r.classList.add('dark')})()</script>`
 
-function layout({ path, title, description, body, jsonLd = [], type = 'website' }) {
+function layout({ path, title, description, body, jsonLd = [], type = 'website', alternates = [] }) {
   const url = SITE_URL + path
   return `<!doctype html>
 <html lang="en">
@@ -273,8 +273,13 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website' 
     <title>${esc(title)}</title>
     <meta name="description" content="${esc(description)}" />
     <link rel="canonical" href="${url}" />
+    <link rel="icon" href="${link('favicon.ico')}" sizes="48x48" />
     <link rel="icon" href="${link('favicon.svg')}" type="image/svg+xml" />
+    <link rel="icon" href="${link('favicon-96.png')}" type="image/png" sizes="96x96" />
+    <link rel="apple-touch-icon" href="${link('apple-touch-icon.png')}" />
+    <link rel="manifest" href="${link('site.webmanifest')}" />
     <link rel="alternate" type="application/atom+xml" title="PR Sift changelog" href="${SITE_URL}changelog/feed.xml" />
+    ${alternates.map(([type, href, label]) => `<link rel="alternate" type="${type}" title="${esc(label)}" href="${href}" />`).join('\n    ')}
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta name="author" content="${AUTHOR.name}" />
@@ -523,7 +528,18 @@ function homePage() {
   return layout({ path: '', title: h.title, description: h.description, body, jsonLd: [appLd, faqLd(h.faq)] })
 }
 
-function article({ path, crumbs, kicker, title, description, body, jsonLd = [], wide = false }) {
+function article({
+  path,
+  crumbs,
+  kicker,
+  title,
+  description,
+  metaDescription = description,
+  body,
+  jsonLd = [],
+  wide = false,
+  alternates = [],
+}) {
   const content = `
     <div class="mx-auto ${wide ? 'max-w-6xl' : 'max-w-3xl'} px-4 py-14 sm:px-6 sm:py-20">
       <nav class="flex flex-wrap items-center gap-1.5 text-sm text-muted" aria-label="Breadcrumb">
@@ -535,7 +551,15 @@ function article({ path, crumbs, kicker, title, description, body, jsonLd = [], 
       ${body}
     </div>
     ${ctaBlock()}`
-  return layout({ path, title: `${title} | PR Sift`, description, body: content, type: 'article', jsonLd: [breadcrumb(crumbs), ...jsonLd] })
+  return layout({
+    path,
+    title: `${title} | PR Sift`,
+    description: metaDescription,
+    body: content,
+    type: 'article',
+    jsonLd: [breadcrumb(crumbs), ...jsonLd],
+    alternates,
+  })
 }
 
 const moreLinks = (title, items) => `<div class="mt-14 border-t border-line pt-8">
@@ -671,6 +695,23 @@ function parseChangelog() {
   return releases
 }
 const changelog = parseChangelog()
+const releaseId = (version) => `v${version.replace(/\./g, '-')}`
+const releaseUrl = (version) => `${SITE_URL}changelog/#${releaseId(version)}`
+const released = changelog.filter((r) => r.date)
+
+function changelogMarkdown() {
+  return `# PR Sift changelog
+
+Every PR Sift release, newest first. Each item starts with the area it touches. Web page: ${SITE_URL}changelog/
+
+${changelog
+  .map(
+    (r) =>
+      `## ${r.version}${r.date ? ` - ${r.date}` : ''}\n\nLink: ${releaseUrl(r.version)}\n\n${r.sections.map((sec) => `### ${sec.kind}\n\n${sec.items.map((i) => `- ${i.area}: ${i.text}`).join('\n')}`).join('\n\n')}`,
+  )
+  .join('\n\n')}
+`
+}
 
 function changelogPage() {
   const counts = new Map()
@@ -681,8 +722,13 @@ function changelogPage() {
     </div>`
   const releases = changelog
     .map(
-      (r) => `<article class="mt-12 grid gap-6 border-t border-line pt-10 lg:grid-cols-[12rem_1fr]" id="v${r.version.replace(/\./g, '-')}">
-        <div><h2 class="font-mono text-2xl font-medium">${esc(r.version)}</h2><p class="mt-1 text-sm text-muted">${esc(r.date || '')}</p></div>
+      (
+        r,
+      ) => `<article class="release mt-12 grid scroll-mt-24 gap-6 border-t border-line pt-10 lg:grid-cols-[12rem_1fr]" id="${releaseId(r.version)}">
+        <div class="lg:sticky lg:top-24 lg:self-start">
+          <h2 class="group flex items-center gap-2 font-mono text-2xl font-medium"><a href="#${releaseId(r.version)}" class="rounded-sm hover:underline hover:decoration-line hover:underline-offset-4">${esc(r.version)}</a><button type="button" data-copy-link="#${releaseId(r.version)}" class="flex size-7 items-center justify-center rounded-md text-muted hover:bg-raised hover:text-ink" aria-label="Copy link to version ${esc(r.version)}" title="Copy link"><span data-icon-idle>${icon('link', 'size-4')}</span><span data-icon-done hidden>${icon('check', 'size-4')}</span></button></h2>
+          ${r.date ? `<p class="mt-1 text-sm text-muted"><time datetime="${esc(r.date)}">${esc(r.date)}</time></p>` : ''}
+        </div>
         <div class="flex flex-col gap-8">${r.sections
           .map(
             (
@@ -709,12 +755,41 @@ function changelogPage() {
     kicker: '',
     title: 'Changelog',
     description: 'Every change to PR Sift, grouped by area.',
+    metaDescription: `Release notes for every PR Sift version: what was added, changed and fixed, by area.${released[0] ? ` Latest: ${released[0].version} (${released[0].date}).` : ''}`,
     body: subscribe + chips + releases,
+    alternates: [['text/markdown', `${SITE_URL}changelog.md`, 'PR Sift changelog as Markdown']],
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'PR Sift changelog',
+        url: SITE_URL + 'changelog/',
+        ...(released[0] ? { dateModified: released[0].date } : {}),
+        about: { '@type': 'SoftwareApplication', name: 'PR Sift', url: SITE_URL, softwareVersion: VERSION },
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListOrder: 'https://schema.org/ItemListOrderDescending',
+          numberOfItems: released.length,
+          itemListElement: released.map((r, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            item: {
+              '@type': 'CreativeWork',
+              name: `PR Sift ${r.version}`,
+              url: releaseUrl(r.version),
+              datePublished: r.date,
+              text: r.sections.map((sec) => `${sec.kind}: ${sec.items.map((it) => `${it.area}: ${it.text}`).join(' ')}`).join(' '),
+            },
+          })),
+        },
+      },
+    ],
   })
 }
 
 function changelogFeed() {
-  const updated = new Date().toISOString()
+  const stamp = (date) => (date ? `${date}T00:00:00Z` : new Date().toISOString())
+  const updated = stamp(changelog[0]?.date)
   return `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>PR Sift changelog</title>
@@ -727,9 +802,9 @@ ${changelog
   .map(
     (r) => `  <entry>
     <title>PR Sift ${esc(r.version)}</title>
-    <link href="${SITE_URL}changelog/#v${r.version.replace(/\./g, '-')}" />
-    <id>${SITE_URL}changelog/#v${r.version.replace(/\./g, '-')}</id>
-    <updated>${updated}</updated>
+    <link href="${releaseUrl(r.version)}" />
+    <id>${releaseUrl(r.version)}</id>
+    <updated>${stamp(r.date)}</updated>
     <content type="html">${esc(r.sections.map((s) => `<h3>${s.kind}</h3><ul>${s.items.map((i) => `<li>${i.area}: ${i.text}</li>`).join('')}</ul>`).join(''))}</content>
   </entry>`,
   )
@@ -847,9 +922,29 @@ mkdirSync(here('public/changelog'), { recursive: true })
 cpSync(fileURLToPath(new URL('../../../media', import.meta.url)), here('public/media'), { recursive: true })
 cpSync(here('assets/brands/dia-favicon.svg'), here('public/brand/dia.svg'))
 writeFileSync(here('public/favicon.svg'), logoFile('#000000', '#ffffff'))
+cpSync(here('assets/icons'), here('public'), { recursive: true })
+writeFileSync(
+  here('public/site.webmanifest'),
+  JSON.stringify(
+    {
+      name: 'PR Sift',
+      short_name: 'PR Sift',
+      icons: [
+        { src: link('icon-192.png'), sizes: '192x192', type: 'image/png' },
+        { src: link('icon-512.png'), sizes: '512x512', type: 'image/png' },
+      ],
+      theme_color: '#000000',
+      background_color: '#000000',
+      display: 'browser',
+    },
+    null,
+    2,
+  ),
+)
 writeFileSync(here('public/brand/pr-sift-logo.svg'), logoFile('#000000', '#ffffff'))
 writeFileSync(here('public/brand/pr-sift-logo-light.svg'), logoFile('#ffffff', '#000000'))
 writeFileSync(here('public/changelog/feed.xml'), changelogFeed())
+writeFileSync(here('public/changelog.md'), changelogMarkdown())
 
 const today = new Date().toISOString().slice(0, 10)
 writeFileSync(
@@ -896,8 +991,8 @@ ${compare.map((c) => `- [PR Sift vs ${c.name}](${SITE_URL}compare/${c.slug}/): $
 
 ## Changelog
 
-${SITE_URL}changelog/ (Atom feed: ${SITE_URL}changelog/feed.xml)
-
+${SITE_URL}changelog/ (Markdown: ${SITE_URL}changelog.md, Atom feed: ${SITE_URL}changelog/feed.xml). Link to one version with its anchor, for example ${released[0] ? releaseUrl(released[0].version) : SITE_URL + 'changelog/'}.
+${released[0] ? `\nLatest release, ${released[0].version} (${released[0].date}):\n\n${released[0].sections.map((sec) => sec.items.map((i) => `- ${sec.kind}, ${i.area}: ${i.text}`).join('\n')).join('\n')}\n` : ''}
 ## FAQ
 
 ${home.faq.map(([q, a]) => `### ${q}\n\n${a}`).join('\n\n')}

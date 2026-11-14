@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import DiffTable from '../../../src/features/diff/DiffTable.vue'
 import type { Note } from '../../../src/lib/types'
 import { notesContext, provideContext } from '../../helpers/context'
+import { fileContextKey } from '../../../src/features/diff/fileContext'
+import { shallowRef } from 'vue'
 
 const patch = '@@ -1,3 +1,3 @@\n ctx\n-old\n+new\n tail'
 
@@ -121,5 +123,26 @@ describe('DiffTable', () => {
     const note: Note = { id: 'n1', file: 'a.php', side: 'new', line: 1, lineText: 'ctx', quote: '', text: 'only once', createdAt: 0 }
     const { wrapper } = mountTable('split', [note])
     expect(wrapper.text().split('only once')).toHaveLength(2)
+  })
+
+  it('loads the file and shows hidden lines around a hunk', async () => {
+    const loadLines = vi.fn(async () => Array.from({ length: 40 }, (_, i) => `line ${i + 1}`))
+    const wrapper = mount(DiffTable, {
+      props: { filename: 'a.php', patch: '@@ -10,2 +10,2 @@\n line 10\n-old\n+line 11', mode: 'unified', expandable: true },
+      global: {
+        provide: {
+          ...provideContext(notesContext()),
+          [fileContextKey as symbol]: { canExpand: shallowRef(true), loadLines, githubUrl: async () => '' },
+        },
+      },
+    })
+    expect(wrapper.text()).not.toContain('line 9')
+    await wrapper.find('[aria-label="Show 9 hidden lines"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('line 9'))
+    expect(loadLines).toHaveBeenCalledWith('a.php')
+    expect(wrapper.text()).toContain('line 1')
+    await wrapper.find('[aria-label="Show more lines below"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('line 31'))
+    expect(wrapper.text()).not.toContain('line 32')
   })
 })

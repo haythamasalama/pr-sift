@@ -16,8 +16,10 @@ import { usePullRequest } from './usePullRequest'
 import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
-import { buildTree, githubLineUrl, normalizeExtension } from '@pr-sift/core'
+import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
 import { hasToken } from './github'
+import { fetchFileLines } from './pull'
+import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
 import { prKey, type DiffMode, type PrRef, type Settings } from '../../lib/types'
@@ -34,8 +36,8 @@ let stopWatchingSettings = () => {}
 onBeforeUnmount(() => stopWatchingSettings())
 
 const settings = shallowRef<Settings>(DEFAULTS)
-const { files, info, status, error, load, hasUpdate, refresh } = usePullRequest()
-const { viewed, isViewed, setViewed, setMany, clearAll } = useViewed(computed(() => prKey(pr)))
+const { files, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+const { viewed, isViewed, setViewed, setMany, clearAll, undo } = useViewed(computed(() => prKey(pr)))
 const notesStore = useNotes(computed(() => prKey(pr)))
 const filter = useFileFilter(
   files,
@@ -84,6 +86,22 @@ provide(notesKey, {
   openOnGithub: async (note) => {
     window.open(await githubLineUrl(pr, note), '_blank', 'noopener')
   },
+})
+
+const fileLines = new Map<string, Promise<string[]>>()
+provide(fileContextKey, {
+  canExpand: computed(() => headSha.value !== ''),
+  loadLines: (filename) => {
+    const key = `${headSha.value}:${filename}`
+    let pending = fileLines.get(key)
+    if (!pending) {
+      pending = fetchFileLines(pr, headSha.value, filename)
+      pending.catch(() => fileLines.delete(key))
+      fileLines.set(key, pending)
+    }
+    return pending
+  },
+  githubUrl: (filename) => githubFileUrl(pr, filename),
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
@@ -147,6 +165,24 @@ function addExtension(raw: string) {
   if (ext && !settings.value.customExtensions.includes(ext)) return setCustomExtensions([...settings.value.customExtensions, ext])
 }
 
+function isEditable(target: EventTarget | undefined) {
+  return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+}
+
+async function onUndoKey(e: KeyboardEvent) {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return
+  if (isEditable(e.composedPath()[0]) || notesOpen.value) return
+  const restored = undo()
+  if (!restored) return
+  e.preventDefault()
+  if (restored.length !== 1) return
+  await nextTick()
+  if (filter.inScope.value.some((f) => f.filename === restored[0])) await list.value?.scrollTo(restored[0]!)
+}
+
+onMounted(() => window.addEventListener('keydown', onUndoKey, true))
+onBeforeUnmount(() => window.removeEventListener('keydown', onUndoKey, true))
+
 const removeExtension = (ext: string) => setCustomExtensions(settings.value.customExtensions.filter((e) => e !== ext))
 
 onMounted(async () => {
@@ -192,7 +228,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
       :listed-count="filter.inScope.value.length"
-      :viewed-in-view-count="filter.viewedInView.value.length"
+      :viewed-in-view="filter.viewedInView.value"
       @update:review-mode="setReviewMode"
       @toggle-extension="filter.toggleChip"
       @reset-filters="filter.resetFilters"
@@ -200,6 +236,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @remove-extension="removeExtension"
       @mark-listed="setMany(filter.inScope.value, true)"
       @unmark-viewed="setMany(filter.viewedInView.value, false)"
+      @unmark-file="(file) => setViewed(file, false)"
       @clear-all="clearAll"
       @expand-cards="setAllCards(true)"
       @collapse-cards="setAllCards(false)"
@@ -284,6 +321,8 @@ watch(diffMode, (value) => saveSetting('diffView', value))
               :search="filter.query.value"
               :selected="filter.selectedFolder.value"
               :is-viewed="isViewed"
+              :indent="settings.treeIndent"
+              :guides="settings.treeGuides"
               @select-folder="selectFolder"
               @jump-folder="
                 (path) => {

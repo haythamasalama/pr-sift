@@ -1,7 +1,7 @@
 {
   "name": "@pr-sift/extension",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",

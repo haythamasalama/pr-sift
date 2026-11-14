@@ -1,6 +1,20 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
-import { Bug, CircleAlert, Lightbulb, CircleCheck, ChevronDown, Columns2, Eye, EyeOff, Monitor, Moon, Rows2, Sun } from '@lucide/vue'
+import {
+  Bug,
+  CircleAlert,
+  Lightbulb,
+  CircleCheck,
+  ChevronDown,
+  Columns2,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Monitor,
+  Moon,
+  Rows2,
+  Sun,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
+import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -31,6 +46,8 @@ const hide = shallowRef('')
 const hideStatuses = shallowRef<string[]>([])
 const reviewMode = shallowRef(DEFAULTS.reviewMode)
 const diffView = shallowRef<DiffMode>(DEFAULTS.diffView)
+const treeIndent = shallowRef(DEFAULTS.treeIndent)
+const treeGuides = shallowRef(DEFAULTS.treeGuides)
 const presets = shallowRef('[]')
 const advancedOpen = shallowRef(false)
 const confirmReset = shallowRef(false)
@@ -41,6 +58,8 @@ function fill(settings: Settings) {
   hideStatuses.value = [...settings.hideStatuses]
   reviewMode.value = settings.reviewMode
   diffView.value = settings.diffView
+  treeIndent.value = settings.treeIndent
+  treeGuides.value = settings.treeGuides
   presets.value = JSON.stringify(settings.presets, null, 2)
 }
 
@@ -81,6 +100,8 @@ async function save() {
     hideStatuses: hideStatuses.value,
     reviewMode: reviewMode.value,
     diffView: diffView.value,
+    treeIndent: treeIndent.value,
+    treeGuides: treeGuides.value,
   }
   await chrome.storage.local.set({ token: token.value.trim(), settings })
   flash(true, 'Saved')
@@ -110,16 +131,14 @@ onMounted(load)
         </div>
         <div class="flex flex-col">
           <h1 class="text-xl font-semibold">PR Sift</h1>
-          <p class="text-sm text-muted-foreground">Review big pull requests without the noise. Settings stay in this browser.</p>
+          <p class="text-sm text-muted-foreground">Review big pull requests without the noise.</p>
         </div>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle>GitHub token</CardTitle>
-          <CardDescription>
-            Optional. Used only to post a private note as a comment on the pull request, and as a fallback if reading fails.
-          </CardDescription>
+          <CardDescription>Optional. Used to post notes as comments, and to read the pull request if your session can’t.</CardDescription>
         </CardHeader>
         <CardContent>
           <Field>
@@ -138,6 +157,12 @@ onMounted(load)
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
+            <FieldDescription>Fine-grained, with Pull requests set to read and write.</FieldDescription>
+            <Button as-child variant="outline" size="sm" class="w-fit">
+              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
+                <ExternalLink /> Create a token on GitHub
+              </a>
+            </Button>
           </Field>
         </CardContent>
       </Card>
@@ -145,13 +170,13 @@ onMounted(load)
       <Card>
         <CardHeader>
           <CardTitle>Theme</CardTitle>
-          <CardDescription>Applied immediately. You can also change it from the palette button inside a review.</CardDescription>
+          <CardDescription>Applies right away, here and in the review.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
             <Field orientation="horizontal">
               <FieldContent>
-                <FieldLabel>Theme</FieldLabel>
+                <FieldLabel>Mode</FieldLabel>
                 <FieldDescription>System follows your device.</FieldDescription>
               </FieldContent>
               <ToggleGroup
@@ -173,14 +198,14 @@ onMounted(load)
       <Card>
         <CardHeader>
           <CardTitle>Hidden files</CardTitle>
-          <CardDescription>These stay out of the list until you turn on “Hidden” in the review.</CardDescription>
+          <CardDescription>Kept out of the list until you turn on “Hidden” in the review.</CardDescription>
         </CardHeader>
         <CardContent>
           <FieldGroup>
             <Field>
               <FieldLabel for="hide">Path patterns</FieldLabel>
               <Textarea id="hide" v-model="hide" rows="6" spellcheck="false" placeholder="**/*.lock" />
-              <FieldDescription>One per line. Use * inside a folder and ** across folders.</FieldDescription>
+              <FieldDescription>One per line. * stays inside a folder, ** crosses folders.</FieldDescription>
             </Field>
             <FieldSet>
               <FieldLegend variant="label">Hide by change type</FieldLegend>
@@ -208,14 +233,14 @@ onMounted(load)
             <Field orientation="horizontal">
               <FieldContent>
                 <FieldLabel for="review-mode">Hide viewed files</FieldLabel>
-                <FieldDescription>Files disappear from the list as soon as you mark them viewed.</FieldDescription>
+                <FieldDescription>Files leave the list once you mark them viewed.</FieldDescription>
               </FieldContent>
               <Switch id="review-mode" v-model="reviewMode" />
             </Field>
             <Field orientation="horizontal">
               <FieldContent>
                 <FieldLabel>Diff view</FieldLabel>
-                <FieldDescription>Split falls back to unified on small windows.</FieldDescription>
+                <FieldDescription>Small windows always use Unified.</FieldDescription>
               </FieldContent>
               <ToggleGroup
                 type="single"
@@ -233,10 +258,44 @@ onMounted(load)
       </Card>
 
       <Card>
+        <CardHeader>
+          <CardTitle>File tree</CardTitle>
+          <CardDescription>How far each folder’s contents are pushed in.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field>
+              <div class="flex items-center justify-between">
+                <FieldLabel for="tree-indent">Indent</FieldLabel>
+                <span class="text-sm text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+              </div>
+              <Slider
+                id="tree-indent"
+                :model-value="[treeIndent]"
+                :min="0"
+                :max="24"
+                :step="2"
+                aria-label="Indent"
+                @update:model-value="(v) => v && (treeIndent = v[0]!)"
+              />
+              <FieldDescription>6 px matches the tree before this setting existed.</FieldDescription>
+            </Field>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel for="tree-guides">Guide lines</FieldLabel>
+                <FieldDescription>A line under each open folder.</FieldDescription>
+              </FieldContent>
+              <Switch id="tree-guides" v-model="treeGuides" />
+            </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      <Card>
         <Collapsible v-model:open="advancedOpen">
           <CardHeader>
             <CardTitle>Presets</CardTitle>
-            <CardDescription>Named sets of path patterns shown as a picker in the review.</CardDescription>
+            <CardDescription>Named groups of paths to pick in the review.</CardDescription>
             <CollapsibleTrigger as-child>
               <Button variant="outline" size="sm" class="w-fit">
                 {{ advancedOpen ? 'Hide' : 'Edit' }} JSON
@@ -259,7 +318,7 @@ onMounted(load)
       <Card>
         <CardHeader>
           <CardTitle>Help</CardTitle>
-          <CardDescription>Reports open a GitHub issue form. Nothing from your pull requests is sent.</CardDescription>
+          <CardDescription>Opens a GitHub issue. Nothing from your pull requests is sent.</CardDescription>
         </CardHeader>
         <CardContent class="flex flex-wrap gap-2">
           <Button variant="outline" @click="openReport('bug')"><Bug /> Report a problem</Button>

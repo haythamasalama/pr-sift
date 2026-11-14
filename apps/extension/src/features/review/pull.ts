@@ -7,6 +7,7 @@ export interface Loaded {
   files: PrFile[]
   via: Via
   signature: string
+  headSha: string
 }
 
 const basePath = (pr: PrRef) => `/${pr.owner}/${pr.repo}/pull/${pr.number}`
@@ -30,9 +31,11 @@ async function loadViaSession(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const base = basePath(pr)
   const [diffText, pageRes] = await Promise.all([fetchDiff(base, true), fetch(base, { credentials: 'same-origin' }).catch(() => null)])
   const files = parseDiff(diffText, base)
-  const doc = new DOMParser().parseFromString(pageRes?.ok ? await pageRes.text() : '', 'text/html')
+  const html = pageRes?.ok ? await pageRes.text() : ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
   const title = doc.querySelector('.js-issue-title')?.textContent?.trim() || document.title.split(' by ')[0] || ''
-  return { info: { title }, files, signature: hashText(diffText) }
+  const headSha = /"headSha":"([0-9a-f]{40})"/.exec(html)?.[1] ?? ''
+  return { info: { title }, files, signature: hashText(diffText), headSha }
 }
 
 interface ApiPull {
@@ -71,7 +74,7 @@ async function loadViaApi(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
     hash: f.sha,
     blob_url: f.blob_url,
   }))
-  return { info: { title: data.title }, files, signature: data.head.sha }
+  return { info: { title: data.title }, files, signature: data.head.sha, headSha: data.head.sha }
 }
 
 export async function loadPr(pr: PrRef): Promise<Loaded> {
@@ -92,4 +95,22 @@ export async function loadPr(pr: PrRef): Promise<Loaded> {
 export async function fetchSignature(pr: PrRef, via: Via): Promise<string> {
   if (via === 'api') return (await gh<ApiPull>(`/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`)).head.sha
   return hashText(await fetchDiff(basePath(pr), true))
+}
+
+function decodeBase64(content: string): string {
+  const binary = atob(content.replace(/\n/g, ''))
+  return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)))
+}
+
+export async function fetchFileLines(pr: PrRef, sha: string, path: string): Promise<string[]> {
+  const encoded = path.split('/').map(encodeURIComponent).join('/')
+  let text: string | null = null
+  const res = await fetch(`/${pr.owner}/${pr.repo}/raw/${sha}/${encoded}`, { credentials: 'same-origin' }).catch(() => null)
+  if (res?.ok) text = await res.text()
+  if (text === null && (await hasToken())) {
+    const data = await gh<{ content?: string; encoding?: string }>(`/repos/${pr.owner}/${pr.repo}/contents/${encoded}?ref=${sha}`)
+    if (data.encoding === 'base64' && data.content) text = decodeBase64(data.content)
+  }
+  if (text === null) throw new Error('Could not load ' + path)
+  return (text.endsWith('\n') ? text.slice(0, -1) : text).split('\n')
 }

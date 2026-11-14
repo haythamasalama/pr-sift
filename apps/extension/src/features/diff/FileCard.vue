@@ -10,10 +10,22 @@ import { useDiffMode } from './diffMode'
 import { cardsExpandKey, useExpandCommand } from '../tree/expandContext'
 import type { PrFile } from '../../lib/types'
 import DiffTable from './DiffTable.vue'
+import { useFileContext } from './fileContext'
 import FileStatusIcon from './FileStatusIcon.vue'
 
 const { file, viewed, stale = false } = defineProps<{ file: PrFile; viewed: boolean; stale?: boolean }>()
 const emit = defineEmits<{ viewed: [value: boolean] }>()
+
+const fileContext = useFileContext()
+const githubUrl = shallowRef(file.blob_url)
+watch(
+  () => file.filename,
+  async (name) => {
+    if (fileContext) githubUrl.value = await fileContext.githubUrl(name)
+  },
+  { immediate: true },
+)
+const expandable = computed(() => !!fileContext?.canExpand.value && file.status !== 'added' && file.status !== 'removed')
 
 const globalMode = useDiffMode()
 const override = shallowRef<'unified' | 'split' | null>(null)
@@ -141,14 +153,21 @@ defineExpose({ reveal, flash, el })
           <DropdownMenuItem :disabled="!addedLines" @select="copy(addedLines)"><ListPlus /> Copy added lines</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="ghost" size="icon-xs" as-child aria-label="Open on GitHub">
-        <a :href="file.blob_url" target="_blank" rel="noreferrer"><ExternalLink /></a>
+      <Button variant="ghost" size="icon-xs" as-child title="Open this file in the pull request on GitHub" aria-label="Open on GitHub">
+        <a :href="githubUrl" target="_blank" rel="noreferrer"><ExternalLink /></a>
       </Button>
     </div>
 
     <template v-if="!collapsed">
       <div v-if="seen" ref="body">
-        <DiffTable v-if="file.patch" :filename="file.filename" :patch="file.patch" :mode="mode" @editing="editing = $event" />
+        <DiffTable
+          v-if="file.patch"
+          :filename="file.filename"
+          :patch="file.patch"
+          :mode="mode"
+          :expandable="expandable"
+          @editing="editing = $event"
+        />
         <p v-else class="p-4 text-xs text-muted-foreground">No inline diff available (binary, renamed without changes, or too large).</p>
       </div>
       <div v-else :style="{ height: (measuredHeight || estimatedHeight) + 'px' }" />

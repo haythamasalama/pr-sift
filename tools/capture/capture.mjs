@@ -684,7 +684,7 @@ await clip(
   browser,
   'theme',
   async (page) => {
-    const button = page.getByRole('button', { name: 'Theme' })
+    const button = page.getByRole('button', { name: 'Options' })
     await camera(page, button, 1.6)
     for (const name of ['Dark', 'Light', 'System']) {
       await glide(page, button)

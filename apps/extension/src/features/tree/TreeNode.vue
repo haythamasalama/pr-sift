@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, provide, shallowRef, watch } from 'vue'
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder } from '@lucide/vue'
+import { computed, inject, provide, shallowRef, watch } from 'vue'
+import { Check, ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, Minus } from '@lucide/vue'
 import { Checkbox } from '@/components/ui/checkbox'
-import { treeExpandKey, useExpandCommand, type ExpandCommand } from './expandContext'
+import { treeExpandKey, treeLayoutKey, useExpandCommand, type ExpandCommand } from './expandContext'
 import { collectFiles } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
@@ -22,6 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const expand = useExpandCommand(treeExpandKey)
+const layout = inject(treeLayoutKey, null)
 
 const viewedState = computed(() => {
   const all = collectFiles(node)
@@ -75,7 +76,12 @@ function jump() {
         :model-value="viewedState === 'all' ? true : viewedState === 'some' ? 'indeterminate' : false"
         @click.stop
         @update:model-value="(value) => emit('toggleViewed', node.path, value === true)"
-      />
+      >
+        <template #default="{ state }">
+          <Minus v-if="state === 'indeterminate'" />
+          <Check v-else />
+        </template>
+      </Checkbox>
       <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 text-left" @click="jump">
         <Folder :size="14" class="shrink-0 text-muted-foreground" />
         <span class="truncate">{{ node.name }}</span>
@@ -103,7 +109,12 @@ function jump() {
       </span>
     </div>
 
-    <div v-if="open" class="ml-3 border-l pl-1.5">
+    <div
+      v-if="open"
+      class="ml-3 border-l"
+      :class="layout?.guides === false ? 'border-transparent' : ''"
+      :style="{ paddingLeft: `${layout?.indent ?? 6}px` }"
+    >
       <TreeNode
         v-for="d in node.dirs"
         :key="d.path"

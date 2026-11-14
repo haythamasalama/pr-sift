@@ -10,7 +10,7 @@ interface TextMessage {
   url: string
 }
 
-type Message = ApiMessage | TextMessage
+type Message = ApiMessage | TextMessage | { type: 'options' }
 
 async function api(msg: ApiMessage) {
   const { token } = (await chrome.storage.local.get('token')) as { token?: string }
@@ -45,6 +45,10 @@ async function fetchText(url: string) {
 
 chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   if (sender.id !== chrome.runtime.id) return
+  if (msg.type === 'options') {
+    void chrome.runtime.openOptionsPage()
+    return
+  }
   const task = msg.type === 'gh' ? api(msg) : msg.type === 'text' ? fetchText(msg.url) : null
   if (!task) return
   task.then(send).catch((e) => send({ ok: false, status: 0, data: { message: String(e) } }))

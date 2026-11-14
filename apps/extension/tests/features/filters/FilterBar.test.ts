@@ -1,7 +1,8 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import FilterBar from '../../../src/features/filters/FilterBar.vue'
 import type { ExtChip } from '../../../src/lib/types'
+import { file } from '@pr-sift/core/testing'
 
 const chips: ExtChip[] = [
   { ext: '.php', label: '.php', count: 3, custom: false },
@@ -12,7 +13,15 @@ const chips: ExtChip[] = [
 
 const mountBar = () =>
   mount(FilterBar, {
-    props: { chips, listedCount: 4, viewedInViewCount: 2, hiddenCount: 1, filtersActive: false, reviewMode: true, showHidden: false },
+    props: {
+      chips,
+      listedCount: 4,
+      viewedInView: [file('a.php'), file('b.php')],
+      hiddenCount: 1,
+      filtersActive: false,
+      reviewMode: true,
+      showHidden: false,
+    },
   })
 
 const button = (wrapper: ReturnType<typeof mountBar>, text: string) => wrapper.findAll('button').find((b) => b.text().includes(text))!
@@ -49,7 +58,15 @@ describe('FilterBar', () => {
     const idle = mountBar()
     expect(idle.text()).not.toContain('Reset filters')
     const active = mount(FilterBar, {
-      props: { chips, listedCount: 4, viewedInViewCount: 2, hiddenCount: 1, filtersActive: true, reviewMode: true, showHidden: false },
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [file('a.php'), file('b.php')],
+        hiddenCount: 1,
+        filtersActive: true,
+        reviewMode: true,
+        showHidden: false,
+      },
     })
     await active
       .findAll('button')
@@ -88,22 +105,15 @@ describe('FilterBar', () => {
     expect(wrapper.emitted('addExtension')).toEqual([['.blade.php']])
   })
 
-  it('asks twice before clearing every viewed mark', async () => {
-    vi.useFakeTimers()
-    const wrapper = mountBar()
-    await button(wrapper, 'Clear viewed').trigger('click')
-    expect(wrapper.emitted('clearAll')).toBeUndefined()
-    await button(wrapper, 'Click again').trigger('click')
-    expect(wrapper.emitted('clearAll')).toHaveLength(1)
-    vi.useRealTimers()
+  it('shows how many files in the view are viewed', () => {
+    expect(button(mountBar(), 'Viewed').text()).toContain('2')
   })
 
-  it('disables bulk actions when there is nothing to act on', () => {
+  it('disables mark all when there is nothing to act on', () => {
     const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 0, viewedInViewCount: 0, hiddenCount: 0, filtersActive: false, reviewMode: true, showHidden: false },
+      props: { chips, listedCount: 0, viewedInView: [], hiddenCount: 0, filtersActive: false, reviewMode: true, showHidden: false },
     })
     expect(button(wrapper, 'Mark all').attributes('disabled')).toBeDefined()
-    expect(button(wrapper, 'Restore').attributes('disabled')).toBeDefined()
   })
 
   it('emits expand and collapse commands for the file cards', async () => {

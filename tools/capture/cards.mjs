@@ -1,12 +1,9 @@
-import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import ffmpeg from 'ffmpeg-static'
 import { chromium } from 'playwright'
 
 const root = (path) => fileURLToPath(new URL(`../../${path}`, import.meta.url))
 const STORE = root('media/store')
-const STORE_SHOTS = ['review', 'filters', 'notes', 'ai-export', 'dark']
 
 const font = (pkg, file) =>
   `data:font/woff2;base64,${readFileSync(root(`apps/site/node_modules/@fontsource/${pkg}/files/${file}`)).toString('base64')}`
@@ -67,21 +64,64 @@ await render(
   { width: 1400, height: 560 },
   `${STORE}/promo-marquee-1400x560.png`,
 )
-await browser.close()
+const SHOTS = [
+  {
+    name: 'review',
+    title: 'Review the 12 files that matter, not all 214',
+    sub: 'A focused review on top of any GitHub pull request.',
+    crop: [160, 122, 2400],
+  },
+  {
+    name: 'filters',
+    title: 'Filter the noise in one click',
+    sub: 'By file type, by change, or with smart filters for tests, migrations and config.',
+    crop: [160, 122, 2400],
+  },
+  {
+    name: 'notes',
+    title: 'Private notes on any line',
+    sub: 'They stay in your browser. Post one to GitHub only when you choose.',
+    crop: [700, 775, 2340],
+  },
+  {
+    name: 'ai-export',
+    title: 'Hand your notes to your AI',
+    sub: "One prompt with each note's file, lines and code, ready for your coding assistant.",
+    crop: [500, 500, 2200],
+  },
+  {
+    name: 'dark',
+    title: 'Light or dark, like GitHub',
+    sub: "System, light or dark theme with GitHub's own diff colors.",
+    crop: [160, 122, 2400],
+  },
+]
 
-STORE_SHOTS.forEach((name, i) => {
-  execFileSync(ffmpeg, [
-    '-y',
-    '-loglevel',
-    'error',
-    '-i',
-    root(`media/screenshots/${name}.webp`),
-    '-vf',
-    'scale=1280:-2:flags=lanczos,crop=1280:800',
-    '-q:v',
-    '2',
-    `${STORE}/screenshot-${i + 1}-${name}.jpg`,
-  ])
-})
+const SHOT = { width: 1280, height: 800, side: 60, top: 190 }
+
+function storeShot({ name, title, sub, crop: [x, y, w] }) {
+  const image = readFileSync(root(`media/screenshots/${name}.webp`)).toString('base64')
+  const frameWidth = SHOT.width - SHOT.side * 2
+  const scale = frameWidth / w
+  return `<!doctype html>
+<style>
+  ${FONTS}
+  * { margin: 0; box-sizing: border-box; }
+  body { width: ${SHOT.width}px; height: ${SHOT.height}px; overflow: hidden; background: #000; color: #fff; font-family: Plex; position: relative; }
+  header { position: absolute; left: ${SHOT.side}px; right: ${SHOT.side}px; top: 52px; display: flex; justify-content: space-between; gap: 32px; }
+  h1 { font-size: 44px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; }
+  p { margin-top: 12px; font-size: 21px; font-weight: 500; color: #8b949e; }
+  header svg { flex: none; width: 52px; height: 52px; }
+  .frame { position: absolute; left: ${SHOT.side}px; top: ${SHOT.top}px; width: ${frameWidth}px; bottom: -20px; overflow: hidden; border-radius: 14px; border: 1px solid #30363d; }
+  .frame img { position: absolute; left: ${-x * scale}px; top: ${-y * scale}px; width: ${3200 * scale}px; }
+</style>
+<header><div><h1>${title}</h1><p>${sub}</p></div>${LOGO}</header>
+<div class="frame"><img src="data:image/webp;base64,${image}"></div>`
+}
+
+for (const [i, shot] of SHOTS.entries()) {
+  await render(storeShot(shot), SHOT, `${STORE}/screenshot-${i + 1}-${shot.name}.png`)
+}
+await browser.close()
 
 console.log('social image and store images written')

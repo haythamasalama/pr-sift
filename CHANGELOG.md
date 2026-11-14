@@ -9,6 +9,27 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 - Filters: Clicking a type keeps every chip in place. Reset filters now sits at the end of the row.
 
+## 1.1.0 - 2026-11-14
+
+### Added
+
+- Views: Show hidden lines above and below each change, 20 at a time or all at once.
+- Review: Ctrl+Z (or ⌘Z) undoes the last viewed change.
+- Review: A Viewed menu restores one file, every file in the view, or clears all marks in the pull request.
+- Review: The open button on a file jumps to that file inside the pull request on GitHub.
+- Tree: Set the indent and turn guide lines on or off in the options.
+- Appearance: A Settings item in the review menu opens the options page.
+
+### Changed
+
+- Appearance: The PR Sift button matches GitHub's buttons and follows the page's light or dark background.
+- Review: Theme, settings and help share one menu, and progress sits next to the pull request title.
+- Tree: Partly viewed folders show a dash instead of a check.
+
+### Fixed
+
+- Review: Pressing Escape in a menu closes the menu, not the whole review.
+
 ## 1.0.1 - 2026-11-12
 
 ### Fixed
