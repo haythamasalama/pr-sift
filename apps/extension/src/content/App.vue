@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
 import { useAppearance } from '../features/appearance/useAppearance'
+import { useGithubDark } from '../features/appearance/useGithubDark'
 import { portalTargetKey } from '../lib/portal'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
@@ -17,6 +18,7 @@ const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
 const { dark } = useAppearance()
+const githubDark = useGithubDark()
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
 provide(portalTargetKey, portalEl)
@@ -70,10 +72,12 @@ onBeforeUnmount(() => {
         <RefreshCw class="size-3" /> Reload
       </span>
     </Button>
-    <Button v-else-if="pr && !open" class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
-      <BrandMark /> PR Sift
-      <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
-    </Button>
+    <div v-else-if="pr && !open" class="ps-root" :class="{ dark: githubDark }">
+      <Button class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
+        <BrandMark /> PR Sift
+        <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
+      </Button>
+    </div>
     <ReviewPanel
       v-if="pr && open && !dead"
       :key="prKey(pr)"
