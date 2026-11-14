@@ -60,4 +60,31 @@ describe('useViewed', () => {
     await second.setViewed(file('b.php', { hash: 'h2' }), true)
     expect(store['viewed2:o/r#1']).toEqual({ 'a.php': 'h1', 'b.php': 'h2' })
   })
+
+  it('undoes the last viewed change, one step at a time', async () => {
+    const { store } = installChrome()
+    const viewed = useViewed(shallowRef('o/r#1'))
+    const a = file('a.php', { hash: 'h1' })
+    const b = file('b.php', { hash: 'h2' })
+    await viewed.setViewed(a, true)
+    await viewed.setViewed(b, true)
+    expect(viewed.undo()).toEqual(['b.php'])
+    await flushPromises()
+    expect(viewed.isViewed(b)).toBe(false)
+    expect(viewed.isViewed(a)).toBe(true)
+    expect(viewed.undo()).toEqual(['a.php'])
+    await flushPromises()
+    expect(store['viewed2:o/r#1']).toEqual({})
+    expect(viewed.undo()).toBeNull()
+  })
+
+  it('brings back every mark removed by clear all', async () => {
+    installChrome()
+    const viewed = useViewed(shallowRef('o/r#1'))
+    const list = [file('a'), file('b')]
+    await viewed.setMany(list, true)
+    await viewed.clearAll()
+    viewed.undo()
+    expect(list.every(viewed.isViewed)).toBe(true)
+  })
 })
