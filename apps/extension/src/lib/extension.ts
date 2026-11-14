@@ -1,5 +1,9 @@
 export const alive = () => Boolean(chrome.runtime?.id)
 
+export function openOptions() {
+  if (alive()) chrome.runtime.sendMessage({ type: 'options' })
+}
+
 export async function storageGet<T>(key: string): Promise<T | undefined> {
   if (!alive()) return undefined
   try {
