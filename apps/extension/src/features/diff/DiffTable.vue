@@ -2,20 +2,64 @@
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import { MessageSquarePlus, Plus } from '@lucide/vue'
 import { useNotesContext } from '../notes/useNotes'
-import { anchorOf, buildSplitRows, lineText, parsePatch } from '@pr-sift/core'
+import { anchorOf, buildSplitRows, expandPatch, lineText, parsePatch, revealMore, type Reveal } from '@pr-sift/core'
 import { highlightRows } from './highlight'
 import { whenIdle } from '../../lib/idle'
 import type { DiffMode, DiffRow, Note } from '../../lib/types'
 import NoteBox from '../notes/NoteBox.vue'
 import NoteEditor from '../notes/NoteEditor.vue'
+import ExpandControl from './ExpandControl.vue'
+import { useFileContext } from './fileContext'
 import { Button } from '@/components/ui/button'
 
-const { filename, patch, mode } = defineProps<{ filename: string; patch: string; mode: DiffMode }>()
+const {
+  filename,
+  patch,
+  mode,
+  expandable = false,
+} = defineProps<{ filename: string; patch: string; mode: DiffMode; expandable?: boolean }>()
 const emit = defineEmits<{ editing: [value: boolean] }>()
 const ctx = useNotesContext()
+const fileContext = useFileContext()
 
 const LIMIT = 500
-const rows = computed(() => parsePatch(patch))
+const parsed = computed(() => parsePatch(patch))
+const lines = shallowRef<string[] | null>(null)
+const reveal = shallowRef<Record<number, Reveal>>({})
+const loadingLines = shallowRef(false)
+const linesFailed = shallowRef(false)
+watch(
+  () => [patch, filename],
+  () => {
+    lines.value = null
+    reveal.value = {}
+    linesFailed.value = false
+  },
+)
+const expanded = computed(() =>
+  expandable && fileContext && !linesFailed.value
+    ? expandPatch(parsed.value, lines.value, reveal.value)
+    : { rows: parsed.value, controls: new Map() },
+)
+const rows = computed(() => expanded.value.rows)
+const controls = computed(() => expanded.value.controls)
+
+async function expand(gap: number, direction: 'up' | 'down' | 'all') {
+  if (!fileContext) return
+  if (!lines.value) {
+    loadingLines.value = true
+    try {
+      lines.value = await fileContext.loadLines(filename)
+    } catch {
+      linesFailed.value = true
+      return
+    } finally {
+      loadingLines.value = false
+    }
+  }
+  const control = [...controls.value.values()].find((c) => c.gap === gap)
+  if (control) reveal.value = { ...reveal.value, [gap]: revealMore(reveal.value[gap], control, direction) }
+}
 const hasOld = computed(() => rows.value.some((row) => row.oldNo !== ''))
 const hasNew = computed(() => rows.value.some((row) => row.newNo !== ''))
 const unifiedColumns = computed(() => 3 + Number(hasOld.value) + Number(hasNew.value))
@@ -28,7 +72,7 @@ function scheduleHighlight() {
   cancelIdle = whenIdle(() => (highlighted.value = highlightRows(rows.value, filename)))
 }
 
-watch(() => [patch, filename], scheduleHighlight, { immediate: true })
+watch(rows, scheduleHighlight, { immediate: true })
 onBeforeUnmount(() => cancelIdle?.())
 const showAll = shallowRef(false)
 const total = computed(() => (mode === 'split' ? splitRows.value.length : rows.value.length))
@@ -63,7 +107,8 @@ interface Span {
   end: number
 }
 
-const draft = shallowRef<(Span & { at: number; quote: string }) | null>(null)
+const draft = shallowRef<(Span & { quote: string }) | null>(null)
+const draftAt = computed(() => (draft.value ? rowAt.value.get(`${draft.value.side}:${draft.value.end}`) : undefined))
 const active = shallowRef<Span | null>(null)
 watch(
   () => active.value !== null || draft.value !== null,
@@ -81,7 +126,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => resizeObserver?.disconnect())
 
-const draftHere = (...indexes: (number | null)[]) => draft.value !== null && indexes.includes(draft.value.at)
+const draftHere = (...indexes: (number | null)[]) => draftAt.value !== undefined && indexes.includes(draftAt.value)
 
 function spanOf(from: number, to: number): Span | null {
   const a = anchorOf(rows.value[from]!)
@@ -94,9 +139,8 @@ function spanOf(from: number, to: number): Span | null {
 function openRange(from: number, to: number, quote: string) {
   const span = spanOf(from, to)
   if (!span) return
-  const at = rowAt.value.get(`${span.side}:${span.end}`)
-  if (at === undefined) return
-  draft.value = { ...span, at, quote }
+  if (!rowAt.value.has(`${span.side}:${span.end}`)) return
+  draft.value = { ...span, quote }
   active.value = span
   floating.value = null
 }
@@ -199,7 +243,18 @@ function cellClass(index: number | null, side: 'left' | 'right') {
     <table v-if="mode === 'unified'" class="w-full border-collapse font-mono text-xs leading-[1.5]">
       <tbody>
         <template v-for="(row, i) in visibleRows" :key="i">
-          <tr :data-i="i" class="group" :class="[rowClass[row.kind], isActive(i) ? lit : '']">
+          <tr v-if="row.kind === 'hunk'" :class="rowClass.hunk">
+            <td :colspan="unifiedColumns - 1" class="px-1 select-none">
+              <ExpandControl
+                v-if="controls.get(i)"
+                :control="controls.get(i)!"
+                :busy="loadingLines"
+                @expand="expand(controls.get(i)!.gap, $event)"
+              />
+            </td>
+            <td class="pr-3 whitespace-pre">{{ row.text }}</td>
+          </tr>
+          <tr v-else :data-i="i" class="group" :class="[rowClass[row.kind], isActive(i) ? lit : '']">
             <td class="w-5 pr-0 pl-1 text-center select-none">
               <Button
                 v-if="anchorOf(row)"
@@ -256,7 +311,18 @@ function cellClass(index: number | null, side: 'left' | 'right') {
       </colgroup>
       <tbody>
         <template v-for="(row, i) in visibleSplit" :key="i">
-          <tr v-if="row.full !== null" :class="rowClass[rows[row.full]!.kind]">
+          <tr v-if="row.full !== null && rows[row.full]!.kind === 'hunk'" :class="rowClass.hunk">
+            <td class="px-1 select-none">
+              <ExpandControl
+                v-if="controls.get(row.full)"
+                :control="controls.get(row.full)!"
+                :busy="loadingLines"
+                @expand="expand(controls.get(row.full)!.gap, $event)"
+              />
+            </td>
+            <td colspan="3" class="px-2 whitespace-pre-wrap">{{ rows[row.full]!.text }}</td>
+          </tr>
+          <tr v-else-if="row.full !== null" :class="rowClass[rows[row.full]!.kind]">
             <td colspan="4" class="px-3 whitespace-pre-wrap">{{ rows[row.full]!.text }}</td>
           </tr>
           <tr v-else>
