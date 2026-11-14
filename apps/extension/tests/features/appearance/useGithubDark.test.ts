@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { githubIsDark } from '../../../src/features/appearance/useGithubDark'
+import { githubIsDark, isDarkColor } from '../../../src/features/appearance/useGithubDark'
 
 describe('githubIsDark', () => {
   it('uses the mode GitHub sets on the page', () => {
@@ -14,5 +14,17 @@ describe('githubIsDark', () => {
 
   it('treats a missing mode as light', () => {
     expect(githubIsDark(undefined, true)).toBe(false)
+  })
+})
+
+describe('isDarkColor', () => {
+  it('reads the page background brightness', () => {
+    expect(isDarkColor('rgb(13, 17, 23)')).toBe(true)
+    expect(isDarkColor('rgb(255, 255, 255)')).toBe(false)
+  })
+
+  it('gives no answer for a transparent or unknown colour', () => {
+    expect(isDarkColor('rgba(0, 0, 0, 0)')).toBeNull()
+    expect(isDarkColor('transparent')).toBeNull()
   })
 })

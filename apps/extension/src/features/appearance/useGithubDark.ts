@@ -4,19 +4,30 @@ import { useAppearance } from './useAppearance'
 export const githubIsDark = (colorMode: string | undefined, systemDark: boolean) =>
   colorMode === 'dark' || (colorMode === 'auto' && systemDark)
 
-// The launcher sits on GitHub's page, so it follows GitHub's theme rather than PR Sift's own setting.
+export function isDarkColor(color: string): boolean | null {
+  const m = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:\s*[,/]\s*([\d.]+))?/.exec(color)
+  if (!m || Number(m[4] ?? 1) === 0) return null
+  return 0.299 * Number(m[1]) + 0.587 * Number(m[2]) + 0.114 * Number(m[3]) < 128
+}
+
+// The launcher sits on GitHub's page, so it follows the page's real background rather than PR Sift's own theme.
 export function useGithubDark() {
   const { systemDark } = useAppearance()
-  const colorMode = shallowRef<string | undefined>()
-  const root = document.documentElement
-  const read = () => (colorMode.value = root.dataset.colorMode)
-  const observer = new MutationObserver(read)
+  const version = shallowRef(0)
+  const bump = () => version.value++
+  const observer = new MutationObserver(bump)
 
   onMounted(() => {
-    read()
-    observer.observe(root, { attributes: true, attributeFilter: ['data-color-mode'] })
+    observer.observe(document.documentElement, { attributes: true })
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] })
   })
   onBeforeUnmount(() => observer.disconnect())
 
-  return computed(() => githubIsDark(colorMode.value, systemDark.value))
+  return computed(() => {
+    void version.value
+    const fromBackground =
+      isDarkColor(getComputedStyle(document.body).backgroundColor) ??
+      isDarkColor(getComputedStyle(document.documentElement).backgroundColor)
+    return fromBackground ?? githubIsDark(document.documentElement.dataset.colorMode, systemDark.value)
+  })
 }

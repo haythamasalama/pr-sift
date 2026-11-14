@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RefreshCw, Sparkles } from '@lucide/vue'
+import { RefreshCw } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,7 @@ function sync() {
 const reload = () => location.reload()
 
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"]')) open.value = false
+  if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
 }
 
 onMounted(() => {
@@ -60,22 +60,27 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="ps-root" :class="{ dark }">
-    <Button
-      v-if="dead && pr"
-      variant="emphasis"
-      class="fixed right-5 bottom-5 z-30 h-8 gap-2 rounded-full pr-1 pl-3 text-xs shadow-lg"
-      @click="reload"
-    >
-      <Sparkles class="size-3.5" />
-      <span>Update ready</span>
-      <span class="inline-flex h-6 items-center gap-1 rounded-full bg-emphasis-foreground px-2.5 text-[11px] font-semibold text-emphasis">
-        <RefreshCw class="size-3" /> Reload
-      </span>
-    </Button>
-    <div v-else-if="pr && !open" class="ps-root" :class="{ dark: githubDark }">
-      <Button class="fixed right-5 bottom-5 z-30 rounded-full shadow-lg" @click="open = true">
-        <BrandMark /> PR Sift
-        <Badge v-if="externalUpdate" variant="secondary" class="bg-amber-400 text-black">Updated</Badge>
+    <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
+      <Button
+        variant="outline"
+        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-full border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        @click="dead ? reload() : (open = true)"
+      >
+        <span class="relative flex size-6 items-center justify-center">
+          <span class="absolute inset-0 rounded-md bg-primary/40 motion-safe:animate-soft-ping" />
+          <span class="relative flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <RefreshCw v-if="dead" />
+            <BrandMark v-else class="size-3.5" />
+          </span>
+        </span>
+        {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
+        <Badge
+          v-if="externalUpdate && !dead"
+          variant="outline"
+          class="border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+        >
+          Updated
+        </Badge>
       </Button>
     </div>
     <ReviewPanel
