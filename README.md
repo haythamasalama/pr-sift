@@ -46,7 +46,7 @@ Mark files or whole folders as viewed. A new push brings changed files back.
   <img src="media/videos/review.gif" alt="Marking folders as viewed" />
 </picture>
 
-### Private notes for your AI
+### Write notes on the code. Your AI fixes them.
 
 Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post one to GitHub.
 
