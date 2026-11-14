@@ -16,9 +16,44 @@ export const IMPORTANT = [
   'config/billing.php',
 ]
 const LOCKFILES = ['composer.lock', 'pnpm-lock.yaml']
+export const QUICK = '.github/workflows/tests.yml'
 
-const LOCALES = ['ar', 'de', 'es', 'fr', 'hi', 'id', 'it', 'ja', 'ko', 'nl', 'pl', 'pt_BR', 'ru', 'sv', 'tr', 'uk', 'zh_CN']
+const LOCALES = ['ar', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'nl', 'pt_BR', 'ru', 'tr', 'zh_CN']
 const LANG_FILES = ['billing', 'invoices', 'payments', 'plans', 'usage', 'validation']
+const CLAUDE = [
+  'agents/billing-reviewer.md',
+  'agents/migration-checker.md',
+  'agents/test-writer.md',
+  'commands/invoice-fixture.md',
+  'commands/review-billing.md',
+  'commands/seed-usage.md',
+  'settings.json',
+  'skills/billing/SKILL.md',
+  'skills/billing/examples.md',
+  'skills/invoices/SKILL.md',
+  'skills/invoices/rules.md',
+  'skills/money/SKILL.md',
+  'skills/money/rounding.md',
+  'skills/testing/SKILL.md',
+  'skills/testing/fixtures.md',
+  'skills/usage/SKILL.md',
+]
+const DOCS = [
+  'billing/usage.md',
+  'billing/invoices.md',
+  'billing/plans.md',
+  'billing/proration.md',
+  'billing/refunds.md',
+  'billing/taxes.md',
+  'api/invoices.md',
+  'api/usage.md',
+  'api/webhooks.md',
+  'adr/0012-usage-billing.md',
+  'adr/0013-invoice-periods.md',
+  'runbooks/failed-invoices.md',
+  'runbooks/month-end.md',
+  'changelog/billing.md',
+]
 const SUBJECTS = [
   'GenerateInvoice',
   'UsageMeter',
@@ -62,23 +97,28 @@ const add = (path, body) => {
   if (!DIFF.includes(` b/${path}\n`)) added(path, body)
 }
 
+for (const file of CLAUDE) add(`.claude/${file}`, `# ${file}\n\nProject notes for the coding agent.`)
+for (const file of DOCS) add(`docs/${file}`, `# ${file}\n\nHow usage-based billing works.`)
 for (const locale of LOCALES) {
   for (const file of LANG_FILES) {
     add(`lang/${locale}/${file}.php`, `<?php\n\nreturn [\n    'title' => '${file}',\n    'period' => ':start – :end',\n];`)
   }
 }
+const TOTAL = 214
+const tests = []
 for (const subject of SUBJECTS) {
-  for (const suite of ['Feature', 'Unit']) {
-    add(
-      `tests/${suite}/Billing/${subject}Test.php`,
-      `<?php\n\nit('handles ${subject} for a usage period', function () {\n    expect(true)->toBeTrue();\n});`,
-    )
-  }
+  tests.push(`tests/Feature/Billing/${subject}Test.php`, `tests/Unit/Billing/${subject}Test.php`)
+  tests.push(`tests/js/billing/${subject[0].toLowerCase() + subject.slice(1)}.test.ts`)
 }
-for (const subject of SUBJECTS.slice(0, 30)) {
-  const name = subject[0].toLowerCase() + subject.slice(1)
-  add(`tests/js/billing/${name}.test.ts`, `import { it, expect } from 'vitest'\n\nit('${name}', () => {\n  expect(true).toBe(true)\n})`)
+const room = TOTAL - IMPORTANT.length - LOCKFILES.length - 1 - noise.length
+for (const path of tests.slice(0, room)) {
+  add(
+    path,
+    path.endsWith('.ts')
+      ? `import { it, expect } from 'vitest'\n\nit('works', () => {\n  expect(true).toBe(true)\n})`
+      : `<?php\n\nit('handles a usage period', function () {\n    expect(true)->toBeTrue();\n});`,
+  )
 }
 
-export const BIG_PATHS = [...IMPORTANT, ...LOCKFILES, ...noise]
+export const BIG_PATHS = [...IMPORTANT, QUICK, ...LOCKFILES, ...noise]
 export const BIG_DIFF = diffFor(BIG_PATHS)

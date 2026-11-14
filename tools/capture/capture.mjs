@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ffmpeg from 'ffmpeg-static'
 import { chromium } from 'playwright'
-import { BIG_DIFF, BIG_PATHS } from './big-pr.mjs'
+import { BIG_DIFF, BIG_PATHS, QUICK } from './big-pr.mjs'
 import { DIFF, PR, SMALL_DIFF, TITLE } from './demo-pr.mjs'
 
 const root = (path) => fileURLToPath(new URL(`../../${path}`, import.meta.url))
@@ -313,8 +314,13 @@ function videoCursor({ ringColor }) {
   else add()
 }
 
-// The frame always holds the cursor and the whole target, so zoom never cuts what the viewer should read.
+const GENTLE_ZOOM = 1.35
+let maxZoom = GENTLE_ZOOM
+
+// The frame always holds the cursor and the whole target, so zoom never cuts what the viewer should read. A zoom too
+// small to help is skipped, and the tour turns zoom off because its frames need the whole panel.
 async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
+  zoom = Math.min(zoom, maxZoom)
   let box = !target ? null : typeof target.boundingBox === 'function' ? await target.boundingBox() : target
   const focus = box
   if (box && typeof target.evaluate === 'function') {
@@ -358,7 +364,8 @@ async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
         }
         const pad = 28
         const fit = Math.min(width / (right - left + pad * 2), height / (bottom - top + pad * 2))
-        const z = Math.max(1, Math.min(zoom, fit))
+        const fitted = Math.min(zoom, fit)
+        const z = fitted < 1.12 ? 1 : fitted
         const fullW = width * scale
         const fullH = height * scale
         const x = fullW / 2 - ((left + right) / 2) * scale * z
@@ -392,6 +399,89 @@ async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
   await page.waitForTimeout(80)
 }
 
+// Playwright's own recorder caps the bitrate around 1 Mbps, which blurs code text, so frames come straight from the
+// browser at full size and ffmpeg builds the video from them.
+async function startCapture(page) {
+  const client = await page.context().newCDPSession(page)
+  const frames = []
+  client.on('Page.screencastFrame', ({ data, metadata, sessionId }) => {
+    frames.push({ data, t: metadata.timestamp })
+    client.send('Page.screencastFrameAck', { sessionId }).catch(() => {})
+  })
+  const size = page.viewportSize()
+  await client.send('Page.startScreencast', { format: 'jpeg', quality: 95, maxWidth: size.width, maxHeight: size.height })
+  return {
+    frames,
+    async stop() {
+      await client.send('Page.stopScreencast')
+      await client.detach()
+    },
+  }
+}
+
+const now = () => Date.now() / 1000
+
+function writeVideo(frames, { from, to, cut = null }, mp4, width = 1920) {
+  const dir = `${OUT}/raw/${basename(mp4, '.mp4')}-frames`
+  rmSync(dir, { recursive: true, force: true })
+  mkdirSync(dir, { recursive: true })
+  frames.forEach((frame, i) => writeFileSync(`${dir}/${i}.jpg`, Buffer.from(frame.data, 'base64')))
+  const fps = 30
+  const skip = cut && cut[1] - cut[0] > 0.2 ? cut[1] - cut[0] : 0
+  const length = to - from - skip
+  const lines = []
+  let index = 0
+  for (let k = 0; k < Math.round(length * fps); k++) {
+    let t = from + k / fps
+    if (skip && t >= cut[0]) t += skip
+    while (index + 1 < frames.length && frames[index + 1].t <= t) index++
+    lines.push(`file '${index}.jpg'`, `duration ${(1 / fps).toFixed(6)}`)
+  }
+  lines.push(`file '${index}.jpg'`)
+  writeFileSync(`${dir}/list.txt`, lines.join('\n'))
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-f',
+    'concat',
+    '-safe',
+    '0',
+    '-i',
+    `${dir}/list.txt`,
+    '-vf',
+    `scale=${width}:-2:flags=lanczos,fps=${fps}`,
+    '-c:v',
+    'libx264',
+    '-preset',
+    'slow',
+    '-crf',
+    '18',
+    '-tune',
+    'animation',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    mp4,
+  ])
+  rmSync(dir, { recursive: true, force: true })
+  return length
+}
+
+function writeGif(mp4, gif) {
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-i',
+    mp4,
+    '-vf',
+    'fps=10,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
+    gif,
+  ])
+}
+
 async function clip(browser, name, play, options = {}) {
   if (only.length && !only.includes(name)) return
   for (const theme of THEMES) await record(browser, themedName(name, theme), play, { ...options, theme })
@@ -400,8 +490,7 @@ async function clip(browser, name, play, options = {}) {
 async function record(browser, name, play, options) {
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
   const theme = options.theme
-  const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
-  const started = Date.now()
+  const context = await browser.newContext({ viewport: big, colorScheme: theme })
   const store = {
     settings: { theme, assistant: 'claude-code', reviewMode: options.reviewMode ?? true },
     [`notes:${KEY}`]: options.notes ?? NOTES,
@@ -416,6 +505,42 @@ async function record(browser, name, play, options) {
   const page = await context.newPage()
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
+  await scaleHost(page)
+  await openReview(page)
+  if (options.setup) await options.setup(page)
+  await page.mouse.move(big.width * 0.62, big.height * 0.6)
+  maxZoom = options.zoom === false ? 1 : GENTLE_ZOOM
+  const capture = await startCapture(page)
+  await page.waitForTimeout(700)
+  const from = now()
+  await play(page)
+  await camera(page, null)
+  await page.waitForTimeout(900)
+  const to = now()
+  await capture.stop()
+  await context.close()
+  maxZoom = GENTLE_ZOOM
+  const mp4 = `${OUT}/videos/${name}.mp4`
+  const length = writeVideo(capture.frames, { from, to }, mp4)
+  if (README_GIFS.includes(name.replace(/-dark$/, ''))) writeGif(mp4, `${OUT}/videos/${name}.gif`)
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-ss',
+    (length * (options.poster ?? 0.5)).toFixed(2),
+    '-i',
+    mp4,
+    '-frames:v',
+    '1',
+    '-q:v',
+    '2',
+    `${OUT}/videos/${name}.jpg`,
+  ])
+  console.log('video', name, length.toFixed(1) + 's')
+}
+
+async function scaleHost(page) {
   await page.evaluate(
     ({ scale, width, height }) => {
       Object.assign(document.getElementById('pr-sift-host').style, {
@@ -432,53 +557,6 @@ async function record(browser, name, play, options) {
     },
     { scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
   )
-  await openReview(page)
-  if (options.setup) await options.setup(page)
-  await page.mouse.move(big.width * 0.62, big.height * 0.6)
-  await page.waitForTimeout(700)
-  const trim = (Date.now() - started) / 1000
-  await play(page)
-  const length = (Date.now() - started) / 1000 - trim
-  await camera(page, null)
-  await page.waitForTimeout(900)
-  const video = page.video()
-  await context.close()
-  const raw = `${OUT}/raw/${name}.webm`
-  renameSync(await video.path(), raw)
-  const mp4 = `${OUT}/videos/${name}.mp4`
-  const encode = (args) => execFileSync(ffmpeg, ['-y', '-loglevel', 'error', ...args])
-  encode([
-    '-ss',
-    String(trim),
-    '-i',
-    raw,
-    '-vf',
-    'scale=1600:-2:flags=lanczos,fps=30',
-    '-c:v',
-    'libx264',
-    '-preset',
-    'slow',
-    '-crf',
-    '27',
-    '-tune',
-    'animation',
-    '-pix_fmt',
-    'yuv420p',
-    '-movflags',
-    '+faststart',
-    mp4,
-  ])
-  if (README_GIFS.includes(name.replace(/-dark$/, ''))) {
-    encode([
-      '-i',
-      mp4,
-      '-vf',
-      'fps=10,scale=800:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
-      `${OUT}/videos/${name}.gif`,
-    ])
-  }
-  encode(['-ss', (length * (options.poster ?? 0.5)).toFixed(2), '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
-  console.log('video', name)
 }
 
 const browser = await chromium.launch()
@@ -643,7 +721,7 @@ await clip(
     await glide(page, page.getByRole('button', { name: /Copy for Claude/ }))
     await pause(page, 1500)
   },
-  { diff: SMALL_DIFF, notes: [], reviewMode: false },
+  { diff: SMALL_DIFF, notes: [], reviewMode: false, zoom: false },
 )
 
 await clip(browser, 'filters', async (page) => {
@@ -868,8 +946,7 @@ async function around(...targets) {
 async function recordStory(theme, { caption }) {
   const name = themedName('before-after', theme)
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
-  const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
-  const started = Date.now()
+  const context = await browser.newContext({ viewport: big, colorScheme: theme })
   await context.addInitScript(chromeMock, { store: { settings: { theme, reviewMode: true } } })
   await context.addInitScript(videoCursor, { ringColor: theme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)' })
   await context.route('https://github.com/**', (route) =>
@@ -880,26 +957,12 @@ async function recordStory(theme, { caption }) {
   const page = await context.newPage()
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
-  await page.evaluate(
-    ({ scale, width, height }) => {
-      Object.assign(document.getElementById('pr-sift-host').style, {
-        position: 'fixed',
-        left: '0px',
-        top: '0px',
-        width: width + 'px',
-        height: height + 'px',
-        transformOrigin: '0 0',
-        transform: `scale(${scale})`,
-        transition: 'transform 0.9s cubic-bezier(0.45, 0, 0.2, 1)',
-        zIndex: '2147483000',
-      })
-    },
-    { scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
-  )
+  await scaleHost(page)
   if (caption) await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
   await page.mouse.move(big.width * 0.55, big.height * 0.45)
-  await page.waitForTimeout(800)
-  const trim = (Date.now() - started) / 1000
+  const capture = await startCapture(page)
+  await page.waitForTimeout(600)
+  const from = now()
 
   await pause(page, 400)
   await page.evaluate(
@@ -918,76 +981,52 @@ async function recordStory(theme, { caption }) {
   )
   await pause(page, 200)
   await glide(page, launcher(page), { steps: 20 })
-  const clicked = (Date.now() - started) / 1000 - trim
-  await page.getByRole('button', { name: 'Collapse all folders' }).waitFor()
-  await pause(page, 150)
-  const loaded = (Date.now() - started) / 1000 - trim
-  await pause(page, 300)
-  await glide(page, page.getByRole('button', { name: 'Collapse all folders' }))
-  await pause(page, 200)
-  const allFolders = page.getByRole('button', { name: 'Collapse all folders' })
-  await camera(page, await around(allFolders, folderRow(page, 'tests')), 1.8)
-  for (const folder of ['lang', 'tests']) {
-    await glide(page, folderViewed(page, folder))
-    await pause(page, 300)
-  }
-  if (caption) await page.evaluate(() => document.getElementById('story').classList.add('done'))
-  const left = page.getByText(/^\d+ left$/).first()
-  await camera(page, await around(left, allFolders, folderRow(page, 'src')), 1.6)
-  const ring = await left.boundingBox()
-  await page.mouse.move(ring.x + ring.width + 24, ring.y + ring.height / 2, { steps: 16 })
-  await pause(page, 1000)
-  await camera(page, null)
-  await pause(page, 600)
-  const length = (Date.now() - started) / 1000 - trim
+  const clicked = now()
+  await folderViewed(page, '.claude').waitFor()
+  await pause(page, 100)
+  const loaded = now()
+  await pause(page, 700)
 
-  const video = page.video()
+  for (const folder of ['.claude', 'docs', 'lang', 'tests']) {
+    const box = folderViewed(page, folder)
+    await box.scrollIntoViewIfNeeded()
+    await glide(page, box)
+    await pause(page, 500)
+  }
+  await glide(page, chip(page, 'modified'))
+  await pause(page, 600)
+  const quick = page
+    .locator('div.group')
+    .filter({ has: page.locator(`button[title="${QUICK}"]`) })
+    .first()
+  await glide(page, quick.locator(`button[title="${QUICK}"]`))
+  await pause(page, 900)
+  await glide(page, quick.locator('[title="Mark as viewed"]'))
+  await pause(page, 500)
+  await glide(page, chip(page, 'modified'))
+  await pause(page, 400)
+  await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
+  await pause(page, 300)
+  if (caption) await page.evaluate(() => document.getElementById('story').classList.add('done'))
+  const left = await page
+    .getByText(/^\d+ left$/)
+    .first()
+    .boundingBox()
+  await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 14 })
+  await pause(page, 1800)
+  const to = now()
+  await capture.stop()
   await context.close()
-  const raw = `${OUT}/raw/${name}.webm`
-  renameSync(await video.path(), raw)
+
   const mp4 = caption ? `${OUT}/raw/${name}.caption.mp4` : `${OUT}/videos/${name}.mp4`
-  const encode = (args) => execFileSync(ffmpeg, ['-y', '-loglevel', 'error', ...args])
-  const [cutFrom, cutTo] = [clicked + 0.5, loaded - 0.1]
-  const jump =
-    cutTo - cutFrom > 0.2
-      ? `[0:v]trim=0:${cutFrom.toFixed(2)},setpts=PTS-STARTPTS[a];[0:v]trim=${cutTo.toFixed(2)},setpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=1,`
-      : ''
-  encode([
-    '-ss',
-    String(trim),
-    '-t',
-    length.toFixed(2),
-    '-i',
-    raw,
-    '-filter_complex',
-    `${jump}scale=1600:-2:flags=lanczos,fps=30`,
-    '-c:v',
-    'libx264',
-    '-preset',
-    'slow',
-    '-crf',
-    '27',
-    '-tune',
-    'animation',
-    '-pix_fmt',
-    'yuv420p',
-    '-movflags',
-    '+faststart',
-    mp4,
-  ])
+  const length = writeVideo(capture.frames, { from, to, cut: [clicked + 0.5, loaded - 0.1] }, mp4)
   if (caption) {
-    encode([
-      '-i',
-      mp4,
-      '-vf',
-      'fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
-      `${OUT}/videos/${name}.gif`,
-    ])
-    console.log('gif', name)
+    writeGif(mp4, `${OUT}/videos/${name}.gif`)
+    console.log('gif', name, length.toFixed(1) + 's')
     return
   }
-  encode(['-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
-  console.log('video', name, (length - Math.max(0, cutTo - cutFrom)).toFixed(1) + 's')
+  execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
+  console.log('video', name, length.toFixed(1) + 's')
 }
 
 if (!only.length || only.includes('before-after')) {
@@ -1002,7 +1041,7 @@ if (!only.length || only.includes('before-after')) {
   await warmPage.goto(PR_URL)
   await warmPage.addScriptTag({ path: CONTENT })
   await launcher(warmPage).click()
-  await warmPage.getByRole('button', { name: 'Collapse all folders' }).waitFor()
+  await folderViewed(warmPage, '.claude').waitFor()
   await warm.close()
   for (const theme of THEMES) {
     await recordStory(theme, { caption: false })
