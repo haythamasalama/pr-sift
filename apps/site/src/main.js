@@ -194,3 +194,32 @@ fetch('https://api.github.com/repos/haythamasalama/pr-sift')
     document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = String(repo.stargazers_count)))
   })
   .catch(() => undefined)
+
+const dotted = /^#v?(\d+\.\d+\.\d+)$/.exec(location.hash)
+if (dotted) {
+  const target = document.getElementById(`v${dotted[1].replace(/\./g, '-')}`)
+  if (target) {
+    history.replaceState(null, '', `#${target.id}`)
+    target.scrollIntoView()
+  }
+}
+
+for (const button of document.querySelectorAll('[data-copy-link]')) {
+  button.addEventListener('click', async () => {
+    const url = new URL(button.dataset.copyLink, location.href).href
+    history.replaceState(null, '', button.dataset.copyLink)
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      return
+    }
+    button.querySelector('[data-icon-idle]').hidden = true
+    button.querySelector('[data-icon-done]').hidden = false
+    button.title = 'Link copied'
+    setTimeout(() => {
+      button.querySelector('[data-icon-idle]').hidden = false
+      button.querySelector('[data-icon-done]').hidden = true
+      button.title = 'Copy link'
+    }, 1500)
+  })
+}
