@@ -23,6 +23,7 @@ export const home = {
     secondary: 'Star on GitHub',
   },
   demos: [
+    ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
     ['tour', 'play', 'Full tour', 'A 10-file pull request, from noise to notes.'],
     ['filters', 'funnel', 'Filters', 'Include, exclude and combine types and changes.'],
     ['review', 'list-checks', 'Review', 'Mark files and whole folders as viewed.'],

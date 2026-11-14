@@ -830,7 +830,7 @@ function brandPage() {
       <dl class="mt-5 flex flex-col gap-4">${brand.descriptions.map(([k, v]) => `<div class="rounded-lg border border-line p-5"><dt class="text-sm text-muted">${k}</dt><dd class="mt-1.5 text-[17px]">${esc(v)}</dd></div>`).join('')}</dl>
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Screenshots and videos</h2>
       <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'filters', 'notes', 'ai-export', 'split', 'dark'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
-      <p class="mt-4 text-muted">Videos: ${['tour', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
+      <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
   return article({
     path: 'brand/',
     crumbs: [
