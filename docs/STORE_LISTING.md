@@ -24,18 +24,24 @@ Filter the noise
 • Smart filters for tests, migrations, translations, config and CI.
 
 Track what you read
-• Mark files or whole folders as viewed to hide them.
-• A progress ring shows what is left. Files changed by a new push come back.
+• Mark files or whole folders as viewed to hide them. A ring shows what is left.
+• Files changed by a new push come back on their own.
+• Undo the last mark with Ctrl+Z, or restore any single file from the Viewed menu.
+
+Read the diff in context
+• Show hidden lines above and below each change, like on GitHub.
+• Unified or Split diffs, for every file or just one.
+• Jump from any file to the same file on GitHub.
 
 Private notes
 • Write notes on one or many lines as you review. They stay in your browser.
 • Self-review code an AI assistant wrote, or keep side notes during a team review.
-• Copy all open notes as one prompt, each with its file, lines and code, ready to paste into a coding assistant.
+• Copy all open notes as one prompt, with file, lines and code, ready for a coding assistant.
 • Post a note to GitHub as a review comment only when you choose.
 
-Read it your way
-• Unified or Split diffs, for every file or just one.
+Make it yours
 • Light, dark or system theme with GitHub's diff colors.
+• Set the file tree indent and guide lines.
 
 Free, with public source code. No account, no server, no analytics. PR Sift only talks to GitHub.
 
