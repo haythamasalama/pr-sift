@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:f
 import { fileURLToPath } from 'node:url'
 import ffmpeg from 'ffmpeg-static'
 import { chromium } from 'playwright'
+import { BIG_DIFF, BIG_PATHS } from './big-pr.mjs'
 import { DIFF, PR, SMALL_DIFF, TITLE } from './demo-pr.mjs'
 
 const root = (path) => fileURLToPath(new URL(`../../${path}`, import.meta.url))
@@ -312,7 +313,7 @@ function videoCursor({ ringColor }) {
 }
 
 async function camera(page, target, zoom = 1.7) {
-  const box = target ? await target.boundingBox() : null
+  const box = !target ? null : typeof target.boundingBox === 'function' ? await target.boundingBox() : target
   await page.evaluate(
     ({ box, zoom, scale, width, height }) => {
       const host = document.getElementById('pr-sift-host')
@@ -492,6 +493,30 @@ await shot(browser, 'split', async (page) => {
   await openReview(page)
   await page.getByLabel('Split', { exact: true }).click()
 })
+
+await shot(
+  browser,
+  'hide-noise',
+  async (page) => {
+    await openReview(page)
+    for (const type of ['.test.ts', '.lock', '.yaml', '.yml', '.md']) {
+      await page.getByRole('button', { name: new RegExp(`^${type.replace('.', '\\.')} \\d+$`) }).click({ modifiers: ['Shift'] })
+    }
+    for (const folder of ['lang', 'tests', 'database', 'config']) await folderViewed(page, folder).click()
+  },
+  { theme: 'light' },
+)
+
+await shot(
+  browser,
+  'tree-viewed',
+  async (page) => {
+    await openReview(page)
+    await page.locator('#hide-viewed').click()
+    for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
+  },
+  { theme: 'light' },
+)
 
 await shot(browser, 'copy-menu', async (page) => {
   await openReview(page)
@@ -718,6 +743,188 @@ await clip(browser, 'views', async (page) => {
   await glide(page, page.getByRole('menuitem', { name: /Copy diff/ }))
   await pause(page, 700)
 })
+
+const fontData = (pkg, file) =>
+  `data:font/woff2;base64,${readFileSync(root(`apps/site/node_modules/@fontsource/${pkg}/files/${file}`)).toString('base64')}`
+
+const bigGithubPage = (theme) => {
+  const dark = theme === 'dark'
+  const c = dark
+    ? { bg: '#0d1117', fg: '#f0f6fc', muted: '#9198a1', line: '#3d444d', raised: '#151b23' }
+    : { bg: '#ffffff', fg: '#1f2328', muted: '#59636e', line: '#d1d9e0', raised: '#f6f8fa' }
+  const rows = BIG_PATHS.map(
+    (path) =>
+      `<section class="file"><header><span class="chev">›</span>${path}<span class="stat"><b>+${3 + (path.length % 40)}</b></span></header></section>`,
+  ).join('')
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${TITLE} · Pull Request #${PR.number}</title>
+<style>
+  .top, main { zoom: 2; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: ${c.fg}; background: ${c.bg}; }
+  .top { height: 56px; background: ${c.raised}; border-bottom: 1px solid ${c.line}; display: flex; align-items: center; padding: 0 32px; gap: 12px; color: ${c.muted}; }
+  .top b { color: ${c.fg}; }
+  main { max-width: 1280px; margin: 20px auto 120px; padding: 0 32px; }
+  h1 { font-size: 26px; font-weight: 400; margin: 0 0 8px; }
+  .state { display: inline-block; background: #1f883d; color: #fff; border-radius: 999px; padding: 4px 12px; font-size: 13px; margin-right: 8px; }
+  .tabs { display: flex; gap: 24px; border-bottom: 1px solid ${c.line}; margin: 20px 0 16px; padding-bottom: 8px; color: ${c.muted}; }
+  .tabs .on { color: ${c.fg}; font-weight: 600; border-bottom: 2px solid #fd8c73; padding-bottom: 8px; margin-bottom: -9px; }
+  .count { background: ${c.raised}; border-radius: 999px; padding: 0 8px; margin-left: 6px; }
+  .file { border: 1px solid ${c.line}; border-radius: 6px; margin-bottom: 8px; }
+  .file header { display: flex; gap: 10px; align-items: center; background: ${c.raised}; padding: 8px 16px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .chev { color: ${c.muted}; }
+  .stat { margin-left: auto; color: #1a7f37; }
+</style></head><body>
+<div class="top"><b>${PR.owner} / ${PR.repo}</b> · Pull requests</div>
+<main>
+  <h1 class="js-issue-title">${TITLE}</h1>
+  <div><span class="state">Open</span> ${PR.owner} wants to merge 18 commits into <code>main</code></div>
+  <div class="tabs"><span>Conversation</span><span>Commits<span class="count">18</span></span><span>Checks</span><span class="on">Files changed<span class="count">${BIG_PATHS.length}</span></span></div>
+  ${rows}
+</main></body></html>`
+}
+
+function storyCaption({ mono }) {
+  const style = document.createElement('style')
+  style.textContent = `
+    @font-face { font-family: PlexMono; font-weight: 500; src: url(${mono}); }
+    #story { position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 2147483600; pointer-events: none;
+      font: 500 60px/1.2 PlexMono, ui-monospace, monospace; letter-spacing: -0.01em; color: #fff; background: #000;
+      border-radius: 24px; padding: 14px; box-shadow: 0 24px 80px rgb(0 0 0 / 0.35); }
+    #story p { margin: 0; display: flex; gap: 28px; padding: 12px 28px; white-space: nowrap; transition: opacity 0.45s ease, max-height 0.45s ease; overflow: hidden; }
+    #story .del { background: rgb(248 81 73 / 0.2); border-radius: 14px 14px 0 0; }
+    #story .add { background: rgb(46 160 67 / 0.24); border-radius: 0 0 14px 14px; max-height: 0; padding-block: 0; opacity: 0; }
+    #story.done .add { max-height: 140px; padding-block: 12px; opacity: 1; }
+    #story .del span { color: #f85149; }
+    #story .add span { color: #3fb950; }`
+  document.head.appendChild(style)
+  const box = document.createElement('div')
+  box.id = 'story'
+  box.innerHTML = '<p class="del"><span>−</span>Scroll 214 changed files.</p><p class="add"><span>+</span>Review the 12 that matter.</p>'
+  document.documentElement.appendChild(box)
+}
+
+async function around(...targets) {
+  const boxes = await Promise.all(targets.map((t) => t.boundingBox()))
+  const x = Math.min(...boxes.map((b) => b.x))
+  const y = Math.min(...boxes.map((b) => b.y))
+  const right = Math.max(...boxes.map((b) => b.x + b.width))
+  const bottom = Math.max(...boxes.map((b) => b.y + b.height))
+  return { x, y, width: right - x, height: bottom - y }
+}
+
+async function recordStory(theme) {
+  const name = themedName('before-after', theme)
+  const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
+  const context = await browser.newContext({ viewport: big, colorScheme: theme, recordVideo: { dir: `${OUT}/raw`, size: big } })
+  const started = Date.now()
+  await context.addInitScript(chromeMock, { store: { settings: { theme, reviewMode: true } } })
+  await context.addInitScript(videoCursor, { ringColor: theme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)' })
+  await context.route('https://github.com/**', (route) =>
+    route.request().url().endsWith('.diff')
+      ? route.fulfill({ status: 200, contentType: 'text/plain', body: BIG_DIFF })
+      : route.fulfill({ status: 200, contentType: 'text/html', body: bigGithubPage(theme) }),
+  )
+  const page = await context.newPage()
+  await page.goto(PR_URL)
+  await page.addScriptTag({ path: CONTENT })
+  await page.evaluate(
+    ({ scale, width, height }) => {
+      Object.assign(document.getElementById('pr-sift-host').style, {
+        position: 'fixed',
+        left: '0px',
+        top: '0px',
+        width: width + 'px',
+        height: height + 'px',
+        transformOrigin: '0 0',
+        transform: `scale(${scale})`,
+        transition: 'transform 0.9s cubic-bezier(0.45, 0, 0.2, 1)',
+        zIndex: '2147483000',
+      })
+    },
+    { scale: SCALE, width: VIEWPORT.width, height: VIEWPORT.height },
+  )
+  await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
+  await page.mouse.move(big.width * 0.55, big.height * 0.45)
+  await page.waitForTimeout(800)
+  const trim = (Date.now() - started) / 1000
+
+  await pause(page, 400)
+  await page.evaluate(
+    () =>
+      new Promise((done) => {
+        const end = document.documentElement.scrollHeight * 0.55
+        const t0 = performance.now()
+        const step = (t) => {
+          const k = Math.min(1, (t - t0) / 1700)
+          scrollTo(0, end * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2))
+          if (k < 1) requestAnimationFrame(step)
+          else done()
+        }
+        requestAnimationFrame(step)
+      }),
+  )
+  await pause(page, 200)
+  await glide(page, launcher(page), { steps: 20 })
+  await page.getByRole('button', { name: 'Collapse all folders' }).waitFor()
+  await pause(page, 400)
+  await glide(page, page.getByRole('button', { name: 'Collapse all folders' }))
+  await pause(page, 200)
+  const allFolders = page.getByRole('button', { name: 'Collapse all folders' })
+  await camera(page, await around(allFolders, folderRow(page, 'tests')), 1.8)
+  for (const folder of ['lang', 'tests']) {
+    await glide(page, folderViewed(page, folder))
+    await pause(page, 300)
+  }
+  await page.evaluate(() => document.getElementById('story').classList.add('done'))
+  const left = page.getByText(/^\d+ left$/).first()
+  await camera(page, await around(left, allFolders, folderRow(page, 'src')), 1.6)
+  const ring = await left.boundingBox()
+  await page.mouse.move(ring.x + ring.width + 24, ring.y + ring.height / 2, { steps: 16 })
+  await pause(page, 1300)
+  await camera(page, null)
+  await pause(page, 800)
+  const length = (Date.now() - started) / 1000 - trim
+
+  const video = page.video()
+  await context.close()
+  const raw = `${OUT}/raw/${name}.webm`
+  renameSync(await video.path(), raw)
+  const mp4 = `${OUT}/videos/${name}.mp4`
+  const encode = (args) => execFileSync(ffmpeg, ['-y', '-loglevel', 'error', ...args])
+  encode([
+    '-ss',
+    String(trim),
+    '-t',
+    length.toFixed(2),
+    '-i',
+    raw,
+    '-vf',
+    'scale=1600:-2:flags=lanczos,fps=30',
+    '-c:v',
+    'libx264',
+    '-preset',
+    'slow',
+    '-crf',
+    '27',
+    '-tune',
+    'animation',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    mp4,
+  ])
+  encode([
+    '-i',
+    mp4,
+    '-vf',
+    'fps=10,scale=880:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle',
+    `${OUT}/videos/${name}.gif`,
+  ])
+  encode(['-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
+  console.log('video', name, length.toFixed(1) + 's')
+}
+
+if (!only.length || only.includes('before-after')) for (const theme of THEMES) await recordStory(theme)
 
 await browser.close()
 for (const f of readdirSync(`${OUT}/raw`)) rmSync(`${OUT}/raw/${f}`)
