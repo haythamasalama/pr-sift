@@ -35,7 +35,6 @@ import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
 import SettingsSheet from '../settings/SettingsSheet.vue'
 import { settingsOpenerKey } from '../settings/useSettingsOpener'
-import { isDemo } from '../../lib/demo'
 import type { SettingsSectionId } from '../settings/sections'
 import UpdateNotice from '../updates/UpdateNotice.vue'
 import AutoOpenTip from './AutoOpenTip.vue'
@@ -138,10 +137,7 @@ function onMerged(sha: string) {
 
 const settingsOpen = shallowRef(false)
 const settingsSection = shallowRef<SettingsSectionId | undefined>()
-// Settings belong to the installed extension, so the website's demo leaves them out.
-const demo = isDemo()
 provide(settingsOpenerKey, (section) => {
-  if (demo) return
   settingsSection.value = section
   settingsOpen.value = true
 })
@@ -520,7 +516,7 @@ watch(
       </main>
     </div>
 
-    <SettingsSheet v-if="!demo" v-model:open="settingsOpen" :section="settingsSection" :files="files" />
+    <SettingsSheet v-model:open="settingsOpen" :section="settingsSection" :files="files" />
 
     <NotesDialog
       v-if="notesOpen"

@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
-import { isDemo, isEmbeddedDemo } from '../../lib/demo'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
@@ -40,8 +39,6 @@ const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
-const demo = isDemo()
-const closable = !isEmbeddedDemo()
 </script>
 
 <template>
@@ -61,9 +58,7 @@ const closable = !isEmbeddedDemo()
       <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
-    <Button v-if="closable" variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"
-      ><X
-    /></Button>
+    <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
     <div class="order-2 basis-full xl:hidden" />
 
     <div
@@ -125,10 +120,7 @@ const closable = !isEmbeddedDemo()
       <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
     </Button>
 
-    <Button v-if="demo" variant="outline" size="icon-sm" class="order-3 shrink-0 xl:order-none" aria-label="Options" aria-disabled="true">
-      <Settings />
-    </Button>
-    <DropdownMenu v-else>
+    <DropdownMenu>
       <DropdownMenuTrigger as-child>
         <Button
           variant="outline"
@@ -160,8 +152,6 @@ const closable = !isEmbeddedDemo()
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button v-if="closable" variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"
-      ><X
-    /></Button>
+    <Button variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"><X /></Button>
   </header>
 </template>

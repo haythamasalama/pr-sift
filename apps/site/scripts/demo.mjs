@@ -176,6 +176,56 @@ function chromeShim({ seed, api, version, installUrl }) {
     },
     true,
   )
+  // The website keeps the review open and leaves settings to the installed extension. Full screen, closing goes back.
+  const embedded = window.top !== window
+  const leave = () => (history.length > 1 ? history.back() : location.assign('/#try'))
+  const SETTINGS_LABELS = ['Options', 'Options, update ready', 'Edit saved filters', 'Edit hidden files']
+  const SETTINGS_TEXT = ['Settings', 'Connect GitHub', 'Change token', 'Edit list']
+  const opensSettings = (button) =>
+    SETTINGS_LABELS.includes(button.getAttribute('aria-label')) || SETTINGS_TEXT.includes(button.textContent.trim())
+  const closesReview = (button) => button.getAttribute('aria-label') === 'Close' && !!button.closest('header')
+  const stop = (event) => {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+  const guard = (event) => {
+    const button = event.composedPath().find((el) => el instanceof HTMLButtonElement)
+    if (!button) return
+    if (opensSettings(button)) stop(event)
+    else if (closesReview(button)) {
+      stop(event)
+      if (!embedded && (event.type === 'click' || event.type === 'keydown')) leave()
+    }
+  }
+  for (const type of ['pointerdown', 'mousedown', 'click']) window.addEventListener(type, guard, true)
+  window.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Escape') {
+        if (['Enter', ' ', 'ArrowDown'].includes(event.key)) guard(event)
+        return
+      }
+      const root = [...document.querySelectorAll('*')].find((el) => el.shadowRoot)?.shadowRoot
+      if (root?.querySelector('[role="dialog"], [role="menu"]')) return
+      stop(event)
+      if (!embedded) leave()
+    },
+    true,
+  )
+  const css = `${embedded ? 'header button[aria-label="Close"] { display: none !important; }' : ''}
+    button[aria-label^="Options"], button[aria-label="Edit saved filters"], button[aria-label="Edit hidden files"] { pointer-events: none; }`
+  const decorate = () => {
+    const host = [...document.querySelectorAll('*')].find((el) => el.shadowRoot)
+    if (!host) return false
+    const style = document.createElement('style')
+    style.textContent = css
+    host.shadowRoot.append(style)
+    return true
+  }
+  new MutationObserver((_, observer) => decorate() && observer.disconnect()).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  })
   let site = null
   try {
     site = localStorage.getItem('theme')
