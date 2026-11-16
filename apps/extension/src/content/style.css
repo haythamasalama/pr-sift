@@ -61,6 +61,19 @@
 
 @theme {
   --animate-soft-ping: soft-ping 2.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-dot-pulse: dot-pulse 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes dot-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.75;
+    }
+    70%,
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
 
   @keyframes soft-ping {
     0% {

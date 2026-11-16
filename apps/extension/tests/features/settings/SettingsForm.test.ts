@@ -59,6 +59,19 @@ describe('SettingsForm', () => {
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
   })
 
+  it('marks new settings until each is used once', async () => {
+    const wrapper = await mountForm()
+    const marked = () => wrapper.findAll('[data-new-dot]').length
+    expect(marked()).toBe(6)
+    await wrapper.find('#settings-auto-open').trigger('click')
+    await flushPromises()
+    expect(marked()).toBe(5)
+    expect(store.seenNew).toEqual(['auto-open'])
+
+    const again = await mountForm({ seenNew: ['auto-open', 'co-authors'] })
+    expect(again.findAll('[data-new-dot]').length).toBe(4)
+  })
+
   it('saves switches, choices and checkboxes as soon as they change', async () => {
     const wrapper = await mountForm()
     await wrapper.find('#settings-auto-open').trigger('click')

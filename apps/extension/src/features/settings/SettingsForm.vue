@@ -26,6 +26,7 @@ import ThemePreview from './ThemePreview.vue'
 import TreePreview from './TreePreview.vue'
 import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
 import { useSettingsState } from './useSettingsState'
+import { useNewMarks } from './useNewMarks'
 
 const STATUSES = [
   { value: 'added', label: 'Added' },
@@ -59,6 +60,7 @@ const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
 const { theme, setTheme } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
+const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
 const treeIndent = shallowRef(settings.value.treeIndent)
 const confirmReset = shallowRef(false)
@@ -183,11 +185,21 @@ defineExpose({ scrollToSection })
           label="Merge method"
           @update:model-value="(v) => update('mergeMethod', v)"
         />
-        <SettingsRow label="Leave out AI co-authors" :description="coAuthorSummary" control-id="settings-leave-out">
+        <SettingsRow
+          label="Leave out AI co-authors"
+          :description="coAuthorSummary"
+          control-id="settings-leave-out"
+          :is-new="isNew('co-authors')"
+        >
           <Switch
             id="settings-leave-out"
             :model-value="settings.leaveOutCoAuthors"
-            @update:model-value="(v) => update('leaveOutCoAuthors', v)"
+            @update:model-value="
+              (v) => {
+                update('leaveOutCoAuthors', v)
+                markSeen('co-authors')
+              }
+            "
           />
         </SettingsRow>
         <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-2">
@@ -220,8 +232,18 @@ defineExpose({ scrollToSection })
         label="Open PR Sift automatically"
         description="Pull requests open straight in PR Sift. Close it to see GitHub's page."
         control-id="settings-auto-open"
+        :is-new="isNew('auto-open')"
       >
-        <Switch id="settings-auto-open" :model-value="settings.autoOpen" @update:model-value="(v) => update('autoOpen', v)" />
+        <Switch
+          id="settings-auto-open"
+          :model-value="settings.autoOpen"
+          @update:model-value="
+            (v) => {
+              update('autoOpen', v)
+              markSeen('auto-open')
+            }
+          "
+        />
       </SettingsRow>
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />

@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { Preset, PrFile } from '../../lib/types'
 import SettingsGroup from './SettingsGroup.vue'
+import { useNewMarks } from './useNewMarks'
 import { useDraft } from './useDraft'
 
 interface FilterDraft {
@@ -38,9 +39,14 @@ const toFilter = (draft: FilterDraft): SavedFilter => ({
   includeHidden: draft.includeHidden,
 })
 
+const { isNew, markSeen } = useNewMarks()
+
 const { draft, schedule, flush, save } = useDraft({
   source: () => model.value,
-  commit: (value) => (model.value = value),
+  commit: (value) => {
+    model.value = value
+    void markSeen('saved-filters')
+  },
   toDraft: (filters) => filters.map(toDraft),
   fromDraft: (drafts) => cleanSavedFilters(drafts.map(toFilter)),
 })
@@ -96,6 +102,7 @@ function setIncludeHidden(filter: FilterDraft, value: boolean) {
     id="filters"
     ref="root"
     title="Saved filters"
+    :is-new="isNew('saved-filters')"
     description="Buttons in the review’s top bar. One click lists only their files."
   >
     <div v-for="(filter, index) in draft" :key="filter.key" :data-filter="filter.key" class="flex flex-col gap-2 rounded-md border p-2.5">

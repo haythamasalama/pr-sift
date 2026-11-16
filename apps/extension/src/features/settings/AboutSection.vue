@@ -3,14 +3,27 @@ import { Bug, ExternalLink, Lightbulb, PackageCheck, RefreshCw, RotateCw, Star, 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import BrandMark from '../../components/BrandMark.vue'
+import NewDot from '../../components/NewDot.vue'
 import { openReport } from '../../lib/report'
 import { CHANGELOG_URL, REVIEWS_URL } from '../../lib/updates'
 import { useUpdates } from '../updates/useUpdates'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
+import { useNewMarks } from './useNewMarks'
 
 const { framed = false } = defineProps<{ framed?: boolean }>()
 const { version, ready, updated, checking, status, check, restart, dismiss } = useUpdates()
+const { isNew, markSeen } = useNewMarks()
+
+function checkForUpdates() {
+  void markSeen('updates')
+  void check()
+}
+
+function report(kind: 'bug' | 'idea') {
+  void markSeen(kind === 'bug' ? 'report' : 'idea')
+  openReport(kind)
+}
 </script>
 
 <template>
@@ -32,8 +45,9 @@ const { version, ready, updated, checking, status, check, restart, dismiss } = u
         <template v-if="ready"> Reload open GitHub tabs afterwards.</template>
       </template>
       <Button v-if="ready" size="sm" @click="restart"><RotateCw /> Restart to update to {{ ready }}</Button>
-      <Button v-else variant="outline" size="sm" :disabled="checking" @click="check">
+      <Button v-else variant="outline" size="sm" class="relative" :disabled="checking" @click="checkForUpdates">
         <Spinner v-if="checking" /><RefreshCw v-else /> Check for updates
+        <NewDot v-if="isNew('updates')" class="absolute -top-1 -right-1" />
       </Button>
     </SettingsRow>
     <div class="flex flex-wrap gap-2 py-3">
@@ -43,8 +57,14 @@ const { version, ready, updated, checking, status, check, restart, dismiss } = u
       <Button as-child variant="outline" size="sm">
         <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate PR Sift</a>
       </Button>
-      <Button variant="ghost" size="sm" @click="openReport('bug')"><Bug /> Report a problem</Button>
-      <Button variant="ghost" size="sm" @click="openReport('idea')"><Lightbulb /> Suggest an idea</Button>
+      <Button variant="ghost" size="sm" @click="report('bug')">
+        <Bug /> Report a problem
+        <NewDot v-if="isNew('report')" />
+      </Button>
+      <Button variant="ghost" size="sm" @click="report('idea')">
+        <Lightbulb /> Suggest an idea
+        <NewDot v-if="isNew('idea')" />
+      </Button>
     </div>
   </SettingsSection>
 </template>

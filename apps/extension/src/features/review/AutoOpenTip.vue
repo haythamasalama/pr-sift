@@ -2,6 +2,7 @@
 import { onMounted, shallowRef } from 'vue'
 import { CheckCircle2, X, Zap } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
+import NewDot from '../../components/NewDot.vue'
 import NoticeBar from '../../components/NoticeBar.vue'
 import { storageGet, storageSet } from '../../lib/extension'
 import { saveSetting } from '../../lib/settings'
@@ -45,10 +46,7 @@ async function turnOn() {
     <template #actions>
       <Button variant="outline" size="sm" class="relative" @click="turnOn">
         Turn on
-        <span class="absolute -top-0.5 -right-0.5 flex size-2" aria-hidden="true">
-          <span class="absolute inset-0 rounded-full bg-emphasis motion-safe:animate-soft-ping" />
-          <span class="relative size-2 rounded-full bg-emphasis ring-2 ring-sidebar" />
-        </span>
+        <NewDot class="absolute -top-1 -right-1" />
       </Button>
       <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Not now" @click="dismiss"><X /></Button>
     </template>
