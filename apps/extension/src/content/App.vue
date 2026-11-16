@@ -98,13 +98,7 @@ onBeforeUnmount(() => {
           </span>
         </span>
         {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge
-          v-if="externalUpdate && !dead"
-          variant="outline"
-          class="border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400"
-        >
-          Updated
-        </Badge>
+        <Badge v-if="externalUpdate && !dead" variant="outline" class="border-attention/50 bg-attention/15 text-attention"> Updated </Badge>
         <span
           v-if="updateNote && !dead"
           data-update-dot

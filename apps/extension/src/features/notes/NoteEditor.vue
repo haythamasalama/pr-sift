@@ -57,7 +57,7 @@ function save() {
         ><ChevronDown
       /></Button>
     </div>
-    <p v-if="quote" class="truncate border-l-2 border-amber-500 pl-2 font-mono text-[11px] text-muted-foreground" :title="quote">
+    <p v-if="quote" class="truncate border-l-2 border-attention pl-2 font-mono text-[11px] text-muted-foreground" :title="quote">
       {{ quote }}
     </p>
     <Textarea

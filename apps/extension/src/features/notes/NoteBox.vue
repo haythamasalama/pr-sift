@@ -77,12 +77,12 @@ async function post() {
   />
   <div
     v-else
-    class="@container flex flex-col gap-1 border-y border-amber-500/50 bg-amber-500/10 px-3 py-2 font-sans"
+    class="@container flex flex-col gap-1 border-y border-attention/50 bg-attention/10 px-3 py-2 font-sans"
     :class="note.resolved ? 'opacity-60' : ''"
   >
     <div class="flex min-h-6 items-center gap-2">
-      <Lock class="size-3.5 shrink-0 text-amber-600" />
-      <p class="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-700 dark:text-amber-400">{{ describeLines(note) }}</p>
+      <Lock class="size-3.5 shrink-0 text-attention" />
+      <p class="min-w-0 flex-1 truncate text-[11px] font-medium text-attention">{{ describeLines(note) }}</p>
       <TooltipProvider :delay-duration="300">
         <div class="flex shrink-0 items-center gap-1">
           <Badge v-if="note.postedUrl" as-child variant="secondary" class="shrink-0">
@@ -96,7 +96,7 @@ async function post() {
             :class="
               armed
                 ? ''
-                : 'border-amber-500/40 bg-transparent text-amber-800 hover:bg-amber-500/15 hover:text-amber-900 dark:border-amber-400/30 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-400/10 dark:hover:text-amber-200'
+                : 'border-attention/40 bg-transparent text-attention hover:bg-attention/15 hover:text-attention dark:border-attention/40 dark:bg-transparent dark:hover:bg-attention/15'
             "
             :disabled="posting"
             :aria-label="armed ? 'Click again to post publicly' : 'Post to GitHub'"
@@ -150,7 +150,7 @@ async function post() {
         v-if="note.quote"
         :code="note.quote"
         :filename="note.file"
-        class="mb-1 truncate border-l-2 border-amber-500 pl-2 text-[11px] whitespace-pre"
+        class="mb-1 truncate border-l-2 border-attention pl-2 text-[11px] whitespace-pre"
       />
       <p class="text-xs whitespace-pre-wrap text-foreground">{{ note.text }}</p>
       <p v-if="error" class="mt-1 text-[11px] text-destructive">{{ error }}</p>

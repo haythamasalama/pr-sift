@@ -140,7 +140,7 @@ defineExpose({ reveal, flash, el })
       <Badge
         v-if="stale"
         variant="outline"
-        class="border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+        class="border-attention/50 bg-attention/15 text-attention"
         title="This file changed after you marked it viewed"
       >
         Updated since viewed

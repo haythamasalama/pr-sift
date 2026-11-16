@@ -183,7 +183,7 @@ const chipClass = (chip: ExtChip) => [
           @click="(e: MouseEvent) => emit('toggleExtension', c.ext, isHideGesture(e))"
           @contextmenu.prevent="emit('toggleExtension', c.ext, true)"
         >
-          <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-amber-600 dark:text-amber-400" />
+          <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-attention" />
           <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>
