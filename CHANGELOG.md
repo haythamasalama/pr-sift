@@ -27,6 +27,8 @@ goes under `## Unreleased` until the next release moves it under its version and
   files they match in the open pull request.
 - Review: The PR Sift toolbar icon shows ↑ when an update is ready and NEW after one is installed. The PR Sift button on
   GitHub shows a dot at the same time.
+- Review: PR Sift can open on its own on every pull request. Turn it on from the tip in the review or in Settings under
+  Reviewing. Closing the review keeps it closed until the next pull request.
 
 ### Changed
 

@@ -57,6 +57,29 @@ describe('App launcher', () => {
     wrapper.unmount()
   })
 
+  it('waits for a click by default', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())
+    await new Promise((done) => setTimeout(done, 50))
+    expect(closeButton(wrapper).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('opens the review on its own when Open on every pull request is on, and stays closed once closed', async () => {
+    const { store } = installChrome()
+    store.settings = { autoOpen: true }
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(closeButton(wrapper).exists()).toBe(true))
+    await closeButton(wrapper).trigger('click')
+    await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())
+    await new Promise((done) => setTimeout(done, 900))
+    expect(closeButton(wrapper).exists()).toBe(false)
+
+    history.pushState({}, '', '/o/r/pull/2/files')
+    await vi.waitFor(() => expect(closeButton(wrapper).exists()).toBe(true), { timeout: 2000 })
+    wrapper.unmount()
+  })
+
   it('leaves the launcher plain when there is no update', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())

@@ -9,6 +9,7 @@ import { useAppearance } from '../features/appearance/useAppearance'
 import { useGithubDark } from '../features/appearance/useGithubDark'
 import { useUpdates } from '../features/updates/useUpdates'
 import { portalTargetKey } from '../lib/portal'
+import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 
@@ -45,6 +46,18 @@ function sync() {
   const next = m ? { owner: m[1]!, repo: m[2]!, number: Number(m[3]) } : null
   if (prKey(next) !== prKey(pr.value)) pr.value = next
   if (!next) open.value = false
+  maybeAutoOpen()
+}
+
+const autoOpen = shallowRef<boolean | null>(null)
+let decidedFor = ''
+let stopWatchingSettings = () => {}
+
+// Each pull request gets one automatic open, so closing the review keeps it closed until the next pull request.
+function maybeAutoOpen() {
+  if (autoOpen.value === null || !pr.value || prKey(pr.value) === decidedFor) return
+  decidedFor = prKey(pr.value)
+  if (autoOpen.value && !dead.value) open.value = true
 }
 
 const reload = () => location.reload()
@@ -53,14 +66,18 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
   sync()
   timer = window.setInterval(sync, 800)
   document.addEventListener('keydown', onKey)
+  stopWatchingSettings = onSettingsChange((next) => (autoOpen.value = next.autoOpen))
+  autoOpen.value = (await getSettings()).autoOpen
+  maybeAutoOpen()
 })
 onBeforeUnmount(() => {
   clearInterval(timer)
   document.removeEventListener('keydown', onKey)
+  stopWatchingSettings()
 })
 </script>
 

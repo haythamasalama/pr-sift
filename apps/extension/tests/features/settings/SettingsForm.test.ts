@@ -61,6 +61,7 @@ describe('SettingsForm', () => {
 
   it('saves switches, choices and checkboxes as soon as they change', async () => {
     const wrapper = await mountForm()
+    await wrapper.find('#settings-auto-open').trigger('click')
     await wrapper.find('#settings-review-mode').trigger('click')
     await wrapper.find('#settings-diff-split').trigger('click')
     await wrapper.find('#settings-merge-rebase').trigger('click')
@@ -69,6 +70,7 @@ describe('SettingsForm', () => {
     await wrapper.find('#settings-status-removed').trigger('click')
     await flushPromises()
     expect(saved()).toMatchObject({
+      autoOpen: true,
       reviewMode: false,
       diffView: 'split',
       mergeMethod: 'rebase',

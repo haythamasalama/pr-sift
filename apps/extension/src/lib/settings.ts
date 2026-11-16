@@ -9,6 +9,7 @@ export const DEFAULTS: Settings = {
   customExtensions: [],
   hiddenTypes: [],
   reviewMode: true,
+  autoOpen: false,
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',

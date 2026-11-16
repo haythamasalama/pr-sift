@@ -29,6 +29,7 @@ export interface Settings {
   customExtensions: string[]
   hiddenTypes: string[]
   reviewMode: boolean
+  autoOpen: boolean
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode

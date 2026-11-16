@@ -216,6 +216,13 @@ defineExpose({ scrollToSection })
       description="How each review starts."
       area="files"
     >
+      <SettingsRow
+        label="Open on every pull request"
+        description="PR Sift opens as soon as a pull request loads. Close it to get GitHub back."
+        control-id="settings-auto-open"
+      >
+        <Switch id="settings-auto-open" :model-value="settings.autoOpen" @update:model-value="(v) => update('autoOpen', v)" />
+      </SettingsRow>
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>

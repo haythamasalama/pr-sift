@@ -37,6 +37,7 @@ import SettingsSheet from '../settings/SettingsSheet.vue'
 import { settingsOpenerKey } from '../settings/useSettingsOpener'
 import type { SettingsSectionId } from '../settings/sections'
 import UpdateNotice from '../updates/UpdateNotice.vue'
+import AutoOpenTip from './AutoOpenTip.vue'
 import { REVIEWS_URL } from '../../lib/updates'
 
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
@@ -390,6 +391,7 @@ watch(
     </Alert>
 
     <UpdateNotice />
+    <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />
 
     <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
       <Spinner /> Loading pull request…
