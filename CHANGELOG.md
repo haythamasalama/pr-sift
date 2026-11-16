@@ -36,6 +36,10 @@ goes under `## Unreleased` until the next release moves it under its version and
   hides in the open pull request.
 - Review: Presets are now called saved filters and are edited as a list of names and paths instead of JSON. Your
   existing presets stay.
+- Review: The options page is one scrolling page with About first and a menu at the side. A switch in GitHub turns
+  the AI co-author list on or off.
+- Notes: The code a note quotes keeps the diff's colors. "Show resolved in the diff" counts resolved notes, says when
+  there are none, and says they show dimmed once it is on.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 
 ## 1.1.0 - 2026-11-14
