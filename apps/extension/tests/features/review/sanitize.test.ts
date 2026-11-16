@@ -25,4 +25,9 @@ describe('sanitizeHtml', () => {
       '<ul><li class="task-list-item"><input type="checkbox" checked="" disabled=""> done</li></ul>',
     )
   })
+
+  it('drops SVG and MathML, which can set a script URL through animation', () => {
+    const svg = '<svg><a><animate attributeName="href" values="javascript:alert(1)"></animate><text>x</text></a></svg>'
+    expect(sanitizeHtml(`<p>before</p>${svg}<math><mi>x</mi></math>`)).toBe('<p>before</p>')
+  })
 })

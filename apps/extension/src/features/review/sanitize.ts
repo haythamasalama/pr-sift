@@ -1,5 +1,5 @@
 const DROP =
-  'script, style, iframe, frame, frameset, object, embed, form, link, meta, base, template, noscript, textarea, select, button, foreignObject, a.anchor'
+  'script, style, iframe, frame, frameset, object, embed, form, link, meta, base, template, noscript, textarea, select, button, svg, math, a.anchor'
 const URL_ATTRIBUTES = new Set(['href', 'src', 'xlink:href', 'poster'])
 const SAFE_PROTOCOLS = new Set(['https:', 'http:', 'mailto:'])
 
