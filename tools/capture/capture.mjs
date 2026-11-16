@@ -859,16 +859,11 @@ await shot(
   { theme: 'light' },
 )
 
-await shot(
-  browser,
-  'tree-viewed',
-  async (page) => {
-    await openReview(page)
-    await page.locator('#hide-viewed').click()
-    for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
-  },
-  { theme: 'light' },
-)
+await shot(browser, 'tree-viewed', async (page) => {
+  await openReview(page)
+  await page.locator('#hide-viewed').click()
+  for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
+})
 
 await shot(browser, 'copy-menu', async (page) => {
   await openReview(page)
