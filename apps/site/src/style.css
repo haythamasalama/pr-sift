@@ -27,7 +27,8 @@
   --color-code-fn: var(--code-fn);
 }
 
-:root {
+:root,
+.light {
   --paper: #ffffff;
   --raised: #f6f8fa;
   --ink: #000000;

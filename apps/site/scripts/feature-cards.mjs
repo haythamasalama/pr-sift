@@ -40,16 +40,16 @@ export function featureVisual(id, icon) {
   const subtree = (cls) =>
     `${icon('chevrons-up-down', `size-[13px] shrink-0 ${cls}`)}${icon('chevrons-down-up', `size-[13px] shrink-0 ${cls}`)}`
   const hint = (ic, strong, rest) =>
-    `<span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-2.5 py-1 text-[13px] text-muted">${icon(ic, 'size-3.5 text-ink')}<strong class="font-medium text-ink">${strong}</strong> ${rest}</span>`
+    `<span class="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-2.5 py-1 text-[13px] whitespace-nowrap text-muted">${icon(ic, 'size-3.5 text-ink')}<strong class="font-medium text-ink">${strong}</strong> ${rest}</span>`
 
   const visuals = {
     filters: () => `<div class="flex w-full max-w-[600px] flex-col gap-3.5">
       ${panel(
         'flex flex-col gap-2.5 px-4 py-3.5',
-        `<div class="flex flex-wrap items-center gap-1.5">${label('Types', 'me-1')}${chip('.php', { count: 28, state: 'on', mono: true })}${chip('.vue', { count: 5, mono: true })}${chip('.ts', { count: 4, mono: true })}${chip('.lock', { count: 1, state: 'off', mono: true, lead: icon('eye-off', 'size-3') })}${chip('.md', { count: 1, mono: true })}${chip('.test.ts', { count: 1, mono: true })}${chip('+ type', { state: 'ghost' })}</div>
-        <div class="flex flex-wrap items-center gap-1.5">${label('Changes', 'me-1')}${chip('added', { count: 23, lead: icon('square-plus', 'size-[13px] text-add') })}${chip('modified', { count: 16, lead: icon('square-dot', 'size-[13px] text-modified') })}${chip('deleted', { count: 1, lead: icon('square-minus', 'size-[13px] text-del') })}${chip('renamed', { count: 1, lead: icon('square-arrow-right', 'size-[13px] text-muted') })}</div>`,
+        `<div class="flex flex-wrap items-center gap-1.5">${label('Types', 'me-1')}${chip('.php', { count: 28, state: 'on', mono: true })}${chip('.vue', { count: 5, mono: true })}${chip('.ts', { count: 4, mono: true })}${chip('.lock', { count: 1, state: 'off', mono: true, lead: icon('eye-off', 'size-3') })}${chip('+ type', { state: 'ghost' })}</div>
+        <div class="flex flex-wrap items-center gap-1.5">${label('Changes', 'me-1')}${chip('added', { count: 23, lead: icon('square-plus', 'size-[13px] text-add') })}${chip('modified', { count: 16, lead: icon('square-dot', 'size-[13px] text-modified') })}${chip('deleted', { count: 1, lead: icon('square-minus', 'size-[13px] text-del') })}</div>`,
       )}
-      <div class="flex flex-wrap gap-2">${hint('mouse-pointer-click', 'Click', 'shows only .php')}${hint('eye-off', 'Shift-click', 'hides .lock on every pull request')}</div>
+      <div class="flex flex-wrap gap-2">${hint('mouse-pointer-click', 'Click', 'shows only .php')}${hint('eye-off', 'Shift-click', 'hides .lock everywhere')}</div>
     </div>`,
 
     review: () =>
@@ -137,6 +137,25 @@ export function featureVisual(id, icon) {
         `<div class="flex items-center gap-2 border-b border-line px-2.5 py-2 text-xs">${icon('square-dot', 'size-[13px] shrink-0 text-modified')}<span class="min-w-0 truncate font-mono">src/Domain/Billing/Actions/GenerateInvoice.php</span><span class="ms-auto font-medium text-add">+14</span><span class="font-medium text-del">−3</span><span class="inline-flex shrink-0 overflow-hidden rounded-md border border-line"><span class="px-2 py-[3px] text-muted">Unified</span><span class="inline-flex items-center gap-1 bg-ink px-2 py-[3px] text-paper">${icon('columns-2', 'size-3')}Split this file</span></span></div>
         <div class="grid grid-cols-2"><div class="min-w-0 border-e border-line">${left.join('')}</div><div class="min-w-0">${right.join('')}</div></div>`,
       )
+    },
+
+    theme: () => {
+      const lines = [
+        ['', 'w-3/5'],
+        ['bg-del-bg text-del', 'w-1/2'],
+        ['bg-add-bg text-add', 'w-4/5'],
+        ['bg-add-bg text-add', 'w-2/5'],
+      ]
+        .map(
+          ([tone, width]) =>
+            `<span class="flex h-2.5 items-center px-1.5 ${tone}"><span class="h-[3px] rounded-full bg-current opacity-60 ${width}"></span></span>`,
+        )
+        .join('')
+      const layer = (scope, cls = '') =>
+        `<span class="${scope} absolute inset-0 flex flex-col justify-center bg-paper text-muted ${cls}">${lines}</span>`
+      const tile = (name, layers, selected = false) =>
+        `<span class="flex flex-col gap-2"><span class="relative h-16 overflow-hidden rounded-md border border-line ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-raised' : ''}">${layers}</span><span class="text-center text-xs ${selected ? 'font-medium' : 'text-muted'}">${name}</span></span>`
+      return `<div class="grid w-full max-w-[300px] grid-cols-3 gap-3">${tile('Light', layer('light'))}${tile('Dark', layer('dark'))}${tile('System', layer('light') + layer('dark', '[clip-path:polygon(100%_0,100%_100%,0_100%)]'), true)}</div>`
     },
 
     settings: () =>

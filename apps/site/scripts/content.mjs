@@ -103,12 +103,6 @@ export const home = {
       text: 'Chips come from the pull request itself. Add endings like .blade.php with + type.',
     },
     {
-      id: 'review',
-      icon: 'list-checks',
-      title: 'Never read a file twice',
-      text: 'Viewed files leave the list. The ring shows what is left.',
-    },
-    {
       id: 'folders',
       icon: 'folder-tree',
       title: 'Open and close whole folders',
@@ -121,10 +115,22 @@ export const home = {
       text: 'Tests, migrations, translations, config and CI, grouped the way reviewers read them.',
     },
     {
+      id: 'review',
+      icon: 'list-checks',
+      title: 'Never read a file twice',
+      text: 'Viewed files leave the list. The ring shows what is left.',
+    },
+    {
       id: 'comments',
       icon: 'messages-square',
       title: 'Comments where the code is',
       text: 'GitHub threads show under their lines. Jump from any comment to its line.',
+    },
+    {
+      id: 'theme',
+      icon: 'sun-moon',
+      title: 'Light, dark or your system',
+      text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
     },
     {
       id: 'notes',
@@ -155,10 +161,6 @@ export const home = {
       ['clipboard-check', 'Paste', 'into your agent or the chat that opens.'],
       ['circle-check', 'Resolve', 'what got fixed. It leaves the diff and the next prompt, and you can reopen it.'],
     ],
-  },
-  theme: {
-    title: 'Light, dark or your system',
-    text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
   },
   openSource: {
     title: 'Built in the open',

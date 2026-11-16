@@ -402,7 +402,7 @@ function homePage() {
       ${installButton()}
     </div>`
 
-  const FEATURE_SPAN = { filters: 'md:col-span-2', views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
+  const FEATURE_SPAN = { views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
   const featureCard = (f) => `
         <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
           <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
@@ -488,13 +488,6 @@ function homePage() {
       </ul>`,
     ],
     features,
-    [
-      'theme',
-      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-        <div class="lg:col-span-4">${iconBox('sun-moon')}${h2(h.theme.title, 'mt-5')}${lead(h.theme.text)}</div>
-        <div class="lg:col-span-8"><div class="grid grid-cols-2 gap-3">${['', '-dark'].map((suffix) => `<img src="${media(`screenshots/review${suffix}.webp`)}" alt="${esc(`${h.theme.title}: ${suffix ? 'dark' : 'light'}`)}" width="3200" height="2120" class="h-auto w-full rounded-lg border border-line" loading="lazy" decoding="async" />`).join('')}</div></div>
-      </div>`,
-    ],
     [
       'how',
       `${h2('Three steps. No account.')}
