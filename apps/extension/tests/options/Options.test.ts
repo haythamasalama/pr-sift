@@ -26,16 +26,16 @@ describe('Options page', () => {
     document.body.innerHTML = ''
   })
 
-  it('shows every settings section in one column', async () => {
+  it('shows the settings grouped by what you want to do, with one save button for the token', async () => {
     installChrome()
     const wrapper = mount(Options, { attachTo: document.body })
     await flushPromises()
-    const sections = wrapper.findAll('section').map((s) => s.attributes('data-section'))
-    expect(sections).toEqual(['about', 'token', 'theme', 'hidden', 'defaults', 'merging', 'tree', 'filters', 'help'])
+    const sections = wrapper.findAll('section[data-section]').map((s) => s.attributes('data-section'))
+    expect(sections).toEqual(['github', 'review', 'files', 'appearance', 'about'])
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
-    const saveButtons = wrapper.findAll('button').filter((b) => b.text() === 'Save')
-    expect(saveButtons).toHaveLength(1)
-    expect(wrapper.find('[data-section="token"]').element.contains(saveButtons[0]!.element)).toBe(true)
+    const connect = wrapper.findAll('button').filter((b) => b.text() === 'Connect')
+    expect(connect).toHaveLength(1)
+    expect(wrapper.find('[data-section="token"]').element.contains(connect[0]!.element)).toBe(true)
   })
 
   it('shows the installed version and links to the changelog and the store reviews', async () => {
@@ -46,7 +46,7 @@ describe('Options page', () => {
     expect(card.text()).toContain('PR Sift 1.1.0')
     expect(card.text()).toContain('Chrome updates it on its own every few hours.')
     const links = Object.fromEntries(card.findAll('a').map((a) => [a.text(), a.attributes('href')]))
-    expect(links).toEqual({ Changelog: CHANGELOG_URL, Rate: REVIEWS_URL })
+    expect(links).toEqual({ 'What’s new': CHANGELOG_URL, 'Rate PR Sift': REVIEWS_URL })
     expect(button(wrapper, 'Restart to update')).toBeUndefined()
   })
 
@@ -66,7 +66,7 @@ describe('Options page', () => {
     const wrapper = mount(Options, { attachTo: document.body })
     await flushPromises()
     expect(about(wrapper).text()).toContain('Update ready')
-    expect(about(wrapper).text()).toContain('Open GitHub tabs need a reload afterwards: click Reload PR Sift.')
+    expect(about(wrapper).text()).toContain('Reload open GitHub tabs afterwards.')
     expect(button(wrapper, 'Check for updates')).toBeUndefined()
     await button(wrapper, 'Restart to update to 1.2.0')!.trigger('click')
     expect(sent).toContainEqual({ type: 'apply-update' })

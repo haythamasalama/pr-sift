@@ -44,7 +44,7 @@ describe('SettingsSheet', () => {
     const wrapper = mount(SettingsSheet, { props: { open: true, section: 'filters' }, attachTo: document.body })
     await flushPromises()
     expect(scrolled).toEqual([sectionIn('filters')])
-    expect(document.activeElement).toBe(sectionIn('filters')?.querySelector('h2'))
+    expect(document.activeElement).toBe(sectionIn('filters')?.querySelector('h3'))
     wrapper.unmount()
   })
 

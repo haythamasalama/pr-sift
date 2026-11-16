@@ -1,40 +1,50 @@
 <script setup lang="ts">
-import { ExternalLink, RefreshCw, RotateCw, Star } from '@lucide/vue'
+import { Bug, ExternalLink, Lightbulb, PackageCheck, RefreshCw, RotateCw, Star, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import BrandMark from '../../components/BrandMark.vue'
+import { openReport } from '../../lib/report'
 import { CHANGELOG_URL, REVIEWS_URL } from '../../lib/updates'
 import { useUpdates } from '../updates/useUpdates'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 
-const { version, ready, checking, status, check, restart } = useUpdates()
+const { version, ready, updated, checking, status, check, restart, dismiss } = useUpdates()
 </script>
 
 <template>
-  <SettingsSection id="about" title="About" description="Your version, updates and what changed.">
+  <SettingsSection id="about" title="About" description="Your version, updates and help.">
     <template #icon>
       <span class="flex size-5 items-center justify-center rounded-sm bg-primary p-0.5 text-primary-foreground"><BrandMark /></span>
     </template>
+    <div v-if="updated" class="flex items-center gap-2 py-3 text-xs">
+      <PackageCheck class="size-4 shrink-0 text-success-fg" />
+      <span class="flex-1">Updated to {{ updated.version }}.</span>
+      <Button as-child variant="outline" size="xs">
+        <a :href="CHANGELOG_URL" target="_blank" rel="noopener noreferrer">What’s new</a>
+      </Button>
+      <Button variant="ghost" size="icon-xs" aria-label="Dismiss" title="Dismiss" @click="dismiss"><X /></Button>
+    </div>
     <SettingsRow :label="`PR Sift ${version}`">
       <template #description>
         <span aria-live="polite">{{ status || 'Chrome updates it on its own every few hours.' }}</span>
-        <template v-if="ready"> Open GitHub tabs need a reload afterwards: click Reload PR Sift.</template>
+        <template v-if="ready"> Reload open GitHub tabs afterwards.</template>
       </template>
       <Button v-if="ready" size="sm" @click="restart"><RotateCw /> Restart to update to {{ ready }}</Button>
       <Button v-else variant="outline" size="sm" :disabled="checking" @click="check">
         <Spinner v-if="checking" /><RefreshCw v-else /> Check for updates
       </Button>
     </SettingsRow>
-    <SettingsRow label="What’s new" description="The changes in each version, on the PR Sift site.">
+    <div class="flex flex-wrap gap-2 py-3">
       <Button as-child variant="outline" size="sm">
-        <a :href="CHANGELOG_URL" target="_blank" rel="noopener noreferrer"><ExternalLink /> Changelog</a>
+        <a :href="CHANGELOG_URL" target="_blank" rel="noopener noreferrer"><ExternalLink /> What’s new</a>
       </Button>
-    </SettingsRow>
-    <SettingsRow label="Rate PR Sift" description="A review on the Chrome Web Store helps other reviewers find it.">
       <Button as-child variant="outline" size="sm">
-        <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate</a>
+        <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate PR Sift</a>
       </Button>
-    </SettingsRow>
+      <Button variant="ghost" size="sm" @click="openReport('bug')"><Bug /> Report a problem</Button>
+      <Button variant="ghost" size="sm" @click="openReport('idea')"><Lightbulb /> Suggest an idea</Button>
+    </div>
+    <slot />
   </SettingsSection>
 </template>

@@ -3,16 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import SettingsForm from '../../../src/features/settings/SettingsForm.vue'
 import type { SettingsSectionId } from '../../../src/features/settings/sections'
 import { SAVE_DELAY } from '../../../src/features/settings/useDraft'
-import { DEFAULTS } from '../../../src/lib/settings'
-import type { Settings } from '../../../src/lib/types'
+import type { PrFile, Settings } from '../../../src/lib/types'
+import { file } from '@pr-sift/core/testing'
 import { installChrome } from '../../helpers/chrome'
 
 type Wrapper = VueWrapper<InstanceType<typeof SettingsForm>>
+type Responder = Parameters<typeof installChrome>[0]
 
 let store: Record<string, unknown>
 
-async function mountForm(stored: Record<string, unknown> = {}, props: { section?: SettingsSectionId } = {}) {
-  store = installChrome().store
+async function mountForm(
+  stored: Record<string, unknown> = {},
+  props: { section?: SettingsSectionId; files?: PrFile[] } = {},
+  responder?: Responder,
+) {
+  store = installChrome(responder).store
   Object.assign(store, stored)
   const wrapper = mount(SettingsForm, { props, attachTo: document.body }) as Wrapper
   await flushPromises()
@@ -26,78 +31,91 @@ const buttonIn = (wrapper: Wrapper, id: string, label: string) =>
     .findAll('button')
     .find((b) => b.text().includes(label) || b.attributes('aria-label') === label)
 
+async function addChip(wrapper: Wrapper, label: string, value: string) {
+  const input = wrapper.find(`input[aria-label="Add to ${label}"]`)
+  await input.setValue(value)
+  await input.element.closest('form')!.dispatchEvent(new Event('submit'))
+  await flushPromises()
+}
+
 afterEach(() => {
   vi.useRealTimers()
   document.body.innerHTML = ''
 })
 
 describe('SettingsForm', () => {
-  it('lays sections out as a header with rows, not cards', async () => {
+  it('groups settings by what you want to do, with a jump list', async () => {
     const wrapper = await mountForm()
-    const theme = section(wrapper, 'theme')
-    expect(theme.find('h2').text()).toBe('Theme')
-    expect(theme.find('svg[data-area="all"]').exists()).toBe(true)
-    expect(section(wrapper, 'filters').find('svg[data-area="toolbar"]').exists()).toBe(true)
+    expect(wrapper.findAll('section[data-section]').map((s) => s.attributes('data-section'))).toEqual([
+      'github',
+      'review',
+      'files',
+      'appearance',
+      'about',
+    ])
+    expect(
+      wrapper
+        .find('nav')
+        .findAll('button')
+        .map((b) => b.text()),
+    ).toEqual(['GitHub', 'Reviewing', 'Files', 'Appearance', 'About'])
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
   })
 
-  it('saves switches, toggles and checkboxes as soon as they change', async () => {
+  it('saves switches, choices and checkboxes as soon as they change', async () => {
     const wrapper = await mountForm()
-    await section(wrapper, 'defaults').find('#settings-review-mode').trigger('click')
-    await buttonIn(wrapper, 'defaults', 'Split')!.trigger('click')
-    await buttonIn(wrapper, 'merging', 'Rebase')!.trigger('click')
-    await section(wrapper, 'tree').find('#settings-tree-guides').trigger('click')
-    await section(wrapper, 'hidden').find('#settings-status-removed').trigger('click')
+    await wrapper.find('#settings-review-mode').trigger('click')
+    await wrapper.find('#settings-diff-split').trigger('click')
+    await wrapper.find('#settings-merge-rebase').trigger('click')
+    await wrapper.find('#settings-show-resolved').trigger('click')
+    await wrapper.find('#settings-tree-guides').trigger('click')
+    await wrapper.find('#settings-status-removed').trigger('click')
     await flushPromises()
     expect(saved()).toMatchObject({
       reviewMode: false,
       diffView: 'split',
       mergeMethod: 'rebase',
+      showResolved: true,
       treeGuides: false,
       hideStatuses: ['removed'],
     })
   })
 
-  it('saves the theme from its toggle', async () => {
+  it('picks the theme from preview cards', async () => {
     const wrapper = await mountForm()
-    await buttonIn(wrapper, 'theme', 'Dark')!.trigger('click')
+    expect(section(wrapper, 'appearance').findAll('.ps-root.dark')).toHaveLength(2)
+    await wrapper.find('#settings-theme-dark').trigger('click')
     await flushPromises()
     expect(saved().theme).toBe('dark')
   })
 
-  it('saves path patterns after a pause in typing, one per line', async () => {
-    const wrapper = await mountForm()
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
-    await wrapper.find('#settings-hide').setValue('**/*.lock\n\n  dist/**  \n')
+  it('adds and removes hidden paths and co-authors as chips', async () => {
+    const wrapper = await mountForm({ settings: { hide: ['**/*.lock'], removedCoAuthors: ['claude'] } })
+    await addChip(wrapper, 'hidden paths', 'vendor/**')
+    expect(saved().hide).toEqual(['**/*.lock', 'vendor/**'])
+    await wrapper.find('button[aria-label="Remove **/*.lock"]').trigger('click')
     await flushPromises()
-    expect(saved().hide).toBeUndefined()
-    await vi.advanceTimersByTimeAsync(SAVE_DELAY)
-    await flushPromises()
-    expect(saved().hide).toEqual(['**/*.lock', 'dist/**'])
+    expect(saved().hide).toEqual(['vendor/**'])
+    await addChip(wrapper, 'co-authors to leave out', 'bot@example.com')
+    expect(saved().removedCoAuthors).toEqual(['claude', 'bot@example.com'])
   })
 
-  it('saves a text area right away when it loses focus', async () => {
-    const wrapper = await mountForm()
-    const field = wrapper.find('#settings-removed-co-authors')
-    await field.setValue('bot@example.com')
-    await field.trigger('blur')
-    await flushPromises()
-    expect(saved().removedCoAuthors).toEqual(['bot@example.com'])
+  it('counts what the rules hide and what each saved filter matches in this pull request', async () => {
+    const files = [file('composer.lock'), file('src/A.php'), file('src/B.php', { status: 'removed' }), file('web/app.ts')]
+    const wrapper = await mountForm(
+      { settings: { hide: ['**/*.lock'], hideStatuses: ['removed'], presets: [{ name: 'PHP', include: ['**/*.php'] }] } },
+      { files },
+    )
+    expect(section(wrapper, 'hidden').text()).toContain('Hides 2 files in this pull request')
+    expect(section(wrapper, 'filters').text()).toContain('Matches 2 files in this pull request')
   })
 
-  it('saves text that is still waiting when the form closes', async () => {
-    const wrapper = await mountForm()
-    await wrapper.find('#settings-hide').setValue('build/**')
-    wrapper.unmount()
-    await flushPromises()
-    expect(saved().hide).toEqual(['build/**'])
-  })
-
-  it('shows the stored settings', async () => {
-    const wrapper = await mountForm({ settings: { hide: ['vendor/**'], reviewMode: false, mergeMethod: 'merge' } })
-    expect((wrapper.find('#settings-hide').element as HTMLTextAreaElement).value).toBe('vendor/**')
-    expect(wrapper.find('#settings-review-mode').attributes('data-state')).toBe('unchecked')
-    expect(buttonIn(wrapper, 'merging', 'Merge')!.attributes('data-state')).toBe('on')
+  it('previews the folder indentation in a small tree', async () => {
+    const wrapper = await mountForm({ settings: { treeIndent: 14, treeGuides: false } })
+    const levels = section(wrapper, 'tree').findAll('.ml-3')
+    expect(levels).toHaveLength(3)
+    expect(levels.every((l) => (l.element as HTMLElement).style.paddingLeft === '14px')).toBe(true)
+    expect(levels[0]!.classes()).toContain('border-transparent')
   })
 
   it('resets every setting only on the second click', async () => {
@@ -111,33 +129,42 @@ describe('SettingsForm', () => {
     expect('settings' in store).toBe(false)
     expect(wrapper.text()).toContain('Settings reset to defaults')
     expect(wrapper.find('#settings-review-mode').attributes('data-state')).toBe('checked')
-    expect((wrapper.find('#settings-hide').element as HTMLTextAreaElement).value).toBe(DEFAULTS.hide.join('\n'))
   })
 })
 
-describe('SettingsForm token', () => {
-  it('saves a trimmed token only when Save is pressed', async () => {
-    const wrapper = await mountForm()
-    const save = () => buttonIn(wrapper, 'token', 'Save')!
-    expect(save().attributes('disabled')).toBeDefined()
+describe('SettingsForm connection', () => {
+  const github: Responder = (message) =>
+    message.path === '/user'
+      ? { ok: true, status: 200, data: { login: 'sam', avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4' } }
+      : { ok: false, status: 404, data: {} }
+
+  it('connects with a trimmed token and says who you are', async () => {
+    const wrapper = await mountForm({}, {}, github)
     await wrapper.find('#settings-token').setValue('  github_pat_abc  ')
     expect('token' in store).toBe(false)
-    await save().trigger('click')
+    await buttonIn(wrapper, 'token', 'Connect')!.trigger('click')
     await flushPromises()
     expect(store.token).toBe('github_pat_abc')
-    expect(section(wrapper, 'token').text()).toContain('Token saved')
-    expect(save().attributes('disabled')).toBeDefined()
+    expect(section(wrapper, 'token').text()).toContain('Connected as @sam')
+    expect(wrapper.find('#settings-token').exists()).toBe(false)
+  })
+
+  it('says why GitHub refused the token', async () => {
+    const wrapper = await mountForm({ token: 'github_pat_old' }, {}, () => ({
+      ok: false,
+      status: 401,
+      data: { message: 'Bad credentials' },
+    }))
+    expect(section(wrapper, 'token').text()).toContain('GitHub didn’t accept this token')
+    expect(section(wrapper, 'token').text()).toContain('Bad credentials')
   })
 
   it('removes a stored token', async () => {
-    const wrapper = await mountForm({ token: 'github_pat_old' })
-    expect((wrapper.find('#settings-token').element as HTMLInputElement).value).toBe('github_pat_old')
-    expect(wrapper.find('#settings-token').attributes('type')).toBe('password')
+    const wrapper = await mountForm({ token: 'github_pat_old' }, {}, github)
     await buttonIn(wrapper, 'token', 'Remove')!.trigger('click')
     await flushPromises()
     expect('token' in store).toBe(false)
-    expect((wrapper.find('#settings-token').element as HTMLInputElement).value).toBe('')
-    expect(buttonIn(wrapper, 'token', 'Remove')).toBeUndefined()
+    expect(wrapper.find('#settings-token').exists()).toBe(true)
     expect(section(wrapper, 'token').text()).toContain('Token removed')
   })
 })
@@ -148,7 +175,7 @@ describe('SettingsForm saved filters', () => {
 
   it('edits the stored presets as a list, with no JSON', async () => {
     const wrapper = await mountForm({ settings: { presets: [{ name: 'API', include: ['api/**', 'routes/**'], includeHidden: true }] } })
-    expect(section(wrapper, 'filters').find('h2').text()).toBe('Saved filters')
+    expect(section(wrapper, 'filters').find('h3').text()).toBe('Saved filters')
     expect(section(wrapper, 'filters').text()).not.toContain('JSON')
     const [row] = rows(wrapper)
     expect((row!.find('input').element as HTMLInputElement).value).toBe('API')
@@ -243,15 +270,17 @@ describe('SettingsForm sections', () => {
   it('scrolls to the section it opens on and focuses its title', async () => {
     const wrapper = await mountForm({}, { section: 'merging' })
     expect(scrolled).toEqual([section(wrapper, 'merging').element])
-    expect(document.activeElement).toBe(section(wrapper, 'merging').find('h2').element)
+    expect(document.activeElement).toBe(section(wrapper, 'merging').find('h3').element)
   })
 
-  it('scrolls to a section on request', async () => {
+  it('scrolls to a section on request, including from the jump list', async () => {
     const wrapper = await mountForm()
     expect(scrolled).toEqual([])
-    wrapper.vm.scrollToSection('help')
-    expect(scrolled).toEqual([section(wrapper, 'help').element])
+    wrapper.vm.scrollToSection('hidden')
+    expect(scrolled).toEqual([section(wrapper, 'hidden').element])
     await wrapper.setProps({ section: 'token' })
     expect(scrolled.at(-1)).toBe(section(wrapper, 'token').element)
+    await wrapper.find('nav').findAll('button')[3]!.trigger('click')
+    expect(scrolled.at(-1)).toBe(section(wrapper, 'appearance').element)
   })
 })

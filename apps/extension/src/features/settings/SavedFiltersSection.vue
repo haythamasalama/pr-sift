@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue'
 import { Plus, Trash2 } from '@lucide/vue'
-import { cleanSavedFilters, missingExamples, splitLines, type SavedFilter } from '@pr-sift/core'
+import { cleanSavedFilters, matcher, missingExamples, splitLines, type SavedFilter } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import { FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import type { Preset } from '../../lib/types'
-import SettingsSection from './SettingsSection.vue'
+import type { Preset, PrFile } from '../../lib/types'
+import SettingsGroup from './SettingsGroup.vue'
 import { useDraft } from './useDraft'
 
 interface FilterDraft {
@@ -19,6 +19,7 @@ interface FilterDraft {
 }
 
 const model = defineModel<Preset[]>({ required: true })
+const { files } = defineProps<{ files?: PrFile[] }>()
 
 let nextKey = 0
 const blank = (): FilterDraft => ({ key: nextKey++, name: '', patterns: '', includeHidden: false })
@@ -45,7 +46,7 @@ const { draft, schedule, flush, save } = useDraft({
 })
 
 const examples = computed(() => missingExamples(draft.value))
-const root = useTemplateRef<InstanceType<typeof SettingsSection>>('root')
+const root = useTemplateRef<InstanceType<typeof SettingsGroup>>('root')
 
 const problems = computed(() => {
   const seen = new Set<string>()
@@ -57,6 +58,14 @@ const problems = computed(() => {
     return ''
   })
 })
+
+function matches(filter: FilterDraft): string {
+  const patterns = splitLines(filter.patterns)
+  if (!files || !patterns.length) return ''
+  const inFilter = matcher(patterns)
+  const count = files.filter((f) => inFilter(f.filename)).length
+  return `Matches ${count} file${count === 1 ? '' : 's'} in this pull request`
+}
 
 async function add() {
   const filter = blank()
@@ -83,18 +92,13 @@ function setIncludeHidden(filter: FilterDraft, value: boolean) {
 </script>
 
 <template>
-  <SettingsSection
+  <SettingsGroup
     id="filters"
     ref="root"
     title="Saved filters"
-    description="Named groups of paths, shown as buttons in the review’s top bar."
-    area="toolbar"
+    description="Buttons in the review’s top bar. One click lists only their files."
   >
-    <p class="py-3 text-xs text-muted-foreground">
-      Pick one in the review to list only its files. Paths work like hidden files: one per line, * stays inside a folder, ** crosses
-      folders.
-    </p>
-    <div v-for="(filter, index) in draft" :key="filter.key" :data-filter="filter.key" class="flex flex-col gap-2 py-3">
+    <div v-for="(filter, index) in draft" :key="filter.key" :data-filter="filter.key" class="flex flex-col gap-2 rounded-md border p-2.5">
       <div class="flex items-center gap-2">
         <Input
           v-model="filter.name"
@@ -125,7 +129,7 @@ function setIncludeHidden(filter: FilterDraft, value: boolean) {
         @blur="flush"
       />
       <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <p class="text-xs text-muted-foreground">{{ problems[index] }}</p>
+        <p class="text-xs text-muted-foreground">{{ problems[index] || matches(filter) }}</p>
         <div class="flex items-center gap-2">
           <Switch
             :id="`saved-filter-hidden-${filter.key}`"
@@ -137,8 +141,10 @@ function setIncludeHidden(filter: FilterDraft, value: boolean) {
         </div>
       </div>
     </div>
-    <div class="flex flex-col items-start gap-2.5 py-3">
-      <p v-if="!draft.length" class="text-xs text-muted-foreground">No saved filters yet. Add your own, or start from an example.</p>
+    <div class="flex flex-col items-start gap-2.5">
+      <p v-if="!draft.length" class="text-xs text-muted-foreground">
+        No saved filters yet. Start from an example, or press Save view in the review.
+      </p>
       <Button variant="outline" size="sm" @click="add"><Plus /> Add filter</Button>
       <div v-if="examples.length" class="flex flex-wrap items-center gap-1">
         <span class="mr-1 text-xs text-muted-foreground">Examples:</span>
@@ -155,5 +161,5 @@ function setIncludeHidden(filter: FilterDraft, value: boolean) {
         </Button>
       </div>
     </div>
-  </SettingsSection>
+  </SettingsGroup>
 </template>
