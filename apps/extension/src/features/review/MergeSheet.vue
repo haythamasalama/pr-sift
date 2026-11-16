@@ -21,7 +21,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { openOptions } from '../../lib/extension'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { DEFAULTS, getSettings, saveSetting } from '../../lib/settings'
 import type { PrInfo, PrRef } from '../../lib/types'
 import { explain, loadMergeContext, merge, type MergeContext } from './actions'
@@ -38,6 +38,13 @@ const {
   method?: MergeMethod
 }>()
 const emit = defineEmits<{ close: []; merged: [sha: string] }>()
+
+const openSettings = useSettingsOpener()
+
+function editSettings(section: 'token' | 'merging') {
+  emit('close')
+  openSettings(section)
+}
 
 const METHODS: { value: MergeMethod; label: string; action: string; hint: string }[] = [
   { value: 'squash', label: 'Squash', action: 'Squash and merge', hint: 'Combines every commit into one commit on the base branch.' },
@@ -180,7 +187,7 @@ async function submit() {
           <KeyRound />
           <AlertDescription class="flex flex-col items-start gap-2">
             Merging from the review needs a GitHub token with Contents and Pull requests set to read and write.
-            <Button size="sm" variant="outline" @click="openOptions">Open settings</Button>
+            <Button size="sm" variant="outline" @click="editSettings('token')">Connect GitHub</Button>
           </AlertDescription>
         </Alert>
         <Alert v-else-if="loadError" variant="destructive">
@@ -223,7 +230,10 @@ async function submit() {
 
           <FieldSet v-if="method === 'squash'">
             <FieldLegend variant="label">Co-authors</FieldLegend>
-            <FieldDescription class="text-xs">Unchecked people stay off next time.</FieldDescription>
+            <FieldDescription class="flex items-center gap-1 text-xs">
+              Unchecked people stay off next time.
+              <button type="button" class="text-emphasis hover:underline" @click="editSettings('merging')">Edit list</button>
+            </FieldDescription>
             <FieldGroup class="gap-2">
               <p v-if="!people.length" class="text-xs text-muted-foreground">No other authors in these commits.</p>
               <Field v-for="(row, i) in people" :key="row.person.email" orientation="horizontal">

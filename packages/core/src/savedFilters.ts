@@ -45,3 +45,10 @@ export function missingExamples(filters: readonly Pick<SavedFilter, 'name'>[]): 
     include: [...example.include],
   }))
 }
+
+// Status, search and smart filter choices have no path pattern, so a saved view keeps its file types and folders.
+export function patternsFromView(extensions: readonly string[], folders: readonly string[]): string[] {
+  if (!folders.length) return extensions.map((ext) => `**/*${ext}`)
+  if (!extensions.length) return folders.map((folder) => `${folder}/**`)
+  return folders.flatMap((folder) => extensions.map((ext) => `${folder}/**/*${ext}`))
+}

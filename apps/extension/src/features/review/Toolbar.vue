@@ -7,6 +7,7 @@ import {
   Moon,
   NotebookPen,
   PanelLeft,
+  Pencil,
   RotateCw,
   Rows2,
   Search,
@@ -32,7 +33,7 @@ import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { openReport } from '../../lib/report'
-import { openOptions } from '../../lib/extension'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { openReviews } from '../../lib/updates'
 import { useUpdates } from '../updates/useUpdates'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
@@ -57,6 +58,7 @@ const { theme, setTheme } = useAppearance()
 const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
+const openSettings = useSettingsOpener()
 </script>
 
 <template>
@@ -102,6 +104,15 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       >
         {{ p.name }}
       </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        title="Edit saved filters"
+        aria-label="Edit saved filters"
+        class="text-muted-foreground"
+        @click="openSettings('filters')"
+        ><Pencil
+      /></Button>
     </div>
 
     <div v-if="compact" class="relative order-3 flex shrink-0 items-center xl:order-none">
@@ -166,7 +177,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem @select="openOptions"><Settings /> Settings</DropdownMenuItem>
+        <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
         <DropdownMenuItem @select="openReport('bug')"><Bug /> Report a problem</DropdownMenuItem>
         <DropdownMenuItem @select="openReport('idea')"><Lightbulb /> Suggest an idea</DropdownMenuItem>
         <DropdownMenuItem @select="openReviews"><Star /> Rate PR Sift</DropdownMenuItem>

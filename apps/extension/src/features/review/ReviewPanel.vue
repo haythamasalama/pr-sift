@@ -16,7 +16,7 @@ import { usePullRequest } from './usePullRequest'
 import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
-import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
+import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
 import { fetchConversation, type Conversation, type Thread } from './conversation'
@@ -33,6 +33,9 @@ import PrSummary from './PrSummary.vue'
 import ReviewActions from './ReviewActions.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
+import SettingsSheet from '../settings/SettingsSheet.vue'
+import { settingsOpenerKey } from '../settings/useSettingsOpener'
+import type { SettingsSectionId } from '../settings/sections'
 import UpdateNotice from '../updates/UpdateNotice.vue'
 import { REVIEWS_URL } from '../../lib/updates'
 
@@ -128,6 +131,28 @@ async function goToThread(thread: Thread) {
 function onMerged(sha: string) {
   if (info.value) info.value = { ...info.value, state: 'merged' }
   announce(`Merged${info.value?.base ? ` into ${info.value.base}` : ''} as ${sha.slice(0, 7)}.`)
+}
+
+const settingsOpen = shallowRef(false)
+const settingsSection = shallowRef<SettingsSectionId | undefined>()
+provide(settingsOpenerKey, (section) => {
+  settingsSection.value = section
+  settingsOpen.value = true
+})
+
+const viewPatterns = computed(() =>
+  patternsFromView(
+    filter.chips.value.filter((c) => c.state === 'include' && c.ext.startsWith('.')).map((c) => c.ext),
+    filter.scopes.value.filter((k) => k.startsWith('path:')).map((k) => k.slice(5)),
+  ),
+)
+
+async function saveView(name: string) {
+  const others = settings.value.presets.filter((p) => p.name.trim().toLowerCase() !== name.toLowerCase())
+  const presets = cleanSavedFilters([...others, { name, include: viewPatterns.value }])
+  settings.value = { ...settings.value, presets }
+  await saveSetting('presets', presets)
+  announce(`Saved “${name}” as a filter in the top bar.`)
 }
 
 provide(notesKey, {
@@ -264,6 +289,18 @@ onMounted(async () => {
 
 watch(diffMode, (value) => saveSetting('diffView', value))
 watch(showResolved, (value) => saveSetting('showResolved', value))
+watch(
+  () => settings.value.diffView,
+  (value) => (diffMode.value = value),
+)
+watch(
+  () => settings.value.showResolved,
+  (value) => (showResolved.value = value),
+)
+watch(
+  () => settings.value.reviewMode,
+  (value) => (filter.reviewMode.value = value),
+)
 </script>
 
 <template>
@@ -321,6 +358,7 @@ watch(showResolved, (value) => saveSetting('showResolved', value))
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
+      :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
       @update:review-mode="setReviewMode"
@@ -334,6 +372,7 @@ watch(showResolved, (value) => saveSetting('showResolved', value))
       @clear-all="clearAll"
       @expand-cards="setAllCards(true)"
       @collapse-cards="setAllCards(false)"
+      @save-view="saveView"
     />
 
     <Alert
@@ -475,6 +514,8 @@ watch(showResolved, (value) => saveSetting('showResolved', value))
         <FileList v-else ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
       </main>
     </div>
+
+    <SettingsSheet v-model:open="settingsOpen" :section="settingsSection" :files="files" />
 
     <NotesDialog
       v-if="notesOpen"

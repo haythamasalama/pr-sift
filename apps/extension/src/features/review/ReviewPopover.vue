@@ -9,7 +9,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { openOptions } from '../../lib/extension'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
 import type { PrRef } from '../../lib/types'
 import { explain, submitReview } from './actions'
 
@@ -23,6 +23,7 @@ const EVENTS: { value: ReviewEvent; label: string; hint: string }[] = [
 ]
 
 const open = shallowRef(false)
+const openSettings = useSettingsOpener()
 const event = shallowRef<ReviewEvent>('APPROVE')
 const comment = shallowRef('')
 const busy = shallowRef(false)
@@ -125,7 +126,17 @@ async function submit() {
         <p class="flex gap-2">
           <KeyRound class="mt-0.5 size-3.5 shrink-0" /> Reviewing from here needs a GitHub token with Pull requests set to read and write.
         </p>
-        <Button size="sm" variant="outline" @click="openOptions">Open settings</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          @click="
+            () => {
+              open = false
+              openSettings('token')
+            }
+          "
+          >Connect GitHub</Button
+        >
       </div>
     </PopoverContent>
   </Popover>

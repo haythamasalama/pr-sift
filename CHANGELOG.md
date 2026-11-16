@@ -19,16 +19,21 @@ goes under `## Unreleased` until the next release moves it under its version and
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.
 - Review: Rate PR Sift on the Chrome Web Store from the review menu or the options page.
-- Review: Settings open in a side sheet inside the review, so changing one does not leave the pull request.
-- Review: Each settings section shows a small map of the part of the review it changes.
-- Review: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples.
+- Review: Settings open in a side sheet inside the review that keeps the review visible, so you see each change as you
+  make it. They also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in
+  Merge and every "Connect GitHub" prompt.
+- Review: Save the file types and folders you picked as a saved filter in the top bar with Save view.
+- Review: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples, and show how many
+  files they match in the open pull request.
 - Review: The PR Sift toolbar icon shows ↑ when an update is ready and NEW after one is installed. The PR Sift button on
   GitHub shows a dot at the same time.
 
 ### Changed
 
-- Review: Settings are one column of sections that save as you change them, with no Save button. The GitHub token keeps
-  its own Save button and gains Remove.
+- Review: Settings are grouped by what you want to do (GitHub, Reviewing, Files, Appearance, About) and save as you
+  change them. The connection shows who you are on GitHub, the theme and diff view are picked from small previews, the
+  folder indentation has a live tree, and hidden paths and co-authors are chips. "Always hidden" counts the files it
+  hides in the open pull request.
 - Review: Presets are now called saved filters and are edited as a list of names and paths instead of JSON. Your
   existing presets stay.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.

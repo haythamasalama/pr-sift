@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { Conversation, Thread } from './conversation'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
 import GithubComment from './GithubComment.vue'
 import { plainText, sanitizeHtml } from './sanitize'
 
@@ -12,6 +13,7 @@ const { html, url, conversation } = defineProps<{ html?: string; url: string; co
 const tab = defineModel<'description' | 'conversation'>('tab', { required: true })
 const emit = defineEmits<{ close: []; jump: [thread: Thread] }>()
 
+const openSettings = useSettingsOpener()
 const description = computed(() => (html ? sanitizeHtml(html) : ''))
 const threads = computed(() => [...(conversation?.threads.values() ?? [])].flat())
 const total = computed(() => (conversation ? conversation.discussion.length + threads.value.length : 0))
@@ -48,7 +50,10 @@ const preview = (thread: Thread) => plainText(thread.comments[0]?.bodyHtml ?? ''
     </div>
 
     <div v-else class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-      <p v-if="!conversation" class="text-xs text-muted-foreground">Add a GitHub token in Settings to read the comments here.</p>
+      <div v-if="!conversation" class="flex flex-col items-start gap-2 text-xs text-muted-foreground">
+        Connect your GitHub account to read the comments here.
+        <Button variant="outline" size="sm" @click="openSettings('token')">Connect GitHub</Button>
+      </div>
       <p v-else-if="!total" class="text-xs text-muted-foreground">No comments yet.</p>
       <div v-else class="flex max-w-4xl flex-col gap-4">
         <ol v-if="conversation.discussion.length" class="flex flex-col">
