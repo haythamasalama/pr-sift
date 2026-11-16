@@ -3,12 +3,13 @@ import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 import { Eye, FolderTree, Palette } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
+import BrandIcon from '../components/BrandIcon.vue'
 import GithubMark from '../components/GithubMark.vue'
 import { useAppearance } from '../features/appearance/useAppearance'
 import SettingsForm from '../features/settings/SettingsForm.vue'
 import { SETTINGS_TABS, TAB_OF, type SettingsSectionId, type SettingsTab } from '../features/settings/sections'
 
-const ICONS = { about: BrandMark, github: GithubMark, review: Eye, files: FolderTree, appearance: Palette }
+const ICONS = { about: BrandIcon, github: GithubMark, review: Eye, files: FolderTree, appearance: Palette }
 
 const { dark } = useAppearance()
 const section = (location.hash.slice(1) || undefined) as SettingsSectionId | undefined

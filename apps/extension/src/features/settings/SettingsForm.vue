@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import BrandMark from '../../components/BrandMark.vue'
+import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
 import { useAppearance } from '../appearance/useAppearance'
@@ -24,7 +24,7 @@ import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 import ThemePreview from './ThemePreview.vue'
 import TreePreview from './TreePreview.vue'
-import { SETTINGS_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
+import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
 import { useSettingsState } from './useSettingsState'
 
 const STATUSES = [
@@ -51,10 +51,10 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
   { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit' },
 ]
 
-const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandMark }
+const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandIcon }
 
 const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
-const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
+const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
 const { theme, setTheme } = useAppearance()
@@ -149,7 +149,7 @@ defineExpose({ scrollToSection })
       class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2"
     >
       <Button
-        v-for="t in SETTINGS_TABS"
+        v-for="t in SHEET_TABS"
         :key="t.id"
         role="tab"
         :aria-selected="tab === t.id"
@@ -190,7 +190,7 @@ defineExpose({ scrollToSection })
             @update:model-value="(v) => update('leaveOutCoAuthors', v)"
           />
         </SettingsRow>
-        <Collapsible v-if="settings.leaveOutCoAuthors" default-open class="-mt-2">
+        <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-2">
           <CollapsibleTrigger as-child>
             <Button variant="ghost" size="xs" class="group w-fit px-1 text-muted-foreground">
               <ChevronRight class="transition-transform group-data-[state=open]:rotate-90" /> Edit the list

@@ -1,4 +1,4 @@
-import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import SettingsForm from '../../../src/features/settings/SettingsForm.vue'
 import type { SettingsSectionId } from '../../../src/features/settings/sections'
@@ -44,18 +44,18 @@ afterEach(() => {
 })
 
 describe('SettingsForm', () => {
-  it('groups settings by what you want to do and shows one group at a time', async () => {
+  it('groups settings by what you want to do, starts on GitHub and keeps About last', async () => {
     const wrapper = await mountForm()
-    expect(wrapper.findAll('[role="tab"]').map((b) => b.text())).toEqual(['About', 'GitHub', 'Reviewing', 'Files', 'Appearance'])
+    expect(wrapper.findAll('[role="tab"]').map((b) => b.text())).toEqual(['GitHub', 'Reviewing', 'Files', 'Appearance', 'About'])
     const visible = () =>
       wrapper
         .findAll('section[data-section]')
         .filter((s) => s.isVisible())
         .map((s) => s.attributes('data-section'))
-    expect(visible()).toEqual(['about'])
-    await wrapper.findAll('[role="tab"]')[2]!.trigger('click')
+    expect(visible()).toEqual(['github'])
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
     expect(visible()).toEqual(['review'])
-    expect(wrapper.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
   })
 
@@ -95,14 +95,20 @@ describe('SettingsForm', () => {
     await wrapper.find('button[aria-label="Remove **/*.lock"]').trigger('click')
     await flushPromises()
     expect(saved().hide).toEqual(['vendor/**'])
+    await buttonIn(wrapper, 'merging', 'Edit the list')!.trigger('click')
+    await flushPromises()
     await addChip(wrapper, 'co-authors to leave out', 'bot@example.com')
     expect(saved().removedCoAuthors).toEqual(['claude', 'bot@example.com'])
   })
 
-  it('turns AI co-authors off with one switch, with the list open below it', async () => {
+  it('turns AI co-authors off with one switch, with the list closed below it', async () => {
     const wrapper = await mountForm()
     expect(section(wrapper, 'merging').text()).toContain('Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked')
-    expect(wrapper.find('input[aria-label="Add to co-authors to leave out"]').exists()).toBe(true)
+    const listInput = () => wrapper.find('input[aria-label="Add to co-authors to leave out"]')
+    expect(listInput().exists()).toBe(false)
+    await buttonIn(wrapper, 'merging', 'Edit the list')!.trigger('click')
+    await flushPromises()
+    expect(listInput().exists()).toBe(true)
     await wrapper.find('#settings-leave-out').trigger('click')
     await flushPromises()
     expect(saved().leaveOutCoAuthors).toBe(false)
@@ -265,6 +271,8 @@ describe('SettingsForm saved filters', () => {
 describe('SettingsForm sections', () => {
   let scrolled: Element[]
 
+  enableAutoUnmount(afterEach)
+
   beforeEach(() => {
     scrolled = []
     vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
@@ -280,6 +288,11 @@ describe('SettingsForm sections', () => {
     const wrapper = await mountForm({}, { section: 'merging' })
     expect(scrolled).toEqual([section(wrapper, 'merging').element])
     expect(document.activeElement).toBe(section(wrapper, 'merging').find('h3').element)
+  })
+
+  it('opens the co-author list when asked for the merging settings', async () => {
+    const wrapper = await mountForm({}, { section: 'merging' })
+    expect(wrapper.find('input[aria-label="Add to co-authors to leave out"]').exists()).toBe(true)
   })
 
   it('opens the tab of a section on request and scrolls to it', async () => {

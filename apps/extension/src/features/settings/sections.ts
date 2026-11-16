@@ -14,6 +14,9 @@ export const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Appearance' },
 ]
 
+// Inside a review the sheet leads with what changes the review; About comes last.
+export const SHEET_TABS = [...SETTINGS_TABS.filter((t) => t.id !== 'about'), ...SETTINGS_TABS.filter((t) => t.id === 'about')]
+
 export const TAB_OF: Record<SettingsSectionId, SettingsTab> = {
   github: 'github',
   token: 'github',

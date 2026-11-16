@@ -28,7 +28,7 @@ const model = defineModel<T>({ required: true })
       <slot name="preview" :value="option.value" />
       <span class="flex items-center gap-1.5 px-0.5">
         <RadioGroupItem :id="`${name}-${option.value}`" :value="option.value" class="size-3.5" />
-        <span class="truncate">{{ option.label }}</span>
+        <span class="leading-tight">{{ option.label }}</span>
       </span>
     </FieldLabel>
   </RadioGroup>

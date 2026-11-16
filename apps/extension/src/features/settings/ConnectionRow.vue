@@ -86,9 +86,7 @@ onMounted(async () => adopt(await storageGet<string>('token')))
           <template v-else-if="account">Connected as @{{ account.login }}</template>
           <template v-else><CircleAlert class="size-3.5 text-destructive" /> GitHub didn’t accept this token</template>
         </p>
-        <p class="text-xs text-muted-foreground">
-          {{ problem || 'Comments, reviews and merging work from the review.' }}
-        </p>
+        <p v-if="problem" class="text-xs text-muted-foreground">{{ problem }}</p>
       </div>
       <div class="flex gap-2">
         <Button variant="outline" size="sm" @click="editing = true">Change</Button>

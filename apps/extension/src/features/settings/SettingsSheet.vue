@@ -17,7 +17,7 @@ const stayOpen = (event: Event) => event.preventDefault()
 </script>
 
 <template>
-  <Sheet v-model:open="open" :modal="false">
+  <Sheet v-model:open="open">
     <SheetContent
       side="right"
       class="gap-0 border-l bg-background shadow-xl data-[side=right]:w-full data-[side=right]:sm:max-w-[480px]"
