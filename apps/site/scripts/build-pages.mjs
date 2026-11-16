@@ -58,7 +58,6 @@ const logoFile = (bg, fg) =>
 const BUTTON = {
   primary: 'bg-ink text-paper hover:opacity-85',
   secondary: 'border border-line bg-paper text-ink hover:bg-raised',
-  ghost: 'text-muted hover:bg-raised hover:text-ink',
 }
 
 const button = (href, text, variant = 'primary', size = 'md') =>
@@ -85,7 +84,7 @@ const installButton = (size = 'lg') =>
     size,
   )
 
-const githubButton = (variant = 'ghost') => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, variant, 'lg')
+const githubButton = () => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, 'secondary', 'lg')
 
 const rating = () => {
   const full = Math.round(STORE_RATING)
@@ -331,7 +330,7 @@ const ctaBlock = () => `<section class="border-t border-line">
         <div class="flex shrink-0 flex-col items-start gap-3">
           <div class="flex flex-wrap gap-3">
             ${installButton()}
-            ${githubButton('secondary')}
+            ${githubButton()}
           </div>
           ${rating()}
         </div>
