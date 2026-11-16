@@ -24,7 +24,8 @@
   <img src="media/videos/before-after.gif" alt="A 214-file pull request cut down to the 12 files that matter" />
 </picture>
 
-A free Chrome extension that turns a long GitHub pull request into a focused review.
+A free Chrome extension that turns a long GitHub pull request into a focused review. Filter out the noise, keep
+private notes for your AI, and [merge without AI co-authors](#merge-without-ai-co-authors).
 
 ## What it does
 
@@ -55,13 +56,38 @@ Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post
   <img src="media/videos/notes.gif" alt="Writing a private note and sending it to an assistant" />
 </picture>
 
+### Merge without AI co-authors
+
+```diff
+- Co-authored-by: Claude <noreply@anthropic.com>
++ Your name on your commit.
+```
+
+Approve, then squash and merge from the review. Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked, so
+they stay out of your history unless you keep them.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/videos/merge-dark.gif" />
+  <img src="media/videos/merge.gif" alt="Approving, then squashing and merging without the AI co-authors" />
+</picture>
+
+### Comments where the code is
+
+GitHub threads show under their lines, and the conversation opens above the files. No trip back to GitHub.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="media/screenshots/comments-dark.webp" />
+  <img src="media/screenshots/comments.webp" alt="A GitHub comment thread under its line, and the conversation above the files" />
+</picture>
+
 ### And the small things
 
 - 🧩 Smart filters for tests, migrations, translations, config and CI
 - 🪟 Split or unified diffs, for every file or just one
 - 📋 Copy a file's name, path, diff or added lines
-- 📝 Read the description and see comment counts without leaving the review
-- ✅ Approve and merge, with the co-authors you choose
+- 📝 The pull request description one click away
+- ⚙️ Settings in a side sheet, opened right where you need them
+- 🔖 Save your filters as a button with Save view
 - 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
 - 🌓 Light, dark or system theme
 
