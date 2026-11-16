@@ -415,7 +415,7 @@ function homePage() {
     'features',
     `<div class="flex flex-col items-start gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div class="max-w-2xl">${h2(h.featuresIntro.title)}${lead(h.featuresIntro.lead)}</div>
-        ${HAS_DEMO ? `<span class="shrink-0">${button('#try', `${esc(h.featuresIntro.live)}${icon('arrow-right', 'size-4')}`, 'secondary')}</span>` : ''}
+        <span class="shrink-0">${installButton('md')}</span>
       </div>
       <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         ${h.features

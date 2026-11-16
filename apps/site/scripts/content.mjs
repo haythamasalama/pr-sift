@@ -93,7 +93,6 @@ export const home = {
   featuresIntro: {
     title: 'Find the files that matter. Read each one once.',
     lead: 'Filters, folders and progress made for pull requests with hundreds of files.',
-    live: 'Try them in the live demo',
   },
   features: [
     {
