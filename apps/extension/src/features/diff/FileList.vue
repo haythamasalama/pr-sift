@@ -29,12 +29,37 @@ onMounted(grow)
 watch(() => files.length, grow)
 onBeforeUnmount(() => cancelGrow?.())
 
+const cardFor = (filename: string) => cards.value?.find((c) => c.el?.dataset.file === filename)
+
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node
+  }
+  return null
+}
+
+// Marking a file viewed collapses it, or removes it when viewed files are hidden. When the reader has scrolled past
+// the top of that file, the content above the viewport shrinks and the next file would end up above the screen.
+async function markViewed(file: PrFile, value: boolean) {
+  const el = cardFor(file.filename)?.el
+  const scroller = el ? scrollParent(el) : null
+  const next = files[files.findIndex((f) => f.filename === file.filename) + 1]?.filename
+  emit('setViewed', file, value)
+  if (!value || !el || !scroller || el.getBoundingClientRect().top >= scroller.getBoundingClientRect().top) return
+  await nextTick()
+  const target = files.some((f) => f.filename === file.filename) ? file.filename : next
+  const targetEl = target ? cardFor(target)?.el : null
+  if (!targetEl) return
+  const padding = parseFloat(getComputedStyle(scroller).paddingTop) || 0
+  scroller.scrollTop += targetEl.getBoundingClientRect().top - scroller.getBoundingClientRect().top - padding
+}
+
 async function scrollTo(filename: string) {
   const index = files.findIndex((f) => f.filename === filename)
   if (index < 0) return
   if (index >= limit.value) limit.value = index + 1
   await nextTick()
-  const card = cards.value?.find((c) => c.el?.dataset.file === filename)
+  const card = cardFor(filename)
   if (!card) return
   card.reveal()
   await nextTick()
@@ -64,6 +89,6 @@ defineExpose({ scrollTo, scrollToFolder })
     :file="f"
     :viewed="viewed[f.filename] === f.hash"
     :stale="viewed[f.filename] !== undefined && viewed[f.filename] !== f.hash"
-    @viewed="emit('setViewed', f, $event)"
+    @viewed="markViewed(f, $event)"
   />
 </template>
