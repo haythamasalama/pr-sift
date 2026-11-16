@@ -494,7 +494,7 @@ watch(
           </TabsContent>
         </Tabs>
       </aside>
-      <main ref="main" class="min-h-0 overflow-auto p-4">
+      <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
         <Empty v-if="allReviewed" class="mx-auto mt-16 max-w-sm border-0">
           <EmptyHeader>
             <EmptyMedia variant="icon"><CheckCircle2 class="text-success" /></EmptyMedia>
@@ -515,7 +515,9 @@ watch(
           </EmptyHeader>
           <Button variant="outline" @click="filter.resetFilters">Reset filters</Button>
         </Empty>
-        <FileList v-else ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
+        <div v-else class="pt-4">
+          <FileList ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
+        </div>
       </main>
     </div>
 
