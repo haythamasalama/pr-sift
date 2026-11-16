@@ -395,7 +395,7 @@ function homePage() {
       <div role="tablist" aria-label="Demos" class="flex gap-2 overflow-x-auto lg:flex-col">
         ${h.demos.map(([id, ic, title, text], i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-video="${id}" class="demo-tab flex shrink-0 items-center gap-3 rounded-lg lg:items-start border border-transparent p-3 text-left transition aria-selected:border-line aria-selected:bg-paper lg:w-full">${iconBox(ic)}<span><span class="block font-medium">${esc(title)}</span><span class="hidden text-sm text-muted lg:block">${esc(text)}</span></span></button>`).join('\n        ')}
       </div>
-      <div>${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
+      <div class="lg:self-center">${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
     </div>
     <div class="mt-12 flex flex-col items-start gap-5 border-t border-line pt-10 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex flex-col gap-2"><p class="text-2xl font-semibold tracking-tight text-balance">${esc(h.hero.tryIt)}</p>${rating()}</div>
