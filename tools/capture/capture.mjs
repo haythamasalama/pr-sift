@@ -244,6 +244,9 @@ const githubPage = (
 </main></body></html>`
 
 function chromeMock({ store, api = null }) {
+  // The auto open tip and the dots on new settings would sit in every shot.
+  store.autoOpenTipDismissed ??= true
+  store.seenNew ??= ['auto-open', 'co-authors', 'saved-filters', 'updates', 'report', 'idea']
   const listeners = new Set()
   const local = {
     get: async (key) => (typeof key === 'string' ? (key in store ? { [key]: store[key] } : {}) : { ...store }),
@@ -483,7 +486,7 @@ function videoCursor({ ringColor }) {
   else add()
 }
 
-const GENTLE_ZOOM = 1.35
+const GENTLE_ZOOM = 1.2
 let maxZoom = GENTLE_ZOOM
 
 // The frame always holds the cursor and the whole target, so zoom never cuts what the viewer should read. A zoom too
@@ -569,7 +572,7 @@ async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
 }
 
 // Playwright's own recorder caps the bitrate around 1 Mbps, which blurs code text, so frames come straight from the
-// browser at full size and ffmpeg builds the video from them.
+// browser and ffmpeg builds the video from them. Frames at the output width keep the encoder fast enough for smooth motion.
 async function startCapture(page) {
   const client = await page.context().newCDPSession(page)
   const frames = []
@@ -578,7 +581,13 @@ async function startCapture(page) {
     client.send('Page.screencastFrameAck', { sessionId }).catch(() => {})
   })
   const size = page.viewportSize()
-  await client.send('Page.startScreencast', { format: 'jpeg', quality: 95, maxWidth: size.width, maxHeight: size.height })
+  const maxWidth = Math.min(size.width, 1920)
+  await client.send('Page.startScreencast', {
+    format: 'jpeg',
+    quality: 92,
+    maxWidth,
+    maxHeight: Math.round((maxWidth * size.height) / size.width),
+  })
   return {
     frames,
     async stop() {
@@ -729,7 +738,8 @@ async function scaleHost(page) {
   )
 }
 
-const browser = await chromium.launch()
+// Hardware compositing keeps the sheet's backdrop blur from dropping frames.
+const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'] })
 
 async function launcherShot() {
   if (only.length && !only.includes('launcher')) return
@@ -1027,22 +1037,24 @@ await clip(browser, 'resolve', async (page) => {
 })
 
 await clip(browser, 'merge', async (page) => {
+  await pause(page, 500)
+  await glide(page, page.getByRole('button', { name: /^Squash and merge/ }).first(), { steps: 30 })
+  const sheet = page.locator('[data-slot="sheet-content"]')
+  await sheet.getByText('Co-authors').waitFor()
   await pause(page, 600)
-  const approve = page.getByTitle('Approve, request changes or comment')
-  await camera(page, approve, 1.6)
-  await glide(page, approve)
-  await pause(page, 500)
-  await glide(page, page.locator('[data-slot="popover-content"]').getByRole('button', { name: 'Approve' }))
-  await pause(page, 1200)
-  const merge = page.getByRole('button', { name: /^Squash and merge/ }).first()
-  await camera(page, merge, 1.6)
-  await glide(page, merge)
-  await page.getByText('Co-authors').waitFor()
-  await pause(page, 500)
-  await camera(page, page.locator('#co-author-0'), 1.6)
+  const submit = sheet.getByRole('button', { name: 'Squash and merge' })
+  await glide(page, page.locator('#co-author-0'), { click: false, steps: 30 })
+  await camera(page, await around(sheet.getByText('Co-authors'), submit), 1.2, { follow: false })
+  await pause(page, 1100)
+  for (const [id, wait] of [
+    ['#co-author-2', 900],
+    ['#co-author-1', 900],
+  ]) {
+    await glide(page, page.locator(id), { click: false, steps: 26 })
+    await pause(page, wait)
+  }
+  await glide(page, submit, { steps: 30 })
   await pause(page, 1800)
-  await glide(page, page.locator('[data-slot="sheet-content"]').getByRole('button', { name: 'Squash and merge' }))
-  await pause(page, 1600)
 })
 
 await clip(browser, 'claude', async (page) => {
@@ -1141,20 +1153,50 @@ function storyCaption({ mono }) {
   const style = document.createElement('style')
   style.textContent = `
     @font-face { font-family: PlexMono; font-weight: 500; src: url(${mono}); }
-    #story { position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 2147483600; pointer-events: none;
-      font: 500 60px/1.2 PlexMono, ui-monospace, monospace; letter-spacing: -0.01em; color: #fff; background: #000;
+    #story { position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147483600; pointer-events: none;
+      font: 500 72px/1.2 PlexMono, ui-monospace, monospace; letter-spacing: -0.01em; color: #fff; background: #000;
       border-radius: 24px; padding: 14px; box-shadow: 0 24px 80px rgb(0 0 0 / 0.35); }
-    #story p { margin: 0; display: flex; gap: 28px; padding: 12px 28px; white-space: nowrap; transition: opacity 0.45s ease, max-height 0.45s ease; overflow: hidden; }
-    #story .del { background: rgb(248 81 73 / 0.2); border-radius: 14px 14px 0 0; }
+    #story p { margin: 0; display: flex; gap: 28px; padding: 12px 28px; white-space: nowrap; overflow: hidden;
+      transition: opacity 0.45s ease, max-height 0.45s ease, padding 0.45s ease, border-radius 0.45s ease; }
+    #story .del { background: rgb(248 81 73 / 0.2); border-radius: 14px; }
     #story .add { background: rgb(46 160 67 / 0.24); border-radius: 0 0 14px 14px; max-height: 0; padding-block: 0; opacity: 0; }
-    #story.done .add { max-height: 140px; padding-block: 12px; opacity: 1; }
-    #story .del span { color: #f85149; }
-    #story .add span { color: #3fb950; }`
+    #story.open .del { border-radius: 14px 14px 0 0; }
+    #story.open .add { max-height: 140px; padding-block: 12px; opacity: 1; }
+    #story .del > span:first-child { color: #f85149; }
+    #story .add > span:first-child { color: #3fb950; }
+    #story-text { transition: opacity 0.3s ease; }
+    #story-n { font-variant-numeric: tabular-nums; }`
   document.head.appendChild(style)
   const box = document.createElement('div')
   box.id = 'story'
-  box.innerHTML = '<p class="del"><span>−</span>Scroll 214 changed files.</p><p class="add"><span>+</span>Review the 12 that matter.</p>'
+  box.innerHTML =
+    '<p class="del"><span>−</span><span>Scroll 214 changed files.</span></p><p class="add"><span>+</span><span id="story-text"><span id="story-n"></span> left to review.</span></p>'
   document.documentElement.appendChild(box)
+  const n = box.querySelector('#story-n')
+  window.__story = {
+    open(count) {
+      n.textContent = String(count)
+      box.classList.add('open')
+    },
+    count(target) {
+      const from = Number(n.textContent)
+      const t0 = performance.now()
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / 650)
+        n.textContent = String(Math.round(from + (target - from) * (1 - (1 - k) ** 3)))
+        if (k < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    },
+    done(text) {
+      const line = box.querySelector('#story-text')
+      line.style.opacity = '0'
+      setTimeout(() => {
+        line.textContent = text
+        line.style.opacity = '1'
+      }, 300)
+    },
+  }
 }
 
 async function around(...targets) {
@@ -1166,7 +1208,17 @@ async function around(...targets) {
   return { x, y, width: right - x, height: bottom - y }
 }
 
-async function recordStory(theme, { caption }) {
+const leftCount = async (page) =>
+  Number(
+    (
+      await page
+        .getByText(/^\d+ left$/)
+        .first()
+        .textContent()
+    ).match(/\d+/)[0],
+  )
+
+async function recordStory(theme) {
   const name = themedName('before-after', theme)
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
   const context = await browser.newContext({ viewport: big, colorScheme: theme })
@@ -1181,20 +1233,20 @@ async function recordStory(theme, { caption }) {
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
   await scaleHost(page)
-  if (caption) await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
+  await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
   await page.mouse.move(big.width * 0.55, big.height * 0.45)
   const capture = await startCapture(page)
   await page.waitForTimeout(600)
   const from = now()
 
-  await pause(page, 400)
+  await pause(page, 900)
   await page.evaluate(
     () =>
       new Promise((done) => {
         const end = document.documentElement.scrollHeight * 0.55
         const t0 = performance.now()
         const step = (t) => {
-          const k = Math.min(1, (t - t0) / 1300)
+          const k = Math.min(1, (t - t0) / 2200)
           scrollTo(0, end * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2))
           if (k < 1) requestAnimationFrame(step)
           else done()
@@ -1202,52 +1254,46 @@ async function recordStory(theme, { caption }) {
         requestAnimationFrame(step)
       }),
   )
-  await pause(page, 200)
-  await glide(page, launcher(page), { steps: 20 })
+  await pause(page, 300)
+  await glide(page, launcher(page), { steps: 24 })
   const clicked = now()
   await folderViewed(page, '.claude').waitFor()
   await pause(page, 100)
   const loaded = now()
-  await pause(page, 700)
+  await page.evaluate(async (count) => window.__story.open(count), await leftCount(page))
+  await pause(page, 900)
 
   for (const folder of ['.claude', 'docs', 'lang', 'tests']) {
     const box = folderViewed(page, folder)
     await box.scrollIntoViewIfNeeded()
-    await glide(page, box)
-    await pause(page, 500)
+    await glide(page, box, { steps: 22 })
+    await pause(page, 150)
+    await page.evaluate((count) => window.__story.count(count), await leftCount(page))
+    await pause(page, 650)
   }
-  await glide(page, chip(page, 'modified'))
-  await pause(page, 600)
   const quick = page
     .locator('div.group')
     .filter({ has: page.locator(`button[title="${QUICK}"]`) })
     .first()
-  await glide(page, quick.locator(`button[title="${QUICK}"]`))
-  await pause(page, 900)
-  await glide(page, quick.locator('[title="Mark as viewed"]'))
-  await pause(page, 500)
-  await glide(page, chip(page, 'modified'))
-  await pause(page, 400)
+  await glide(page, quick.locator('[title="Mark as viewed"]'), { steps: 22 })
+  await pause(page, 150)
+  await page.evaluate((count) => window.__story.count(count), await leftCount(page))
+  await pause(page, 700)
   await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
-  await pause(page, 300)
-  if (caption) await page.evaluate(() => document.getElementById('story').classList.add('done'))
+  await page.evaluate((count) => window.__story.done(`Review the ${count} that matter.`), await leftCount(page))
   const left = await page
     .getByText(/^\d+ left$/)
     .first()
     .boundingBox()
-  await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 14 })
-  await pause(page, 1800)
+  await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 20 })
+  await pause(page, 2600)
   const to = now()
   await capture.stop()
   await context.close()
 
-  const mp4 = caption ? `${OUT}/raw/${name}.caption.mp4` : `${OUT}/videos/${name}.mp4`
+  const mp4 = `${OUT}/videos/${name}.mp4`
   const length = writeVideo(capture.frames, { from, to, cut: [clicked + 0.5, loaded - 0.1] }, mp4)
-  if (caption) {
-    writeGif(mp4, `${OUT}/videos/${name}.gif`)
-    console.log('gif', name, length.toFixed(1) + 's')
-    return
-  }
+  writeGif(mp4, `${OUT}/videos/${name}.gif`)
   execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
   console.log('video', name, length.toFixed(1) + 's')
 }
@@ -1266,10 +1312,7 @@ if (!only.length || only.includes('before-after')) {
   await launcher(warmPage).click()
   await folderViewed(warmPage, '.claude').waitFor()
   await warm.close()
-  for (const theme of THEMES) {
-    await recordStory(theme, { caption: false })
-    await recordStory(theme, { caption: true })
-  }
+  for (const theme of THEMES) await recordStory(theme)
 }
 
 await browser.close()
