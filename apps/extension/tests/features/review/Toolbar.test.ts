@@ -3,7 +3,7 @@ import { shallowRef } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Toolbar from '../../../src/features/review/Toolbar.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
-import { REVIEWS_URL } from '../../../src/lib/updates'
+import { settingsOpenerKey } from '../../../src/features/settings/useSettingsOpener'
 import { installChrome } from '../../helpers/chrome'
 
 const props = {
@@ -19,12 +19,12 @@ const props = {
   diffMode: 'unified' as const,
 }
 
-async function openMenu() {
+async function openMenu(provide: Record<symbol, unknown> = {}) {
   const target = document.createElement('div')
   document.body.appendChild(target)
   const wrapper = mount(Toolbar, {
     props,
-    global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
+    global: { provide: { [portalTargetKey as symbol]: shallowRef(target), ...provide } },
     attachTo: document.body,
   })
   await flushPromises()
@@ -41,15 +41,15 @@ describe('Toolbar settings menu', () => {
     document.body.innerHTML = ''
   })
 
-  it('opens the store reviews in a new tab', async () => {
+  it('sends help and feedback to the About settings', async () => {
     installChrome()
-    const open = vi.fn()
-    vi.stubGlobal('open', open)
-    const wrapper = await openMenu()
+    const openSettings = vi.fn()
+    const wrapper = await openMenu({ [settingsOpenerKey as symbol]: openSettings })
     expect(wrapper.find('[aria-label="Options"]').exists()).toBe(true)
     expect(item('Restart to update')).toBeUndefined()
-    item('Rate PR Sift')!.click()
-    expect(open).toHaveBeenCalledWith(REVIEWS_URL, '_blank', 'noopener')
+    expect(item('Report a problem')).toBeUndefined()
+    item('Help and feedback')!.click()
+    expect(openSettings).toHaveBeenCalledWith('about')
   })
 
   it('marks the settings button and offers a restart once an update is ready', async () => {

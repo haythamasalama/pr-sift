@@ -18,7 +18,7 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: The options page shows your version and checks for updates. Restart into a downloaded update from there or
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.
-- Review: Rate PR Sift on the Chrome Web Store from the review menu or the options page.
+- Review: Rate PR Sift on the Chrome Web Store from About in Settings or the options page.
 - Review: Settings open in a side sheet over the review, starting on GitHub, and every change applies right away. They
   also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in
   Merge and every "Connect GitHub" prompt.
@@ -33,6 +33,8 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 ### Changed
 
+- Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s new,
+  rating, reporting a problem and suggesting an idea.
 - Review: Settings are grouped by what you want to do (GitHub, Reviewing, Files, Appearance, About) and save as you
   change them. The connection shows who you are on GitHub, the theme and diff view are picked from small previews, the
   folder indentation has a live tree, and hidden paths and co-authors are chips. "Always hidden" counts the files it

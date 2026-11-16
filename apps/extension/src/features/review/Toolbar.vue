@@ -1,20 +1,5 @@
 <script setup lang="ts">
-import {
-  Bug,
-  Columns2,
-  Lightbulb,
-  Monitor,
-  Moon,
-  NotebookPen,
-  PanelLeft,
-  Pencil,
-  RotateCw,
-  Rows2,
-  Settings,
-  Star,
-  Sun,
-  X,
-} from '@lucide/vue'
+import { CircleHelp, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Pencil, RotateCw, Rows2, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,9 +16,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { isDemo, isEmbeddedDemo } from '../../lib/demo'
-import { openReport } from '../../lib/report'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
-import { openReviews } from '../../lib/updates'
 import { useUpdates } from '../updates/useUpdates'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
@@ -173,9 +156,7 @@ const closable = !isEmbeddedDemo()
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
-        <DropdownMenuItem @select="openReport('bug')"><Bug /> Report a problem</DropdownMenuItem>
-        <DropdownMenuItem @select="openReport('idea')"><Lightbulb /> Suggest an idea</DropdownMenuItem>
-        <DropdownMenuItem @select="openReviews"><Star /> Rate PR Sift</DropdownMenuItem>
+        <DropdownMenuItem @select="openSettings('about')"><CircleHelp /> Help and feedback</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
 
