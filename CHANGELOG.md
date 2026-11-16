@@ -19,8 +19,8 @@ goes under `## Unreleased` until the next release moves it under its version and
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.
 - Review: Rate PR Sift on the Chrome Web Store from the review menu or the options page.
-- Review: Settings open in a side sheet inside the review that keeps the review visible, so you see each change as you
-  make it. They also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in
+- Review: Settings open in a side sheet over the review, starting on GitHub, and every change applies right away. They
+  also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in
   Merge and every "Connect GitHub" prompt.
 - Review: Save the file types and folders you picked as a saved filter in the top bar with Save view.
 - Review: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples, and show how many
@@ -42,6 +42,9 @@ goes under `## Unreleased` until the next release moves it under its version and
   the AI co-author list on or off.
 - Notes: The code a note quotes keeps the diff's colors. "Show resolved in the diff" counts resolved notes, says when
   there are none, and says they show dimmed once it is on.
+- Notes: A note shows its lines and buttons on one row and its text below, so it stays readable in narrow windows.
+- Review: On small screens the header keeps to two rows. The top search is gone, since the sidebar has one.
+- Review: The Approve popover shows each review type with a short hint.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 
 ## 1.1.0 - 2026-11-14
