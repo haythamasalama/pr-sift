@@ -111,4 +111,13 @@ describe('MergeDialog', () => {
     await vi.waitFor(() => expect(document.body.textContent).toContain('needs a GitHub token'))
     expect(button('Squash and merge').hasAttribute('disabled')).toBe(true)
   })
+
+  it('loads the commits as soon as a token is saved, without a reload', async () => {
+    github()
+    const wrapper = mountDialog(false)
+    await vi.waitFor(() => expect(document.body.textContent).toContain('needs a GitHub token'))
+    await wrapper.setProps({ canAct: true })
+    await vi.waitFor(() => expect(document.querySelector('#co-author-1')).not.toBeNull())
+    expect(button('Squash and merge').hasAttribute('disabled')).toBe(false)
+  })
 })

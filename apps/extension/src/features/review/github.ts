@@ -4,7 +4,7 @@ interface GhResponse<T> {
   data: T & { message?: string }
 }
 
-import { alive, storageGet } from '../../lib/extension'
+import { alive, onStorageKey, storageGet } from '../../lib/extension'
 
 export class GhError extends Error {
   constructor(
@@ -45,4 +45,16 @@ export function backgroundText(url: string): Promise<TextResponse> {
 
 export async function hasToken(): Promise<boolean> {
   return Boolean(await storageGet<string>('token'))
+}
+
+export function watchToken(callback: (present: boolean) => void): () => void {
+  let changed = false
+  const stop = onStorageKey<string>('token', (value) => {
+    changed = true
+    callback(Boolean(value))
+  })
+  void hasToken().then((present) => {
+    if (!changed) callback(present)
+  })
+  return stop
 }

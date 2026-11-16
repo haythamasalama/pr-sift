@@ -17,7 +17,7 @@ import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
 import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
-import { hasToken } from './github'
+import { watchToken } from './github'
 import { fetchFileLines } from './pull'
 import { fetchConversation, type Conversation } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
@@ -37,7 +37,11 @@ import Toolbar from './Toolbar.vue'
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
 let stopWatchingSettings = () => {}
-onBeforeUnmount(() => stopWatchingSettings())
+let stopWatchingToken = () => {}
+onBeforeUnmount(() => {
+  stopWatchingSettings()
+  stopWatchingToken()
+})
 
 const settings = shallowRef<Settings>(DEFAULTS)
 const { files, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
@@ -217,14 +221,17 @@ const removeExtension = (ext: string) => setCustomExtensions(settings.value.cust
 onMounted(async () => {
   stopWatchingSettings = onSettingsChange((next) => (settings.value = next))
   settings.value = await getSettings()
-  tokenAvailable.value = await hasToken()
+  stopWatchingToken = watchToken((present) => {
+    tokenAvailable.value = present
+    if (present) void loadConversation()
+    else conversation.value = null
+  })
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
   diffMode.value = settings.value.diffView
   sidebarSize.set(settings.value.sidebarWidth)
   await load(pr)
   emit('refreshed')
-  await loadConversation()
 })
 
 watch(diffMode, (value) => saveSetting('diffView', value))

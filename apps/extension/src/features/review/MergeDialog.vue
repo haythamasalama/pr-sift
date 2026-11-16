@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import { CircleAlert, GitMerge, KeyRound, Plus, TriangleAlert } from '@lucide/vue'
 import {
   coAuthorsOf,
@@ -81,8 +81,8 @@ function choose(value: MergeMethod) {
   if (context.value) fillMessage(context.value)
 }
 
-onMounted(async () => {
-  if (!canAct) return
+async function load() {
+  loadError.value = ''
   const settings = await getSettings()
   removed.value = settings.removedCoAuthors
   try {
@@ -95,7 +95,15 @@ onMounted(async () => {
   } catch (e) {
     loadError.value = explain(e, 'merge')
   }
-})
+}
+
+watch(
+  () => canAct,
+  (can) => {
+    if (can && !context.value) void load()
+  },
+  { immediate: true },
+)
 
 function toggle(index: number, keep: boolean) {
   people.value = people.value.map((row, i) => (i === index ? { ...row, keep } : row))
