@@ -131,8 +131,25 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
 for (const demo of document.querySelectorAll('[data-live-demo]')) {
   const frame = demo.querySelector('[data-live-frame]')
   const restart = demo.querySelector('[data-live-restart]')
+  // The demo loads on its own, so the wheel keeps scrolling the page until the visitor clicks into the demo.
+  let engaged = false
+  frame.addEventListener('pointerleave', () => (engaged = false))
+  const passScroll = (win) => {
+    win.addEventListener('pointerdown', () => (engaged = true), true)
+    win.addEventListener(
+      'wheel',
+      (event) => {
+        if (engaged || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return
+        event.preventDefault()
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
+        window.scrollBy({ top: event.deltaY * unit, behavior: 'instant' })
+      },
+      { capture: true, passive: false },
+    )
+  }
   // The new frame loads over the old one, so the preview never flashes empty.
   const start = () => {
+    engaged = false
     const iframe = document.createElement('iframe')
     iframe.src = frame.dataset.src
     iframe.title = 'PR Sift live demo'
@@ -141,6 +158,7 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
     iframe.addEventListener(
       'load',
       () => {
+        passScroll(iframe.contentWindow)
         iframe.classList.remove('opacity-0')
         for (const child of [...frame.children]) if (child !== iframe) child.remove()
       },
