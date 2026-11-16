@@ -133,7 +133,7 @@ async function submit() {
       </template>
       <div v-else class="flex flex-col items-start gap-2 text-xs text-muted-foreground">
         <p class="flex gap-2">
-          <KeyRound class="mt-0.5 size-3.5 shrink-0" /> Reviewing from here needs a GitHub token with Pull requests set to read and write.
+          <KeyRound class="mt-0.5 size-3.5 shrink-0" /> Reviewing from here needs a classic GitHub token with the repo scope.
         </p>
         <Button
           size="sm"

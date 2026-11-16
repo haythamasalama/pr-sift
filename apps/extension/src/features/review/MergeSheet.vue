@@ -186,7 +186,7 @@ async function submit() {
         <Alert v-if="!canAct">
           <KeyRound />
           <AlertDescription class="flex flex-col items-start gap-2">
-            Merging from the review needs a GitHub token with Contents and Pull requests set to read and write.
+            Merging from the review needs a classic GitHub token with the repo scope.
             <Button size="sm" variant="outline" @click="editSettings('token')">Connect GitHub</Button>
           </AlertDescription>
         </Alert>
