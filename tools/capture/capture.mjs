@@ -322,10 +322,10 @@ function cursorScript() {
   else add()
 }
 
-async function openDemo(browser, { theme = 'light', notes = true, video = null } = {}) {
+async function openDemo(browser, { theme = 'light', notes = true, video = null, scale = 2 } = {}) {
   const context = await browser.newContext({
     viewport: VIEWPORT,
-    deviceScaleFactor: video ? 1 : 2,
+    deviceScaleFactor: video ? 1 : scale,
     colorScheme: theme,
     ...(video ? { recordVideo: { dir: `${OUT}/raw`, size: VIEWPORT } } : {}),
   })
@@ -411,16 +411,57 @@ async function framed(browser, rawPath, name, { theme = 'light', url = `github.c
   console.log('screenshot', name)
 }
 
+// Close-ups share one 16:10 shape, grown around what they show and kept inside the page.
+async function focusBox(page, targets, pad = 16) {
+  const box = await around(...targets)
+  const view = page.viewportSize()
+  let { x, y, width: w, height: h } = { x: box.x - pad, y: box.y - pad, width: box.width + pad * 2, height: box.height + pad * 2 }
+  if (w / h < 1.6) {
+    x -= (h * 1.6 - w) / 2
+    w = h * 1.6
+  } else {
+    y -= (w / 1.6 - h) / 2
+    h = w / 1.6
+  }
+  w = Math.min(w, view.width)
+  h = Math.min(h, view.height)
+  return { x: Math.max(0, Math.min(x, view.width - w)), y: Math.max(0, Math.min(y, view.height - h)), width: w, height: h }
+}
+
+async function framedCrop(browser, rawPath, name, { theme = 'light' } = {}) {
+  const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 })
+  const img = readFileSync(rawPath).toString('base64')
+  const edge = theme === 'dark' ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'
+  await page.setContent(`<!doctype html><html><body style="margin:0">
+  <div id="shot" style="width:1600px;height:1000px;display:flex;align-items:center;justify-content:center;background:${background(theme)}">
+    <img src="data:image/png;base64,${img}" style="display:block;width:1400px;height:875px;object-fit:cover;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 1px ${edge}">
+  </div></body></html>`)
+  await page.locator('#shot').screenshot({ path: `${OUT}/raw/${name}.framed.png` })
+  await page.close()
+  execFileSync(ffmpeg, [
+    '-y',
+    '-loglevel',
+    'error',
+    '-i',
+    `${OUT}/raw/${name}.framed.png`,
+    '-quality',
+    '88',
+    `${OUT}/screenshots/${name}.webp`,
+  ])
+  console.log('screenshot', name)
+}
+
 async function shot(browser, name, prepare, options = {}) {
   if (only.length && !only.includes(name)) return
   for (const theme of options.theme ? [options.theme] : THEMES) {
     const file = options.theme ? name : themedName(name, theme)
-    const { context, page } = await openDemo(browser, { ...options, theme })
+    const { context, page } = await openDemo(browser, { ...options, theme, scale: options.focus ? 4 : 2 })
     await prepare(page)
     await page.waitForTimeout(400)
-    await page.screenshot({ path: `${OUT}/raw/${file}.png` })
+    const clip = options.focus ? await focusBox(page, await options.focus(page)) : undefined
+    await page.screenshot({ path: `${OUT}/raw/${file}.png`, clip })
     await context.close()
-    await framed(browser, `${OUT}/raw/${file}.png`, file, { ...options, theme })
+    await (clip ? framedCrop : framed)(browser, `${OUT}/raw/${file}.png`, file, { ...options, theme })
   }
 }
 
@@ -879,6 +920,104 @@ await shot(
   { theme: 'dark' },
 )
 
+const treeRow = (page, name) =>
+  page
+    .locator('div.group')
+    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name}$`) }) })
+    .first()
+
+await shot(
+  browser,
+  'feature-filters',
+  async (page) => {
+    await openReview(page)
+    await page.getByRole('button', { name: /^\.php/ }).click()
+    await page.getByRole('button', { name: /^added \d/ }).click()
+  },
+  { focus: async (page) => [page.getByRole('button', { name: /^\.php/ }), page.getByRole('button', { name: /^added \d/ })] },
+)
+
+await shot(
+  browser,
+  'feature-folders',
+  async (page) => {
+    await openReview(page)
+    await page.getByRole('button', { name: 'Collapse all folders' }).click()
+    await treeRow(page, 'src').hover()
+    await treeRow(page, 'src').getByRole('button', { name: 'Expand folder tree' }).click()
+    await treeRow(page, 'src').hover()
+  },
+  { focus: async (page) => [treeRow(page, 'lang'), treeRow(page, 'Enums')] },
+)
+
+await shot(
+  browser,
+  'feature-viewed',
+  async (page) => {
+    await openReview(page)
+    for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
+  },
+  { focus: async (page) => [page.getByText(/^\d+ left$/).first(), treeRow(page, 'lang')] },
+)
+
+await shot(
+  browser,
+  'feature-smart',
+  async (page) => {
+    await openReview(page)
+    await page.getByRole('tab', { name: /Smart filters/ }).click()
+  },
+  { focus: async (page) => [page.getByRole('tab', { name: /Smart filters/ }), page.getByText('By parent folder')] },
+)
+
+await shot(
+  browser,
+  'feature-comments',
+  async (page) => {
+    await openReview(page)
+    await page.locator('[data-thread="901"]').scrollIntoViewIfNeeded()
+  },
+  { focus: async (page) => [page.locator('[data-thread="901"]'), row(page, 'src/Domain/Billing/Actions/GenerateInvoice.php', 31)] },
+)
+
+await shot(
+  browser,
+  'feature-notes',
+  async (page) => {
+    await openReview(page)
+    const file = 'src/Domain/Billing/Usage/UsageMeter.php'
+    await card(page, file).scrollIntoViewIfNeeded()
+    await row(page, file, 16).hover()
+    const from = await row(page, file, 16).getByRole('button', { name: 'Add a private note' }).boundingBox()
+    await page.mouse.move(from.x + 6, from.y + 6)
+    await page.mouse.down()
+    const to = await row(page, file, 21).boundingBox()
+    await page.mouse.move(to.x + 40, to.y + to.height / 2, { steps: 8 })
+    await page.mouse.up()
+    await page.locator('textarea').fill('Filter zero quantities in SQL instead of in PHP, the totals table can be large.')
+  },
+  { focus: async (page) => [row(page, 'src/Domain/Billing/Usage/UsageMeter.php', 16), page.locator('textarea')] },
+)
+
+await shot(
+  browser,
+  'feature-split',
+  async (page) => {
+    await openReview(page)
+    await card(page, 'src/Domain/Billing/Actions/GenerateInvoice.php').getByRole('button', { name: 'Show this file as split' }).click()
+  },
+  {
+    focus: async (page) => [
+      card(page, 'src/Domain/Billing/Actions/GenerateInvoice.php').getByText('Viewed').first(),
+      card(page, 'src/Domain/Billing/Actions/GenerateInvoice.php').getByRole('button', { name: 'Show this file as unified' }),
+      card(page, 'src/Domain/Billing/Actions/GenerateInvoice.php')
+        .locator('tr')
+        .filter({ hasText: "'currency' => $account->currency" })
+        .first(),
+    ],
+  },
+)
+
 const pause = (page, ms = 900) => page.waitForTimeout(ms)
 const chip = (page, name) => page.getByRole('button', { name: new RegExp(`^${name.replace('.', '\\.')} \\d+$`) })
 const folderRow = (page, name) =>
@@ -1058,6 +1197,18 @@ await clip(browser, 'merge', async (page) => {
   }
   await glide(page, submit, { steps: 30 })
   await pause(page, 1800)
+})
+
+await clip(browser, 'settings', async (page) => {
+  await glide(page, page.getByRole('button', { name: 'Options' }), { steps: 24 })
+  await pause(page, 500)
+  await glide(page, page.getByRole('menuitem', { name: 'Settings' }), { steps: 18 })
+  await page.getByRole('tab', { name: 'GitHub' }).waitFor()
+  await pause(page, 1100)
+  for (const tab of ['Reviewing', 'Files', 'Appearance', 'GitHub']) {
+    await glide(page, page.getByRole('tab', { name: tab }), { steps: 22 })
+    await pause(page, 1500)
+  }
 })
 
 await clip(browser, 'claude', async (page) => {
