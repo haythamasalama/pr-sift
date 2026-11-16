@@ -85,7 +85,7 @@ const installButton = (size = 'lg') =>
     size,
   )
 
-const githubButton = () => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, 'ghost', 'lg')
+const githubButton = (variant = 'ghost') => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, variant, 'lg')
 
 const rating = () => {
   const full = Math.round(STORE_RATING)
@@ -327,13 +327,13 @@ const appLd = {
 
 const ctaBlock = () => `<section class="border-t border-line">
       <div class="mx-auto flex max-w-6xl flex-col items-start gap-8 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex items-center gap-5">${logo('size-12 shrink-0')}<h2 class="max-w-xl text-3xl font-semibold tracking-tight text-balance">Make your next big review the easy one.</h2></div>
-        <div class="flex flex-col items-start gap-3 lg:items-end">
-        <div class="flex flex-wrap gap-3">
-          ${installButton()}
-          ${githubButton()}
-        </div>
-        ${rating()}
+        <div class="flex min-w-0 items-center gap-5">${logo('size-12 shrink-0')}<h2 class="max-w-xl text-3xl font-semibold tracking-tight text-balance">Make your next big review the easy one.</h2></div>
+        <div class="flex shrink-0 flex-col items-start gap-3">
+          <div class="flex flex-wrap gap-3">
+            ${installButton()}
+            ${githubButton('secondary')}
+          </div>
+          ${rating()}
         </div>
       </div>
     </section>`
