@@ -9,7 +9,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { onStorageKey, storageGet, storageRemove, storageSet } from '../../lib/extension'
 import { gh } from '../review/github'
 
-const CREATE_TOKEN_URL = 'https://github.com/settings/personal-access-tokens/new'
+// A classic token with the repo scope works for organization repositories without an approval step.
+const CREATE_TOKEN_URL = 'https://github.com/settings/tokens/new?description=PR%20Sift&scopes=repo'
 
 const saved = shallowRef('')
 const draft = shallowRef('')
@@ -96,8 +97,8 @@ onMounted(async () => adopt(await storageGet<string>('token')))
 
     <form v-if="showForm" class="flex flex-col gap-2" @submit.prevent="save">
       <p class="text-xs text-muted-foreground">
-        A fine-grained token with Pull requests set to read and write, and Contents too if you merge from the review. It stays on this
-        device and goes only to api.github.com.
+        A classic token with the repo scope. Create a token fills in the name and scope for you. It stays on this device and goes only to
+        api.github.com.
       </p>
       <InputGroup>
         <InputGroupInput

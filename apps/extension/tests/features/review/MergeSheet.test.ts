@@ -120,17 +120,13 @@ describe('MergeSheet', () => {
     [
       403,
       'Resource not accessible by personal access token',
-      'Your token can’t merge here. Give it Contents and Pull requests set to read and write, and access to this repository. GitHub said: “Resource not accessible by personal access token.”',
+      'Your token can’t merge here. Use a classic token with the repo scope, and check that you can merge in this repository. GitHub said: “Resource not accessible by personal access token.”',
     ],
-    [
-      404,
-      'Not Found',
-      'Your token can’t see this repository. For an organization’s repository, create the token with the organization as its resource owner',
-    ],
+    [404, 'Not Found', 'Your token can’t see this repository. Use a classic token with the repo scope, then try again.'],
     [
       403,
       'Resource protected by organization SAML enforcement. You must grant your Personal Access token access to this organization.',
-      'This organization uses single sign-on. On GitHub, authorize your token for the organization, then try again.',
+      'This organization uses single sign-on. On GitHub, open your token, choose Configure SSO and authorize the organization, then try again.',
     ],
   ])('says why GitHub refused to load the merge (%i: %s)', (status, message, expected) => {
     expect(explain(new GhError(`${status}: ${message}`, status), 'merge')).toContain(expected)

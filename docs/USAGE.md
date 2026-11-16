@@ -26,8 +26,8 @@ Open the extension options from the toolbar icon. Theme changes apply at once; o
 you press **Save**.
 
 - **GitHub token (optional).** Used only to post a note as a review comment, and as a fallback when GitHub refuses to
-  load a very large diff. Use a fine-grained token limited to the repositories you need, with **Pull requests: Read
-  and write**.
+  load a very large diff. Use a classic token with the **repo** scope. **Create a token** in PR Sift opens
+  GitHub with the name and scope filled in.
 - **Hidden files.** Path patterns (`**/*.lock`) and change types hidden until you turn on **Hidden**.
 - **Defaults.** Hide viewed files, unified or split view.
 - **Presets.** Named sets of path patterns shown as buttons in the review, for example

@@ -224,7 +224,7 @@ export const guides = [
         'Your list, remembered',
         'Uncheck anyone else once and they stay unchecked next time. Edit the list, or turn it off, in Settings.',
       ],
-      ['key-round', 'What you need', 'A fine-grained GitHub token with Pull requests and Contents set to read and write.'],
+      ['key-round', 'What you need', 'A classic GitHub token with the repo scope. PR Sift’s Create a token link fills it in.'],
     ],
   },
   {

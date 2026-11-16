@@ -35,6 +35,8 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 - Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s new,
   rating, reporting a problem and suggesting an idea.
+- Review: Create a token opens a classic GitHub token named PR Sift with the repo scope checked. It works for
+  organization repositories without an approval step.
 - Review: Settings are grouped by what you want to do (GitHub, Reviewing, Files, Appearance, About) and save as you
   change them. The connection shows who you are on GitHub, the theme and diff view are picked from small previews, the
   folder indentation has a live tree, and hidden paths and co-authors are chips. "Always hidden" counts the files it
