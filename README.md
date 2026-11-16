@@ -61,6 +61,7 @@ Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post
 - 🪟 Split or unified diffs, for every file or just one
 - 📋 Copy a file's name, path, diff or added lines
 - 📝 Read the description and see comment counts without leaving the review
+- ✅ Approve and merge, with the co-authors you choose
 - 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
 - 🌓 Light, dark or system theme
 

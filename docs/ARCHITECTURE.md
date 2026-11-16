@@ -24,6 +24,7 @@ everything else can be tested without a browser.
 | `scopes`     | Smart filters: categories, repeated folders, folder grouping        |
 | `extensions` | File type chips, including compound suffixes such as `.blade.php`   |
 | `glob`       | Path patterns used by hidden-file rules                             |
+| `merge`      | Squash commit messages and the co-authors kept or left out          |
 | `notes`      | Note anchors, the prompt exported to an assistant, GitHub line URLs |
 | `overview`   | Pull request state, author and branches from GitHub's page data     |
 | `range`      | Multi-line note ranges                                              |

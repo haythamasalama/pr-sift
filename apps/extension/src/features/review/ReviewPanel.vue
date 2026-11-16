@@ -30,6 +30,7 @@ import FilterBar from '../filters/FilterBar.vue'
 import NotesDialog from '../notes/NotesDialog.vue'
 import DescriptionPanel from './DescriptionPanel.vue'
 import PrSummary from './PrSummary.vue'
+import ReviewActions from './ReviewActions.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
 
@@ -78,6 +79,7 @@ const showResolved = shallowRef(false)
 const descriptionOpen = shallowRef(false)
 const conversation = shallowRef<Conversation | null>(null)
 const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
+const actionNote = shallowRef('')
 
 async function loadConversation() {
   if (!tokenAvailable.value) return
@@ -86,6 +88,16 @@ async function loadConversation() {
   } catch {
     conversation.value = null
   }
+}
+
+function announce(text: string) {
+  actionNote.value = text
+  setTimeout(() => (actionNote.value = ''), 10_000)
+}
+
+function onMerged(sha: string) {
+  if (info.value) info.value = { ...info.value, state: 'merged' }
+  announce(`Merged${info.value?.base ? ` into ${info.value.base}` : ''} as ${sha.slice(0, 7)}.`)
 }
 
 provide(notesKey, {
@@ -246,6 +258,17 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           :conversation-url="conversationUrl"
         />
       </template>
+      <template #actions>
+        <ReviewActions
+          v-if="status === 'ready'"
+          :pr="pr"
+          :info="info"
+          :head-sha="headSha"
+          :can-act="tokenAvailable"
+          @approved="announce('You approved this pull request.')"
+          @merged="onMerged"
+        />
+      </template>
     </Toolbar>
 
     <DescriptionPanel
@@ -284,6 +307,11 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       <RefreshCw :class="refreshing ? 'animate-spin' : ''" />
       <AlertDescription class="flex-1 text-xs">{{ refreshNote || 'New changes were pushed to this pull request.' }}</AlertDescription>
       <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
+    </Alert>
+
+    <Alert v-if="actionNote" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
+      <CheckCircle2 class="text-success" />
+      <AlertDescription class="flex-1 text-xs">{{ actionNote }}</AlertDescription>
     </Alert>
 
     <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">

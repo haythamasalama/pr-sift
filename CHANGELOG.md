@@ -10,6 +10,7 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: The pull request's state, author, branches, commit count and comment count sit under the title.
 - Review: A Description button shows the pull request description above the files.
 - Review: Each file shows how many GitHub comments it has.
+- Review: Approve and Merge from the review. Squash merges leave out AI co-authors such as Claude, ChatGPT, Gemini and Copilot by default, and remember the people you uncheck.
 
 ### Changed
 

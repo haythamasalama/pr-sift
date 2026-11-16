@@ -1,3 +1,4 @@
+import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { storageGet, storageSet } from './extension'
 import type { Settings } from './types'
 
@@ -13,6 +14,8 @@ export const DEFAULTS: Settings = {
   theme: 'system',
   treeIndent: 6,
   treeGuides: true,
+  mergeMethod: 'squash',
+  removedCoAuthors: DEFAULT_REMOVED_CO_AUTHORS,
   assistant: 'claude-code',
 }
 

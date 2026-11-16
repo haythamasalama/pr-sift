@@ -10,6 +10,9 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  GitCommitHorizontal,
+  GitMerge,
+  Layers,
   Monitor,
   Moon,
   Rows2,
@@ -30,7 +33,7 @@ import BrandMark from '../components/BrandMark.vue'
 import { openReport } from '../lib/report'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { DEFAULTS, getSettings } from '../lib/settings'
-import type { DiffMode, Settings, ThemeMode } from '../lib/types'
+import type { DiffMode, MergeMethod, Settings, ThemeMode } from '../lib/types'
 
 const STATUSES = [
   { value: 'added', label: 'Added files' },
@@ -49,6 +52,8 @@ const diffView = shallowRef<DiffMode>(DEFAULTS.diffView)
 const treeIndent = shallowRef(DEFAULTS.treeIndent)
 const treeGuides = shallowRef(DEFAULTS.treeGuides)
 const presets = shallowRef('[]')
+const mergeMethod = shallowRef<MergeMethod>(DEFAULTS.mergeMethod)
+const removedCoAuthors = shallowRef('')
 const advancedOpen = shallowRef(false)
 const confirmReset = shallowRef(false)
 const message = shallowRef<{ ok: boolean; text: string } | null>(null)
@@ -61,7 +66,15 @@ function fill(settings: Settings) {
   treeIndent.value = settings.treeIndent
   treeGuides.value = settings.treeGuides
   presets.value = JSON.stringify(settings.presets, null, 2)
+  mergeMethod.value = settings.mergeMethod
+  removedCoAuthors.value = settings.removedCoAuthors.join('\n')
 }
+
+const lines = (text: string) =>
+  text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 
 async function load() {
   token.value = ((await chrome.storage.local.get('token')) as { token?: string }).token ?? ''
@@ -93,15 +106,14 @@ async function save() {
   const settings: Settings = {
     ...current,
     presets: parsed,
-    hide: hide.value
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean),
+    hide: lines(hide.value),
     hideStatuses: hideStatuses.value,
     reviewMode: reviewMode.value,
     diffView: diffView.value,
     treeIndent: treeIndent.value,
     treeGuides: treeGuides.value,
+    mergeMethod: mergeMethod.value,
+    removedCoAuthors: lines(removedCoAuthors.value),
   }
   await chrome.storage.local.set({ token: token.value.trim(), settings })
   flash(true, 'Saved')
@@ -138,7 +150,10 @@ onMounted(load)
       <Card>
         <CardHeader>
           <CardTitle>GitHub token</CardTitle>
-          <CardDescription>Optional. Used to post notes as comments, and to read the pull request if your session can’t.</CardDescription>
+          <CardDescription
+            >Optional. Used to post notes as comments, show comment counts, approve and merge, and to read the pull request if your session
+            can’t.</CardDescription
+          >
         </CardHeader>
         <CardContent>
           <Field>
@@ -157,7 +172,10 @@ onMounted(load)
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
-            <FieldDescription>Fine-grained, with Pull requests set to read and write.</FieldDescription>
+            <FieldDescription
+              >Fine-grained, with Pull requests set to read and write. To merge from the review, set Contents to read and write
+              too.</FieldDescription
+            >
             <Button as-child variant="outline" size="sm" class="w-fit">
               <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
                 <ExternalLink /> Create a token on GitHub
@@ -252,6 +270,42 @@ onMounted(load)
                 <ToggleGroupItem value="unified"><Rows2 /> Unified</ToggleGroupItem>
                 <ToggleGroupItem value="split"><Columns2 /> Split</ToggleGroupItem>
               </ToggleGroup>
+            </Field>
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Merging</CardTitle>
+          <CardDescription>Used by Merge in the review. Your last choice there becomes the default.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel>Merge method</FieldLabel>
+                <FieldDescription>Used when the repository allows it.</FieldDescription>
+              </FieldContent>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                :model-value="mergeMethod"
+                aria-label="Merge method"
+                @update:model-value="(v) => v && (mergeMethod = v as MergeMethod)"
+              >
+                <ToggleGroupItem value="squash"><GitCommitHorizontal /> Squash</ToggleGroupItem>
+                <ToggleGroupItem value="merge"><GitMerge /> Merge</ToggleGroupItem>
+                <ToggleGroupItem value="rebase"><Layers /> Rebase</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
+            <Field>
+              <FieldLabel for="removed-co-authors">Leave out these co-authors</FieldLabel>
+              <Textarea id="removed-co-authors" v-model="removedCoAuthors" rows="6" spellcheck="false" placeholder="anthropic.com" />
+              <FieldDescription
+                >One per line. A co-author whose name or email contains one of these starts unchecked when you squash and merge. The
+                defaults cover AI assistants such as Claude, ChatGPT, Gemini and Copilot.</FieldDescription
+              >
             </Field>
           </FieldGroup>
         </CardContent>
