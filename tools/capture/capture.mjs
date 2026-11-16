@@ -793,6 +793,14 @@ await shot(browser, 'notes', async (page) => {
   await page.locator('textarea').fill('Filter zero quantities in SQL instead of in PHP, the totals table can be large.')
 })
 
+await shot(browser, 'resolve', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: 'Mark note as resolved' }).first().click()
+  await page.getByRole('button', { name: /Notes/ }).click()
+  await page.getByLabel('Show resolved in the diff').click()
+  await page.waitForTimeout(300)
+})
+
 await shot(browser, 'ai-export', async (page) => {
   await openReview(page)
   await page.getByRole('button', { name: /Notes/ }).click()
@@ -1111,9 +1119,6 @@ await clip(browser, 'views', async (page) => {
   await pause(page, 700)
 })
 
-const fontData = (pkg, file) =>
-  `data:font/woff2;base64,${readFileSync(root(`apps/site/node_modules/@fontsource/${pkg}/files/${file}`)).toString('base64')}`
-
 const bigGithubPage = (theme) => {
   const dark = theme === 'dark'
   const c = dark
@@ -1149,56 +1154,6 @@ const bigGithubPage = (theme) => {
 </main></body></html>`
 }
 
-function storyCaption({ mono }) {
-  const style = document.createElement('style')
-  style.textContent = `
-    @font-face { font-family: PlexMono; font-weight: 500; src: url(${mono}); }
-    #story { position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 2147483600; pointer-events: none;
-      font: 500 72px/1.2 PlexMono, ui-monospace, monospace; letter-spacing: -0.01em; color: #fff; background: #000;
-      border-radius: 24px; padding: 14px; box-shadow: 0 24px 80px rgb(0 0 0 / 0.35); }
-    #story p { margin: 0; display: flex; gap: 28px; padding: 12px 28px; white-space: nowrap; overflow: hidden;
-      transition: opacity 0.45s ease, max-height 0.45s ease, padding 0.45s ease, border-radius 0.45s ease; }
-    #story .del { background: rgb(248 81 73 / 0.2); border-radius: 14px; }
-    #story .add { background: rgb(46 160 67 / 0.24); border-radius: 0 0 14px 14px; max-height: 0; padding-block: 0; opacity: 0; }
-    #story.open .del { border-radius: 14px 14px 0 0; }
-    #story.open .add { max-height: 140px; padding-block: 12px; opacity: 1; }
-    #story .del > span:first-child { color: #f85149; }
-    #story .add > span:first-child { color: #3fb950; }
-    #story-text { transition: opacity 0.3s ease; }
-    #story-n { font-variant-numeric: tabular-nums; }`
-  document.head.appendChild(style)
-  const box = document.createElement('div')
-  box.id = 'story'
-  box.innerHTML =
-    '<p class="del"><span>−</span><span>Scroll 214 changed files.</span></p><p class="add"><span>+</span><span id="story-text"><span id="story-n"></span> left to review.</span></p>'
-  document.documentElement.appendChild(box)
-  const n = box.querySelector('#story-n')
-  window.__story = {
-    open(count) {
-      n.textContent = String(count)
-      box.classList.add('open')
-    },
-    count(target) {
-      const from = Number(n.textContent)
-      const t0 = performance.now()
-      const step = (t) => {
-        const k = Math.min(1, (t - t0) / 650)
-        n.textContent = String(Math.round(from + (target - from) * (1 - (1 - k) ** 3)))
-        if (k < 1) requestAnimationFrame(step)
-      }
-      requestAnimationFrame(step)
-    },
-    done(text) {
-      const line = box.querySelector('#story-text')
-      line.style.opacity = '0'
-      setTimeout(() => {
-        line.textContent = text
-        line.style.opacity = '1'
-      }, 300)
-    },
-  }
-}
-
 async function around(...targets) {
   const boxes = await Promise.all(targets.map((t) => t.boundingBox()))
   const x = Math.min(...boxes.map((b) => b.x))
@@ -1207,16 +1162,6 @@ async function around(...targets) {
   const bottom = Math.max(...boxes.map((b) => b.y + b.height))
   return { x, y, width: right - x, height: bottom - y }
 }
-
-const leftCount = async (page) =>
-  Number(
-    (
-      await page
-        .getByText(/^\d+ left$/)
-        .first()
-        .textContent()
-    ).match(/\d+/)[0],
-  )
 
 async function recordStory(theme) {
   const name = themedName('before-after', theme)
@@ -1233,7 +1178,6 @@ async function recordStory(theme) {
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
   await scaleHost(page)
-  await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
   await page.mouse.move(big.width * 0.55, big.height * 0.45)
   const capture = await startCapture(page)
   await page.waitForTimeout(600)
@@ -1260,7 +1204,6 @@ async function recordStory(theme) {
   await folderViewed(page, '.claude').waitFor()
   await pause(page, 100)
   const loaded = now()
-  await page.evaluate(async (count) => window.__story.open(count), await leftCount(page))
   await pause(page, 900)
 
   for (const folder of ['.claude', 'docs', 'lang', 'tests']) {
@@ -1268,7 +1211,6 @@ async function recordStory(theme) {
     await box.scrollIntoViewIfNeeded()
     await glide(page, box, { steps: 22 })
     await pause(page, 150)
-    await page.evaluate((count) => window.__story.count(count), await leftCount(page))
     await pause(page, 650)
   }
   const quick = page
@@ -1277,10 +1219,8 @@ async function recordStory(theme) {
     .first()
   await glide(page, quick.locator('[title="Mark as viewed"]'), { steps: 22 })
   await pause(page, 150)
-  await page.evaluate((count) => window.__story.count(count), await leftCount(page))
   await pause(page, 700)
   await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
-  await page.evaluate((count) => window.__story.done(`Review the ${count} that matter.`), await leftCount(page))
   const left = await page
     .getByText(/^\d+ left$/)
     .first()
