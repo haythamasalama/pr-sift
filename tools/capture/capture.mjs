@@ -411,30 +411,55 @@ async function framed(browser, rawPath, name, { theme = 'light', url = `github.c
   console.log('screenshot', name)
 }
 
-// Close-ups share one 16:10 shape, grown around what they show and kept inside the page.
+// Close-ups share one 16:10 shape. A side near the page edge extends to it, so only sides that really cut through
+// the review need the fade framedCrop draws.
 async function focusBox(page, targets, pad = 16) {
   const box = await around(...targets)
   const view = page.viewportSize()
-  let { x, y, width: w, height: h } = { x: box.x - pad, y: box.y - pad, width: box.width + pad * 2, height: box.height + pad * 2 }
+  const near = 160
+  let left = box.x - pad
+  let top = box.y - pad
+  let right = box.x + box.width + pad
+  let bottom = box.y + box.height + pad
+  if (left < near) left = 0
+  if (top < near) top = 0
+  if (view.width - right < near) right = view.width
+  if (view.height - bottom < near) bottom = view.height
+  let w = right - left
+  let h = bottom - top
   if (w / h < 1.6) {
-    x -= (h * 1.6 - w) / 2
-    w = h * 1.6
+    const grown = Math.min(view.width, h * 1.6)
+    left = left === 0 ? 0 : right === view.width ? view.width - grown : left - (grown - w) / 2
+    w = grown
+    h = Math.min(h, w / 1.6)
   } else {
-    y -= (w / 1.6 - h) / 2
-    h = w / 1.6
+    const grown = Math.min(view.height, w / 1.6)
+    top = top === 0 ? 0 : bottom === view.height ? view.height - grown : top - (grown - h) / 2
+    h = grown
+    w = Math.min(w, h * 1.6)
   }
-  w = Math.min(w, view.width)
-  h = Math.min(h, view.height)
-  return { x: Math.max(0, Math.min(x, view.width - w)), y: Math.max(0, Math.min(y, view.height - h)), width: w, height: h }
+  return { x: Math.max(0, Math.min(left, view.width - w)), y: Math.max(0, Math.min(top, view.height - h)), width: w, height: h }
 }
 
-async function framedCrop(browser, rawPath, name, { theme = 'light' } = {}) {
+const cutSides = (clip, view) => ({
+  left: clip.x > 1,
+  top: clip.y > 1,
+  right: clip.x + clip.width < view.width - 1,
+  bottom: clip.y + clip.height < view.height - 1,
+})
+
+async function framedCrop(browser, rawPath, name, { theme = 'light', cut = {} } = {}) {
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 })
   const img = readFileSync(rawPath).toString('base64')
   const edge = theme === 'dark' ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'
+  const fade = (from, to) => `${from ? 'transparent' : '#000'} 0, #000 96px, #000 calc(100% - 96px), ${to ? 'transparent' : '#000'} 100%`
+  const mask = `linear-gradient(to right, ${fade(cut.left, cut.right)}), linear-gradient(to bottom, ${fade(cut.top, cut.bottom)})`
+  const corner = (a, b) => (cut[a] || cut[b] ? '0' : '14px')
+  const radius = [corner('top', 'left'), corner('top', 'right'), corner('bottom', 'right'), corner('bottom', 'left')].join(' ')
+  const whole = !cut.left && !cut.top && !cut.right && !cut.bottom
   await page.setContent(`<!doctype html><html><body style="margin:0">
   <div id="shot" style="width:1600px;height:1000px;display:flex;align-items:center;justify-content:center;background:${background(theme)}">
-    <img src="data:image/png;base64,${img}" style="display:block;width:1400px;height:875px;object-fit:cover;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 1px ${edge}">
+    <img src="data:image/png;base64,${img}" style="display:block;width:1400px;height:875px;object-fit:cover;border-radius:${radius};-webkit-mask-image:${mask};-webkit-mask-composite:source-in;mask-composite:intersect;${whole ? `box-shadow:0 30px 80px rgba(0,0,0,.35),0 0 0 1px ${edge};` : ''}">
   </div></body></html>`)
   await page.locator('#shot').screenshot({ path: `${OUT}/raw/${name}.framed.png` })
   await page.close()
@@ -459,9 +484,10 @@ async function shot(browser, name, prepare, options = {}) {
     await prepare(page)
     await page.waitForTimeout(400)
     const clip = options.focus ? await focusBox(page, await options.focus(page)) : undefined
+    const cut = clip ? cutSides(clip, page.viewportSize()) : undefined
     await page.screenshot({ path: `${OUT}/raw/${file}.png`, clip })
     await context.close()
-    await (clip ? framedCrop : framed)(browser, `${OUT}/raw/${file}.png`, file, { ...options, theme })
+    await (clip ? framedCrop : framed)(browser, `${OUT}/raw/${file}.png`, file, { ...options, theme, cut })
   }
 }
 
