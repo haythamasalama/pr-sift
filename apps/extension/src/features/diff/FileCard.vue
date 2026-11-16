@@ -125,7 +125,8 @@ defineExpose({ reveal, flash, el })
     class="mb-3 rounded-lg border bg-background transition-shadow"
     :class="flashing ? 'border-primary ring-2 ring-primary' : 'border-border'"
   >
-    <div class="sticky top-0 z-10 flex items-center gap-2.5 rounded-t-lg border-b bg-muted px-3 py-1.5">
+    <!-- The list scrolls inside 1rem of padding; -top-4 keeps the header flush with the top edge so no code shows above it. -->
+    <div class="sticky -top-4 z-10 flex items-center gap-2.5 rounded-t-lg border-b bg-muted px-3 py-1.5">
       <Button variant="ghost" size="icon-xs" :aria-label="collapsed ? 'Expand file' : 'Collapse file'" @click="collapsed = !collapsed">
         <ChevronDown class="transition-transform" :class="collapsed ? '-rotate-90' : ''" />
       </Button>
