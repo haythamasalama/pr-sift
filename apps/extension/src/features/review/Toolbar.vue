@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
-import { isEmbeddedDemo } from '../../lib/demo'
+import { isDemo, isEmbeddedDemo } from '../../lib/demo'
 import { openReport } from '../../lib/report'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { openReviews } from '../../lib/updates'
@@ -57,6 +57,7 @@ const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
+const demo = isDemo()
 const closable = !isEmbeddedDemo()
 </script>
 
@@ -141,7 +142,10 @@ const closable = !isEmbeddedDemo()
       <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
     </Button>
 
-    <DropdownMenu>
+    <Button v-if="demo" variant="outline" size="icon-sm" class="order-3 shrink-0 xl:order-none" aria-label="Options" aria-disabled="true">
+      <Settings />
+    </Button>
+    <DropdownMenu v-else>
       <DropdownMenuTrigger as-child>
         <Button
           variant="outline"
