@@ -138,7 +138,6 @@ const browsers = (cls = '') =>
   </ul>`
 
 const NAV = [
-  ...(HAS_DEMO ? [['Try it', '#try']] : []),
   ['Notes', '#notes'],
   ['Features', '#features'],
   ['Guides', 'guides/'],
