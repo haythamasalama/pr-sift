@@ -205,7 +205,7 @@ function chromeShim({ seed, api, version, installUrl }) {
         if (['Enter', ' ', 'ArrowDown'].includes(event.key)) guard(event)
         return
       }
-      const root = [...document.querySelectorAll('*')].find((el) => el.shadowRoot)?.shadowRoot
+      const root = document.getElementById('pr-sift-host')?.shadowRoot
       if (root?.querySelector('[role="dialog"], [role="menu"]')) return
       stop(event)
       if (!embedded) leave()
@@ -215,7 +215,7 @@ function chromeShim({ seed, api, version, installUrl }) {
   const css = `${embedded ? 'header button[aria-label="Close"] { display: none !important; }' : ''}
     button[aria-label^="Options"], button[aria-label="Edit saved filters"], button[aria-label="Edit hidden files"] { pointer-events: none; }`
   const decorate = () => {
-    const host = [...document.querySelectorAll('*')].find((el) => el.shadowRoot)
+    const host = document.getElementById('pr-sift-host')
     if (!host) return false
     const style = document.createElement('style')
     style.textContent = css

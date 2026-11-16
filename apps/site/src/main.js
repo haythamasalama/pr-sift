@@ -152,8 +152,7 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
     iframe.className = 'absolute inset-0 size-full border-0 bg-paper opacity-0 transition-opacity duration-300'
     const reveal = () => iframe.classList.remove('opacity-0')
     // The stand-in GitHub page and the review's loading state show for a moment first, so the frame waits for the files.
-    const reviewShown = () =>
-      [...iframe.contentDocument.querySelectorAll('*')].some((el) => el.shadowRoot?.querySelector('main [data-file]'))
+    const reviewShown = () => Boolean(iframe.contentDocument.getElementById('pr-sift-host')?.shadowRoot?.querySelector('main [data-file]'))
     iframe.addEventListener(
       'load',
       () => {
