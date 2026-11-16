@@ -99,7 +99,7 @@ const chipTitle = (chip: ExtChip) =>
       : 'Click to show only this type. Shift-click or right-click to always hide it'
 const isHideGesture = (e: MouseEvent) => e.shiftKey || e.altKey || e.metaKey || e.ctrlKey
 const chipClass = (chip: ExtChip) => [
-  'h-[22px] gap-1 rounded-full px-2.5 text-[11px] font-medium shadow-none',
+  'h-[22px] gap-1 rounded-md px-2.5 text-[11px] font-medium shadow-none',
   chip.ext.includes(':') ? '' : 'font-mono',
   chip.state === 'exclude' ? 'border-destructive/40 text-destructive line-through' : '',
 ]
@@ -146,7 +146,7 @@ const chipClass = (chip: ExtChip) => [
         v-else
         variant="ghost"
         size="xs"
-        class="h-[22px] rounded-full border border-dashed px-2.5 text-[11px] text-muted-foreground"
+        class="h-[22px] rounded-md border border-dashed px-2.5 text-[11px] text-muted-foreground"
         title="Add a file type, e.g. .blade.php"
         @click="startAdding"
       >
@@ -177,7 +177,7 @@ const chipClass = (chip: ExtChip) => [
         <Button
           variant="outline"
           size="xs"
-          class="h-[22px] rounded-full px-2.5 text-[11px]"
+          class="h-[22px] rounded-md px-2.5 text-[11px]"
           title="Clear every filter and go back to the defaults"
           @click="emit('resetFilters')"
         >

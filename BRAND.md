@@ -89,6 +89,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
 | `success-foreground`  | `#ffffff`             | `#ffffff`                            |
+| `success-fg`          | `#1a7f37`             | `#3fb950`                            |
 | `merged`              | `#8250df`             | `#a371f7`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
 | `add-fg` / `add-bg`   | `#1a7f37` / `#e6ffec` | `#3fb950` / `rgba(46, 160, 67, .15)` |
@@ -110,8 +111,9 @@ Merge stays the strongest button.
   file list sits on `background`, so the chrome and the content read as two layers.
 - `selected` (`rgb(212 167 44 / .28)` light, `rgb(187 128 9 / .3)` dark) marks the lines of a note range. It is
   painted over the diff colours, never instead of them.
-- The radius scale comes from `--radius` (10 px) on `:root` and `:host`. Controls use the shadcn sizes, which give
-  8 px for small buttons and toggles and 10 px for inputs and default buttons. Don't override corners per component.
+- The radius scale comes from `--radius` (6 px, GitHub's own) on `:root` and `:host`. Small buttons and toggles get
+  4 px, inputs and default buttons 6 px, cards, dialogs and sheets 8 px. Badges and chips use the base radius too, so
+  nothing is drawn as a pill except switches and avatars. Don't override corners per component.
 
 ### Social cards
 
@@ -146,14 +148,14 @@ The signature move of the brand: a headline written as a two-line diff.
 
 ## Shape and space
 
-| Element                                                | Radius                         |
-| :----------------------------------------------------- | :----------------------------- |
-| Logo tile                                              | 22 % of its size               |
-| Buttons, inputs                                        | 6 px (`rounded-md`)            |
-| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)            |
-| Sibling app cards                                      | 12 px (`rounded-xl`)           |
-| Theme switch                                           | Full pill                      |
-| Extension components                                   | Base radius 10 px (`0.625rem`) |
+| Element                                                | Radius                        |
+| :----------------------------------------------------- | :---------------------------- |
+| Logo tile                                              | 22 % of its size              |
+| Buttons, inputs                                        | 6 px (`rounded-md`)           |
+| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)           |
+| Sibling app cards                                      | 12 px (`rounded-xl`)          |
+| Theme switch                                           | Full pill                     |
+| Extension components                                   | Base radius 6 px (`0.375rem`) |
 
 - Site content width 1152 px (`max-w-6xl`) with 16 px side gutters on phones and 24 px from `sm`.
 - Separate sections with space and a `line` border, not with shadows.

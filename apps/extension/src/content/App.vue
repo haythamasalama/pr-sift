@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
     <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
       <Button
         variant="outline"
-        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-full border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
         @click="dead ? reload() : (open = true)"
       >
         <span class="relative flex size-6 items-center justify-center">

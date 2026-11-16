@@ -26,16 +26,17 @@
   --color-emphasis-foreground: var(--emphasis-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-fg: var(--success-fg);
   --color-merged: var(--merged);
   --color-add-bg: var(--add-bg);
   --color-del-bg: var(--del-bg);
   --color-add-fg: var(--add-fg);
   --color-del-fg: var(--del-fg);
   --color-hunk: var(--hunk);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-sm: calc(var(--radius) - 2px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 2px);
   --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
@@ -52,9 +53,9 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
 }
 
 @theme {
@@ -77,7 +78,7 @@
    Declared only on .ps-root, those variables resolve to nothing and every control using them loses its corners. */
 :root,
 :host {
-  --radius: 0.625rem;
+  --radius: 0.375rem;
 }
 
 @layer base {
@@ -114,6 +115,7 @@
   --primary-foreground: oklch(0.985 0 0);
   --success: #1f883d;
   --success-foreground: #ffffff;
+  --success-fg: #1a7f37;
   --merged: #8250df;
   --add-bg: #e6ffec;
   --del-bg: #ffebe9;
@@ -159,6 +161,7 @@
   --primary-foreground: oklch(0.205 0 0);
   --success: #238636;
   --success-foreground: #ffffff;
+  --success-fg: #3fb950;
   --merged: #a371f7;
   --add-bg: rgba(46, 160, 67, 0.15);
   --del-bg: rgba(248, 81, 73, 0.1);
