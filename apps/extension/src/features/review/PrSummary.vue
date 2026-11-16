@@ -47,7 +47,7 @@ const commentsTitle = computed(() =>
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-1.5 text-[11px] leading-4 text-muted-foreground">
+  <div class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] leading-4 text-muted-foreground">
     <span v-if="state" class="inline-flex shrink-0 items-center gap-1 font-medium" :class="state.tone">
       <component :is="state.icon" class="size-3" />{{ state.label }}
     </span>

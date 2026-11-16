@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, shallowRef, watch } from 'vue'
-import { CircleAlert, GitMerge, KeyRound, Plus, TriangleAlert } from '@lucide/vue'
+import { CircleAlert, GitMerge, KeyRound, Plus } from '@lucide/vue'
 import {
   coAuthorsOf,
   defaultSquashBody,
@@ -45,12 +45,12 @@ const METHODS: { value: MergeMethod; label: string; action: string; hint: string
   { value: 'rebase', label: 'Rebase', action: 'Rebase and merge', hint: 'Adds every commit to the base branch as it is.' },
 ]
 
-const WARNINGS: Record<string, string> = {
-  dirty: 'This branch has conflicts. Resolve them on GitHub first.',
-  blocked: 'GitHub may block this merge until the required reviews or checks pass.',
-  behind: 'This branch is behind the base branch.',
-  unstable: 'Some checks are failing or still running.',
-  draft: 'This pull request is a draft. Mark it ready for review on GitHub first.',
+const WARNINGS: Record<string, { text: string; tone: string }> = {
+  dirty: { text: 'This branch has conflicts', tone: 'bg-destructive' },
+  blocked: { text: 'Waiting for required reviews or checks', tone: 'bg-attention' },
+  behind: { text: 'Behind the base branch', tone: 'bg-attention' },
+  unstable: { text: 'Some checks are failing or running', tone: 'bg-attention' },
+  draft: { text: 'This pull request is a draft', tone: 'bg-muted-foreground' },
 }
 
 interface CoAuthorRow {
@@ -71,7 +71,7 @@ const busy = shallowRef(false)
 const error = shallowRef('')
 
 const current = computed(() => METHODS.find((m) => m.value === method.value)!)
-const warning = computed(() => WARNINGS[context.value?.mergeableState ?? ''] ?? '')
+const warning = computed(() => WARNINGS[context.value?.mergeableState ?? ''])
 const description = computed(() =>
   info?.base && info.head ? `Into ${info.base} from ${info.head}` : `#${pr.number} ${info?.title ?? ''}`.trim(),
 )
@@ -189,10 +189,9 @@ async function submit() {
         </Alert>
         <div v-else-if="!context" class="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Loading the commits…</div>
         <FieldGroup v-else>
-          <Alert v-if="warning">
-            <TriangleAlert />
-            <AlertDescription>{{ warning }}</AlertDescription>
-          </Alert>
+          <p v-if="warning" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span class="size-1.5 shrink-0 rounded-full" :class="warning.tone" />{{ warning.text }}
+          </p>
 
           <Field>
             <FieldLabel>Merge method</FieldLabel>
@@ -205,11 +204,10 @@ async function submit() {
               aria-label="Merge method"
               @update:model-value="(v) => v && choose(v as MergeMethod)"
             >
-              <ToggleGroupItem v-for="m in METHODS" :key="m.value" :value="m.value" :disabled="!context.allowed[m.value]">
+              <ToggleGroupItem v-for="m in METHODS" :key="m.value" :value="m.value" :title="m.hint" :disabled="!context.allowed[m.value]">
                 {{ m.label }}
               </ToggleGroupItem>
             </ToggleGroup>
-            <FieldDescription>{{ current.hint }}</FieldDescription>
           </Field>
 
           <template v-if="method !== 'rebase'">
@@ -225,9 +223,7 @@ async function submit() {
 
           <FieldSet v-if="method === 'squash'">
             <FieldLegend variant="label">Co-authors</FieldLegend>
-            <FieldDescription>
-              Checked people are added as Co-authored-by lines. Anyone you uncheck stays unchecked next time. Edit the list in Settings.
-            </FieldDescription>
+            <FieldDescription class="text-xs">Unchecked people stay off next time.</FieldDescription>
             <FieldGroup class="gap-2">
               <p v-if="!people.length" class="text-xs text-muted-foreground">No other authors in these commits.</p>
               <Field v-for="(row, i) in people" :key="row.person.email" orientation="horizontal">

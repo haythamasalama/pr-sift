@@ -60,23 +60,29 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 </script>
 
 <template>
-  <header class="flex items-center gap-2 border-b bg-sidebar px-3 py-2 sm:gap-3 sm:px-4">
+  <header class="flex flex-wrap items-center gap-x-2 gap-y-2 xl:flex-nowrap border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4">
     <Button
       v-if="compact"
       variant="outline"
       size="icon-sm"
-      class="shrink-0"
+      class="order-1 shrink-0 xl:order-none"
       aria-label="Toggle sidebar"
       title="Files and filters"
       @click="emit('toggleSidebar')"
     >
       <PanelLeft />
     </Button>
-    <div class="flex min-w-0 flex-col">
+    <div class="order-1 flex min-w-0 flex-1 flex-col xl:order-none xl:flex-initial">
       <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
-    <div class="flex shrink-0 items-center gap-2 border-l pl-3" :title="`${done} of ${total} files viewed · ${inView} in the current view`">
+    <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
+    <div class="order-2 basis-full xl:hidden" />
+
+    <div
+      class="order-3 flex shrink-0 items-center gap-2 xl:order-none xl:border-l xl:pl-3"
+      :title="`${done} of ${total} files viewed · ${inView} in the current view`"
+    >
       <ProgressRing :done="done" :total="total" />
       <div class="leading-tight">
         <p class="text-xs font-semibold whitespace-nowrap">{{ total - done }}<span class="hidden sm:inline"> left</span></p>
@@ -84,9 +90,9 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       </div>
     </div>
 
-    <div class="flex-1" />
+    <div class="order-3 flex-1 xl:order-none" />
 
-    <div v-if="presets.length" class="flex shrink-0 gap-1">
+    <div v-if="presets.length" class="order-3 flex shrink-0 gap-1 xl:order-none">
       <Button
         v-for="p in presets"
         :key="p.name"
@@ -98,13 +104,13 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       </Button>
     </div>
 
-    <div v-if="compact" class="relative flex shrink-0 items-center">
+    <div v-if="compact" class="relative order-3 flex shrink-0 items-center xl:order-none">
       <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
       <Input
         v-model="query"
         type="search"
         placeholder="Filter files…"
-        class="h-8 w-24 bg-background pl-8 text-xs sm:w-44 md:text-xs xl:w-56"
+        class="h-8 w-24 bg-background pl-8 text-xs sm:w-36 md:text-xs xl:w-56"
       />
     </div>
 
@@ -113,7 +119,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       type="single"
       variant="outline"
       size="sm"
-      class="shrink-0"
+      class="order-3 shrink-0 xl:order-none"
       :model-value="diffMode"
       aria-label="Diff display"
       @update:model-value="(v) => v && (diffMode = v as DiffMode)"
@@ -126,9 +132,9 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       >
     </ToggleGroup>
 
-    <slot name="actions" />
+    <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
 
-    <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
+    <Button variant="outline" size="sm" class="order-3 shrink-0 xl:order-none" title="Your private notes" @click="emit('openNotes')">
       <NotebookPen /><span class="hidden xl:inline">Notes</span>
       <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
     </Button>
@@ -138,7 +144,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         <Button
           variant="outline"
           size="icon-sm"
-          class="relative shrink-0"
+          class="relative order-3 shrink-0 xl:order-none"
           :aria-label="updateReady ? 'Options, update ready' : 'Options'"
           :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
         >
@@ -167,6 +173,6 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button variant="ghost" size="icon-sm" class="shrink-0" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"><X /></Button>
   </header>
 </template>

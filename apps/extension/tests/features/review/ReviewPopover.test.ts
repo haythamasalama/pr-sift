@@ -53,7 +53,7 @@ describe('ReviewPopover', () => {
     const { sent } = installChrome(() => ({ ok: true, status: 200, data: {} }))
     const wrapper = mountPopover()
     await openPopover(wrapper)
-    buttons('Request changes')[0]!.click()
+    document.querySelector<HTMLElement>('#review-REQUEST_CHANGES')!.click()
     await flushPromises()
 
     const submit = () => buttons('Request changes').at(-1)!

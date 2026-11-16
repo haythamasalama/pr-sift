@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Field, FieldLabel } from '@/components/ui/field'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { openOptions } from '../../lib/extension'
 import type { PrRef } from '../../lib/types'
 import { explain, submitReview } from './actions'
@@ -15,10 +16,10 @@ import { explain, submitReview } from './actions'
 const { pr, headSha, canAct, mine } = defineProps<{ pr: PrRef; headSha: string; canAct: boolean; mine: ReviewVerdict | null }>()
 const emit = defineEmits<{ reviewed: [event: ReviewEvent] }>()
 
-const EVENTS: { value: ReviewEvent; label: string; action: string }[] = [
-  { value: 'APPROVE', label: 'Approve', action: 'Approve' },
-  { value: 'REQUEST_CHANGES', label: 'Request changes', action: 'Request changes' },
-  { value: 'COMMENT', label: 'Comment', action: 'Comment' },
+const EVENTS: { value: ReviewEvent; label: string; hint: string }[] = [
+  { value: 'APPROVE', label: 'Approve', hint: 'Approve merging these changes.' },
+  { value: 'REQUEST_CHANGES', label: 'Request changes', hint: 'Feedback that must be addressed before merging.' },
+  { value: 'COMMENT', label: 'Comment', hint: 'General feedback, without approving.' },
 ]
 
 const open = shallowRef(false)
@@ -61,7 +62,7 @@ async function submit() {
         class="shrink-0 text-success-fg hover:text-success-fg"
         title="You approved this pull request. Review it again."
       >
-        <CheckCheck /><span class="hidden lg:inline">Approved</span>
+        <CheckCheck /><span class="hidden sm:inline">Approved</span>
       </Button>
       <Button
         v-else-if="mine === 'changes_requested'"
@@ -70,26 +71,15 @@ async function submit() {
         class="shrink-0 text-destructive hover:text-destructive"
         title="You requested changes. Review it again."
       >
-        <FileDiff /><span class="hidden lg:inline">Changes requested</span>
+        <FileDiff /><span class="hidden sm:inline">Changes requested</span>
       </Button>
       <Button v-else variant="success" size="sm" class="shrink-0" title="Approve, request changes or comment">
-        <Check /><span class="hidden lg:inline">Approve</span><ChevronDown class="opacity-80" />
+        <Check /><span class="hidden sm:inline">Approve</span><ChevronDown class="opacity-80" />
       </Button>
     </PopoverTrigger>
     <PopoverContent align="end" class="w-80 gap-3 p-3">
       <p class="text-sm font-medium">Review this pull request</p>
       <template v-if="canAct">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          class="w-full"
-          :model-value="event"
-          aria-label="Review type"
-          @update:model-value="(v) => v && (event = v as ReviewEvent)"
-        >
-          <ToggleGroupItem v-for="e in EVENTS" :key="e.value" :value="e.value" class="flex-1 text-xs">{{ e.label }}</ToggleGroupItem>
-        </ToggleGroup>
         <Textarea
           v-model="comment"
           aria-label="Comment"
@@ -99,6 +89,23 @@ async function submit() {
           @keydown.enter.ctrl.prevent="submit"
           @keydown.enter.meta.prevent="submit"
         />
+        <RadioGroup
+          :model-value="event"
+          class="gap-0"
+          aria-label="Review type"
+          @update:model-value="(v) => v && (event = v as ReviewEvent)"
+        >
+          <Field
+            v-for="e in EVENTS"
+            :key="e.value"
+            orientation="horizontal"
+            class="items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted/60"
+            :title="e.hint"
+          >
+            <RadioGroupItem :id="`review-${e.value}`" :value="e.value" />
+            <FieldLabel :for="`review-${e.value}`" class="flex-1 text-xs font-normal">{{ e.label }}</FieldLabel>
+          </Field>
+        </RadioGroup>
         <Alert v-if="error" variant="destructive" class="py-2">
           <CircleAlert />
           <AlertDescription class="text-xs">{{ error }}</AlertDescription>
@@ -110,7 +117,7 @@ async function submit() {
             <Spinner v-if="busy" />
             <Check v-else-if="event === 'APPROVE'" />
             <MessageSquare v-else />
-            {{ current.action }}
+            {{ current.label }}
           </Button>
         </div>
       </template>
