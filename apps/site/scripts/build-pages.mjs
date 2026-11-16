@@ -344,8 +344,10 @@ const appLd = {
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   image: SITE_URL + 'media/og.png',
-  screenshot: ['review', 'filters', 'notes', 'ai-export', 'split'].map((n) => SITE_URL + `media/screenshots/${n}.webp`),
-  featureList: [home.notesStory.title, ...home.features.map((f) => f.title)],
+  screenshot: ['review', 'merge', 'comments', 'filters', 'notes', 'ai-export', 'split'].map(
+    (n) => SITE_URL + `media/screenshots/${n}.webp`,
+  ),
+  featureList: [home.notesStory.title, home.merge.title, ...home.features.map((f) => f.title)],
   author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
 }
 
@@ -414,7 +416,7 @@ function homePage() {
             ${f.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
           </ul>
         </div>
-        <div class="lg:col-span-8">${video(f.video, f.title)}</div>
+        <div class="lg:col-span-8">${f.video ? video(f.video, f.title) : shot(f.shot, f.title)}</div>
       </div>`,
     ])
 
@@ -444,6 +446,24 @@ function homePage() {
         ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
       <div class="mt-10">${video('claude', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
+    ],
+    [
+      'merge',
+      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
+        <div class="lg:col-span-5">
+          ${iconBox('git-merge')}
+          <p class="mt-6 font-mono text-[13px] leading-[1.35] font-medium">
+            <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span class="min-w-0 [overflow-wrap:anywhere]">${esc(h.merge.removed)}</span></span>
+            <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>${esc(h.merge.added)}</span></span>
+          </p>
+          ${h2(h.merge.title, 'mt-6')}
+          ${lead(h.merge.lead)}
+          <ul class="mt-7 flex flex-col gap-3.5">
+            ${h.merge.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
+          </ul>
+        </div>
+        <div class="lg:col-span-7">${video('merge', 'Approving, then squashing without the AI co-authors')}</div>
+      </div>`,
     ],
     [
       'pain',
@@ -508,7 +528,7 @@ function homePage() {
   const body = `
     <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
       <div class="@container min-w-0">
-        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>Write notes on the code. Your AI fixes them.${icon('chevron-right', 'size-3.5 text-muted')}</a>
+        <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
@@ -829,8 +849,8 @@ function brandPage() {
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Descriptions</h2>
       <dl class="mt-5 flex flex-col gap-4">${brand.descriptions.map(([k, v]) => `<div class="rounded-lg border border-line p-5"><dt class="text-sm text-muted">${k}</dt><dd class="mt-1.5 text-[17px]">${esc(v)}</dd></div>`).join('')}</dl>
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Screenshots and videos</h2>
-      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'filters', 'notes', 'ai-export', 'split', 'dark'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
-      <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'merge', 'comments', 'approve', 'settings', 'filters', 'notes', 'ai-export', 'split', 'description', 'dark'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
+      <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'merge', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
   return article({
     path: 'brand/',
     crumbs: [
@@ -969,6 +989,7 @@ Current version: ${VERSION}${changelog[0]?.date ? `, released ${changelog[0].dat
 ${home.notesStory.lead}
 ${home.notesStory.cases.map(([, t, d]) => `- ${t}: ${d}`).join('\n')}
 - ${home.ai.title}. ${home.ai.lead}
+- ${home.merge.title}. ${home.merge.lead}
 
 ## Features
 

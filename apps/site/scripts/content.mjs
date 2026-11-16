@@ -16,7 +16,7 @@ export const SIBLING_APPS = [
 export const home = {
   title: 'PR Sift: review large GitHub pull requests without the noise',
   description:
-    'Free Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude Code, Codex, Cursor or ChatGPT.',
+    'Free Chrome extension for large GitHub pull requests. Filter files, track what you viewed, read comments in place, send private notes to your AI, and merge without AI co-authors.',
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
     cta: 'Install PR Sift',
@@ -24,6 +24,7 @@ export const home = {
   },
   demos: [
     ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
+    ['merge', 'git-merge', 'Merge', 'Approve, then squash without AI co-authors.'],
     ['tour', 'play', 'Full tour', 'A 10-file pull request, from noise to notes.'],
     ['filters', 'funnel', 'Filters', 'Include, exclude and combine types and changes.'],
     ['review', 'list-checks', 'Review', 'Mark files and whole folders as viewed.'],
@@ -40,6 +41,18 @@ export const home = {
       ],
       ['users', 'Side notes in a team review', 'Keep your own questions and reminders while the team discusses. Nobody sees them.'],
       ['send', 'Publish only what helps', 'Turn any note into a GitHub review comment in one click. The rest stay private.'],
+    ],
+  },
+  merge: {
+    removed: 'Co-authored-by: Claude <noreply@anthropic.com>',
+    added: 'Your name on your commit.',
+    title: 'Merge without AI co-authors',
+    lead: 'Approve and squash and merge from the review. Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked, so they stay out of your history unless you keep them.',
+    points: [
+      ['user-round-x', 'AI co-authors', 'start unchecked. Real people stay checked.'],
+      ['bookmark-check', 'Your choice', 'is remembered for the next merge.'],
+      ['git-merge', 'Squash, merge or rebase', 'with the method on the button.'],
+      ['check-check', 'Approve', 'request changes or comment from a small popover.'],
     ],
   },
   pain: {
@@ -119,6 +132,18 @@ export const home = {
       video: 'review',
     },
     {
+      id: 'comments',
+      icon: 'messages-square',
+      title: 'Comments where the code is',
+      text: 'GitHub threads show under their lines. The conversation opens above the files.',
+      points: [
+        ['message-square', 'Threads', 'under the line, with replies indented.'],
+        ['messages-square', 'Conversation', 'and reviews in one panel.'],
+        ['corner-down-right', 'Jump', 'from any comment to its line.'],
+      ],
+      shot: 'comments',
+    },
+    {
       id: 'notes',
       icon: 'notebook-pen',
       title: 'Private notes on any lines',
@@ -153,6 +178,18 @@ export const home = {
         ['file-diff', 'GitHub colors', 'and syntax highlighting.'],
       ],
       video: 'views',
+    },
+    {
+      id: 'settings',
+      icon: 'sliders-horizontal',
+      title: 'Settings where you need them',
+      text: 'A side sheet inside the review. Every change applies right away.',
+      points: [
+        ['settings-2', 'Open in place', 'from Hidden, saved filters or Merge.'],
+        ['eye-off', 'Always hidden', 'paths, counted for this pull request.'],
+        ['bookmark', 'Save view', 'turns your filters into a top bar button.'],
+      ],
+      shot: 'settings',
     },
   ],
   ai: {
@@ -193,7 +230,14 @@ export const home = {
   faq: [
     ['Is PR Sift free?', 'Yes, for everyone, including at work. PR Sift is open source under the MIT license.'],
     ['Does it send my code anywhere?', 'No. It only talks to GitHub. Notes go to your clipboard when you copy them.'],
-    ['Do I need a GitHub token?', 'No. A token is only used to post a note as a review comment.'],
+    [
+      'Can PR Sift keep Claude or ChatGPT out of my commits?',
+      'Yes. When you squash and merge from PR Sift, AI co-authors such as Claude, ChatGPT, Gemini and Copilot start unchecked, so the commit only credits the people you keep. You can edit the list in Settings.',
+    ],
+    [
+      'Do I need a GitHub token?',
+      'Not for filters, viewed files and notes. A token lets you read comments, post notes, approve and merge from the review.',
+    ],
     [
       'How is it different from the GitHub file filter?',
       'It combines type and change filters, remembers hidden types, groups files, marks folders as viewed and adds private notes.',
@@ -204,6 +248,36 @@ export const home = {
 }
 
 export const guides = [
+  {
+    slug: 'merge-without-ai-co-authors',
+    short: 'Merge without AI co-authors',
+    title: 'Squash and merge without Claude, ChatGPT or Copilot as co-authors',
+    description: 'Keep AI tools out of the Co-authored-by lines of your merge commits, and keep the people who did the work.',
+    video: 'merge',
+    sections: [
+      [
+        'bot',
+        'Why they show up',
+        'AI coding tools often add a Co-authored-by line to the commits they help write. A squash merge gathers every one of them into your history.',
+      ],
+      [
+        'git-merge',
+        'Merge from the review',
+        'Press Squash and merge in PR Sift. The commit message and the co-authors open in a side sheet.',
+      ],
+      [
+        'user-round-x',
+        'AI tools start unchecked',
+        'Claude, ChatGPT, Gemini, Copilot, Cursor and more start unchecked. The people who wrote commits stay checked.',
+      ],
+      [
+        'bookmark-check',
+        'Your list, remembered',
+        'Uncheck anyone else once and they stay unchecked next time. Edit the list, or turn it off, in Settings.',
+      ],
+      ['key-round', 'What you need', 'A fine-grained GitHub token with Pull requests and Contents set to read and write.'],
+    ],
+  },
   {
     slug: 'self-review-ai-generated-pull-requests',
     short: 'Self-review AI pull requests',
