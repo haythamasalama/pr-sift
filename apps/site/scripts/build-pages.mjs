@@ -160,7 +160,7 @@ function playground() {
   const count = (pred) => PLAYGROUND.filter(pred).length
   const chip = (key, label, n) =>
     `<button type="button" data-chip="${key}" class="chip inline-flex items-center gap-1.5 rounded-md border border-line bg-paper px-2.5 py-1 font-mono text-[13px] transition hover:border-ink">${esc(label)}<span class="text-muted">${n}</span></button>`
-  return `<div class="rounded-lg border border-line bg-paper" data-playground data-autoplay>
+  return `<div class="rounded-lg border border-line bg-paper" data-playground>
     <div class="flex items-center gap-2 border-b border-line bg-raised px-4 py-2.5 text-sm">
       ${logo('size-5')}<span class="font-medium">feat(billing): usage-based invoices</span><span class="ms-auto font-mono text-xs text-muted" data-summary>12 files</span>
     </div>
@@ -527,7 +527,7 @@ function homePage() {
             ${h.merge.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
           </ul>
         </div>
-        <div class="lg:col-span-7">${video('merge', 'Squash and merge with Claude and Codex left unchecked as co-authors')}</div>
+        <div class="lg:col-span-7">${shot('merge', 'Squash and merge with Claude and Codex left unchecked as co-authors')}</div>
       </div>`,
     ],
     [

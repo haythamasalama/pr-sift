@@ -116,7 +116,7 @@ export const home = {
         ['chevrons-down-up', 'All folders', 'in one click.'],
         ['search', 'Search', 'opens the tree to the match.'],
       ],
-      video: 'folders',
+      shot: 'tree-viewed',
     },
     {
       id: 'smart',
@@ -140,7 +140,7 @@ export const home = {
         ['circle-dashed', 'Progress', 'that ignores search and filters.'],
         ['git-compare', 'New push', 'brings changed files back.'],
       ],
-      video: 'review',
+      shot: 'review',
     },
     {
       id: 'comments',
@@ -176,7 +176,7 @@ export const home = {
         ['eye', 'Show resolved', 'when you want them back.'],
         ['rotate-ccw', 'Reopen', 'any note later.'],
       ],
-      video: 'resolve',
+      shot: 'resolve',
     },
     {
       id: 'views',
