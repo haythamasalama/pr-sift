@@ -68,7 +68,7 @@ they stay out of your history unless you keep them.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="media/videos/merge-dark.gif" />
-  <img src="media/videos/merge.gif" alt="Approving, then squashing and merging without the AI co-authors" />
+  <img src="media/videos/merge.gif" alt="Squash and merge with Claude and Codex left unchecked as co-authors" />
 </picture>
 
 ### Comments where the code is
