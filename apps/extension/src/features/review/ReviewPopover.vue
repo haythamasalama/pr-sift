@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch, type Component } from 'vue'
 import { Check, ChevronDown, CircleAlert, KeyRound, MessageSquare, FileDiff, CheckCheck } from '@lucide/vue'
 import type { ReviewEvent, ReviewVerdict } from '@pr-sift/core'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
-import { Field, FieldLabel } from '@/components/ui/field'
+import { FieldLabel } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import type { PrRef } from '../../lib/types'
@@ -16,10 +16,16 @@ import { explain, submitReview } from './actions'
 const { pr, headSha, canAct, mine } = defineProps<{ pr: PrRef; headSha: string; canAct: boolean; mine: ReviewVerdict | null }>()
 const emit = defineEmits<{ reviewed: [event: ReviewEvent] }>()
 
-const EVENTS: { value: ReviewEvent; label: string; hint: string }[] = [
-  { value: 'APPROVE', label: 'Approve', hint: 'Approve merging these changes.' },
-  { value: 'REQUEST_CHANGES', label: 'Request changes', hint: 'Feedback that must be addressed before merging.' },
-  { value: 'COMMENT', label: 'Comment', hint: 'General feedback, without approving.' },
+const EVENTS: { value: ReviewEvent; label: string; hint: string; icon: Component; tone: string }[] = [
+  { value: 'APPROVE', label: 'Approve', hint: 'Approve merging these changes.', icon: Check, tone: 'text-success-fg' },
+  {
+    value: 'REQUEST_CHANGES',
+    label: 'Request changes',
+    hint: 'Feedback to address before merging.',
+    icon: FileDiff,
+    tone: 'text-destructive',
+  },
+  { value: 'COMMENT', label: 'Comment', hint: 'General feedback, without approving.', icon: MessageSquare, tone: 'text-muted-foreground' },
 ]
 
 const open = shallowRef(false)
@@ -85,27 +91,31 @@ async function submit() {
           v-model="comment"
           aria-label="Comment"
           rows="3"
-          class="min-h-16 text-xs"
-          :placeholder="event === 'APPROVE' ? 'Comment (optional)' : 'Comment'"
+          class="max-h-40 min-h-16 resize-none text-xs focus-visible:ring-2 focus-visible:ring-ring/25"
+          :placeholder="event === 'APPROVE' ? 'Comment (optional)' : 'Comment (required)'"
           @keydown.enter.ctrl.prevent="submit"
           @keydown.enter.meta.prevent="submit"
         />
         <RadioGroup
           :model-value="event"
-          class="gap-0"
+          class="gap-0 overflow-hidden rounded-md border"
           aria-label="Review type"
           @update:model-value="(v) => v && (event = v as ReviewEvent)"
         >
-          <Field
+          <FieldLabel
             v-for="e in EVENTS"
             :key="e.value"
-            orientation="horizontal"
-            class="items-center gap-2 rounded-md px-1.5 py-1 hover:bg-muted/60"
-            :title="e.hint"
+            :for="`review-${e.value}`"
+            class="flex w-full cursor-pointer items-start gap-2.5 border-b px-2.5 py-2 font-normal last:border-b-0 hover:bg-muted/50 has-data-[state=checked]:bg-muted"
           >
-            <RadioGroupItem :id="`review-${e.value}`" :value="e.value" />
-            <FieldLabel :for="`review-${e.value}`" class="flex-1 text-xs font-normal">{{ e.label }}</FieldLabel>
-          </Field>
+            <RadioGroupItem :id="`review-${e.value}`" :value="e.value" class="mt-px" />
+            <span class="flex min-w-0 flex-col gap-0.5">
+              <span class="flex items-center gap-1.5 text-xs font-medium">
+                <component :is="e.icon" class="size-3.5" :class="e.tone" />{{ e.label }}
+              </span>
+              <span class="text-[11px] leading-snug text-muted-foreground">{{ e.hint }}</span>
+            </span>
+          </FieldLabel>
         </RadioGroup>
         <Alert v-if="error" variant="destructive" class="py-2">
           <CircleAlert />
@@ -116,8 +126,7 @@ async function submit() {
           <Button variant="ghost" size="sm" @click="open = false">Cancel</Button>
           <Button :variant="event === 'APPROVE' ? 'success' : 'default'" size="sm" :disabled="busy || needsComment" @click="submit">
             <Spinner v-if="busy" />
-            <Check v-else-if="event === 'APPROVE'" />
-            <MessageSquare v-else />
+            <component :is="current.icon" v-else />
             {{ current.label }}
           </Button>
         </div>
