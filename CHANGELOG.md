@@ -15,9 +15,13 @@ goes under `## Unreleased` until the next release moves it under its version and
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.
 - Review: Rate PR Sift on the Chrome Web Store from the review menu or the options page.
+- Review: Settings open in a side sheet inside the review, so changing one does not leave the pull request.
+- Review: Each settings section shows a small map of the part of the review it changes.
 
 ### Changed
 
+- Review: Settings are one column of sections that save as you change them, with no Save button. The GitHub token keeps
+  its own Save button and gains Remove.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 
 ## 1.1.0 - 2026-11-14
