@@ -425,7 +425,9 @@ function matrix() {
       ([ic, cls, label]) =>
         `<span class="inline-flex items-center gap-1.5"><span class="${cls}">${icon(ic, 'size-4')}</span>${label}</span>`,
     )
-    .join('')}<span>From official pages, ${CHECKED}.</span></p>`
+    .join(
+      '',
+    )}<span>From official pages, checked ${[...new Set([CHECKED, ...compare.map((c) => c.checked).filter(Boolean)])].join(' and ')}.</span></p>`
 }
 
 function homePage() {
@@ -691,7 +693,7 @@ function comparePage(c) {
       <div class="mt-10 grid gap-5 rounded-lg border border-line p-6 sm:p-8">
         ${bar('PR Sift', logo('size-10 shrink-0'), ours)}
         ${bar(c.name, iconBox(c.avatar, 'size-10'), theirs)}
-        <p class="text-sm text-muted">Features below with full support count as 1, partial as ½. Checked ${esc(CHECKED)}.</p>
+        <p class="text-sm text-muted">Features below with full support count as 1, partial as ½. Checked ${esc(c.checked ?? CHECKED)}.</p>
       </div>
       <div class="relative mt-10 overflow-x-auto rounded-lg border border-line">
         <table class="w-full min-w-[620px] text-left text-[15px]">
@@ -702,7 +704,7 @@ function comparePage(c) {
           </tbody>
         </table>
       </div>
-      <p class="mt-3 text-sm text-muted">From ${esc(c.name)}’s official pages on ${esc(CHECKED)}. "Not listed" means we found nothing there, not that it is missing. Sources: ${c.sources.map((s) => `<a href="${s}" class="underline" rel="nofollow noopener">${esc(new URL(s).hostname)}</a>`).join(', ')}.</p>
+      <p class="mt-3 text-sm text-muted">From ${esc(c.name)}’s official pages on ${esc(c.checked ?? CHECKED)}. "Not listed" means we found nothing there, not that it is missing. Sources: ${c.sources.map((s) => `<a href="${s}" class="underline" rel="nofollow noopener">${esc(new URL(s).hostname)}</a>`).join(', ')}.</p>
       <h2 class="mt-14 text-2xl font-semibold tracking-tight">See it in PR Sift</h2>
       <div class="mt-5 grid gap-5 sm:grid-cols-2">${c.showcase.map((v) => video(v, v)).join('')}</div>
       <div class="mt-14 grid gap-4 sm:grid-cols-2">${choose('Choose PR Sift if', c.choosePrSift, 'funnel')}${choose(`Choose ${c.name} if`, c.chooseThem, c.avatar)}</div>
