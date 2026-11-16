@@ -8,7 +8,7 @@ import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSigna
 import { useAppearance } from '../features/appearance/useAppearance'
 import { useGithubDark } from '../features/appearance/useGithubDark'
 import { useUpdates } from '../features/updates/useUpdates'
-import { isDemo } from '../lib/demo'
+import { isDemo, isEmbeddedDemo, leaveDemo } from '../lib/demo'
 import { portalTargetKey } from '../lib/portal'
 import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
@@ -63,10 +63,14 @@ function maybeAutoOpen() {
 
 const reload = () => location.reload()
 
-// The website's demo is the review itself, so it stays open.
+function close() {
+  if (isEmbeddedDemo()) return
+  if (isDemo()) leaveDemo()
+  else open.value = false
+}
+
 function onKey(e: KeyboardEvent) {
-  if (isDemo()) return
-  if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
+  if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) close()
 }
 
 onMounted(async () => {
@@ -124,7 +128,7 @@ onBeforeUnmount(() => {
       :pr="pr"
       :external-update="externalUpdate"
       @refreshed="acknowledged = githubRefresh"
-      @close="open = false"
+      @close="close"
     />
     <div ref="portal" />
   </div>

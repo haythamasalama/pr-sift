@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
-import { isDemo } from '../../lib/demo'
+import { isEmbeddedDemo } from '../../lib/demo'
 import { openReport } from '../../lib/report'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { openReviews } from '../../lib/updates'
@@ -57,7 +57,7 @@ const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
-const closable = !isDemo()
+const closable = !isEmbeddedDemo()
 </script>
 
 <template>
