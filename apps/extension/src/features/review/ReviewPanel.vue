@@ -256,12 +256,14 @@ onMounted(async () => {
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
   diffMode.value = settings.value.diffView
+  showResolved.value = settings.value.showResolved
   sidebarSize.set(settings.value.sidebarWidth)
   await load(pr)
   emit('refreshed')
 })
 
 watch(diffMode, (value) => saveSetting('diffView', value))
+watch(showResolved, (value) => saveSetting('showResolved', value))
 </script>
 
 <template>

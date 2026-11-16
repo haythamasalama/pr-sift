@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { shallowRef } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import NotesDialog from '../../../src/features/notes/NotesDialog.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
 import type { Note } from '../../../src/lib/types'
@@ -8,6 +8,8 @@ import { PR } from '@pr-sift/core/testing'
 import { installChrome } from '../../helpers/chrome'
 
 const note: Note = { id: 'n1', file: 'a.php', side: 'new', line: 3, lineText: '', quote: '', text: 'old text', createdAt: 0 }
+
+enableAutoUnmount(afterEach)
 
 describe('NotesDialog', () => {
   it('edits a note text in place', async () => {
@@ -28,5 +30,20 @@ describe('NotesDialog', () => {
     await wrapper.vm.$nextTick()
     ;[...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Save')!.click()
     expect(wrapper.emitted('update')).toEqual([['n1', { text: 'new text' }]])
+  })
+
+  it('turns resolved notes on in the diff from the switch', async () => {
+    installChrome()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(NotesDialog, {
+      props: { pr: PR, title: 'T', notes: [{ ...note, resolved: true }], files: [], showResolved: false },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(document.querySelector('#show-resolved')).not.toBeNull())
+    document.querySelector<HTMLElement>('#show-resolved')!.click()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.emitted('update:showResolved')).toEqual([[true]])
   })
 })

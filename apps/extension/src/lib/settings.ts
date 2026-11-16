@@ -16,6 +16,7 @@ export const DEFAULTS: Settings = {
   treeGuides: true,
   mergeMethod: 'squash',
   removedCoAuthors: DEFAULT_REMOVED_CO_AUTHORS,
+  showResolved: false,
   assistant: 'claude-code',
 }
 
