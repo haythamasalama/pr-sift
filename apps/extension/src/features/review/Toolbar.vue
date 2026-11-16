@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
+import { isDemo } from '../../lib/demo'
 import { openReport } from '../../lib/report'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { openReviews } from '../../lib/updates'
@@ -56,6 +57,7 @@ const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
+const closable = !isDemo()
 </script>
 
 <template>
@@ -75,7 +77,9 @@ const openSettings = useSettingsOpener()
       <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
-    <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button v-if="closable" variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"
+      ><X
+    /></Button>
     <div class="order-2 basis-full xl:hidden" />
 
     <div
@@ -171,6 +175,8 @@ const openSettings = useSettingsOpener()
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button v-if="closable" variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"
+      ><X
+    /></Button>
   </header>
 </template>

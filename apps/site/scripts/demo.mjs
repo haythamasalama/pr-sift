@@ -157,6 +157,19 @@ const SEED = {
 // Stands in for the extension's chrome.* APIs inside the page. Storage lives in memory, so every load starts from the
 // same example, and GitHub calls are answered from the fixtures above. Nothing leaves the browser.
 function chromeShim({ seed, api, version, installUrl }) {
+  // The demo is one component on the website, so only the install link may leave it.
+  const leaves = (href) => new URL(href, location.href).origin !== location.origin
+  const allowed = (href) => href.startsWith(installUrl)
+  const open = window.open.bind(window)
+  window.open = (url, ...rest) => (url && allowed(String(url)) ? open(url, ...rest) : null)
+  document.addEventListener(
+    'click',
+    (event) => {
+      const link = event.composedPath().find((el) => el instanceof HTMLAnchorElement)
+      if (link && (link.target === '_blank' || leaves(link.href)) && !allowed(link.href)) event.preventDefault()
+    },
+    true,
+  )
   let site = null
   try {
     site = localStorage.getItem('theme')
