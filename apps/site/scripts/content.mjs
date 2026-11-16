@@ -104,7 +104,7 @@ export const home = {
         ['eye-off', 'Shift-click', 'hides it on every pull request.'],
         ['plus', '+ type', 'adds endings like .blade.php or .test.ts.'],
       ],
-      video: 'filters',
+      shot: 'filters',
     },
     {
       id: 'folders',
@@ -128,7 +128,7 @@ export const home = {
         ['database', 'Migrations', 'and schema changes.'],
         ['languages', 'Translations', 'config and CI.'],
       ],
-      video: 'smart-filters',
+      shot: 'smart-filters',
     },
     {
       id: 'review',
@@ -164,7 +164,7 @@ export const home = {
         ['pencil', 'Edit', 'from the diff or the Notes list.'],
         ['send', 'Post', 'one to GitHub when it is worth it.'],
       ],
-      video: 'notes',
+      shot: 'notes',
     },
     {
       id: 'resolve',
@@ -188,7 +188,7 @@ export const home = {
         ['copy', 'Copy', 'the name, path, diff or added lines.'],
         ['file-diff', 'GitHub colors', 'and syntax highlighting.'],
       ],
-      video: 'views',
+      shot: 'split',
     },
     {
       id: 'settings',

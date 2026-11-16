@@ -510,7 +510,7 @@ function homePage() {
       <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
         ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
-      <div class="mt-10">${video('claude', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
+      <div class="mt-10">${shot('ai-export', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
     ],
     [
       'merge',
@@ -552,7 +552,7 @@ function homePage() {
       'theme',
       `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
         <div class="lg:col-span-4">${iconBox('sun-moon')}${h2(h.theme.title, 'mt-5')}${lead(h.theme.text)}</div>
-        <div class="lg:col-span-8">${video('theme', h.theme.title)}</div>
+        <div class="lg:col-span-8">${shot('dark', h.theme.title)}</div>
       </div>`,
     ],
     [
