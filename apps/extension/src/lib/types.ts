@@ -38,6 +38,7 @@ export interface Settings {
   mergeMethod: MergeMethod
   leaveOutCoAuthors: boolean
   removedCoAuthors: string[]
+  keptCoAuthors: string[]
   showResolved: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

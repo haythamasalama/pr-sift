@@ -27,18 +27,19 @@ const READINESS: Record<string, MergeReadiness> = {
 
 export const mergeReadiness = (state: string | undefined): MergeReadiness => READINESS[state ?? ''] ?? 'unknown'
 
+// Exact identities rather than words like "claude", which also match people with that name.
 export const DEFAULT_REMOVED_CO_AUTHORS = [
-  'claude',
-  'anthropic.com',
-  'openai.com',
-  'chatgpt',
-  'codex',
-  'gemini',
-  'copilot',
-  'cursor',
+  '@anthropic.com',
+  '+claude[bot]@',
+  '@openai.com',
+  'chatgpt-codex-connector',
+  '+copilot@',
+  'copilot-swe-agent',
+  'gemini-code-assist',
   'google-labs-jules',
-  'devin-ai',
-  'aider.chat',
+  '@cursor.com',
+  'devin-ai-integration',
+  '@aider.chat',
 ]
 
 const TRAILER = /^co-authored-by:\s*(.*?)\s*<([^<>]+)>\s*$/i
@@ -76,13 +77,36 @@ function unique(people: Person[]): Person[] {
   })
 }
 
+const emailOf = (person: Person) => person.email.trim().toLowerCase()
+
+// GitHub has no login for commits made with an email it does not know, so the author's own commits are also matched by
+// the names and emails on their linked commits and by their noreply address.
+function byPrAuthor(commits: CommitSummary[], prAuthor: string | undefined) {
+  const login = prAuthor?.toLowerCase()
+  if (!login) return () => false
+  const own = commits.filter((c) => c.author.login?.toLowerCase() === login).map((c) => c.author)
+  const emails = new Set(own.map(emailOf))
+  const names = new Set(own.map((a) => a.name.trim().toLowerCase()))
+  return (author: CommitSummary['author']) => {
+    if (author.login) return author.login.toLowerCase() === login
+    const email = emailOf(author)
+    return (
+      emails.has(email) ||
+      names.has(author.name.trim().toLowerCase()) ||
+      email === `${login}@users.noreply.github.com` ||
+      email.endsWith(`+${login}@users.noreply.github.com`)
+    )
+  }
+}
+
 export function coAuthorsOf(commits: CommitSummary[], prAuthor: string | undefined): Person[] {
+  const isPrAuthor = byPrAuthor(commits, prAuthor)
   const people: Person[] = []
   for (const c of commits) {
-    if (!prAuthor || c.author.login?.toLowerCase() !== prAuthor.toLowerCase()) people.push({ name: c.author.name, email: c.author.email })
+    if (!isPrAuthor(c.author)) people.push({ name: c.author.name, email: c.author.email })
     people.push(...stripCoAuthors(c.message).coAuthors)
   }
-  return unique(people)
+  return unique(people.filter((p) => p.email.trim()))
 }
 
 export function isRemovedCoAuthor(person: Person, patterns: string[]): boolean {
@@ -91,6 +115,34 @@ export function isRemovedCoAuthor(person: Person, patterns: string[]): boolean {
     const pattern = p.trim().toLowerCase()
     return pattern !== '' && id.includes(pattern)
   })
+}
+
+export function keepsCoAuthor(person: Person, removed: string[], kept: string[]): boolean {
+  const email = emailOf(person)
+  return kept.some((value) => value.trim().toLowerCase() === email) || !isRemovedCoAuthor(person, removed)
+}
+
+// Unchecking someone adds their email to the removed list. Checking someone a broader pattern removes adds them to the
+// kept list, so the choice sticks without dropping the pattern for everyone else.
+export function rememberCoAuthors(
+  choices: { person: Person; keep: boolean }[],
+  removed: string[],
+  kept: string[],
+): { removed: string[]; kept: string[] } {
+  let nextRemoved = [...removed]
+  let nextKept = [...kept]
+  for (const { person, keep } of choices) {
+    const email = emailOf(person)
+    const same = (value: string) => value.trim().toLowerCase() === email
+    if (keep) {
+      nextRemoved = nextRemoved.filter((value) => !same(value))
+      if (isRemovedCoAuthor(person, nextRemoved) && !nextKept.some(same)) nextKept.push(email)
+    } else {
+      nextKept = nextKept.filter((value) => !same(value))
+      if (!isRemovedCoAuthor(person, nextRemoved)) nextRemoved.push(email)
+    }
+  }
+  return { removed: nextRemoved, kept: nextKept }
 }
 
 const subjectOf = (message: string) => message.split('\n')[0]!.trim()

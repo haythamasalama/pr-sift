@@ -101,6 +101,21 @@ describe('MergeSheet', () => {
     expect((store.settings as { removedCoAuthors: string[] }).removedCoAuthors).toContain('sam@x.dev')
   })
 
+  it('keeps your list as it is when leaving out co-authors is off', async () => {
+    const { store } = github()
+    store.settings = { leaveOutCoAuthors: false, removedCoAuthors: ['bot@example.com'] }
+    const wrapper = mountDialog()
+    await vi.waitFor(() => expect(document.querySelector('#co-author-1')).not.toBeNull())
+    expect(checked('co-author-0')).toBe('true')
+
+    document.querySelector<HTMLElement>('#co-author-1')!.click()
+    await flushPromises()
+    button('Squash and merge').click()
+    await vi.waitFor(() => expect(wrapper.emitted('merged')).toBeTruthy())
+
+    expect((store.settings as { removedCoAuthors: string[] }).removedCoAuthors).toEqual(['bot@example.com'])
+  })
+
   it('adds a co-author typed by hand', async () => {
     const { sent } = github()
     const wrapper = mountDialog()

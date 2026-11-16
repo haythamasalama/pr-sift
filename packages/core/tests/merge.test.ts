@@ -5,8 +5,10 @@ import {
   defaultSquashBody,
   defaultSquashTitle,
   isRemovedCoAuthor,
+  keepsCoAuthor,
   mergeReadiness,
   parsePerson,
+  rememberCoAuthors,
   stripCoAuthors,
   withCoAuthors,
   type CommitSummary,
@@ -44,6 +46,17 @@ describe('coAuthorsOf', () => {
       { name: 'Sam', email: 'sam@x.dev' },
     ])
   })
+
+  it("knows the author's commits that GitHub could not link to their account", () => {
+    const commits = [
+      commit('feat: a'),
+      commit('feat: b', { name: 'Haytham', email: 'h@work.local' }),
+      commit('feat: c', { name: 'H', email: '9+haytham@users.noreply.github.com' }),
+      commit('feat: d', { name: 'Sam', email: 'sam@x.dev' }),
+      commit('feat: e', { name: 'Nobody', email: '' }),
+    ]
+    expect(coAuthorsOf(commits, 'haytham')).toEqual([{ name: 'Sam', email: 'sam@x.dev' }])
+  })
 })
 
 describe('isRemovedCoAuthor', () => {
@@ -55,11 +68,32 @@ describe('isRemovedCoAuthor', () => {
     expect(removed('Cursor Agent', 'cursoragent@cursor.com')).toBe(true)
     expect(removed('gemini-code-assist[bot]', '1@users.noreply.github.com')).toBe(true)
     expect(removed('Haider Ali', 'haider@example.com')).toBe(false)
+    expect(removed('Claude Martin', 'claude.martin@acme.com')).toBe(false)
+    expect(removed('Ana Gemini', 'ana@cursorial.dev')).toBe(false)
     expect(removed('Sam', 'sam@x.dev')).toBe(false)
   })
 
   it('ignores blank patterns', () => {
     expect(isRemovedCoAuthor({ name: 'Sam', email: 'sam@x.dev' }, ['', '  '])).toBe(false)
+  })
+})
+
+describe('rememberCoAuthors', () => {
+  const claude = { name: 'Claude', email: 'claude@acme.com' }
+  const sam = { name: 'Sam', email: 'Sam@x.dev' }
+
+  it('adds people you uncheck and keeps people you check back', () => {
+    const first = rememberCoAuthors([{ person: sam, keep: false }], ['claude'], [])
+    expect(first).toEqual({ removed: ['claude', 'sam@x.dev'], kept: [] })
+    expect(rememberCoAuthors([{ person: sam, keep: true }], first.removed, first.kept)).toEqual({ removed: ['claude'], kept: [] })
+  })
+
+  it('remembers someone a pattern removes once you check them, without dropping the pattern', () => {
+    const next = rememberCoAuthors([{ person: claude, keep: true }], ['claude'], [])
+    expect(next).toEqual({ removed: ['claude'], kept: ['claude@acme.com'] })
+    expect(keepsCoAuthor(claude, next.removed, next.kept)).toBe(true)
+    expect(keepsCoAuthor({ name: 'Claude', email: 'noreply@anthropic.com' }, next.removed, next.kept)).toBe(false)
+    expect(rememberCoAuthors([{ person: claude, keep: false }], next.removed, next.kept)).toEqual({ removed: ['claude'], kept: [] })
   })
 })
 

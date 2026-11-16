@@ -18,6 +18,7 @@ export const DEFAULTS: Settings = {
   mergeMethod: 'squash',
   leaveOutCoAuthors: true,
   removedCoAuthors: DEFAULT_REMOVED_CO_AUTHORS,
+  keptCoAuthors: [],
   showResolved: false,
   assistant: 'claude-code',
 }

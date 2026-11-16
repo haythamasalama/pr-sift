@@ -6,8 +6,9 @@ import {
   defaultSquashBody,
   defaultSquashTitle,
   formatPerson,
-  isRemovedCoAuthor,
+  keepsCoAuthor,
   parsePerson,
+  rememberCoAuthors,
   withCoAuthors,
   type MergeMethod,
   type Person,
@@ -67,7 +68,9 @@ interface CoAuthorRow {
 
 const context = shallowRef<MergeContext | null>(null)
 const loadError = shallowRef('')
+const leaveOut = shallowRef(DEFAULTS.leaveOutCoAuthors)
 const removed = shallowRef<string[]>(DEFAULTS.removedCoAuthors)
+const kept = shallowRef<string[]>(DEFAULTS.keptCoAuthors)
 const method = shallowRef<MergeMethod>(DEFAULTS.mergeMethod)
 const title = shallowRef('')
 const body = shallowRef('')
@@ -101,13 +104,18 @@ function choose(value: MergeMethod) {
 async function load() {
   loadError.value = ''
   const settings = await getSettings()
-  removed.value = settings.leaveOutCoAuthors ? settings.removedCoAuthors : []
+  leaveOut.value = settings.leaveOutCoAuthors
+  removed.value = settings.removedCoAuthors
+  kept.value = settings.keptCoAuthors
   try {
     const ctx = await loadMergeContext(pr)
     const wanted = initialMethod ?? settings.mergeMethod
     const preferred = ctx.allowed[wanted] ? wanted : METHODS.find((m) => ctx.allowed[m.value])?.value
     method.value = preferred ?? 'merge'
-    people.value = coAuthorsOf(ctx.commits, ctx.author).map((person) => ({ person, keep: !isRemovedCoAuthor(person, removed.value) }))
+    people.value = coAuthorsOf(ctx.commits, ctx.author).map((person) => ({
+      person,
+      keep: !leaveOut.value || keepsCoAuthor(person, removed.value, kept.value),
+    }))
     fillMessage(ctx)
     context.value = ctx
   } catch (e) {
@@ -141,15 +149,11 @@ function addCustom() {
 
 async function remember() {
   await saveSetting('mergeMethod', method.value)
-  if (method.value !== 'squash') return
-  const list = [...removed.value]
-  for (const row of people.value) {
-    const email = row.person.email.toLowerCase()
-    const listed = list.findIndex((pattern) => pattern.trim().toLowerCase() === email)
-    if (!row.keep && !isRemovedCoAuthor(row.person, list)) list.push(email)
-    if (row.keep && listed >= 0) list.splice(listed, 1)
-  }
-  if (list.join('\n') !== removed.value.join('\n')) await saveSetting('removedCoAuthors', list)
+  // With the list turned off, unchecking someone applies to this merge only.
+  if (method.value !== 'squash' || !leaveOut.value) return
+  const next = rememberCoAuthors(people.value, removed.value, kept.value)
+  if (next.removed.join('\n') !== removed.value.join('\n')) await saveSetting('removedCoAuthors', next.removed)
+  if (next.kept.join('\n') !== kept.value.join('\n')) await saveSetting('keptCoAuthors', next.kept)
 }
 
 async function submit() {
@@ -157,13 +161,13 @@ async function submit() {
   if (!ctx) return
   busy.value = true
   error.value = ''
-  const kept = people.value.filter((row) => row.keep).map((row) => row.person)
+  const coAuthors = people.value.filter((row) => row.keep).map((row) => row.person)
   try {
     const sha = await merge(pr, {
       method: method.value,
       sha: ctx.headSha,
       title: title.value.trim(),
-      message: method.value === 'squash' ? withCoAuthors(body.value, kept) : body.value.trim(),
+      message: method.value === 'squash' ? withCoAuthors(body.value, coAuthors) : body.value.trim(),
     })
     await remember()
     emit('merged', sha)
