@@ -11,6 +11,7 @@ const open = shallowRef(true)
 const lines = computed(() =>
   thread.startLine && thread.startLine < thread.line ? `Lines ${thread.startLine}–${thread.line}` : `Line ${thread.line}`,
 )
+const replies = computed(() => thread.comments.slice(1))
 const count = computed(() => `${thread.comments.length} comment${thread.comments.length === 1 ? '' : 's'}`)
 </script>
 
@@ -27,8 +28,11 @@ const count = computed(() => `${thread.comments.length} comment${thread.comments
         <a :href="thread.comments[0]?.url" target="_blank" rel="noreferrer"><ExternalLink /></a>
       </Button>
     </div>
-    <div v-if="open" class="flex flex-col gap-3 px-3 pb-3">
-      <GithubComment v-for="c in thread.comments" :key="c.id" :comment="c" />
+    <div v-if="open && thread.comments[0]" class="flex flex-col gap-3 px-3 pb-3">
+      <GithubComment :comment="thread.comments[0]" />
+      <div v-if="replies.length" data-replies class="ml-3 flex flex-col gap-3 border-l pl-5">
+        <GithubComment v-for="c in replies" :key="c.id" :comment="c" />
+      </div>
     </div>
   </section>
 </template>
