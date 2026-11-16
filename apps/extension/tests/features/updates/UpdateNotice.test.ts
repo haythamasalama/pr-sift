@@ -32,6 +32,6 @@ describe('UpdateNotice', () => {
     installChrome()
     const wrapper = mount(UpdateNotice)
     await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 })

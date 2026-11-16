@@ -10,7 +10,8 @@ describe('AutoOpenTip', () => {
     installChrome()
     const wrapper = mount(AutoOpenTip, { props: { enabled: false } })
     await flushPromises()
-    expect(wrapper.text()).toContain('Open PR Sift automatically on every pull request?')
+    expect(wrapper.text()).toContain('Open PR Sift automatically?')
+    expect(wrapper.text()).toContain('Pull requests will open straight in PR Sift, with no button to click.')
     expect(button(wrapper, 'Turn on')).toBeDefined()
   })
 
@@ -22,7 +23,7 @@ describe('AutoOpenTip', () => {
     await flushPromises()
     expect(store.settings).toMatchObject({ autoOpen: true })
     expect(store.autoOpenTipDismissed).toBe(true)
-    expect(wrapper.text()).toContain('Pull requests now open straight in PR Sift.')
+    expect(wrapper.text()).toContain('PR Sift now opens automatically.')
     expect(button(wrapper, 'Settings')).toBeDefined()
   })
 
@@ -45,6 +46,6 @@ describe('AutoOpenTip', () => {
     if (dismissed) store.autoOpenTipDismissed = true
     const wrapper = mount(AutoOpenTip, { props: { enabled } })
     await flushPromises()
-    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })
 })

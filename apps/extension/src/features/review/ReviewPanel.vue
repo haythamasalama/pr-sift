@@ -38,6 +38,7 @@ import { settingsOpenerKey } from '../settings/useSettingsOpener'
 import type { SettingsSectionId } from '../settings/sections'
 import UpdateNotice from '../updates/UpdateNotice.vue'
 import AutoOpenTip from './AutoOpenTip.vue'
+import NoticeBar from '../../components/NoticeBar.vue'
 import { REVIEWS_URL } from '../../lib/updates'
 
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
@@ -375,19 +376,18 @@ watch(
       @save-view="saveView"
     />
 
-    <Alert
-      v-if="updates.available.value || externalUpdate || refreshNote"
-      class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2"
-    >
-      <RefreshCw :class="refreshing ? 'animate-spin' : ''" />
-      <AlertDescription class="flex-1 text-xs">{{ refreshNote || 'New changes were pushed to this pull request.' }}</AlertDescription>
-      <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
-    </Alert>
+    <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">
+      <template #icon><RefreshCw :class="refreshing ? 'animate-spin' : ''" /></template>
+      {{ refreshNote || 'New changes were pushed to this pull request.' }}
+      <template #actions>
+        <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
+      </template>
+    </NoticeBar>
 
-    <Alert v-if="actionNote" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
-      <CheckCircle2 class="text-success" />
-      <AlertDescription class="flex-1 text-xs">{{ actionNote }}</AlertDescription>
-    </Alert>
+    <NoticeBar v-if="actionNote">
+      <template #icon><CheckCircle2 class="text-success" /></template>
+      {{ actionNote }}
+    </NoticeBar>
 
     <UpdateNotice />
     <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, shallowRef } from 'vue'
 import { CheckCircle2, X, Zap } from '@lucide/vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import NoticeBar from '../../components/NoticeBar.vue'
 import { storageGet, storageSet } from '../../lib/extension'
 import { saveSetting } from '../../lib/settings'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
@@ -31,16 +31,20 @@ async function turnOn() {
 </script>
 
 <template>
-  <Alert v-if="turnedOn" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
-    <CheckCircle2 class="text-success" />
-    <AlertDescription class="flex-1 text-xs">Pull requests now open straight in PR Sift.</AlertDescription>
-    <Button variant="outline" size="sm" @click="openSettings('review')">Settings</Button>
-    <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Dismiss" @click="dismiss"><X /></Button>
-  </Alert>
-  <Alert v-else-if="!enabled && !dismissed" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
-    <Zap />
-    <AlertDescription class="flex-1 text-xs">Open PR Sift automatically on every pull request?</AlertDescription>
-    <Button variant="outline" size="sm" @click="turnOn">Turn on</Button>
-    <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Not now" @click="dismiss"><X /></Button>
-  </Alert>
+  <NoticeBar v-if="turnedOn" title="PR Sift now opens automatically.">
+    <template #icon><CheckCircle2 class="text-success" /></template>
+    Turn it off any time in Settings.
+    <template #actions>
+      <Button variant="outline" size="sm" @click="openSettings('review')">Settings</Button>
+      <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Dismiss" @click="dismiss"><X /></Button>
+    </template>
+  </NoticeBar>
+  <NoticeBar v-else-if="!enabled && !dismissed" title="Open PR Sift automatically?">
+    <template #icon><Zap /></template>
+    Pull requests will open straight in PR Sift, with no button to click.
+    <template #actions>
+      <Button variant="outline" size="sm" @click="turnOn">Turn on</Button>
+      <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Not now" @click="dismiss"><X /></Button>
+    </template>
+  </NoticeBar>
 </template>
