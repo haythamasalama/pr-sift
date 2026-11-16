@@ -382,7 +382,6 @@ const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
           <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
             <span class="flex gap-1.5" aria-hidden="true"><span class="size-[11px] rounded-full bg-[#ff5f57]"></span><span class="size-[11px] rounded-full bg-[#febc2e]"></span><span class="size-[11px] rounded-full bg-[#28c840]"></span></span>
             <span class="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-paper px-3 py-1 font-mono text-xs text-muted" aria-hidden="true">${icon('lock', 'size-3 shrink-0')}<span class="truncate">github.com/haythamasalama/storefront/pull/482/files</span></span>
-            <button type="button" data-live-restart hidden class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Start over</button>
             <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">

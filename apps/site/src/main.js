@@ -130,7 +130,6 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
 
 for (const demo of document.querySelectorAll('[data-live-demo]')) {
   const frame = demo.querySelector('[data-live-frame]')
-  const restart = demo.querySelector('[data-live-restart]')
   // The demo loads on its own, so the wheel keeps scrolling the page until the visitor clicks into the demo.
   let engaged = false
   frame.addEventListener('pointerleave', () => (engaged = false))
@@ -147,9 +146,8 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
       { capture: true, passive: false },
     )
   }
-  // The new frame loads over the old one, so the preview never flashes empty.
+  // The frame loads over the preview image, so the box never flashes empty.
   const start = () => {
-    engaged = false
     const iframe = document.createElement('iframe')
     iframe.src = frame.dataset.src
     iframe.title = 'PR Sift live demo'
@@ -165,7 +163,6 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
       { once: true },
     )
     frame.append(iframe)
-    restart.hidden = false
   }
   new IntersectionObserver(
     (entries, observer) => {
@@ -175,5 +172,4 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
     },
     { rootMargin: '300px' },
   ).observe(frame)
-  restart.addEventListener('click', start)
 }
