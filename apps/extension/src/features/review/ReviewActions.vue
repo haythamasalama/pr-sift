@@ -68,19 +68,13 @@ function onReviewed(event: ReviewEvent) {
       <Button
         :variant="mergeIsPrimary ? 'success' : 'outline'"
         size="sm"
-        class="rounded-r-none"
+        class="relative rounded-r-none"
         :title="mergeTitle"
         :aria-label="mergeTitle"
         @click="sheetOpen = true"
       >
-        <span class="relative flex">
-          <GitMerge />
-          <span
-            v-if="readiness"
-            class="absolute -top-0.5 -right-0.5 size-1.5 rounded-full ring-1 ring-background"
-            :class="readiness.tone"
-          />
-        </span>
+        <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full" :class="readiness.tone" />
+        <GitMerge />
         <span class="hidden sm:inline lg:hidden">Merge</span><span class="hidden lg:inline">{{ current.action }}</span>
       </Button>
       <DropdownMenu>

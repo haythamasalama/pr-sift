@@ -155,7 +155,7 @@ const closable = !isEmbeddedDemo()
           :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
         >
           <Settings />
-          <span v-if="updateReady" class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emphasis ring-2 ring-sidebar" />
+          <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-emphasis" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" class="w-56">
