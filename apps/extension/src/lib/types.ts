@@ -32,5 +32,6 @@ export interface Settings {
   theme: ThemeMode
   treeIndent: number
   treeGuides: boolean
+  showResolved: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

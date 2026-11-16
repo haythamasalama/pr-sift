@@ -13,6 +13,7 @@ export const DEFAULTS: Settings = {
   theme: 'system',
   treeIndent: 6,
   treeGuides: true,
+  showResolved: false,
   assistant: 'claude-code',
 }
 
