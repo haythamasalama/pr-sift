@@ -15,11 +15,17 @@ const open = computed(() => info?.state !== 'merged' && info?.state !== 'closed'
 
 <template>
   <template v-if="open">
-    <Button variant="outline" size="sm" class="shrink-0" title="Approve this pull request on GitHub" @click="dialog = 'approve'">
-      <Check /><span class="hidden xl:inline">Approve</span>
+    <Button
+      variant="outline"
+      size="sm"
+      class="shrink-0 border-success/50 text-success hover:bg-success/10 hover:text-success dark:border-success/60 dark:hover:bg-success/15"
+      title="Approve this pull request on GitHub"
+      @click="dialog = 'approve'"
+    >
+      <Check /><span class="hidden lg:inline">Approve</span>
     </Button>
-    <Button variant="outline" size="sm" class="shrink-0" title="Merge this pull request" @click="dialog = 'merge'">
-      <GitMerge /><span class="hidden xl:inline">Merge</span>
+    <Button variant="success" size="sm" class="shrink-0" title="Merge this pull request" @click="dialog = 'merge'">
+      <GitMerge /><span class="hidden lg:inline">Merge</span>
     </Button>
   </template>
   <ApproveDialog

@@ -241,7 +241,7 @@ async function submit() {
     <template #footer>
       <div class="flex justify-end gap-2">
         <Button variant="outline" size="sm" @click="emit('close')">Cancel</Button>
-        <Button size="sm" :disabled="!context || busy" @click="submit">
+        <Button variant="success" size="sm" :disabled="!context || busy" @click="submit">
           <Spinner v-if="busy" />
           <GitMerge v-else />
           {{ current.action }}

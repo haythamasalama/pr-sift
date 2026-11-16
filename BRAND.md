@@ -88,6 +88,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `emphasis` (blue)     | `#0969da`             | `#1f6feb`                            |
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
+| `success-foreground`  | `#ffffff`             | `#ffffff`                            |
 | `merged`              | `#8250df`             | `#a371f7`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
 | `add-fg` / `add-bg`   | `#1a7f37` / `#e6ffec` | `#3fb950` / `rgba(46, 160, 67, .15)` |
@@ -99,8 +100,11 @@ Syntax colours also follow GitHub (keyword `#cf222e` / `#ff7b72`, entity `#8250d
 
 In extension code use the shadcn-vue semantic tokens (`bg-background`, `text-muted-foreground`), never raw colours.
 `primary` is neutral to match the brand. GitHub's blue (`emphasis`, the Button `emphasis` variant) is kept for the
-places GitHub itself uses blue: the add-note button on a diff line, the sidebar resize handle and the progress ring
-(blue while files are left, `success` green when all are viewed).
+places GitHub itself uses blue: the add-note button on a diff line, the sidebar resize handle, the branch names under
+the title and the progress ring (blue while files are left, `success` green when all are viewed). GitHub's green (the
+Button `success` variant, white text from `success-foreground`) is kept for the actions that finish a review, as on
+GitHub: Merge and the confirm buttons in the Approve and Merge dialogs. Approve in the top bar is a green outline, so
+Merge stays the strongest button.
 
 - `sidebar` (`#ffffff` light, `#010409` dark) is the panel chrome: the top bar, the filter bar and the sidebar. The
   file list sits on `background`, so the chrome and the content read as two layers.

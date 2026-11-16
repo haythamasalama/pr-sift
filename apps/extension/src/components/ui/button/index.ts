@@ -15,6 +15,7 @@ export const buttonVariants = cva(
         destructive: 'bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30',
         link: 'text-primary underline-offset-4 hover:underline',
         emphasis: 'bg-emphasis text-emphasis-foreground hover:bg-emphasis/90',
+        success: 'bg-success text-success-foreground hover:bg-success/90',
       },
       size: {
         'default': 'h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
