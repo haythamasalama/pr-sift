@@ -287,30 +287,30 @@ defineExpose({ scrollToSection })
         </ChoiceCards>
       </div>
       <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">
-        <div class="grid grid-cols-[minmax(0,1fr)_11rem] items-center gap-4">
+        <div class="rounded-lg border p-1.5">
           <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
-          <div class="flex flex-col gap-3">
-            <div class="flex items-center gap-3">
-              <Slider
-                :model-value="[treeIndent]"
-                :min="0"
-                :max="24"
-                :step="2"
-                aria-label="Folder indentation"
-                @update:model-value="(v) => v && (treeIndent = v[0]!)"
-                @value-commit="(v) => update('treeIndent', v[0]!)"
-              />
-              <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <Switch
-                id="settings-tree-guides"
-                size="sm"
-                :model-value="settings.treeGuides"
-                @update:model-value="(v) => update('treeGuides', v)"
-              />
-              <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
-            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div class="flex min-w-48 flex-1 items-center gap-3">
+            <Slider
+              :model-value="[treeIndent]"
+              :min="0"
+              :max="24"
+              :step="2"
+              aria-label="Folder indentation"
+              @update:model-value="(v) => v && (treeIndent = v[0]!)"
+              @value-commit="(v) => update('treeIndent', v[0]!)"
+            />
+            <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <Switch
+              id="settings-tree-guides"
+              size="sm"
+              :model-value="settings.treeGuides"
+              @update:model-value="(v) => update('treeGuides', v)"
+            />
+            <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
           </div>
         </div>
       </SettingsGroup>

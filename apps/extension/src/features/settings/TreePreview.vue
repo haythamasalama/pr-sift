@@ -9,7 +9,7 @@ const line = computed(() => (guides ? '' : 'border-transparent'))
 </script>
 
 <template>
-  <div class="rounded-md border bg-sidebar px-2 py-1.5 text-[11px] leading-5" aria-hidden="true">
+  <div class="rounded-md border bg-background px-2 py-1.5 text-[11px] leading-5" aria-hidden="true">
     <p class="flex items-center gap-1"><Folder class="size-3 text-muted-foreground" />src</p>
     <div class="ml-3 border-l" :class="line" :style="level">
       <p class="flex items-center gap-1"><Folder class="size-3 text-muted-foreground" />Domain</p>
