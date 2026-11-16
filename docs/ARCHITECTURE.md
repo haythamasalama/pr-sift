@@ -17,18 +17,19 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 
 ## packages/core
 
-| Module       | Responsibility                                                      |
-| ------------ | ------------------------------------------------------------------- |
-| `diff`       | Parse GitHub patches into rows; build split rows; hash file content |
-| `tree`       | Build the folder tree and collect files below a node                |
-| `scopes`     | Smart filters: categories, repeated folders, folder grouping        |
-| `extensions` | File type chips, including compound suffixes such as `.blade.php`   |
-| `glob`       | Path patterns used by hidden-file rules                             |
-| `merge`      | Squash commit messages and the co-authors kept or left out          |
-| `notes`      | Note anchors, the prompt exported to an assistant, GitHub line URLs |
-| `overview`   | Pull request state, author and branches from GitHub's page data     |
-| `range`      | Multi-line note ranges                                              |
-| `testing`    | Fixtures shared by tests (`@pr-sift/core/testing`)                  |
+| Module         | Responsibility                                                        |
+| -------------- | --------------------------------------------------------------------- |
+| `diff`         | Parse GitHub patches into rows; build split rows; hash file content   |
+| `tree`         | Build the folder tree and collect files below a node                  |
+| `scopes`       | Smart filters: categories, repeated folders, folder grouping          |
+| `extensions`   | File type chips, including compound suffixes such as `.blade.php`     |
+| `glob`         | Path patterns used by hidden-file rules                               |
+| `merge`        | Squash commit messages and the co-authors kept or left out            |
+| `notes`        | Note anchors, the prompt exported to an assistant, GitHub line URLs   |
+| `overview`     | Pull request state, author and branches from GitHub's page data       |
+| `range`        | Multi-line note ranges                                                |
+| `savedFilters` | Saved filter examples and the clean-up applied before they are stored |
+| `testing`      | Fixtures shared by tests (`@pr-sift/core/testing`)                    |
 
 ## apps/extension
 

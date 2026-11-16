@@ -1,14 +1,9 @@
 <script setup lang="ts">
 import { Textarea } from '@/components/ui/textarea'
+import { splitLines } from '@pr-sift/core'
 import { useDraft } from './useDraft'
 
 const model = defineModel<string[]>({ required: true })
-
-const splitLines = (text: string) =>
-  text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
 
 const { draft, schedule, flush } = useDraft({
   source: () => model.value,

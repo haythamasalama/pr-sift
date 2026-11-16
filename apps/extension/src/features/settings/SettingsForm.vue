@@ -20,13 +20,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { openReport } from '../../lib/report'
 import type { DiffMode, MergeMethod, ThemeMode } from '../../lib/types'
 import { useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
 import LinesTextarea from './LinesTextarea.vue'
+import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 import TokenSection from './TokenSection.vue'
@@ -50,29 +50,10 @@ const confirmReset = shallowRef(false)
 const notice = shallowRef('')
 let resetTimer: ReturnType<typeof setTimeout> | undefined
 
-const presets = shallowRef('[]')
-const presetsError = shallowRef('')
-
 watch(
   () => settings.value.treeIndent,
   (value) => (treeIndent.value = value),
 )
-watch(
-  () => settings.value.presets,
-  (value) => (presets.value = JSON.stringify(value, null, 2)),
-  { immediate: true },
-)
-
-function savePresets() {
-  try {
-    const parsed: unknown = JSON.parse(presets.value)
-    if (!Array.isArray(parsed)) throw new Error('Presets must be a list')
-    presetsError.value = ''
-    void update('presets', parsed)
-  } catch (e) {
-    presetsError.value = (e as Error).message
-  }
-}
 
 function toggleStatus(status: string, on: boolean) {
   const current = settings.value.hideStatuses.filter((s) => s !== status)
@@ -250,25 +231,7 @@ defineExpose({ scrollToSection })
       </SettingsRow>
     </SettingsSection>
 
-    <SettingsSection
-      id="filters"
-      title="Presets"
-      description="Named groups of paths, shown as buttons in the review’s top bar."
-      area="toolbar"
-    >
-      <SettingsRow label="Presets JSON" control-id="settings-presets" stacked>
-        <template #description>Saved when you leave the field. Example: [{ "name": "Backend", "include": ["src/**"] }]</template>
-        <Textarea
-          id="settings-presets"
-          v-model="presets"
-          rows="8"
-          spellcheck="false"
-          class="font-mono text-xs md:text-xs"
-          @blur="savePresets"
-        />
-        <p v-if="presetsError" class="text-xs text-destructive">{{ presetsError }}</p>
-      </SettingsRow>
-    </SettingsSection>
+    <SavedFiltersSection :model-value="settings.presets" @update:model-value="(v) => update('presets', v)" />
 
     <SettingsSection id="help" title="Help" description="Opens a GitHub issue. Nothing from your pull requests is sent.">
       <template #icon><LifeBuoy class="size-4" /></template>

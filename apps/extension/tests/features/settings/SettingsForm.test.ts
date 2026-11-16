@@ -142,6 +142,90 @@ describe('SettingsForm token', () => {
   })
 })
 
+describe('SettingsForm saved filters', () => {
+  const rows = (wrapper: Wrapper) => section(wrapper, 'filters').findAll('[data-filter]')
+  const example = (wrapper: Wrapper, name: string) => buttonIn(wrapper, 'filters', `Add the ${name} example`)
+
+  it('edits the stored presets as a list, with no JSON', async () => {
+    const wrapper = await mountForm({ settings: { presets: [{ name: 'API', include: ['api/**', 'routes/**'], includeHidden: true }] } })
+    expect(section(wrapper, 'filters').find('h2').text()).toBe('Saved filters')
+    expect(section(wrapper, 'filters').text()).not.toContain('JSON')
+    const [row] = rows(wrapper)
+    expect((row!.find('input').element as HTMLInputElement).value).toBe('API')
+    expect((row!.find('textarea').element as HTMLTextAreaElement).value).toBe('api/**\nroutes/**')
+    expect(row!.find('[role="switch"]').attributes('data-state')).toBe('checked')
+  })
+
+  it('adds a filter once it has a name and a path', async () => {
+    const wrapper = await mountForm()
+    await buttonIn(wrapper, 'filters', 'Add filter')!.trigger('click')
+    await flushPromises()
+    const [row] = rows(wrapper)
+    expect(document.activeElement).toBe(row!.find('input').element)
+
+    await row!.find('input').setValue('Go')
+    await row!.find('input').trigger('blur')
+    await flushPromises()
+    expect(saved().presets).toBeUndefined()
+    expect(row!.text()).toContain('Needs a name and at least one path')
+
+    await row!.find('textarea').setValue('**/*.go\n\ncmd/**')
+    await row!.find('textarea').trigger('blur')
+    await flushPromises()
+    expect(saved().presets).toEqual([{ name: 'Go', include: ['**/*.go', 'cmd/**'], includeHidden: false }])
+  })
+
+  it('saves edits after a pause, and the hidden files switch right away', async () => {
+    const wrapper = await mountForm({ settings: { presets: [{ name: 'API', include: ['api/**'] }] } })
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    await rows(wrapper)[0]!.find('input').setValue('Server')
+    await vi.advanceTimersByTimeAsync(SAVE_DELAY)
+    await flushPromises()
+    expect(saved().presets).toEqual([{ name: 'Server', include: ['api/**'], includeHidden: false }])
+
+    await rows(wrapper)[0]!.find('[role="switch"]').trigger('click')
+    await flushPromises()
+    expect(saved().presets).toEqual([{ name: 'Server', include: ['api/**'], includeHidden: true }])
+  })
+
+  it('deletes a filter', async () => {
+    const wrapper = await mountForm({
+      settings: {
+        presets: [
+          { name: 'API', include: ['api/**'] },
+          { name: 'Web', include: ['web/**'] },
+        ],
+      },
+    })
+    await buttonIn(wrapper, 'filters', 'Delete API')!.trigger('click')
+    await flushPromises()
+    expect(rows(wrapper)).toHaveLength(1)
+    expect(saved().presets).toEqual([{ name: 'Web', include: ['web/**'], includeHidden: false }])
+  })
+
+  it('adds an example in one click and stops offering it', async () => {
+    const wrapper = await mountForm()
+    for (const name of ['Backend', 'Frontend', 'Tests', 'Docs', 'AI']) expect(example(wrapper, name)).toBeDefined()
+    await example(wrapper, 'AI')!.trigger('click')
+    await flushPromises()
+    expect(saved().presets).toEqual([
+      {
+        name: 'AI',
+        include: ['**/CLAUDE.md', '**/AGENTS.md', '.claude/**', '.cursor/**', '.github/copilot-instructions.md', '**/*.mdc'],
+        includeHidden: false,
+      },
+    ])
+    expect(example(wrapper, 'AI')).toBeUndefined()
+    expect(example(wrapper, 'Backend')).toBeDefined()
+  })
+
+  it('does not offer an example whose name is already used', async () => {
+    const wrapper = await mountForm({ settings: { presets: [{ name: 'docs', include: ['handbook/**'] }] } })
+    expect(example(wrapper, 'Docs')).toBeUndefined()
+    expect(example(wrapper, 'Tests')).toBeDefined()
+  })
+})
+
 describe('SettingsForm sections', () => {
   let scrolled: Element[]
 
