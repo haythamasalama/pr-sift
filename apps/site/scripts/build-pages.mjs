@@ -114,8 +114,12 @@ const video = (name, label, attrs = '') =>
 const iconBox = (name, cls = 'size-9') =>
   `<span class="flex ${cls} shrink-0 items-center justify-center rounded-md border border-line bg-paper">${icon(name, 'size-[18px]')}</span>`
 
-const h2 = (text, cls = '') =>
-  `<h2 class="text-3xl font-semibold tracking-tight text-balance sm:text-[2.5rem] sm:leading-[1.1] ${cls}">${esc(text)}</h2>`
+// A trailing icon stays on the line of the last word.
+const h2 = (text, cls = '', trail = '') => {
+  const cut = trail ? text.lastIndexOf(' ') + 1 : text.length
+  const end = trail ? `<span class="whitespace-nowrap">${esc(text.slice(cut))}${trail}</span>` : ''
+  return `<h2 class="text-3xl font-semibold tracking-tight text-balance sm:text-[2.5rem] sm:leading-[1.1] ${cls}">${esc(text.slice(0, cut))}${end}</h2>`
+}
 const lead = (text, cls = '') => `<p class="mt-4 max-w-2xl text-lg leading-relaxed text-muted ${cls}">${esc(text)}</p>`
 
 const BROWSERS = [
@@ -454,12 +458,11 @@ function homePage() {
       'merge',
       `<div class="grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
         <div class="lg:col-span-5">
-          ${iconBox('git-merge')}
-          <p class="mt-6 font-mono text-[13px] leading-[1.35] font-medium">
+          <p class="font-mono text-[13px] leading-[1.35] font-medium">
             <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span class="min-w-0 [overflow-wrap:anywhere]">${esc(h.merge.removed)}</span></span>
             <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>${esc(h.merge.added)}</span></span>
           </p>
-          ${h2(h.merge.title, 'mt-6')}
+          ${h2(h.merge.title, 'mt-6', icon('bot-off', 'ms-3 inline size-[0.8em] align-[-0.08em]'))}
           ${lead(h.merge.lead)}
           <ul class="mt-7 flex flex-col gap-3.5">
             ${h.merge.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
