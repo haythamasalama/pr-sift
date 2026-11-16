@@ -11,6 +11,9 @@ const { section, files } = defineProps<{ section?: SettingsSectionId; files?: Pr
 const keepFocusForSection = (event: Event) => {
   if (section) event.preventDefault()
 }
+
+// Menus and sheets that open this one hand focus back to their trigger outside it as they close.
+const stayOpen = (event: Event) => event.preventDefault()
 </script>
 
 <template>
@@ -19,6 +22,7 @@ const keepFocusForSection = (event: Event) => {
       side="right"
       class="gap-0 border-l bg-background shadow-xl data-[side=right]:w-full data-[side=right]:sm:max-w-[480px]"
       @open-auto-focus="keepFocusForSection"
+      @focus-outside="stayOpen"
     >
       <SheetHeader class="border-b pr-12">
         <SheetTitle>Settings</SheetTitle>
