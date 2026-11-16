@@ -190,7 +190,7 @@ defineExpose({ scrollToSection })
             @update:model-value="(v) => update('leaveOutCoAuthors', v)"
           />
         </SettingsRow>
-        <Collapsible v-if="settings.leaveOutCoAuthors" class="-mt-2">
+        <Collapsible v-if="settings.leaveOutCoAuthors" default-open class="-mt-2">
           <CollapsibleTrigger as-child>
             <Button variant="ghost" size="xs" class="group w-fit px-1 text-muted-foreground">
               <ChevronRight class="transition-transform group-data-[state=open]:rotate-90" /> Edit the list

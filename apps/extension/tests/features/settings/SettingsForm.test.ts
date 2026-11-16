@@ -93,18 +93,14 @@ describe('SettingsForm', () => {
     await wrapper.find('button[aria-label="Remove **/*.lock"]').trigger('click')
     await flushPromises()
     expect(saved().hide).toEqual(['vendor/**'])
-    await wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Edit the list'))!
-      .trigger('click')
     await addChip(wrapper, 'co-authors to leave out', 'bot@example.com')
     expect(saved().removedCoAuthors).toEqual(['claude', 'bot@example.com'])
   })
 
-  it('turns AI co-authors off with one switch and keeps the list folded away', async () => {
+  it('turns AI co-authors off with one switch, with the list open below it', async () => {
     const wrapper = await mountForm()
     expect(section(wrapper, 'merging').text()).toContain('Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked')
-    expect(wrapper.find('input[aria-label="Add to co-authors to leave out"]').exists()).toBe(false)
+    expect(wrapper.find('input[aria-label="Add to co-authors to leave out"]').exists()).toBe(true)
     await wrapper.find('#settings-leave-out').trigger('click')
     await flushPromises()
     expect(saved().leaveOutCoAuthors).toBe(false)
