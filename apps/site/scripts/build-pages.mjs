@@ -684,10 +684,11 @@ const AREAS = {
   AI: 'bot',
   Filters: 'funnel',
   Tree: 'folder-tree',
-  Review: 'list-checks',
+  Review: 'git-pull-request',
   Views: 'columns-2',
   Appearance: 'sun-moon',
   Security: 'shield-check',
+  License: 'scale',
 }
 const KINDS = { Added: 'sparkles', Fixed: 'wrench', Changed: 'refresh-cw', Security: 'shield-check' }
 
@@ -702,6 +703,7 @@ function parseChangelog() {
     if (version) releases.push((release = { version: version[1], date: version[2] ?? '', sections: [] }))
     else if (kind && release) release.sections.push((section = { kind: kind[1], items: [] }))
     else if (item && section) section.items.push({ area: item[1], text: item[2] })
+    else if (/^ {2,}\S/.test(line) && section?.items.length) section.items.at(-1).text += ` ${line.trim()}`
   }
   return releases
 }
@@ -722,6 +724,12 @@ ${changelog
   )
   .join('\n\n')}
 `
+}
+
+const byArea = (items) => {
+  const groups = new Map()
+  for (const item of items) groups.set(item.area, [...(groups.get(item.area) ?? []), item])
+  return [...groups]
 }
 
 function changelogPage() {
@@ -745,10 +753,10 @@ function changelogPage() {
             (
               s,
             ) => `<section><h3 class="flex items-center gap-2 font-medium">${icon(KINDS[s.kind] ?? 'dot', 'size-[18px]')}${esc(s.kind)}<span class="text-sm font-normal text-muted">${s.items.length}</span></h3>
-            <ul class="mt-4 divide-y divide-line border-y border-line">${s.items
+            <ul class="mt-4 divide-y divide-line border-y border-line">${byArea(s.items)
               .map(
-                (i) =>
-                  `<li data-area="${i.area}" class="flex items-start gap-3 py-3"><span class="mt-0.5 inline-flex w-28 shrink-0 items-center gap-1.5 text-sm text-muted">${icon(AREAS[i.area] ?? 'dot', 'size-4')}${esc(i.area)}</span><span>${esc(i.text)}</span></li>`,
+                ([area, items]) =>
+                  `<li data-area="${area}" class="grid gap-2 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4"><span class="inline-flex items-center gap-1.5 self-start text-sm font-medium sm:mt-0.5">${icon(AREAS[area] ?? 'dot', 'size-4 text-muted')}${esc(area)}</span><ul class="flex flex-col gap-2.5">${items.map((i) => `<li class="leading-relaxed">${esc(i.text)}</li>`).join('')}</ul></li>`,
               )
               .join('')}</ul></section>`,
           )
