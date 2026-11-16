@@ -36,11 +36,11 @@ function github() {
   return chrome
 }
 
-function mountDialog(canAct = true) {
+function mountDialog(canAct = true, method?: 'squash' | 'merge' | 'rebase') {
   const target = document.createElement('div')
   document.body.appendChild(target)
   return mount(MergeSheet, {
-    props: { pr: PR, info: { title: 'Ship invoices', base: 'main', head: 'feat/x' }, canAct },
+    props: { pr: PR, info: { title: 'Ship invoices', base: 'main', head: 'feat/x' }, canAct, method },
     global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
     attachTo: document.body,
   })
@@ -50,6 +50,19 @@ const button = (text: string) => [...document.querySelectorAll('button')].find((
 const checked = (id: string) => document.querySelector(`#${id}`)?.getAttribute('aria-checked')
 
 describe('MergeSheet', () => {
+  it('opens on the method picked on the button and explains co-authors outside a squash', async () => {
+    github()
+    mountDialog(true, 'merge')
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Merge commit keeps every commit as it is'))
+    expect(document.querySelector('[data-state="on"]')?.textContent?.trim()).toBe('Merge commit')
+    expect(document.body.textContent).toContain('Claude <noreply@anthropic.com>')
+    expect(document.querySelector('#co-author-0')).toBeNull()
+
+    button('Squash instead').click()
+    await vi.waitFor(() => expect(document.querySelector('#co-author-0')).not.toBeNull())
+    expect(document.querySelector('[data-state="on"]')?.textContent?.trim()).toBe('Squash')
+  })
+
   it('leaves AI co-authors out of a squash merge by default', async () => {
     const { sent, store } = github()
     const wrapper = mountDialog()

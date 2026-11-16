@@ -264,6 +264,20 @@ async function submit() {
               <FieldDescription v-if="customError" class="text-destructive">{{ customError }}</FieldDescription>
             </Field>
           </FieldSet>
+          <FieldSet v-else-if="people.length">
+            <FieldLegend variant="label">Co-authors</FieldLegend>
+            <FieldDescription class="text-xs">
+              {{ current.label }} keeps every commit as it is, so these co-authors stay in the history. Squash to leave them out.
+            </FieldDescription>
+            <ul class="flex flex-col gap-1">
+              <li v-for="row in people" :key="row.person.email" class="font-mono text-xs break-all text-muted-foreground">
+                {{ formatPerson(row.person) }}
+              </li>
+            </ul>
+            <Button v-if="context?.allowed.squash" variant="outline" size="sm" class="w-fit" @click="choose('squash')"
+              >Squash instead</Button
+            >
+          </FieldSet>
 
           <Alert v-if="error" variant="destructive">
             <CircleAlert />
