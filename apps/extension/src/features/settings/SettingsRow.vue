@@ -20,12 +20,8 @@ const {
 <template>
   <Field :orientation="stacked ? 'vertical' : 'horizontal'" class="py-3" :class="stacked ? 'gap-2.5' : 'flex-wrap gap-x-4 gap-y-2'">
     <FieldContent class="min-w-40">
-      <FieldLabel v-if="controlId" :for="controlId" class="relative">
-        <NewDot v-if="isNew" class="absolute top-1/2 -left-3.5 -translate-y-1/2" />{{ label }}
-      </FieldLabel>
-      <FieldTitle v-else class="relative">
-        <NewDot v-if="isNew" class="absolute top-1/2 -left-3.5 -translate-y-1/2" />{{ label }}
-      </FieldTitle>
+      <FieldLabel v-if="controlId" :for="controlId" class="items-center gap-2"> {{ label }}<NewDot v-if="isNew" /> </FieldLabel>
+      <FieldTitle v-else class="items-center gap-2">{{ label }}<NewDot v-if="isNew" /></FieldTitle>
       <FieldDescription v-if="description || $slots.description" class="text-xs">
         <slot name="description">{{ description }}</slot>
       </FieldDescription>

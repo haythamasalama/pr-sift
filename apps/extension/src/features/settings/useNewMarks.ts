@@ -1,7 +1,7 @@
 import { shallowRef } from 'vue'
 import { storageGet, storageSet } from '../../lib/extension'
 
-export type NewMark = 'auto-open' | 'co-authors' | 'saved-filters' | 'updates' | 'report' | 'idea'
+export type NewMark = 'auto-open' | 'co-authors' | 'saved-filters' | 'updates'
 
 const KEY = 'seenNew'
 

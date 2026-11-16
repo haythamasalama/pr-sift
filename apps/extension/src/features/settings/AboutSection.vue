@@ -19,11 +19,6 @@ function checkForUpdates() {
   void markSeen('updates')
   void check()
 }
-
-function report(kind: 'bug' | 'idea') {
-  void markSeen(kind === 'bug' ? 'report' : 'idea')
-  openReport(kind)
-}
 </script>
 
 <template>
@@ -57,14 +52,8 @@ function report(kind: 'bug' | 'idea') {
       <Button as-child variant="outline" size="sm">
         <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate PR Sift</a>
       </Button>
-      <Button variant="ghost" size="sm" @click="report('bug')">
-        <Bug /> Report a problem
-        <NewDot v-if="isNew('report')" />
-      </Button>
-      <Button variant="ghost" size="sm" @click="report('idea')">
-        <Lightbulb /> Suggest an idea
-        <NewDot v-if="isNew('idea')" />
-      </Button>
+      <Button variant="ghost" size="sm" @click="openReport('bug')"> <Bug /> Report a problem </Button>
+      <Button variant="ghost" size="sm" @click="openReport('idea')"> <Lightbulb /> Suggest an idea </Button>
     </div>
   </SettingsSection>
 </template>
