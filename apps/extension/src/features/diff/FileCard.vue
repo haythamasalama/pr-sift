@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { Check, ChevronDown, Columns2, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, Rows2 } from '@lucide/vue'
+import {
+  Check,
+  ChevronDown,
+  Columns2,
+  Copy,
+  ExternalLink,
+  FileDiff,
+  FileText,
+  FolderTree,
+  ListPlus,
+  MessageSquare,
+  Rows2,
+} from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,6 +37,7 @@ watch(
   },
   { immediate: true },
 )
+const commentCount = computed(() => fileContext?.comments?.value.get(file.filename) ?? 0)
 const expandable = computed(() => !!fileContext?.canExpand.value && file.status !== 'added' && file.status !== 'removed')
 
 const globalMode = useDiffMode()
@@ -126,6 +139,16 @@ defineExpose({ reveal, flash, el })
       >
         Updated since viewed
       </Badge>
+      <a
+        v-if="commentCount"
+        :href="githubUrl"
+        target="_blank"
+        rel="noreferrer"
+        class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        :title="`${commentCount} comment${commentCount === 1 ? '' : 's'} on GitHub`"
+      >
+        <MessageSquare class="size-3.5" />{{ commentCount }}
+      </a>
       <span class="text-xs font-medium text-add-fg">+{{ file.additions }}</span>
       <span class="text-xs font-medium text-del-fg">−{{ file.deletions }}</span>
       <Button

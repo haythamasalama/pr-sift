@@ -19,6 +19,7 @@ import { useViewed } from './useViewed'
 import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
 import { hasToken } from './github'
 import { fetchFileLines } from './pull'
+import { fetchConversation, type Conversation } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
@@ -27,6 +28,8 @@ import FileList from '../diff/FileList.vue'
 import FileTree from '../tree/FileTree.vue'
 import FilterBar from '../filters/FilterBar.vue'
 import NotesDialog from '../notes/NotesDialog.vue'
+import DescriptionPanel from './DescriptionPanel.vue'
+import PrSummary from './PrSummary.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
 
@@ -72,6 +75,18 @@ const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpa
 
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
+const descriptionOpen = shallowRef(false)
+const conversation = shallowRef<Conversation | null>(null)
+const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
+
+async function loadConversation() {
+  if (!tokenAvailable.value) return
+  try {
+    conversation.value = await fetchConversation(pr)
+  } catch {
+    conversation.value = null
+  }
+}
 
 provide(notesKey, {
   notes: notesStore.notes,
@@ -102,6 +117,7 @@ provide(fileContextKey, {
     return pending
   },
   githubUrl: (filename) => githubFileUrl(pr, filename),
+  comments: computed(() => conversation.value?.byFile ?? new Map<string, number>()),
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
@@ -114,6 +130,7 @@ async function doRefresh() {
   refreshing.value = false
   updates.dismiss()
   emit('refreshed')
+  void loadConversation()
   refreshNote.value = summary
     ? `Updated: ${summary.changed} changed, ${summary.added} new, ${summary.removed} removed. Changed files are back to unviewed.`
     : 'Could not refresh the pull request.'
@@ -195,6 +212,7 @@ onMounted(async () => {
   sidebarSize.set(settings.value.sidebarWidth)
   await load(pr)
   emit('refreshed')
+  await loadConversation()
 })
 
 watch(diffMode, (value) => saveSetting('diffView', value))
@@ -218,6 +236,23 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @select-preset="filter.togglePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
+    >
+      <template #meta>
+        <PrSummary
+          v-if="status === 'ready'"
+          v-model:description-open="descriptionOpen"
+          :info="info"
+          :conversation="conversation"
+          :conversation-url="conversationUrl"
+        />
+      </template>
+    </Toolbar>
+
+    <DescriptionPanel
+      v-if="descriptionOpen && status === 'ready'"
+      :html="info?.descriptionHtml"
+      :url="conversationUrl"
+      @close="descriptionOpen = false"
     />
 
     <FilterBar

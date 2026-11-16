@@ -60,6 +60,7 @@ Notes only you see. Copy them for Claude Code, Codex, Cursor or ChatGPT, or post
 - 🧩 Smart filters for tests, migrations, translations, config and CI
 - 🪟 Split or unified diffs, for every file or just one
 - 📋 Copy a file's name, path, diff or added lines
+- 📝 Read the description and see comment counts without leaving the review
 - 🤖 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT
 - 🌓 Light, dark or system theme
 

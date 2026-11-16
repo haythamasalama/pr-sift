@@ -4,6 +4,7 @@ export interface FileContext {
   canExpand: Ref<boolean>
   loadLines: (filename: string) => Promise<string[]>
   githubUrl: (filename: string) => Promise<string>
+  comments?: Ref<ReadonlyMap<string, number>>
 }
 
 export const fileContextKey: InjectionKey<FileContext> = Symbol('file-context')

@@ -14,8 +14,16 @@ export interface PrFile {
   blob_url: string
 }
 
+export type PrState = 'open' | 'draft' | 'merged' | 'closed'
+
 export interface PrInfo {
   title: string
+  author?: string
+  base?: string
+  head?: string
+  commits?: number
+  state?: PrState
+  descriptionHtml?: string
 }
 
 export type Via = 'session' | 'api'

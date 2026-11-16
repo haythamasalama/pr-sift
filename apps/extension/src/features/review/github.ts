@@ -15,10 +15,10 @@ export class GhError extends Error {
   }
 }
 
-export function gh<T = unknown>(path: string, method?: string, body?: unknown): Promise<T> {
+export function gh<T = unknown>(path: string, method?: string, body?: unknown, accept?: string): Promise<T> {
   return new Promise((resolve, reject) => {
     if (!alive()) return reject(new Error('The extension was reloaded. Reload this page.'))
-    chrome.runtime.sendMessage({ type: 'gh', path, method, body }, (res: GhResponse<T>) => {
+    chrome.runtime.sendMessage({ type: 'gh', path, method, body, accept }, (res: GhResponse<T>) => {
       if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message))
       if (!res.ok) return reject(new GhError(`${res.status}: ${res.data?.message ?? 'request failed'}`, res.status))
       resolve(res.data)

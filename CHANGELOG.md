@@ -5,6 +5,12 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 ## Unreleased
 
+### Added
+
+- Review: The pull request's state, author, branches, commit count and comment count sit under the title.
+- Review: A Description button shows the pull request description above the files.
+- Review: Each file shows how many GitHub comments it has.
+
 ### Changed
 
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.

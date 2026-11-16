@@ -54,7 +54,10 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
     >
       <PanelLeft />
     </Button>
-    <h1 class="min-w-0 truncate text-sm font-semibold" :title="title">{{ title }}</h1>
+    <div class="flex min-w-0 flex-col">
+      <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
+      <slot name="meta" />
+    </div>
     <div class="flex shrink-0 items-center gap-2 border-l pl-3" :title="`${done} of ${total} files viewed · ${inView} in the current view`">
       <ProgressRing :done="done" :total="total" />
       <div class="leading-tight">
@@ -104,6 +107,8 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         ><Columns2 /><span class="hidden xl:inline">Split</span></ToggleGroupItem
       >
     </ToggleGroup>
+
+    <slot name="actions" />
 
     <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
       <NotebookPen /><span class="hidden xl:inline">Notes</span>

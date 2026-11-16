@@ -27,6 +27,31 @@ describe('loadPr', () => {
     expect(result.signature).toBeTruthy()
   })
 
+  it('reads the author, branches, state and description from the page', async () => {
+    const payload = {
+      payload: {
+        pullRequestsLayoutRoute: {
+          pullRequest: { author: { login: 'sam' }, baseBranch: 'main', headBranch: 'feat/ship', commitsCount: 3, state: 'OPEN' },
+        },
+      },
+    }
+    const html = `<html><body><h1 class="js-issue-title">Ship it</h1>
+      <script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(payload)}</script>
+      <rails-partial data-partial-name="pullRequestsConversationsRoute.Body"><div class="comment-body js-comment-body"><p>Why we ship</p></div></rails-partial>
+      <div class="comment-body js-comment-body"><p>A later comment</p></div></body></html>`
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF) : new Response(html)))
+    const { info } = await loadPr(PR)
+    expect(info).toEqual({
+      title: 'Ship it',
+      author: 'sam',
+      base: 'main',
+      head: 'feat/ship',
+      commits: 3,
+      state: 'open',
+      descriptionHtml: '<p>Why we ship</p>',
+    })
+  })
+
   it('falls back to the background worker when the page fetch is blocked', async () => {
     installChrome((message) =>
       message.type === 'text' ? { ok: true, status: 200, url: 'u', text: SAMPLE_DIFF } : { ok: false, status: 401, data: {} },
@@ -49,7 +74,7 @@ describe('loadPr', () => {
   })
 
   it('uses the API when the session fails and a token exists', async () => {
-    const { store } = installChrome((message) => {
+    const { store, sent } = installChrome((message) => {
       const path = (message as unknown as { path?: string }).path ?? ''
       if (message.type === 'text') return { ok: false, status: 0, url: 'u', text: '', error: 'blocked' }
       if (path.includes('/files')) {
@@ -61,7 +86,21 @@ describe('loadPr', () => {
           ],
         }
       }
-      return { ok: true, status: 200, data: { title: 'API title', changed_files: 1, head: { sha: 'head1' } } }
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          title: 'API title',
+          changed_files: 1,
+          head: { sha: 'head1', ref: 'feat/x' },
+          base: { ref: 'main' },
+          user: { login: 'sam' },
+          commits: 2,
+          state: 'closed',
+          merged: true,
+          body_html: '<p>Body</p>',
+        },
+      }
     })
     store.token = 'ghp_test'
     mockFetch(() => {
@@ -69,7 +108,16 @@ describe('loadPr', () => {
     })
     const result = await loadPr(PR)
     expect(result.via).toBe('api')
-    expect(result.info.title).toBe('API title')
+    expect(result.info).toEqual({
+      title: 'API title',
+      author: 'sam',
+      base: 'main',
+      head: 'feat/x',
+      commits: 2,
+      state: 'merged',
+      descriptionHtml: '<p>Body</p>',
+    })
+    expect(sent.find((m) => m.path === '/repos/o/r/pulls/7')?.accept).toBe('application/vnd.github.html+json')
     expect(result.files[0]).toMatchObject({ filename: 'a.php', hash: 'blob1' })
     expect(result.signature).toBe('head1')
   })

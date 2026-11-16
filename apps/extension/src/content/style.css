@@ -25,6 +25,7 @@
   --color-emphasis: var(--emphasis);
   --color-emphasis-foreground: var(--emphasis-foreground);
   --color-success: var(--success);
+  --color-merged: var(--merged);
   --color-add-bg: var(--add-bg);
   --color-del-bg: var(--del-bg);
   --color-add-fg: var(--add-fg);
@@ -111,6 +112,7 @@
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --success: #1f883d;
+  --merged: #8250df;
   --add-bg: #e6ffec;
   --del-bg: #ffebe9;
   --add-fg: #1a7f37;
@@ -154,6 +156,7 @@
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --success: #238636;
+  --merged: #a371f7;
   --add-bg: rgba(46, 160, 67, 0.15);
   --del-bg: rgba(248, 81, 73, 0.1);
   --add-fg: #3fb950;
@@ -234,4 +237,151 @@
 
 .ps-root .hljs-strong {
   font-weight: 700;
+}
+
+.ps-markdown {
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.ps-markdown > :first-child {
+  margin-top: 0;
+}
+
+.ps-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.ps-markdown :is(p, ul, ol, blockquote, pre, table, details, .highlight, .markdown-alert) {
+  margin: 0 0 0.75rem;
+}
+
+.ps-markdown :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.ps-markdown h1 {
+  font-size: 1.35em;
+}
+
+.ps-markdown h2 {
+  font-size: 1.2em;
+}
+
+.ps-markdown :is(h3, h4, h5, h6) {
+  font-size: 1em;
+}
+
+.ps-markdown :is(ul, ol) {
+  padding-left: 1.5rem;
+}
+
+.ps-markdown ul {
+  list-style: disc;
+}
+
+.ps-markdown ol {
+  list-style: decimal;
+}
+
+.ps-markdown li + li {
+  margin-top: 0.25rem;
+}
+
+.ps-markdown :is(ul, ol) :is(ul, ol) {
+  margin: 0.25rem 0 0;
+}
+
+.ps-markdown li.task-list-item {
+  list-style: none;
+}
+
+.ps-markdown li.task-list-item input {
+  margin: 0 0.4rem 0 -1.2rem;
+  vertical-align: middle;
+}
+
+.ps-markdown a {
+  color: var(--emphasis);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ps-markdown strong {
+  font-weight: 600;
+}
+
+.ps-markdown em {
+  font-style: italic;
+}
+
+.ps-markdown code {
+  border-radius: 6px;
+  background: var(--muted);
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.ps-markdown pre {
+  overflow-x: auto;
+  border-radius: 6px;
+  background: var(--muted);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ps-markdown pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.ps-markdown blockquote,
+.ps-markdown .markdown-alert {
+  border-left: 3px solid var(--border);
+  padding-left: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.ps-markdown table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.ps-markdown :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.6rem;
+}
+
+.ps-markdown th {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.ps-markdown hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.ps-markdown :is(img, video) {
+  max-width: 100%;
+  height: auto;
+}
+
+.ps-markdown summary {
+  cursor: pointer;
+}
+
+.ps-markdown svg.octicon {
+  display: inline-block;
+  vertical-align: text-bottom;
+  fill: currentColor;
 }

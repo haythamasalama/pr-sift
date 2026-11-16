@@ -37,6 +37,11 @@ export default tseslint.config(
     files: ['**/DiffTable.vue'],
     rules: { 'vue/no-v-html': 'off' },
   },
+  {
+    // GitHub renders the description and sanitizeHtml cleans it again before v-html.
+    files: ['**/DescriptionPanel.vue'],
+    rules: { 'vue/no-v-html': 'off' },
+  },
   { files: ['**/*.config.{js,ts}', '**/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
   { files: ['apps/site/src/**/*.js'], languageOptions: { globals: globals.browser } },
   { files: ['apps/site/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },

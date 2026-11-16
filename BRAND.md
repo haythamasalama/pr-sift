@@ -88,6 +88,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `emphasis` (blue)     | `#0969da`             | `#1f6feb`                            |
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
+| `merged`              | `#8250df`             | `#a371f7`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
 | `add-fg` / `add-bg`   | `#1a7f37` / `#e6ffec` | `#3fb950` / `rgba(46, 160, 67, .15)` |
 | `del-fg` / `del-bg`   | `#cf222e` / `#ffebe9` | `#f85149` / `rgba(248, 81, 73, .1)`  |

@@ -1,5 +1,5 @@
 import { backgroundText, gh, hasToken } from './github'
-import { hashText, parseDiff } from '@pr-sift/core'
+import { hashText, infoFromPagePayload, parseDiff, prState } from '@pr-sift/core'
 import type { PrFile, PrInfo, PrRef, Via } from '../../lib/types'
 
 export interface Loaded {
@@ -27,21 +27,44 @@ async function fetchDiff(base: string, fresh = false): Promise<string> {
   throw new Error(problems.join('; '))
 }
 
+function pageInfo(doc: Document): Partial<PrInfo> {
+  let info: Partial<PrInfo> = {}
+  for (const script of doc.querySelectorAll('script[data-target="react-app.embeddedData"]')) {
+    try {
+      info = infoFromPagePayload(JSON.parse(script.textContent ?? ''))
+    } catch {
+      continue
+    }
+    if (Object.keys(info).length) break
+  }
+  const body = doc.querySelector('rails-partial[data-partial-name$=".Body"] .js-comment-body') ?? doc.querySelector('.js-comment-body')
+  const descriptionHtml = body?.innerHTML.trim()
+  return descriptionHtml ? { ...info, descriptionHtml } : info
+}
+
 async function loadViaSession(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const base = basePath(pr)
   const [diffText, pageRes] = await Promise.all([fetchDiff(base, true), fetch(base, { credentials: 'same-origin' }).catch(() => null)])
   const files = parseDiff(diffText, base)
   const html = pageRes?.ok ? await pageRes.text() : ''
   const doc = new DOMParser().parseFromString(html, 'text/html')
-  const title = doc.querySelector('.js-issue-title')?.textContent?.trim() || document.title.split(' by ')[0] || ''
+  const page = pageInfo(doc)
+  const title = doc.querySelector('.js-issue-title')?.textContent?.trim() || page.title || document.title.split(' by ')[0] || ''
   const headSha = /"headSha":"([0-9a-f]{40})"/.exec(html)?.[1] ?? ''
-  return { info: { title }, files, signature: hashText(diffText), headSha }
+  return { info: { ...page, title }, files, signature: hashText(diffText), headSha }
 }
 
 interface ApiPull {
   title: string
   changed_files: number
-  head: { sha: string }
+  head: { sha: string; ref?: string }
+  base?: { ref?: string }
+  user?: { login?: string } | null
+  commits?: number
+  state?: string
+  merged?: boolean
+  draft?: boolean
+  body_html?: string | null
 }
 
 interface ApiFile {
@@ -56,7 +79,7 @@ interface ApiFile {
 
 async function loadViaApi(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const api = `/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`
-  const data = await gh<ApiPull>(api)
+  const data = await gh<ApiPull>(api, undefined, undefined, 'application/vnd.github.html+json')
   const pages = Math.min(30, Math.max(1, Math.ceil(data.changed_files / 100)))
   const chunks = await Promise.all(
     Array.from({ length: pages }, (_, i) =>
@@ -74,7 +97,16 @@ async function loadViaApi(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
     hash: f.sha,
     blob_url: f.blob_url,
   }))
-  return { info: { title: data.title }, files, signature: data.head.sha, headSha: data.head.sha }
+  const info: PrInfo = {
+    title: data.title,
+    author: data.user?.login,
+    base: data.base?.ref,
+    head: data.head.ref,
+    commits: data.commits,
+    state: prState(data.state, { merged: data.merged, draft: data.draft }),
+    descriptionHtml: data.body_html || undefined,
+  }
+  return { info, files, signature: data.head.sha, headSha: data.head.sha }
 }
 
 export async function loadPr(pr: PrRef): Promise<Loaded> {

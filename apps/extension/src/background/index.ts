@@ -3,6 +3,7 @@ interface ApiMessage {
   path: string
   method?: string
   body?: unknown
+  accept?: string
 }
 
 interface TextMessage {
@@ -21,7 +22,7 @@ async function api(msg: ApiMessage) {
     method: msg.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
+      Accept: msg.accept && ACCEPT.test(msg.accept) ? msg.accept : 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       ...(msg.body ? { 'Content-Type': 'application/json' } : {}),
     },
@@ -30,6 +31,8 @@ async function api(msg: ApiMessage) {
   const data = await res.json().catch(() => null)
   return { ok: res.ok, status: res.status, data }
 }
+
+const ACCEPT = /^application\/vnd\.github(\.[a-z-]+)?\+json$/
 
 const READABLE_ORIGINS = ['https://github.com', 'https://patch-diff.githubusercontent.com']
 

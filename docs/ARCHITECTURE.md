@@ -25,6 +25,7 @@ everything else can be tested without a browser.
 | `extensions` | File type chips, including compound suffixes such as `.blade.php`   |
 | `glob`       | Path patterns used by hidden-file rules                             |
 | `notes`      | Note anchors, the prompt exported to an assistant, GitHub line URLs |
+| `overview`   | Pull request state, author and branches from GitHub's page data     |
 | `range`      | Multi-line note ranges                                              |
 | `testing`    | Fixtures shared by tests (`@pr-sift/core/testing`)                  |
 
@@ -40,7 +41,8 @@ everything else can be tested without a browser.
 
 ## Data flow
 
-1. `usePullRequest` loads the pull request (`.diff` through the page session, the API as a fallback).
+1. `usePullRequest` loads the pull request (`.diff` through the page session, the API as a fallback). The same page
+   gives the author, branches, state and description. With a token, comment counts come from the API.
 2. `useFileFilter` derives the visible files from filters, search, hidden rules and viewed marks.
 3. `FileList` renders cards progressively; `DiffTable` renders rows and notes.
 4. Settings, viewed marks and notes are stored in `chrome.storage.local`. Open reviews listen for storage changes.
