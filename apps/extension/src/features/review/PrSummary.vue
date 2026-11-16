@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ChevronDown, FileText, GitMerge, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft, MessageSquare } from '@lucide/vue'
+import { computed, shallowRef } from 'vue'
+import {
+  Check,
+  ChevronDown,
+  FileText,
+  GitMerge,
+  GitPullRequest,
+  GitPullRequestClosed,
+  GitPullRequestDraft,
+  MessageSquare,
+} from '@lucide/vue'
 import type { PrInfo } from '../../lib/types'
 import type { Conversation } from './conversation'
 
@@ -16,6 +25,16 @@ const STATES = {
   draft: { label: 'Draft', icon: GitPullRequestDraft, tone: 'text-muted-foreground' },
   merged: { label: 'Merged', icon: GitMerge, tone: 'text-merged' },
   closed: { label: 'Closed', icon: GitPullRequestClosed, tone: 'text-destructive' },
+}
+
+const copied = shallowRef('')
+let copiedTimer = 0
+
+async function copyBranch(branch: string) {
+  await navigator.clipboard.writeText(branch)
+  copied.value = branch
+  clearTimeout(copiedTimer)
+  copiedTimer = window.setTimeout(() => (copied.value = ''), 1500)
 }
 
 const state = computed(() => (info?.state ? STATES[info.state] : null))
@@ -36,8 +55,18 @@ const commentsTitle = computed(() =>
     </span>
     <span v-if="info?.author && info.base && info.head" class="hidden min-w-0 truncate md:inline">
       <span class="font-medium text-foreground">{{ info.author }}</span> {{ verb }} {{ commits }}into
-      <code class="rounded-sm bg-emphasis/10 px-1 font-mono text-emphasis">{{ info.base }}</code> from
-      <code class="rounded-sm bg-emphasis/10 px-1 font-mono text-emphasis">{{ info.head }}</code>
+      <template v-for="(branch, i) in [info.base, info.head]" :key="i">
+        <button
+          type="button"
+          class="inline-flex items-center gap-0.5 rounded-sm bg-emphasis/10 px-1 font-mono text-emphasis hover:bg-emphasis/20"
+          :title="copied === branch ? 'Copied' : 'Copy the branch name'"
+          :aria-label="`Copy ${branch}`"
+          @click="copyBranch(branch)"
+        >
+          {{ branch }}<Check v-if="copied === branch" class="size-3" />
+        </button>
+        {{ i === 0 ? ' from ' : '' }}
+      </template>
     </span>
     <a
       v-if="conversation"

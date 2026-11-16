@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import PrSummary from '../../../src/features/review/PrSummary.vue'
 import type { PrInfo } from '../../../src/lib/types'
 
@@ -24,7 +24,16 @@ describe('PrSummary', () => {
   it('toggles the description', async () => {
     const wrapper = mount(PrSummary, { props: { info: { ...info, state: 'merged' }, conversation: null, conversationUrl: 'u' } })
     expect(wrapper.text()).toContain('sam merged 3 commits')
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('button[aria-expanded]').trigger('click')
     expect(wrapper.emitted('update:descriptionOpen')).toEqual([[true]])
+  })
+
+  it('copies a branch name when you click it', async () => {
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const wrapper = mount(PrSummary, { props: { info, conversation: null, conversationUrl: 'u' } })
+    await wrapper.get('button[aria-label="Copy feat/ship"]').trigger('click')
+    await vi.waitFor(() => expect(wrapper.get('button[aria-label="Copy feat/ship"]').attributes('title')).toBe('Copied'))
+    expect(writeText).toHaveBeenCalledWith('feat/ship')
   })
 })
