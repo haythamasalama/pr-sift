@@ -7,11 +7,11 @@ export const sectionElementId = (id: SettingsSectionId) => `settings-section-${i
 export type SettingsTab = 'github' | 'review' | 'files' | 'appearance' | 'about'
 
 export const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'about', label: 'About' },
   { id: 'github', label: 'GitHub' },
   { id: 'review', label: 'Reviewing' },
   { id: 'files', label: 'Files' },
   { id: 'appearance', label: 'Appearance' },
-  { id: 'about', label: 'About' },
 ]
 
 export const TAB_OF: Record<SettingsSectionId, SettingsTab> = {

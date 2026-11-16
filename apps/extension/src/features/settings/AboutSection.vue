@@ -9,11 +9,12 @@ import { useUpdates } from '../updates/useUpdates'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 
+const { framed = false } = defineProps<{ framed?: boolean }>()
 const { version, ready, updated, checking, status, check, restart, dismiss } = useUpdates()
 </script>
 
 <template>
-  <SettingsSection id="about" title="About" description="Your version, updates and help.">
+  <SettingsSection id="about" title="About" description="Your version, updates and help." :framed="framed">
     <template #icon>
       <span class="flex size-7 items-center justify-center rounded-md bg-primary p-1 text-primary-foreground"><BrandMark /></span>
     </template>
@@ -45,6 +46,5 @@ const { version, ready, updated, checking, status, check, restart, dismiss } = u
       <Button variant="ghost" size="sm" @click="openReport('bug')"><Bug /> Report a problem</Button>
       <Button variant="ghost" size="sm" @click="openReport('idea')"><Lightbulb /> Suggest an idea</Button>
     </div>
-    <slot />
   </SettingsSection>
 </template>

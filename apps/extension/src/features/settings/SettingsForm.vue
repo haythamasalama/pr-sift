@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { CircleCheck, Eye, FolderTree, Palette, RotateCcw } from '@lucide/vue'
+import { ChevronRight, CircleCheck, Eye, FolderTree, Palette, RotateCcw } from '@lucide/vue'
+import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
@@ -51,8 +53,9 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
 
 const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandMark }
 
-const { section, files } = defineProps<{ section?: SettingsSectionId; files?: PrFile[] }>()
-const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'github')
+const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
+const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
+const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
 const { theme, setTheme } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
@@ -66,6 +69,13 @@ watch(
   () => settings.value.treeIndent,
   (value) => (treeIndent.value = value),
 )
+
+const coAuthorSummary = computed(() => {
+  const list = settings.value.removedCoAuthors
+  const isDefault = list.length === DEFAULT_REMOVED_CO_AUTHORS.length && list.every((p, i) => p === DEFAULT_REMOVED_CO_AUTHORS[i])
+  if (isDefault) return 'Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked when you squash.'
+  return `${list.length} name${list.length === 1 ? '' : 's'} or email${list.length === 1 ? '' : 's'} on your list start unchecked when you squash.`
+})
 
 const hiddenSummary = computed(() => {
   if (!files) return 'Kept out of the list until you turn on Hidden in the review.'
@@ -131,8 +141,9 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col gap-8">
+  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-8'">
     <nav
+      v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
       class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2"
@@ -151,9 +162,12 @@ defineExpose({ scrollToSection })
       </Button>
     </nav>
 
+    <AboutSection v-show="shows('about')" :framed="layout === 'page'" />
+
     <SettingsSection
-      v-show="tab === 'github'"
+      v-show="shows('github')"
       id="github"
+      :framed="layout === 'page'"
       title="GitHub"
       description="Comment, review and merge without leaving the review."
     >
@@ -169,20 +183,39 @@ defineExpose({ scrollToSection })
           label="Merge method"
           @update:model-value="(v) => update('mergeMethod', v)"
         />
-        <div class="flex flex-col gap-1.5">
-          <p class="text-xs font-medium">Leave out these co-authors</p>
-          <p class="text-xs text-muted-foreground">Anyone whose name or email contains one of these starts unchecked.</p>
-          <PatternList
-            :model-value="settings.removedCoAuthors"
-            label="co-authors to leave out"
-            placeholder="anthropic.com"
-            @update:model-value="(v) => update('removedCoAuthors', v)"
+        <SettingsRow label="Leave out AI co-authors" :description="coAuthorSummary" control-id="settings-leave-out">
+          <Switch
+            id="settings-leave-out"
+            :model-value="settings.leaveOutCoAuthors"
+            @update:model-value="(v) => update('leaveOutCoAuthors', v)"
           />
-        </div>
+        </SettingsRow>
+        <Collapsible v-if="settings.leaveOutCoAuthors" class="-mt-2">
+          <CollapsibleTrigger as-child>
+            <Button variant="ghost" size="xs" class="group w-fit px-1 text-muted-foreground">
+              <ChevronRight class="transition-transform group-data-[state=open]:rotate-90" /> Edit the list
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent class="pt-2">
+            <PatternList
+              :model-value="settings.removedCoAuthors"
+              label="co-authors to leave out"
+              placeholder="Name or email, such as bot@example.com"
+              @update:model-value="(v) => update('removedCoAuthors', v)"
+            />
+          </CollapsibleContent>
+        </Collapsible>
       </SettingsGroup>
     </SettingsSection>
 
-    <SettingsSection v-show="tab === 'review'" id="review" title="Reviewing" description="How each review starts." area="files">
+    <SettingsSection
+      v-show="shows('review')"
+      id="review"
+      :framed="layout === 'page'"
+      title="Reviewing"
+      description="How each review starts."
+      area="files"
+    >
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>
@@ -204,8 +237,9 @@ defineExpose({ scrollToSection })
     </SettingsSection>
 
     <SettingsSection
-      v-show="tab === 'files'"
+      v-show="shows('files')"
       id="files"
+      :framed="layout === 'page'"
       title="Files"
       description="What the list leaves out, and your own filters."
       area="sidebar"
@@ -233,8 +267,9 @@ defineExpose({ scrollToSection })
     </SettingsSection>
 
     <SettingsSection
-      v-show="tab === 'appearance'"
+      v-show="shows('appearance')"
       id="appearance"
+      :framed="layout === 'page'"
       title="Appearance"
       description="Applies right away, here and in the review."
       area="all"
@@ -274,7 +309,7 @@ defineExpose({ scrollToSection })
       </SettingsGroup>
     </SettingsSection>
 
-    <AboutSection v-show="tab === 'about'">
+    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : '-mt-6 border-t'">
       <SettingsRow label="Reset settings">
         <template #description>
           <span aria-live="polite" class="inline-flex items-center gap-1.5">
@@ -286,6 +321,6 @@ defineExpose({ scrollToSection })
           <RotateCcw /> {{ confirmReset ? 'Click again to reset' : 'Reset' }}
         </Button>
       </SettingsRow>
-    </AboutSection>
+    </div>
   </div>
 </template>

@@ -31,7 +31,15 @@ describe('Options page', () => {
     const wrapper = mount(Options, { attachTo: document.body })
     await flushPromises()
     const sections = wrapper.findAll('section[data-section]').map((s) => s.attributes('data-section'))
-    expect(sections).toEqual(['github', 'review', 'files', 'appearance', 'about'])
+    expect(sections).toEqual(['about', 'github', 'review', 'files', 'appearance'])
+    expect(wrapper.findAll('section[data-section]').every((s) => s.isVisible())).toBe(true)
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+    expect(
+      wrapper
+        .find('nav')
+        .findAll('button')
+        .map((b) => b.text()),
+    ).toEqual(['About', 'GitHub', 'Reviewing', 'Files', 'Appearance'])
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
     const connect = wrapper.findAll('button').filter((b) => b.text() === 'Connect')
     expect(connect).toHaveLength(1)

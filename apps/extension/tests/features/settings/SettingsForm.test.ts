@@ -46,16 +46,16 @@ afterEach(() => {
 describe('SettingsForm', () => {
   it('groups settings by what you want to do and shows one group at a time', async () => {
     const wrapper = await mountForm()
-    expect(wrapper.findAll('[role="tab"]').map((b) => b.text())).toEqual(['GitHub', 'Reviewing', 'Files', 'Appearance', 'About'])
+    expect(wrapper.findAll('[role="tab"]').map((b) => b.text())).toEqual(['About', 'GitHub', 'Reviewing', 'Files', 'Appearance'])
     const visible = () =>
       wrapper
         .findAll('section[data-section]')
         .filter((s) => s.isVisible())
         .map((s) => s.attributes('data-section'))
-    expect(visible()).toEqual(['github'])
-    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    expect(visible()).toEqual(['about'])
+    await wrapper.findAll('[role="tab"]')[2]!.trigger('click')
     expect(visible()).toEqual(['review'])
-    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
   })
 
@@ -93,8 +93,22 @@ describe('SettingsForm', () => {
     await wrapper.find('button[aria-label="Remove **/*.lock"]').trigger('click')
     await flushPromises()
     expect(saved().hide).toEqual(['vendor/**'])
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Edit the list'))!
+      .trigger('click')
     await addChip(wrapper, 'co-authors to leave out', 'bot@example.com')
     expect(saved().removedCoAuthors).toEqual(['claude', 'bot@example.com'])
+  })
+
+  it('turns AI co-authors off with one switch and keeps the list folded away', async () => {
+    const wrapper = await mountForm()
+    expect(section(wrapper, 'merging').text()).toContain('Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked')
+    expect(wrapper.find('input[aria-label="Add to co-authors to leave out"]').exists()).toBe(false)
+    await wrapper.find('#settings-leave-out').trigger('click')
+    await flushPromises()
+    expect(saved().leaveOutCoAuthors).toBe(false)
+    expect(section(wrapper, 'merging').text()).not.toContain('Edit the list')
   })
 
   it('counts what the rules hide and what each saved filter matches in this pull request', async () => {

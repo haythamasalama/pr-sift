@@ -105,6 +105,15 @@ describe('MergeSheet', () => {
     )
   })
 
+  it('keeps every co-author checked when leaving out AI co-authors is off', async () => {
+    const { store } = github()
+    store.settings = { leaveOutCoAuthors: false }
+    mountDialog()
+    await vi.waitFor(() => expect(document.querySelector('#co-author-1')).not.toBeNull())
+    expect(checked('co-author-0')).toBe('true')
+    expect(checked('co-author-1')).toBe('true')
+  })
+
   it('explains that merging needs a token', async () => {
     installChrome()
     mountDialog(false)

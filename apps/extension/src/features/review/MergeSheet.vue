@@ -101,7 +101,7 @@ function choose(value: MergeMethod) {
 async function load() {
   loadError.value = ''
   const settings = await getSettings()
-  removed.value = settings.removedCoAuthors
+  removed.value = settings.leaveOutCoAuthors ? settings.removedCoAuthors : []
   try {
     const ctx = await loadMergeContext(pr)
     const wanted = initialMethod ?? settings.mergeMethod

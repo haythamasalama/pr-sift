@@ -76,9 +76,9 @@ onMounted(async () => adopt(await storageGet<string>('token')))
 <template>
   <div class="flex flex-col gap-3 py-3">
     <div v-if="saved && !editing" class="flex flex-wrap items-center gap-3">
-      <Avatar size="sm">
+      <Avatar>
         <AvatarImage v-if="account?.avatar" :src="account.avatar" alt="" />
-        <AvatarFallback class="text-[10px] uppercase">{{ account?.login.slice(0, 2) ?? 'gh' }}</AvatarFallback>
+        <AvatarFallback class="text-xs uppercase">{{ account?.login.slice(0, 2) ?? 'gh' }}</AvatarFallback>
       </Avatar>
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
         <p class="flex items-center gap-1.5 text-sm font-medium">

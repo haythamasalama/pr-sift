@@ -35,6 +35,7 @@ export interface Settings {
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod
+  leaveOutCoAuthors: boolean
   removedCoAuthors: string[]
   showResolved: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
