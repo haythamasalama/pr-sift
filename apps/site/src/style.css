@@ -76,46 +76,9 @@ html[data-theme='dark'] [data-theme-mode='dark'] {
   outline-offset: 2px;
 }
 
-[data-file] {
-  max-height: 2.75rem;
-  transition:
-    max-height 0.35s ease,
-    opacity 0.25s ease,
-    margin 0.35s ease,
-    padding 0.35s ease;
-}
-
-[data-file].is-hidden {
-  max-height: 0;
-  opacity: 0;
-  margin-block: 0;
-  padding-block: 0;
-  border-width: 0;
-}
-
-.chip[data-state='include'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
-.chip[data-state='exclude'] {
-  color: var(--del);
-  border-color: var(--del);
-  text-decoration: line-through;
-}
-
-.chip.is-pressing {
-  transform: scale(0.94);
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-  [data-file],
-  .chip {
-    transition: none;
   }
 }
 

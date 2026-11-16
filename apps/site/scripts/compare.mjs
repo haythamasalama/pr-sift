@@ -99,7 +99,7 @@ export const compare = [
     description:
       'pulls.review, by Anthony Fu, regroups a pull request by scope on its own website, with AI summaries. PR Sift works inside github.com, with nothing new to learn and no key or token needed to start.',
     values: {
-      price: ['yes', 'Free, AI needs your model key'],
+      price: ['yes', 'Free'],
       openSource: ['yes', 'MIT'],
       extension: ['unknown', 'Not listed'],
       status: ['unknown', 'Not listed'],

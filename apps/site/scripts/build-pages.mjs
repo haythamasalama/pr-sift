@@ -125,76 +125,6 @@ const browsers = () =>
     ${BROWSERS.map(([slug, name]) => `<li class="inline-flex items-center gap-1.5">${slug === 'dia' ? `<img src="${link('brand/dia.svg')}" alt="" class="size-5 rounded grayscale" />` : brandIcon(slug)}${name}</li>`).join('')}
   </ul>`
 
-const PLAYGROUND = [
-  ['src/Billing/GenerateInvoice.php', 'modified'],
-  ['src/Billing/Usage/UsageMeter.php', 'added'],
-  ['src/Billing/Usage/UsageRepository.php', 'added'],
-  ['src/Billing/Legacy/InvoiceCalculator.php', 'deleted'],
-  ['resources/js/pages/billing/InvoiceList.vue', 'added'],
-  ['resources/js/lib/money.ts', 'modified'],
-  ['tests/Billing/GenerateInvoiceTest.php', 'added'],
-  ['resources/js/billing/InvoiceList.test.ts', 'added'],
-  ['lang/ar/billing.php', 'modified'],
-  ['docs/billing/usage.md', 'renamed'],
-  ['composer.lock', 'modified'],
-  ['pnpm-lock.yaml', 'modified'],
-]
-
-const typeOf = (file) => {
-  const name = file.split('/').pop()
-  if (name.endsWith('.test.ts')) return '.test.ts'
-  if (name.endsWith('.lock') || name.endsWith('-lock.yaml')) return '.lock'
-  return name.slice(name.lastIndexOf('.'))
-}
-
-const STATUS_SIGN = {
-  added: ['+', 'text-add'],
-  modified: ['~', 'text-[#9a6700] dark:text-[#d29922]'],
-  deleted: ['−', 'text-del'],
-  renamed: ['→', 'text-muted'],
-}
-
-function playground() {
-  const types = [...new Set(PLAYGROUND.map(([f]) => typeOf(f)))]
-  const statuses = ['added', 'modified', 'deleted', 'renamed']
-  const count = (pred) => PLAYGROUND.filter(pred).length
-  const chip = (key, label, n) =>
-    `<button type="button" data-chip="${key}" class="chip inline-flex items-center gap-1.5 rounded-md border border-line bg-paper px-2.5 py-1 font-mono text-[13px] transition hover:border-ink">${esc(label)}<span class="text-muted">${n}</span></button>`
-  return `<div class="rounded-lg border border-line bg-paper" data-playground>
-    <div class="flex items-center gap-2 border-b border-line bg-raised px-4 py-2.5 text-sm">
-      ${logo('size-5')}<span class="font-medium">feat(billing): usage-based invoices</span><span class="ms-auto font-mono text-xs text-muted" data-summary>12 files</span>
-    </div>
-    <div class="flex flex-wrap gap-1.5 border-b border-line px-4 py-3">
-      ${types
-        .map((t) =>
-          chip(
-            t,
-            t,
-            count(([f]) => typeOf(f) === t),
-          ),
-        )
-        .join('')}
-      ${statuses
-        .map((s) =>
-          chip(
-            'status:' + s,
-            s,
-            count(([, st]) => st === s),
-          ),
-        )
-        .join('')}
-      <button type="button" data-reset class="ms-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-muted hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Reset</button>
-    </div>
-    <ul class="flex flex-col px-4 py-3 font-mono text-[13px]">
-      ${PLAYGROUND.map(
-        ([file, status]) =>
-          `<li data-file data-type="${typeOf(file)}" data-status="${status}" class="flex items-center gap-3 overflow-hidden border-b border-line py-2 last:border-b-0"><span class="w-3 shrink-0 text-center ${STATUS_SIGN[status][1]}" aria-hidden="true">${STATUS_SIGN[status][0]}</span><span class="min-w-0 truncate">${esc(file)}</span><span class="ms-auto shrink-0 font-sans text-xs text-muted">${status}</span></li>`,
-      ).join('\n      ')}
-    </ul>
-    <p class="border-t border-line px-4 py-2.5 text-[13px] text-muted">Click a chip to show only that. Shift-click to hide it.</p>
-  </div>`
-}
-
 const NAV = [
   ...(HAS_DEMO ? [['Try it', '#try']] : []),
   ['Notes', '#notes'],
@@ -253,7 +183,7 @@ function footer() {
       <div class="col-span-2 md:col-span-1">
         <a href="${link()}" class="flex items-center gap-2 font-semibold">${logo('size-6')}PR Sift</a>
         <p class="mt-4 max-w-56 text-sm leading-relaxed text-muted">Review large GitHub pull requests without the noise.</p>
-        <a href="${link('changelog/')}" class="mt-3 inline-block font-mono text-xs text-muted hover:text-ink">Version ${VERSION}</a>
+        <a href="${link('changelog/')}" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted hover:border-ink hover:text-ink" title="What’s new">v${VERSION}</a>
       </div>
       ${column('Product', [
         ['Private notes', link() + '#notes'],
@@ -435,25 +365,25 @@ function matrix() {
     )}<span>From official pages, checked ${[...new Set([CHECKED, ...compare.map((c) => c.checked).filter(Boolean)])].join(' and ')}.</span></p>`
 }
 
-const liveDemo = (live) => `<section id="try" class="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20 sm:px-6">
-      <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><p class="font-mono text-sm text-muted">${esc(live.kicker)}</p>${h2(live.title, 'mt-2')}${lead(live.lead)}</div>
-        <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-raised hover:text-ink">${icon('maximize-2', 'size-4')}${esc(live.full)}</a>
-      </div>
-      <div data-live-demo class="mt-8 overflow-hidden rounded-xl border border-line bg-raised">
-        <div class="flex items-center gap-3 border-b border-line px-4 py-2.5" aria-hidden="true">
-          <span class="flex gap-1.5"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
-          <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted">github.com/haythamasalama/storefront/pull/482/files</span>
+const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-muted">
+          <p><span class="font-mono text-ink">${esc(live.kicker)}</span> · ${esc(live.lead)}</p>
+          <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
         </div>
-        <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
-          ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" loading="lazy" decoding="async" />`).join('')}
-          <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/60 p-6 text-center">
-            <button type="button" data-live-start class="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-6 text-base font-medium text-paper hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
-            <p class="text-sm text-muted">${esc(live.note)}</p>
+        <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised">
+          <div class="flex items-center gap-3 border-b border-line px-4 py-2.5" aria-hidden="true">
+            <span class="flex gap-1.5"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
+            <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted">github.com/haythamasalama/storefront/pull/482/files</span>
+          </div>
+          <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
+            ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" decoding="async" />`).join('')}
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/60 p-6 text-center">
+              <button type="button" data-live-start class="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-6 text-base font-medium text-paper hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
+              <p class="text-sm text-muted">${esc(live.note)}</p>
+            </div>
           </div>
         </div>
-      </div>
-    </section>`
+      </div>`
 
 function homePage() {
   const h = home
@@ -507,8 +437,8 @@ function homePage() {
         ${AI_TOOLS.map(([slug, name]) => `<li class="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-1.5 text-sm font-medium">${brandIcon(slug, 'size-4')}${esc(name)}</li>`).join('')}
         <li class="inline-flex items-center gap-2 rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted">${icon('clipboard', 'size-4')}Any other AI</li>
       </ul>
-      <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-        ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
+      <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+        ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5 sm:last:col-span-2 lg:last:col-span-1"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
       <div class="mt-10">${shot('ai-export', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
     ],
@@ -552,7 +482,7 @@ function homePage() {
       'theme',
       `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
         <div class="lg:col-span-4">${iconBox('sun-moon')}${h2(h.theme.title, 'mt-5')}${lead(h.theme.text)}</div>
-        <div class="lg:col-span-8">${shot('dark', h.theme.title)}</div>
+        <div class="lg:col-span-8"><div class="grid grid-cols-2 gap-3">${['', '-dark'].map((suffix) => `<img src="${media(`screenshots/review${suffix}.webp`)}" alt="${esc(`${h.theme.title}: ${suffix ? 'dark' : 'light'}`)}" width="3200" height="2120" class="h-auto w-full rounded-lg border border-line" loading="lazy" decoding="async" />`).join('')}</div></div>
       </div>`,
     ],
     [
@@ -591,8 +521,8 @@ function homePage() {
   ]
 
   const body = `
-    <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
-      <div class="@container min-w-0">
+    <section class="mx-auto max-w-6xl px-4 pt-12 pb-20 sm:px-6 lg:pt-20 lg:pb-24">
+      <div class="@container max-w-3xl">
         <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
@@ -606,9 +536,8 @@ function homePage() {
         <div class="mt-4">${rating()}</div>
         <div class="mt-10">${browsers()}</div>
       </div>
-      <div class="min-w-0">${playground()}</div>
+      ${HAS_DEMO ? liveDemo(h.live) : `<div class="mt-14">${shot('review', 'A pull request reviewed in PR Sift')}</div>`}
     </section>
-    ${HAS_DEMO ? liveDemo(h.live) : ''}
     <section class="border-y border-line bg-raised"><div class="mx-auto max-w-6xl px-4 py-16 sm:px-6">${demoTabs}</div></section>
     ${bands(sections)}
     ${ctaBlock()}`
@@ -916,7 +845,7 @@ function brandPage() {
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Descriptions</h2>
       <dl class="mt-5 flex flex-col gap-4">${brand.descriptions.map(([k, v]) => `<div class="rounded-lg border border-line p-5"><dt class="text-sm text-muted">${k}</dt><dd class="mt-1.5 text-[17px]">${esc(v)}</dd></div>`).join('')}</dl>
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Screenshots and videos</h2>
-      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'merge', 'comments', 'approve', 'settings', 'filters', 'notes', 'ai-export', 'split', 'description', 'dark'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'merge', 'comments', 'approve', 'settings', 'filters', 'notes', 'ai-export', 'split', 'description'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
       <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'merge', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
   return article({
     path: 'brand/',

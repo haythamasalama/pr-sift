@@ -27,10 +27,9 @@ export const home = {
   },
   live: {
     kicker: 'Live demo',
-    title: 'Try PR Sift right here',
-    lead: 'The real extension on a 39-file pull request. Filter files, mark them viewed, write notes, approve, merge and open Settings. Nothing leaves this page.',
-    start: 'Start the live demo',
-    note: 'Runs in your browser. No install, no sign-in.',
+    lead: 'The real extension on a 39-file pull request. Nothing leaves this page.',
+    start: 'Try it live',
+    note: 'Filter, mark viewed, write notes, approve, merge. No install, no sign-in.',
     full: 'Open full screen',
   },
   demos: [
@@ -167,18 +166,6 @@ export const home = {
       shot: 'notes',
     },
     {
-      id: 'resolve',
-      icon: 'circle-check',
-      title: 'Resolve as you go',
-      text: 'Resolved notes leave the diff and the prompt.',
-      points: [
-        ['circle-check', 'Resolve', 'with one click on the note.'],
-        ['eye', 'Show resolved', 'when you want them back.'],
-        ['rotate-ccw', 'Reopen', 'any note later.'],
-      ],
-      shot: 'resolve',
-    },
-    {
       id: 'views',
       icon: 'columns-2',
       title: 'Read it your way',
@@ -211,6 +198,7 @@ export const home = {
       ['message-square-text', 'Open Notes', 'all of them, by file.'],
       ['bot', 'Pick your AI', 'a coding agent or a chat.'],
       ['clipboard-check', 'Paste', 'into your agent or the chat that opens.'],
+      ['circle-check', 'Resolve', 'what got fixed. It leaves the diff and the next prompt, and you can reopen it.'],
     ],
   },
   theme: {
