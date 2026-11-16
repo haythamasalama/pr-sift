@@ -3,6 +3,7 @@ import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
 import { DEMO_URL, buildDemo } from './demo.mjs'
+import { featureVisual } from './feature-cards.mjs'
 import { AUTHOR, INSTALL_URL, LAST_STORE_RATING, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
@@ -339,7 +340,7 @@ const ctaBlock = () => `<section class="border-t border-line">
 
 const STATE = {
   yes: ['check', 'text-add', 'Yes'],
-  partial: ['circle-dot', 'text-[#9a6700] dark:text-[#d29922]', 'Partly'],
+  partial: ['circle-dot', 'text-attention', 'Partly'],
   no: ['x', 'text-del', 'No'],
   unknown: ['minus', 'text-muted', 'Not listed'],
 }
@@ -401,22 +402,28 @@ function homePage() {
       ${installButton()}
     </div>`
 
-  const features = h.features
-    .filter((f) => f.id !== 'notes')
-    .map((f, i) => [
-      i === 0 ? 'features' : f.id,
-      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-        <div class="lg:col-span-4 ${i % 2 ? 'lg:order-2' : ''}">
-          ${iconBox(f.icon)}
-          ${h2(f.title, 'mt-5')}
-          ${lead(f.text)}
-          <ul class="mt-7 flex flex-col gap-3.5">
-            ${f.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
-          </ul>
-        </div>
-        <div class="lg:col-span-8">${f.video ? video(f.video, f.title) : shot(f.shot, f.title)}</div>
+  const FEATURE_SPAN = { filters: 'md:col-span-2', views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
+  const featureCard = (f) => `
+        <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
+          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
+          <div class="p-5 sm:px-6 sm:pb-6">
+            <h3 class="flex items-center gap-2.5 text-[17px] font-semibold">${icon(f.icon, 'size-[18px] shrink-0')}${esc(f.title)}</h3>
+            <p class="mt-1.5 leading-relaxed text-muted">${esc(f.text)}</p>
+          </div>
+        </article>`
+  const features = [
+    'features',
+    `<div class="flex flex-col items-start gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">${h2(h.featuresIntro.title)}${lead(h.featuresIntro.lead)}</div>
+        ${HAS_DEMO ? `<span class="shrink-0">${button('#try', `${esc(h.featuresIntro.live)}${icon('arrow-right', 'size-4')}`, 'secondary')}</span>` : ''}
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        ${h.features
+          .filter((f) => f.id !== 'notes')
+          .map(featureCard)
+          .join('')}
       </div>`,
-    ])
+  ]
 
   const sections = [
     [
@@ -480,7 +487,7 @@ function homePage() {
           .join('\n        ')}
       </ul>`,
     ],
-    ...features,
+    features,
     [
       'theme',
       `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">

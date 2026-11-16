@@ -19,6 +19,12 @@
   --color-add-bg: var(--add-bg);
   --color-del: var(--del);
   --color-del-bg: var(--del-bg);
+  --color-accent: var(--accent);
+  --color-attention: var(--attention);
+  --color-attention-bg: var(--attention-bg);
+  --color-modified: var(--modified);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-fn: var(--code-fn);
 }
 
 :root {
@@ -31,6 +37,12 @@
   --add-bg: #dafbe1;
   --del: #cf222e;
   --del-bg: #ffebe9;
+  --accent: #0969da;
+  --attention: #9a6700;
+  --attention-bg: #fff8c5;
+  --modified: #bc4c00;
+  --code-keyword: #cf222e;
+  --code-fn: #8250df;
 }
 
 .dark {
@@ -43,6 +55,12 @@
   --add-bg: rgb(74 222 128 / 0.18);
   --del: #ff6b6b;
   --del-bg: rgb(255 107 107 / 0.2);
+  --accent: #4493f8;
+  --attention: #d29922;
+  --attention-bg: rgb(187 128 9 / 0.15);
+  --modified: #db6d28;
+  --code-keyword: #ff7b72;
+  --code-fn: #d2a8ff;
 }
 
 html {
