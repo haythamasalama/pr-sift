@@ -10,19 +10,19 @@ describe('AutoOpenTip', () => {
     installChrome()
     const wrapper = mount(AutoOpenTip, { props: { enabled: false } })
     await flushPromises()
-    expect(wrapper.text()).toContain('Open PR Sift on its own each time you open a pull request?')
-    expect(button(wrapper, 'Always open')).toBeDefined()
+    expect(wrapper.text()).toContain('Open PR Sift automatically on every pull request?')
+    expect(button(wrapper, 'Turn on')).toBeDefined()
   })
 
   it('turns the setting on and says where to change it', async () => {
     const { store } = installChrome()
     const wrapper = mount(AutoOpenTip, { props: { enabled: false } })
     await flushPromises()
-    await button(wrapper, 'Always open')!.trigger('click')
+    await button(wrapper, 'Turn on')!.trigger('click')
     await flushPromises()
     expect(store.settings).toMatchObject({ autoOpen: true })
     expect(store.autoOpenTipDismissed).toBe(true)
-    expect(wrapper.text()).toContain('PR Sift will open on its own on every pull request.')
+    expect(wrapper.text()).toContain('Pull requests now open straight in PR Sift.')
     expect(button(wrapper, 'Settings')).toBeDefined()
   })
 

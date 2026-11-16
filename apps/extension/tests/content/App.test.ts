@@ -65,7 +65,7 @@ describe('App launcher', () => {
     wrapper.unmount()
   })
 
-  it('opens the review on its own when Open on every pull request is on, and stays closed once closed', async () => {
+  it('opens the review on its own when Open PR Sift automatically is on, and stays closed once closed', async () => {
     const { store } = installChrome()
     store.settings = { autoOpen: true }
     const wrapper = mount(App, { attachTo: document.body })

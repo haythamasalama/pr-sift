@@ -217,8 +217,8 @@ defineExpose({ scrollToSection })
       area="files"
     >
       <SettingsRow
-        label="Open on every pull request"
-        description="PR Sift opens as soon as a pull request loads. Close it to get GitHub back."
+        label="Open PR Sift automatically"
+        description="Pull requests open straight in PR Sift. Close it to see GitHub's page."
         control-id="settings-auto-open"
       >
         <Switch id="settings-auto-open" :model-value="settings.autoOpen" @update:model-value="(v) => update('autoOpen', v)" />

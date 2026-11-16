@@ -33,14 +33,14 @@ async function turnOn() {
 <template>
   <Alert v-if="turnedOn" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
     <CheckCircle2 class="text-success" />
-    <AlertDescription class="flex-1 text-xs">PR Sift will open on its own on every pull request.</AlertDescription>
+    <AlertDescription class="flex-1 text-xs">Pull requests now open straight in PR Sift.</AlertDescription>
     <Button variant="outline" size="sm" @click="openSettings('review')">Settings</Button>
     <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Dismiss" @click="dismiss"><X /></Button>
   </Alert>
   <Alert v-else-if="!enabled && !dismissed" class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2">
     <Zap />
-    <AlertDescription class="flex-1 text-xs">Open PR Sift on its own each time you open a pull request?</AlertDescription>
-    <Button variant="outline" size="sm" @click="turnOn">Always open</Button>
+    <AlertDescription class="flex-1 text-xs">Open PR Sift automatically on every pull request?</AlertDescription>
+    <Button variant="outline" size="sm" @click="turnOn">Turn on</Button>
     <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Not now" @click="dismiss"><X /></Button>
   </Alert>
 </template>
