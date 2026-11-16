@@ -16,24 +16,40 @@ import { usePullRequest } from './usePullRequest'
 import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
-import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
-import { hasToken } from './github'
+import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
+import { watchToken } from './github'
 import { fetchFileLines } from './pull'
+import { fetchConversation, type Conversation, type Thread } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
-import { prKey, type DiffMode, type PrRef, type Settings } from '../../lib/types'
+import { prKey, type DiffMode, type MergeMethod, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
 import FileList from '../diff/FileList.vue'
 import FileTree from '../tree/FileTree.vue'
 import FilterBar from '../filters/FilterBar.vue'
 import NotesDialog from '../notes/NotesDialog.vue'
+import PrPanel from './PrPanel.vue'
+import PrSummary from './PrSummary.vue'
+import ReviewActions from './ReviewActions.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
+import SettingsSheet from '../settings/SettingsSheet.vue'
+import { settingsOpenerKey } from '../settings/useSettingsOpener'
+import { openOptions } from '../../lib/extension'
+import type { SettingsSectionId } from '../settings/sections'
+import UpdateNotice from '../updates/UpdateNotice.vue'
+import AutoOpenTip from './AutoOpenTip.vue'
+import NoticeBar from '../../components/NoticeBar.vue'
+import { REVIEWS_URL } from '../../lib/updates'
 
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
 let stopWatchingSettings = () => {}
-onBeforeUnmount(() => stopWatchingSettings())
+let stopWatchingToken = () => {}
+onBeforeUnmount(() => {
+  stopWatchingSettings()
+  stopWatchingToken()
+})
 
 const settings = shallowRef<Settings>(DEFAULTS)
 const { files, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
@@ -72,6 +88,77 @@ const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpa
 
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
+const panel = shallowRef<'description' | 'conversation' | null>(null)
+const conversation = shallowRef<Conversation | null>(null)
+const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
+const actionNote = shallowRef('')
+
+async function loadConversation() {
+  if (!tokenAvailable.value) return
+  try {
+    conversation.value = await fetchConversation(pr)
+  } catch {
+    conversation.value = null
+  }
+}
+
+function announce(text: string) {
+  actionNote.value = text
+  setTimeout(() => (actionNote.value = ''), 10_000)
+}
+
+const mergeMethod = computed<MergeMethod>({
+  get: () => settings.value.mergeMethod,
+  set: (value) => {
+    settings.value = { ...settings.value, mergeMethod: value }
+    void saveSetting('mergeMethod', value)
+  },
+})
+
+const REVIEWED: Record<ReviewEvent, string> = {
+  APPROVE: 'You approved this pull request.',
+  REQUEST_CHANGES: 'You requested changes.',
+  COMMENT: 'Your review comment is on GitHub.',
+}
+
+function onReviewed(event: ReviewEvent) {
+  announce(REVIEWED[event])
+  void loadConversation()
+}
+
+async function goToThread(thread: Thread) {
+  await goToFile(thread.path)
+  setTimeout(() => main.value?.querySelector(`[data-thread="${thread.id}"]`)?.scrollIntoView({ block: 'center' }), 250)
+}
+
+function onMerged(sha: string) {
+  if (info.value) info.value = { ...info.value, state: 'merged' }
+  announce(`Merged${info.value?.base ? ` into ${info.value.base}` : ''} as ${sha.slice(0, 7)}.`)
+}
+
+const settingsOpen = shallowRef(false)
+const settingsSection = shallowRef<SettingsSectionId | undefined>()
+provide(settingsOpenerKey, (section) => {
+  // The token is typed on PR Sift's own page, never inside GitHub's.
+  if (section === 'token') return openOptions('token')
+  settingsSection.value = section
+  settingsOpen.value = true
+})
+
+const viewPatterns = computed(() =>
+  patternsFromView(
+    filter.chips.value.filter((c) => c.state === 'include' && c.ext.startsWith('.')).map((c) => c.ext),
+    filter.scopes.value.filter((k) => k.startsWith('path:')).map((k) => k.slice(5)),
+  ),
+)
+
+async function saveView(name: string) {
+  const others = settings.value.presets.filter((p) => p.name.trim().toLowerCase() !== name.toLowerCase())
+  const presets = cleanSavedFilters([...others, { name, include: viewPatterns.value }])
+  settings.value = { ...settings.value, presets }
+  await saveSetting('presets', presets)
+  announce(`Saved “${name}” as a filter in the top bar.`)
+}
 
 provide(notesKey, {
   notes: notesStore.notes,
@@ -102,6 +189,8 @@ provide(fileContextKey, {
     return pending
   },
   githubUrl: (filename) => githubFileUrl(pr, filename),
+  comments: computed(() => conversation.value?.byFile ?? new Map<string, number>()),
+  threads: computed(() => conversation.value?.threads ?? new Map<string, Thread[]>()),
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
@@ -114,6 +203,7 @@ async function doRefresh() {
   refreshing.value = false
   updates.dismiss()
   emit('refreshed')
+  void loadConversation()
   refreshNote.value = summary
     ? `Updated: ${summary.changed} changed, ${summary.added} new, ${summary.removed} removed. Changed files are back to unviewed.`
     : 'Could not refresh the pull request.'
@@ -188,22 +278,39 @@ const removeExtension = (ext: string) => setCustomExtensions(settings.value.cust
 onMounted(async () => {
   stopWatchingSettings = onSettingsChange((next) => (settings.value = next))
   settings.value = await getSettings()
-  tokenAvailable.value = await hasToken()
+  stopWatchingToken = watchToken((present) => {
+    tokenAvailable.value = present
+    if (present) void loadConversation()
+    else conversation.value = null
+  })
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
   diffMode.value = settings.value.diffView
+  showResolved.value = settings.value.showResolved
   sidebarSize.set(settings.value.sidebarWidth)
   await load(pr)
   emit('refreshed')
 })
 
 watch(diffMode, (value) => saveSetting('diffView', value))
+watch(showResolved, (value) => saveSetting('showResolved', value))
+watch(
+  () => settings.value.diffView,
+  (value) => (diffMode.value = value),
+)
+watch(
+  () => settings.value.showResolved,
+  (value) => (showResolved.value = value),
+)
+watch(
+  () => settings.value.reviewMode,
+  (value) => (filter.reviewMode.value = value),
+)
 </script>
 
 <template>
   <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
     <Toolbar
-      v-model:query="filter.query.value"
       v-model:diff-mode="diffMode"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :presets="settings.presets"
@@ -218,6 +325,34 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @select-preset="filter.togglePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
+    >
+      <template #meta>
+        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :info="info" :conversation="conversation" />
+      </template>
+      <template #actions>
+        <ReviewActions
+          v-if="status === 'ready'"
+          v-model:method="mergeMethod"
+          :pr="pr"
+          :info="info"
+          :head-sha="headSha"
+          :can-act="tokenAvailable"
+          :conversation="conversation"
+          @reviewed="onReviewed"
+          @merged="onMerged"
+        />
+      </template>
+    </Toolbar>
+
+    <PrPanel
+      v-if="panel && status === 'ready'"
+      :tab="panel"
+      :html="info?.descriptionHtml"
+      :url="conversationUrl"
+      :conversation="conversation"
+      @update:tab="panel = $event"
+      @close="panel = null"
+      @jump="goToThread"
     />
 
     <FilterBar
@@ -227,6 +362,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
+      :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
       @update:review-mode="setReviewMode"
@@ -240,16 +376,24 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @clear-all="clearAll"
       @expand-cards="setAllCards(true)"
       @collapse-cards="setAllCards(false)"
+      @save-view="saveView"
     />
 
-    <Alert
-      v-if="updates.available.value || externalUpdate || refreshNote"
-      class="flex items-center gap-3 rounded-none border-x-0 border-t-0 py-2"
-    >
-      <RefreshCw :class="refreshing ? 'animate-spin' : ''" />
-      <AlertDescription class="flex-1 text-xs">{{ refreshNote || 'New changes were pushed to this pull request.' }}</AlertDescription>
-      <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
-    </Alert>
+    <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">
+      <template #icon><RefreshCw :class="refreshing ? 'animate-spin' : ''" /></template>
+      {{ refreshNote || 'New changes were pushed to this pull request.' }}
+      <template #actions>
+        <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
+      </template>
+    </NoticeBar>
+
+    <NoticeBar v-if="actionNote">
+      <template #icon><CheckCircle2 class="text-success" /></template>
+      {{ actionNote }}
+    </NoticeBar>
+
+    <UpdateNotice />
+    <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />
 
     <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
       <Spinner /> Loading pull request…
@@ -350,7 +494,7 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           </TabsContent>
         </Tabs>
       </aside>
-      <main ref="main" class="min-h-0 overflow-auto p-4">
+      <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
         <Empty v-if="allReviewed" class="mx-auto mt-16 max-w-sm border-0">
           <EmptyHeader>
             <EmptyMedia variant="icon"><CheckCircle2 class="text-success" /></EmptyMedia>
@@ -360,6 +504,9 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           <Button variant="outline" @click="filter.reviewMode.value = false"
             >Show the {{ filter.viewedInView.value.length }} viewed files</Button
           >
+          <Button as-child variant="link" size="sm" class="h-auto whitespace-normal text-muted-foreground">
+            <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer">Enjoying PR Sift? Rate it on the Chrome Web Store</a>
+          </Button>
         </Empty>
         <Empty v-else-if="filter.inScope.value.length === 0 && filter.filtersActive.value" class="mx-auto mt-16 max-w-sm border-0">
           <EmptyHeader>
@@ -368,9 +515,13 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           </EmptyHeader>
           <Button variant="outline" @click="filter.resetFilters">Reset filters</Button>
         </Empty>
-        <FileList v-else ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
+        <div v-else class="pt-4">
+          <FileList ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
+        </div>
       </main>
     </div>
+
+    <SettingsSheet v-model:open="settingsOpen" :section="settingsSection" :files="files" />
 
     <NotesDialog
       v-if="notesOpen"

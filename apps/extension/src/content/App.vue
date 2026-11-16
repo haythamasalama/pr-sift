@@ -7,7 +7,9 @@ import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { useGithubDark } from '../features/appearance/useGithubDark'
+import { useUpdates } from '../features/updates/useUpdates'
 import { portalTargetKey } from '../lib/portal'
+import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 
@@ -28,6 +30,11 @@ const externalUpdate = computed(() => githubRefresh.value && !acknowledged.value
 watch(githubRefresh, (present) => {
   if (!present) acknowledged.value = false
 })
+const { ready: updateReady, updated } = useUpdates()
+const updateNote = computed(() => {
+  if (updateReady.value) return `PR Sift ${updateReady.value} is ready`
+  return updated.value ? `PR Sift was updated to ${updated.value.version}` : ''
+})
 
 function sync() {
   if (!chrome.runtime?.id) {
@@ -39,6 +46,18 @@ function sync() {
   const next = m ? { owner: m[1]!, repo: m[2]!, number: Number(m[3]) } : null
   if (prKey(next) !== prKey(pr.value)) pr.value = next
   if (!next) open.value = false
+  maybeAutoOpen()
+}
+
+const autoOpen = shallowRef<boolean | null>(null)
+let decidedFor = ''
+let stopWatchingSettings = () => {}
+
+// Each pull request gets one automatic open, so closing the review keeps it closed until the next pull request.
+function maybeAutoOpen() {
+  if (autoOpen.value === null || !pr.value || prKey(pr.value) === decidedFor) return
+  decidedFor = prKey(pr.value)
+  if (autoOpen.value && !dead.value) open.value = true
 }
 
 const reload = () => location.reload()
@@ -47,14 +66,18 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
   sync()
   timer = window.setInterval(sync, 800)
   document.addEventListener('keydown', onKey)
+  stopWatchingSettings = onSettingsChange((next) => (autoOpen.value = next.autoOpen))
+  autoOpen.value = (await getSettings()).autoOpen
+  maybeAutoOpen()
 })
 onBeforeUnmount(() => {
   clearInterval(timer)
   document.removeEventListener('keydown', onKey)
+  stopWatchingSettings()
 })
 </script>
 
@@ -63,7 +86,8 @@ onBeforeUnmount(() => {
     <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
       <Button
         variant="outline"
-        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-full border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        :title="dead ? undefined : updateNote || undefined"
         @click="dead ? reload() : (open = true)"
       >
         <span class="relative flex size-6 items-center justify-center">
@@ -74,13 +98,15 @@ onBeforeUnmount(() => {
           </span>
         </span>
         {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge
-          v-if="externalUpdate && !dead"
-          variant="outline"
-          class="border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+        <Badge v-if="externalUpdate && !dead" variant="outline" class="border-attention/50 bg-attention/15 text-attention"> Updated </Badge>
+        <span
+          v-if="updateNote && !dead"
+          data-update-dot
+          class="absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-background"
+          :class="updateReady ? 'bg-emphasis' : 'bg-success'"
         >
-          Updated
-        </Badge>
+          <span class="sr-only">{{ updateNote }}</span>
+        </span>
       </Button>
     </div>
     <ReviewPanel

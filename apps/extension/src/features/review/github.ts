@@ -4,7 +4,7 @@ interface GhResponse<T> {
   data: T & { message?: string }
 }
 
-import { alive, storageGet } from '../../lib/extension'
+import { alive, onStorageKey, storageGet } from '../../lib/extension'
 
 export class GhError extends Error {
   constructor(
@@ -15,10 +15,10 @@ export class GhError extends Error {
   }
 }
 
-export function gh<T = unknown>(path: string, method?: string, body?: unknown): Promise<T> {
+export function gh<T = unknown>(path: string, method?: string, body?: unknown, accept?: string): Promise<T> {
   return new Promise((resolve, reject) => {
     if (!alive()) return reject(new Error('The extension was reloaded. Reload this page.'))
-    chrome.runtime.sendMessage({ type: 'gh', path, method, body }, (res: GhResponse<T>) => {
+    chrome.runtime.sendMessage({ type: 'gh', path, method, body, accept }, (res: GhResponse<T>) => {
       if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message))
       if (!res.ok) return reject(new GhError(`${res.status}: ${res.data?.message ?? 'request failed'}`, res.status))
       resolve(res.data)
@@ -45,4 +45,16 @@ export function backgroundText(url: string): Promise<TextResponse> {
 
 export async function hasToken(): Promise<boolean> {
   return Boolean(await storageGet<string>('token'))
+}
+
+export function watchToken(callback: (present: boolean) => void): () => void {
+  let changed = false
+  const stop = onStorageKey<string>('token', (value) => {
+    changed = true
+    callback(Boolean(value))
+  })
+  void hasToken().then((present) => {
+    if (!changed) callback(present)
+  })
+  return stop
 }

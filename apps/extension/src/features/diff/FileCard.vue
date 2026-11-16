@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { Check, ChevronDown, Columns2, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, Rows2 } from '@lucide/vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
+import {
+  Check,
+  ChevronDown,
+  Columns2,
+  Copy,
+  ExternalLink,
+  FileDiff,
+  FileText,
+  FolderTree,
+  ListPlus,
+  MessageSquare,
+  Rows2,
+} from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -25,6 +37,7 @@ watch(
   },
   { immediate: true },
 )
+const commentCount = computed(() => fileContext?.comments?.value.get(file.filename) ?? 0)
 const expandable = computed(() => !!fileContext?.canExpand.value && file.status !== 'added' && file.status !== 'removed')
 
 const globalMode = useDiffMode()
@@ -91,6 +104,12 @@ function reveal() {
   seen.value = true
 }
 
+async function showComments() {
+  reveal()
+  await nextTick()
+  el.value?.querySelector('[data-thread]')?.scrollIntoView({ block: 'center' })
+}
+
 function flash() {
   flashing.value = true
   setTimeout(() => (flashing.value = false), 1400)
@@ -121,11 +140,20 @@ defineExpose({ reveal, flash, el })
       <Badge
         v-if="stale"
         variant="outline"
-        class="border-amber-500/50 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+        class="border-attention/50 bg-attention/15 text-attention"
         title="This file changed after you marked it viewed"
       >
         Updated since viewed
       </Badge>
+      <button
+        v-if="commentCount"
+        type="button"
+        class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        :title="`${commentCount} comment${commentCount === 1 ? '' : 's'} on GitHub. Show them.`"
+        @click="showComments"
+      >
+        <MessageSquare class="size-3.5" />{{ commentCount }}
+      </button>
       <span class="text-xs font-medium text-add-fg">+{{ file.additions }}</span>
       <span class="text-xs font-medium text-del-fg">−{{ file.deletions }}</span>
       <Button

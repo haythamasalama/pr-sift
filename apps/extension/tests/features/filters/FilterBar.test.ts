@@ -1,6 +1,9 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { shallowRef } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import FilterBar from '../../../src/features/filters/FilterBar.vue'
+import { settingsOpenerKey } from '../../../src/features/settings/useSettingsOpener'
+import { portalTargetKey } from '../../../src/lib/portal'
 import type { ExtChip } from '../../../src/lib/types'
 import { file } from '@pr-sift/core/testing'
 
@@ -130,5 +133,48 @@ describe('FilterBar', () => {
     await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
     expect(wrapper.emitted('expandCards')).toHaveLength(1)
     expect(wrapper.emitted('collapseCards')).toHaveLength(1)
+  })
+
+  it('opens the hidden files settings from the Hidden switch', async () => {
+    const openSettings = vi.fn()
+    const wrapper = mount(FilterBar, {
+      props: { chips, listedCount: 4, viewedInView: [], hiddenCount: 1, filtersActive: false, reviewMode: true, showHidden: false },
+      global: { provide: { [settingsOpenerKey as symbol]: openSettings } },
+    })
+    await wrapper.get('button[aria-label="Edit hidden files"]').trigger('click')
+    expect(openSettings).toHaveBeenCalledWith('hidden')
+  })
+
+  it('saves the current types and folders as a named filter', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [],
+        hiddenCount: 1,
+        filtersActive: true,
+        reviewMode: true,
+        showHidden: false,
+        viewPatterns: ['src/**/*.ts'],
+      },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
+      attachTo: document.body,
+    })
+    await button(wrapper, 'Save view').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('input[aria-label="Filter name"]')).not.toBeNull())
+    expect(document.body.textContent).toContain('src/**/*.ts')
+    const input = document.querySelector<HTMLInputElement>('input[aria-label="Filter name"]')!
+    input.value = 'Frontend'
+    input.dispatchEvent(new Event('input'))
+    await flushPromises()
+    input.closest('form')!.dispatchEvent(new Event('submit'))
+    expect(wrapper.emitted('saveView')).toEqual([['Frontend']])
+    wrapper.unmount()
+  })
+
+  it('offers Save view only when types or folders are chosen', () => {
+    expect(mountBar().text()).not.toContain('Save view')
   })
 })

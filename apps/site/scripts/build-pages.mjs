@@ -1,8 +1,10 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
+import { DEMO_URL, buildDemo } from './demo.mjs'
+import { featureVisual } from './feature-cards.mjs'
+import { AUTHOR, INSTALL_URL, LAST_STORE_RATING, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/'
@@ -11,11 +13,17 @@ const media = (path) => `${BASE}media/${path}`
 const esc = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const YEAR = new Date().getFullYear()
 const VERSION = JSON.parse(readFileSync(here('../extension/manifest.json'), 'utf8')).version
+const EXTENSION_DIST = here('../extension/dist')
+// The extension reads the pull request from the URL path, so the demo needs the site at the domain root.
+const HAS_DEMO = BASE === '/' && existsSync(`${EXTENSION_DIST}/content.js`)
 
 const GITHUB_PATH =
   'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'
 
 function icon(name, cls = 'size-5') {
+  // Competitor logos kept in the repository, so no page loads them from another host.
+  if (name.startsWith('logo:'))
+    return readFileSync(here(`assets/brands/${name.slice(5)}.svg`), 'utf8').replace('<svg ', `<svg class="${cls}" aria-hidden="true" `)
   if (name === 'github')
     return `<svg viewBox="0 0 16 16" class="${cls}" fill="currentColor" aria-hidden="true"><path d="${GITHUB_PATH}"/></svg>`
   return readFileSync(here(`node_modules/lucide-static/icons/${name}.svg`), 'utf8')
@@ -48,8 +56,42 @@ const logo = (cls = 'size-7') =>
 const logoFile = (bg, fg) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="${bg}"/><path d="${MARK}" fill="none" stroke="${fg}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
-const button = (href, text, primary = true) =>
-  `<a href="${href}" class="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] font-medium transition-colors ${primary ? 'bg-ink text-paper hover:opacity-85' : 'border border-line bg-paper text-ink hover:bg-raised'}">${text}</a>`
+const BUTTON = {
+  primary: 'bg-ink text-paper hover:opacity-85',
+  secondary: 'border border-line bg-paper text-ink hover:bg-raised',
+}
+
+const button = (href, text, variant = 'primary', size = 'md') =>
+  `<a href="${href}" class="inline-flex items-center gap-2 rounded-md font-medium transition-colors ${size === 'lg' ? 'h-12 px-6 text-base' : 'px-4 py-2.5 text-[15px]'} ${BUTTON[variant]}">${text}</a>`
+
+async function readStoreRating() {
+  const page = await fetch(`${INSTALL_URL}?hl=en`, { signal: AbortSignal.timeout(8000) })
+    .then((res) => (res.ok ? res.text() : ''))
+    .catch(() => '')
+  const id = INSTALL_URL.split('/').pop()
+  const match = new RegExp(`Average rating ([\\d.]+) out of 5 stars\\.[\\s\\S]{0,1500}?${id}/reviews`).exec(page)
+  if (match) return Number(match[1])
+  console.warn(`Chrome Web Store rating not found, using ${LAST_STORE_RATING}`)
+  return LAST_STORE_RATING
+}
+
+const STORE_RATING = await readStoreRating()
+
+const installButton = (size = 'lg') =>
+  button(
+    INSTALL_URL,
+    `${brandIcon('googlechrome', size === 'lg' ? 'size-5' : 'size-4')}${esc(size === 'lg' ? home.hero.install : home.hero.cta)}`,
+    'primary',
+    size,
+  )
+
+const githubButton = () => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, 'secondary', 'lg')
+
+const rating = () => {
+  const full = Math.round(STORE_RATING)
+  const stars = Array.from({ length: 5 }, (_, i) => icon('star', `size-4 ${i < full ? 'fill-current' : ''}`)).join('')
+  return `<a href="${INSTALL_URL}/reviews" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted hover:text-ink"><span class="inline-flex text-ink">${stars}</span><span><span class="font-semibold text-ink">${STORE_RATING.toFixed(1)}</span> out of 5 on the Chrome Web Store</span></a>`
+}
 
 // Each image and video exists in a light and a -dark version; only the one for the current theme is displayed, so only it loads.
 const THEMED = [
@@ -72,8 +114,12 @@ const video = (name, label, attrs = '') =>
 const iconBox = (name, cls = 'size-9') =>
   `<span class="flex ${cls} shrink-0 items-center justify-center rounded-md border border-line bg-paper">${icon(name, 'size-[18px]')}</span>`
 
-const h2 = (text, cls = '') =>
-  `<h2 class="text-3xl font-semibold tracking-tight text-balance sm:text-[2.5rem] sm:leading-[1.1] ${cls}">${esc(text)}</h2>`
+// A trailing icon stays on the line of the last word.
+const h2 = (text, cls = '', trail = '') => {
+  const cut = trail ? text.lastIndexOf(' ') + 1 : text.length
+  const end = trail ? `<span class="whitespace-nowrap">${esc(text.slice(cut))}${trail}</span>` : ''
+  return `<h2 class="text-3xl font-semibold tracking-tight text-balance sm:text-[2.5rem] sm:leading-[1.1] ${cls}">${esc(text.slice(0, cut))}${end}</h2>`
+}
 const lead = (text, cls = '') => `<p class="mt-4 max-w-2xl text-lg leading-relaxed text-muted ${cls}">${esc(text)}</p>`
 
 const BROWSERS = [
@@ -86,80 +132,10 @@ const BROWSERS = [
   ['vivaldi', 'Vivaldi'],
 ]
 
-const browsers = () =>
-  `<ul class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" aria-label="Supported browsers">
+const browsers = (cls = '') =>
+  `<ul class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm ${cls}" aria-label="Supported browsers">
     ${BROWSERS.map(([slug, name]) => `<li class="inline-flex items-center gap-1.5">${slug === 'dia' ? `<img src="${link('brand/dia.svg')}" alt="" class="size-5 rounded grayscale" />` : brandIcon(slug)}${name}</li>`).join('')}
   </ul>`
-
-const PLAYGROUND = [
-  ['src/Billing/GenerateInvoice.php', 'modified'],
-  ['src/Billing/Usage/UsageMeter.php', 'added'],
-  ['src/Billing/Usage/UsageRepository.php', 'added'],
-  ['src/Billing/Legacy/InvoiceCalculator.php', 'deleted'],
-  ['resources/js/pages/billing/InvoiceList.vue', 'added'],
-  ['resources/js/lib/money.ts', 'modified'],
-  ['tests/Billing/GenerateInvoiceTest.php', 'added'],
-  ['resources/js/billing/InvoiceList.test.ts', 'added'],
-  ['lang/ar/billing.php', 'modified'],
-  ['docs/billing/usage.md', 'renamed'],
-  ['composer.lock', 'modified'],
-  ['pnpm-lock.yaml', 'modified'],
-]
-
-const typeOf = (file) => {
-  const name = file.split('/').pop()
-  if (name.endsWith('.test.ts')) return '.test.ts'
-  if (name.endsWith('.lock') || name.endsWith('-lock.yaml')) return '.lock'
-  return name.slice(name.lastIndexOf('.'))
-}
-
-const STATUS_SIGN = {
-  added: ['+', 'text-add'],
-  modified: ['~', 'text-[#9a6700] dark:text-[#d29922]'],
-  deleted: ['−', 'text-del'],
-  renamed: ['→', 'text-muted'],
-}
-
-function playground() {
-  const types = [...new Set(PLAYGROUND.map(([f]) => typeOf(f)))]
-  const statuses = ['added', 'modified', 'deleted', 'renamed']
-  const count = (pred) => PLAYGROUND.filter(pred).length
-  const chip = (key, label, n) =>
-    `<button type="button" data-chip="${key}" class="chip inline-flex items-center gap-1.5 rounded-md border border-line bg-paper px-2.5 py-1 font-mono text-[13px] transition hover:border-ink">${esc(label)}<span class="text-muted">${n}</span></button>`
-  return `<div class="rounded-lg border border-line bg-paper" data-playground data-autoplay>
-    <div class="flex items-center gap-2 border-b border-line bg-raised px-4 py-2.5 text-sm">
-      ${logo('size-5')}<span class="font-medium">feat(billing): usage-based invoices</span><span class="ms-auto font-mono text-xs text-muted" data-summary>12 files</span>
-    </div>
-    <div class="flex flex-wrap gap-1.5 border-b border-line px-4 py-3">
-      ${types
-        .map((t) =>
-          chip(
-            t,
-            t,
-            count(([f]) => typeOf(f) === t),
-          ),
-        )
-        .join('')}
-      ${statuses
-        .map((s) =>
-          chip(
-            'status:' + s,
-            s,
-            count(([, st]) => st === s),
-          ),
-        )
-        .join('')}
-      <button type="button" data-reset class="ms-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] text-muted hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Reset</button>
-    </div>
-    <ul class="flex flex-col px-4 py-3 font-mono text-[13px]">
-      ${PLAYGROUND.map(
-        ([file, status]) =>
-          `<li data-file data-type="${typeOf(file)}" data-status="${status}" class="flex items-center gap-3 overflow-hidden border-b border-line py-2 last:border-b-0"><span class="w-3 shrink-0 text-center ${STATUS_SIGN[status][1]}" aria-hidden="true">${STATUS_SIGN[status][0]}</span><span class="min-w-0 truncate">${esc(file)}</span><span class="ms-auto shrink-0 font-sans text-xs text-muted">${status}</span></li>`,
-      ).join('\n      ')}
-    </ul>
-    <p class="border-t border-line px-4 py-2.5 text-[13px] text-muted">Click a chip to show only that. Shift-click to hide it.</p>
-  </div>`
-}
 
 const NAV = [
   ['Notes', '#notes'],
@@ -178,7 +154,8 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
         ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="whitespace-nowrap hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <a href="${REPO_URL}" aria-label="Star PR Sift on GitHub" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="h-4 w-px bg-line" aria-hidden="true"></span><span class="flex items-center gap-1.5">${icon('star', 'size-3.5')}Star</span><span data-stars class="text-muted empty:hidden"></span></a>
+      <a href="${REPO_URL}" aria-label="PR Sift on GitHub" title="PR Sift on GitHub" class="hidden size-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-raised hover:text-ink sm:inline-flex">${icon('github', 'size-4')}</a>
+      <a href="${INSTALL_URL}" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper hover:opacity-85">${brandIcon('googlechrome', 'size-4')}<span class="hidden sm:inline">${esc(home.hero.cta)}</span><span class="sm:hidden">Install</span></a>
       <details data-menu class="relative md:hidden">
         <summary aria-label="Menu" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-line text-muted hover:text-ink [&::-webkit-details-marker]:hidden">${icon('menu', 'size-4')}</summary>
         <div class="absolute right-0 top-full mt-2 flex w-48 flex-col rounded-lg border border-line bg-paper p-1.5 shadow-lg">
@@ -217,7 +194,7 @@ function footer() {
       <div class="col-span-2 md:col-span-1">
         <a href="${link()}" class="flex items-center gap-2 font-semibold">${logo('size-6')}PR Sift</a>
         <p class="mt-4 max-w-56 text-sm leading-relaxed text-muted">Review large GitHub pull requests without the noise.</p>
-        <a href="${link('changelog/')}" class="mt-3 inline-block font-mono text-xs text-muted hover:text-ink">Version ${VERSION}</a>
+        <a href="${link('changelog/')}" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted hover:border-ink hover:text-ink" title="What’s new">v${VERSION}</a>
       </div>
       ${column('Product', [
         ['Private notes', link() + '#notes'],
@@ -296,6 +273,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website',
     <meta name="twitter:description" content="${esc(description)}" />
     <meta name="twitter:image" content="${SITE_URL}media/og.png" />
     ${jsonLd.map((data) => `<script type="application/ld+json">${JSON.stringify(data)}</script>`).join('\n    ')}
+    <link rel="stylesheet" href="/src/style.css" />
     <script type="module" src="/src/main.js"></script>
   </head>
   <body class="bg-paper font-sans text-ink antialiased">
@@ -344,24 +322,29 @@ const appLd = {
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   image: SITE_URL + 'media/og.png',
-  screenshot: ['review', 'filters', 'notes', 'ai-export', 'split'].map((n) => SITE_URL + `media/screenshots/${n}.webp`),
-  featureList: [home.notesStory.title, ...home.features.map((f) => f.title)],
+  screenshot: ['review', 'merge', 'comments', 'filters', 'notes', 'ai-export', 'split'].map(
+    (n) => SITE_URL + `media/screenshots/${n}.webp`,
+  ),
+  featureList: [home.notesStory.title, home.merge.title, ...home.features.map((f) => f.title)],
   author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
 }
 
 const ctaBlock = () => `<section class="border-t border-line">
       <div class="mx-auto flex max-w-6xl flex-col items-start gap-8 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex items-center gap-5">${logo('size-12 shrink-0')}<h2 class="max-w-xl text-3xl font-semibold tracking-tight text-balance">Make your next big review the easy one.</h2></div>
-        <div class="flex flex-wrap gap-3">
-          ${button(INSTALL_URL, `${icon('download', 'size-4')}Install PR Sift`)}
-          ${button(REPO_URL, `${icon('github', 'size-4')}Star on GitHub`, false)}
+        <div class="flex min-w-0 items-center gap-5">${logo('size-12 shrink-0')}<h2 class="max-w-xl text-3xl font-semibold tracking-tight text-balance">Make your next big review the easy one.</h2></div>
+        <div class="flex shrink-0 flex-col items-start gap-3">
+          <div class="flex flex-wrap gap-3">
+            ${installButton()}
+            ${githubButton()}
+          </div>
+          ${rating()}
         </div>
       </div>
     </section>`
 
 const STATE = {
   yes: ['check', 'text-add', 'Yes'],
-  partial: ['circle-dot', 'text-[#9a6700] dark:text-[#d29922]', 'Partly'],
+  partial: ['circle-dot', 'text-attention', 'Partly'],
   no: ['x', 'text-del', 'No'],
   unknown: ['minus', 'text-muted', 'Not listed'],
 }
@@ -389,8 +372,23 @@ function matrix() {
       ([ic, cls, label]) =>
         `<span class="inline-flex items-center gap-1.5"><span class="${cls}">${icon(ic, 'size-4')}</span>${label}</span>`,
     )
-    .join('')}<span>From official pages, ${CHECKED}.</span></p>`
+    .join(
+      '',
+    )}<span>From official pages, checked ${[...new Set([CHECKED, ...compare.map((c) => c.checked).filter(Boolean)])].join(' and ')}.</span></p>`
 }
+
+const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
+        <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised shadow-[0_40px_80px_-40px_rgb(0_0_0/0.25)]">
+          <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
+            <span class="flex gap-1.5" aria-hidden="true"><span class="size-[11px] rounded-full bg-[#ff5f57]"></span><span class="size-[11px] rounded-full bg-[#febc2e]"></span><span class="size-[11px] rounded-full bg-[#28c840]"></span></span>
+            <a href="${REPO_URL}" target="_blank" rel="noopener" class="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-paper px-3 py-1 font-mono text-xs text-muted hover:text-ink">${icon('lock', 'size-3 shrink-0')}<span class="truncate">${REPO_URL.replace('https://', '')}</span></a>
+            <a href="${DEMO_URL}" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
+          </div>
+          <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
+            <noscript>${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="A 39-file pull request reviewed in PR Sift" class="${display} absolute inset-0 size-full object-cover object-top" decoding="async" />`).join('')}</noscript>
+          </div>
+        </div>
+      </div>`
 
 function homePage() {
   const h = home
@@ -398,30 +396,40 @@ function homePage() {
       <div role="tablist" aria-label="Demos" class="flex gap-2 overflow-x-auto lg:flex-col">
         ${h.demos.map(([id, ic, title, text], i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-video="${id}" class="demo-tab flex shrink-0 items-center gap-3 rounded-lg lg:items-start border border-transparent p-3 text-left transition aria-selected:border-line aria-selected:bg-paper lg:w-full">${iconBox(ic)}<span><span class="block font-medium">${esc(title)}</span><span class="hidden text-sm text-muted lg:block">${esc(text)}</span></span></button>`).join('\n        ')}
       </div>
-      <div>${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
+      <div class="lg:self-center">${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
+    </div>
+    <div class="mt-12 flex flex-col items-start gap-5 border-t border-line pt-10 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex flex-col gap-2"><p class="text-2xl font-semibold tracking-tight text-balance">${esc(h.hero.tryIt)}</p>${rating()}</div>
+      ${installButton()}
     </div>`
 
-  const features = h.features
-    .filter((f) => f.id !== 'notes')
-    .map((f, i) => [
-      i === 0 ? 'features' : f.id,
-      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-        <div class="lg:col-span-4 ${i % 2 ? 'lg:order-2' : ''}">
-          ${iconBox(f.icon)}
-          ${h2(f.title, 'mt-5')}
-          ${lead(f.text)}
-          <ul class="mt-7 flex flex-col gap-3.5">
-            ${f.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
-          </ul>
-        </div>
-        <div class="lg:col-span-8">${video(f.video, f.title)}</div>
+  const FEATURE_SPAN = { views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
+  const featureCard = (f) => `
+        <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
+          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
+          <div class="p-5 sm:px-6 sm:pb-6">
+            <h3 class="flex items-center gap-2.5 text-[17px] font-semibold">${icon(f.icon, 'size-[18px] shrink-0')}${esc(f.title)}</h3>
+            <p class="mt-1.5 leading-relaxed text-muted">${esc(f.text)}</p>
+          </div>
+        </article>`
+  const features = [
+    'features',
+    `<div class="flex flex-col items-start gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-2xl">${h2(h.featuresIntro.title)}${lead(h.featuresIntro.lead)}</div>
+        <span class="shrink-0">${installButton('md')}</span>
+      </div>
+      <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        ${h.features
+          .filter((f) => f.id !== 'notes')
+          .map(featureCard)
+          .join('')}
       </div>`,
-    ])
+  ]
 
   const sections = [
     [
       'notes',
-      `<div class="grid items-start gap-12 lg:grid-cols-12">
+      `<div class="grid gap-12 lg:grid-cols-12 lg:items-end">
         <div class="lg:col-span-5">
           ${iconBox('lock')}
           ${h2(h.notesStory.title, 'mt-5')}
@@ -440,10 +448,27 @@ function homePage() {
         ${AI_TOOLS.map(([slug, name]) => `<li class="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-1.5 text-sm font-medium">${brandIcon(slug, 'size-4')}${esc(name)}</li>`).join('')}
         <li class="inline-flex items-center gap-2 rounded-md border border-dashed border-line px-3 py-1.5 text-sm text-muted">${icon('clipboard', 'size-4')}Any other AI</li>
       </ul>
-      <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-        ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
+      <ol class="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+        ${h.ai.steps.map(([ic, title, text], i) => `<li class="flex gap-3 bg-paper p-5 sm:last:col-span-2 lg:last:col-span-1"><span class="font-mono text-sm text-muted">${i + 1}</span><span>${icon(ic, 'size-[18px]')}<span class="mt-2 block font-medium">${esc(title)}</span><span class="text-muted">${esc(text)}</span></span></li>`).join('\n        ')}
       </ol>
-      <div class="mt-10">${video('claude', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
+      <div class="mt-10">${shot('ai-export', 'Copying notes for Codex, Cursor and Claude Code')}</div>`,
+    ],
+    [
+      'merge',
+      `<div class="grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
+        <div class="lg:col-span-5">
+          <p class="font-mono text-[13px] leading-[1.35] font-medium">
+            <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span class="min-w-0 [overflow-wrap:anywhere]">${esc(h.merge.removed)}</span></span>
+            <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>${esc(h.merge.added)}</span></span>
+          </p>
+          ${h2(h.merge.title, 'mt-6', icon('bot-off', 'ms-3 inline size-[0.8em] align-[-0.08em]'))}
+          ${lead(h.merge.lead)}
+          <ul class="mt-7 flex flex-col gap-3.5">
+            ${h.merge.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
+          </ul>
+        </div>
+        <div class="lg:col-span-7">${shot('merge', 'Squash and merge with Claude and Codex left unchecked as co-authors')}</div>
+      </div>`,
     ],
     [
       'pain',
@@ -462,22 +487,7 @@ function homePage() {
           .join('\n        ')}
       </ul>`,
     ],
-    ...features,
-    [
-      'theme',
-      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
-        <div class="lg:col-span-4">${iconBox('sun-moon')}${h2(h.theme.title, 'mt-5')}${lead(h.theme.text)}</div>
-        <div class="lg:col-span-8">${video('theme', h.theme.title)}</div>
-      </div>`,
-    ],
-    [
-      'how',
-      `${h2('Three steps. No account.')}
-      <ol class="mt-10 grid gap-8 md:grid-cols-3">
-        ${h.how.map(([ic, title, text], i) => `<li class="border-t-2 border-ink pt-5"><span class="flex items-center gap-3"><span class="font-mono text-sm text-muted">${i + 1}</span>${icon(ic, 'size-[18px]')}</span><h3 class="mt-3 text-lg font-medium">${esc(title)}</h3><p class="mt-1 text-muted">${esc(text)}</p></li>`).join('\n        ')}
-      </ol>
-      <div class="mt-12">${shot('launcher', 'The PR Sift button on a real GitHub pull request')}</div>`,
-    ],
+    features,
     [
       'source-code',
       `<div class="grid gap-12 lg:grid-cols-12">
@@ -506,21 +516,22 @@ function homePage() {
   ]
 
   const body = `
-    <section class="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pt-20 lg:pb-24">
-      <div class="@container min-w-0">
-        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>Write notes on the code. Your AI fixes them.${icon('chevron-right', 'size-3.5 text-muted')}</a>
+    <section class="mx-auto max-w-6xl px-4 pt-12 pb-20 sm:px-6 lg:pt-20 lg:pb-24">
+      <div class="@container mx-auto flex max-w-3xl flex-col items-center text-center">
+        <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'googlegemini', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
         </h1>
         <p class="mt-7 max-w-xl text-lg leading-relaxed text-muted">${esc(h.hero.lead)}</p>
-        <div class="mt-8 flex flex-wrap items-center gap-3">
-          ${button(INSTALL_URL, `${icon('download', 'size-4')}${esc(h.hero.cta)}`)}
-          ${button(REPO_URL, `${icon('github', 'size-4')}${esc(h.hero.secondary)}`, false)}
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+          ${installButton()}
+          ${githubButton()}
         </div>
-        <div class="mt-10">${browsers()}</div>
+        <div class="mt-4">${rating()}</div>
+        <div class="mt-10">${browsers('justify-center')}</div>
       </div>
-      <div class="min-w-0">${playground()}</div>
+      ${HAS_DEMO ? liveDemo(h.live) : `<div class="mt-14">${shot('review', 'A pull request reviewed in PR Sift')}</div>`}
     </section>
     <section class="border-y border-line bg-raised"><div class="mx-auto max-w-6xl px-4 py-16 sm:px-6">${demoTabs}</div></section>
     ${bands(sections)}
@@ -632,7 +643,7 @@ function comparePage(c) {
       <div class="mt-10 grid gap-5 rounded-lg border border-line p-6 sm:p-8">
         ${bar('PR Sift', logo('size-10 shrink-0'), ours)}
         ${bar(c.name, iconBox(c.avatar, 'size-10'), theirs)}
-        <p class="text-sm text-muted">Features below with full support count as 1, partial as ½. Checked ${esc(CHECKED)}.</p>
+        <p class="text-sm text-muted">Features below with full support count as 1, partial as ½. Checked ${esc(c.checked ?? CHECKED)}.</p>
       </div>
       <div class="relative mt-10 overflow-x-auto rounded-lg border border-line">
         <table class="w-full min-w-[620px] text-left text-[15px]">
@@ -643,7 +654,7 @@ function comparePage(c) {
           </tbody>
         </table>
       </div>
-      <p class="mt-3 text-sm text-muted">From ${esc(c.name)}’s official pages on ${esc(CHECKED)}. "Not listed" means we found nothing there, not that it is missing. Sources: ${c.sources.map((s) => `<a href="${s}" class="underline" rel="nofollow noopener">${esc(new URL(s).hostname)}</a>`).join(', ')}.</p>
+      <p class="mt-3 text-sm text-muted">From ${esc(c.name)}’s official pages on ${esc(c.checked ?? CHECKED)}. "Not listed" means we found nothing there, not that it is missing. Sources: ${c.sources.map((s) => `<a href="${s}" class="underline" rel="nofollow noopener">${esc(new URL(s).hostname)}</a>`).join(', ')}.</p>
       <h2 class="mt-14 text-2xl font-semibold tracking-tight">See it in PR Sift</h2>
       <div class="mt-5 grid gap-5 sm:grid-cols-2">${c.showcase.map((v) => video(v, v)).join('')}</div>
       <div class="mt-14 grid gap-4 sm:grid-cols-2">${choose('Choose PR Sift if', c.choosePrSift, 'funnel')}${choose(`Choose ${c.name} if`, c.chooseThem, c.avatar)}</div>
@@ -673,10 +684,11 @@ const AREAS = {
   AI: 'bot',
   Filters: 'funnel',
   Tree: 'folder-tree',
-  Review: 'list-checks',
+  Review: 'git-pull-request',
   Views: 'columns-2',
   Appearance: 'sun-moon',
   Security: 'shield-check',
+  License: 'scale',
 }
 const KINDS = { Added: 'sparkles', Fixed: 'wrench', Changed: 'refresh-cw', Security: 'shield-check' }
 
@@ -691,6 +703,7 @@ function parseChangelog() {
     if (version) releases.push((release = { version: version[1], date: version[2] ?? '', sections: [] }))
     else if (kind && release) release.sections.push((section = { kind: kind[1], items: [] }))
     else if (item && section) section.items.push({ area: item[1], text: item[2] })
+    else if (/^ {2,}\S/.test(line) && section?.items.length) section.items.at(-1).text += ` ${line.trim()}`
   }
   return releases
 }
@@ -711,6 +724,12 @@ ${changelog
   )
   .join('\n\n')}
 `
+}
+
+const byArea = (items) => {
+  const groups = new Map()
+  for (const item of items) groups.set(item.area, [...(groups.get(item.area) ?? []), item])
+  return [...groups]
 }
 
 function changelogPage() {
@@ -734,10 +753,10 @@ function changelogPage() {
             (
               s,
             ) => `<section><h3 class="flex items-center gap-2 font-medium">${icon(KINDS[s.kind] ?? 'dot', 'size-[18px]')}${esc(s.kind)}<span class="text-sm font-normal text-muted">${s.items.length}</span></h3>
-            <ul class="mt-4 divide-y divide-line border-y border-line">${s.items
+            <ul class="mt-4 divide-y divide-line border-y border-line">${byArea(s.items)
               .map(
-                (i) =>
-                  `<li data-area="${i.area}" class="flex items-start gap-3 py-3"><span class="mt-0.5 inline-flex w-28 shrink-0 items-center gap-1.5 text-sm text-muted">${icon(AREAS[i.area] ?? 'dot', 'size-4')}${esc(i.area)}</span><span>${esc(i.text)}</span></li>`,
+                ([area, items]) =>
+                  `<li data-area="${area}" class="grid gap-2 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4"><span class="inline-flex items-center gap-1.5 self-start text-sm font-medium sm:mt-0.5">${icon(AREAS[area] ?? 'dot', 'size-4 text-muted')}${esc(area)}</span><ul class="flex list-disc flex-col gap-2.5 ps-5 marker:text-muted">${items.map((i) => `<li class="leading-relaxed">${esc(i.text)}</li>`).join('')}</ul></li>`,
               )
               .join('')}</ul></section>`,
           )
@@ -745,7 +764,7 @@ function changelogPage() {
       </article>`,
     )
     .join('')
-  const subscribe = `<div class="mt-6 flex flex-wrap gap-3">${button(`${SITE_URL}changelog/feed.xml`, `${icon('rss', 'size-4')}Subscribe`, false)}${button(`${REPO_URL}/releases`, `${icon('github', 'size-4')}Releases on GitHub`, false)}</div>`
+  const subscribe = `<div class="mt-6 flex flex-wrap gap-3">${button(`${SITE_URL}changelog/feed.xml`, `${icon('rss', 'size-4')}Subscribe`, 'secondary')}${button(`${REPO_URL}/releases`, `${icon('github', 'size-4')}Releases on GitHub`, 'secondary')}</div>`
   return article({
     path: 'changelog/',
     crumbs: [
@@ -829,8 +848,8 @@ function brandPage() {
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Descriptions</h2>
       <dl class="mt-5 flex flex-col gap-4">${brand.descriptions.map(([k, v]) => `<div class="rounded-lg border border-line p-5"><dt class="text-sm text-muted">${k}</dt><dd class="mt-1.5 text-[17px]">${esc(v)}</dd></div>`).join('')}</dl>
       <h2 class="mt-12 text-2xl font-semibold tracking-tight">Screenshots and videos</h2>
-      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'filters', 'notes', 'ai-export', 'split', 'dark'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
-      <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
+      <div class="mt-5 grid gap-4 sm:grid-cols-2">${['review', 'merge', 'comments', 'approve', 'settings', 'filters', 'notes', 'ai-export', 'split', 'description'].map((n) => `<a href="${media(`screenshots/${n}.webp`)}" download class="block">${shot(n, `PR Sift screenshot: ${n}`)}</a>`).join('')}</div>
+      <p class="mt-4 text-muted">Videos: ${['before-after', 'tour', 'merge', 'filters', 'folders', 'smart-filters', 'review', 'notes', 'resolve', 'claude', 'theme', 'views'].map((n) => `<a href="${media(`videos/${n}.mp4`)}" class="underline">${n}</a>`).join(', ')}. Social image: <a href="${media('og.png')}" class="underline">og.png</a>.</p>`
   return article({
     path: 'brand/',
     crumbs: [
@@ -920,6 +939,7 @@ rmSync(here('public'), { recursive: true, force: true })
 mkdirSync(here('public/brand'), { recursive: true })
 mkdirSync(here('public/changelog'), { recursive: true })
 cpSync(fileURLToPath(new URL('../../../media', import.meta.url)), here('public/media'), { recursive: true })
+if (HAS_DEMO) buildDemo({ dist: EXTENSION_DIST, pages: here('pages'), assets: here('public'), version: VERSION })
 cpSync(here('assets/brands/dia-favicon.svg'), here('public/brand/dia.svg'))
 writeFileSync(here('public/favicon.svg'), logoFile('#000000', '#ffffff'))
 cpSync(here('assets/icons'), here('public'), { recursive: true })
@@ -969,6 +989,7 @@ Current version: ${VERSION}${changelog[0]?.date ? `, released ${changelog[0].dat
 ${home.notesStory.lead}
 ${home.notesStory.cases.map(([, t, d]) => `- ${t}: ${d}`).join('\n')}
 - ${home.ai.title}. ${home.ai.lead}
+- ${home.merge.title}. ${home.merge.lead}
 
 ## Features
 

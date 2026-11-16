@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bug, Columns2, Lightbulb, Monitor, Moon, NotebookPen, PanelLeft, Rows2, Search, Settings, Sun, X } from '@lucide/vue'
+import { CircleHelp, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Pencil, RotateCw, Rows2, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
-import { openReport } from '../../lib/report'
-import { openOptions } from '../../lib/extension'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
+import { useUpdates } from '../updates/useUpdates'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
@@ -33,29 +32,39 @@ defineProps<{
   splitDisabled: boolean
 }>()
 
-const query = defineModel<string>('query', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const { theme, setTheme } = useAppearance()
+const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
+const openSettings = useSettingsOpener()
 </script>
 
 <template>
-  <header class="flex items-center gap-2 border-b bg-sidebar px-3 py-2 sm:gap-3 sm:px-4">
+  <header class="flex flex-wrap items-center gap-x-2 gap-y-2 xl:flex-nowrap border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4">
     <Button
       v-if="compact"
       variant="outline"
       size="icon-sm"
-      class="shrink-0"
+      class="order-1 shrink-0 xl:order-none"
       aria-label="Toggle sidebar"
       title="Files and filters"
       @click="emit('toggleSidebar')"
     >
       <PanelLeft />
     </Button>
-    <h1 class="min-w-0 truncate text-sm font-semibold" :title="title">{{ title }}</h1>
-    <div class="flex shrink-0 items-center gap-2 border-l pl-3" :title="`${done} of ${total} files viewed · ${inView} in the current view`">
+    <div class="order-1 flex min-w-0 flex-1 flex-col xl:order-none xl:flex-initial">
+      <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
+      <slot name="meta" />
+    </div>
+    <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
+    <div class="order-2 basis-full xl:hidden" />
+
+    <div
+      class="order-3 flex shrink-0 items-center gap-2 xl:order-none xl:border-l xl:pl-3"
+      :title="`${done} of ${total} files viewed · ${inView} in the current view`"
+    >
       <ProgressRing :done="done" :total="total" />
       <div class="leading-tight">
         <p class="text-xs font-semibold whitespace-nowrap">{{ total - done }}<span class="hidden sm:inline"> left</span></p>
@@ -63,9 +72,9 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       </div>
     </div>
 
-    <div class="flex-1" />
+    <div class="order-3 flex-1 xl:order-none" />
 
-    <div v-if="presets.length" class="flex shrink-0 gap-1">
+    <div v-if="presets.length" class="order-3 flex shrink-0 gap-1 xl:order-none">
       <Button
         v-for="p in presets"
         :key="p.name"
@@ -75,16 +84,15 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       >
         {{ p.name }}
       </Button>
-    </div>
-
-    <div v-if="compact" class="relative flex shrink-0 items-center">
-      <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
-      <Input
-        v-model="query"
-        type="search"
-        placeholder="Filter files…"
-        class="h-8 w-24 bg-background pl-8 text-xs sm:w-44 md:text-xs xl:w-56"
-      />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        title="Edit saved filters"
+        aria-label="Edit saved filters"
+        class="text-muted-foreground"
+        @click="openSettings('filters')"
+        ><Pencil
+      /></Button>
     </div>
 
     <ToggleGroup
@@ -92,7 +100,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       type="single"
       variant="outline"
       size="sm"
-      class="shrink-0"
+      class="order-3 shrink-0 xl:order-none"
       :model-value="diffMode"
       aria-label="Diff display"
       @update:model-value="(v) => v && (diffMode = v as DiffMode)"
@@ -105,18 +113,31 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
       >
     </ToggleGroup>
 
-    <Button variant="outline" size="sm" class="shrink-0" title="Your private notes" @click="emit('openNotes')">
+    <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
+
+    <Button variant="outline" size="sm" class="order-3 shrink-0 xl:order-none" title="Your private notes" @click="emit('openNotes')">
       <NotebookPen /><span class="hidden xl:inline">Notes</span>
       <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
     </Button>
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Options" title="Theme, settings and help">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          class="relative order-3 shrink-0 xl:order-none"
+          :aria-label="updateReady ? 'Options, update ready' : 'Options'"
+          :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
+        >
           <Settings />
+          <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-emphasis" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-52">
+      <DropdownMenuContent align="end" class="w-56">
+        <template v-if="updateReady">
+          <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </template>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
           <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
@@ -126,12 +147,11 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem @select="openOptions"><Settings /> Settings</DropdownMenuItem>
-        <DropdownMenuItem @select="openReport('bug')"><Bug /> Report a problem</DropdownMenuItem>
-        <DropdownMenuItem @select="openReport('idea')"><Lightbulb /> Suggest an idea</DropdownMenuItem>
+        <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
+        <DropdownMenuItem @select="openSettings('about')"><CircleHelp /> Help and feedback</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button variant="ghost" size="icon-sm" class="shrink-0" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"><X /></Button>
   </header>
 </template>

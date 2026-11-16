@@ -88,6 +88,10 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `emphasis` (blue)     | `#0969da`             | `#1f6feb`                            |
 | `primary`             | `oklch(0.205 0 0)`    | `oklch(0.922 0 0)`                   |
 | `success`             | `#1f883d`             | `#238636`                            |
+| `success-foreground`  | `#ffffff`             | `#ffffff`                            |
+| `success-fg`          | `#1a7f37`             | `#3fb950`                            |
+| `merged`              | `#8250df`             | `#a371f7`                            |
+| `attention`           | `#9a6700`             | `#d29922`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
 | `add-fg` / `add-bg`   | `#1a7f37` / `#e6ffec` | `#3fb950` / `rgba(46, 160, 67, .15)` |
 | `del-fg` / `del-bg`   | `#cf222e` / `#ffebe9` | `#f85149` / `rgba(248, 81, 73, .1)`  |
@@ -98,15 +102,19 @@ Syntax colours also follow GitHub (keyword `#cf222e` / `#ff7b72`, entity `#8250d
 
 In extension code use the shadcn-vue semantic tokens (`bg-background`, `text-muted-foreground`), never raw colours.
 `primary` is neutral to match the brand. GitHub's blue (`emphasis`, the Button `emphasis` variant) is kept for the
-places GitHub itself uses blue: the add-note button on a diff line, the sidebar resize handle and the progress ring
-(blue while files are left, `success` green when all are viewed).
+places GitHub itself uses blue: the add-note button on a diff line, the sidebar resize handle, the branch names under
+the title and the progress ring (blue while files are left, `success` green when all are viewed). GitHub's green (the
+Button `success` variant, white text from `success-foreground`) is kept for the actions that finish a review, as on
+GitHub: Merge and the confirm buttons in the Approve and Merge dialogs. Approve in the top bar is a green outline, so
+Merge stays the strongest button.
 
 - `sidebar` (`#ffffff` light, `#010409` dark) is the panel chrome: the top bar, the filter bar and the sidebar. The
   file list sits on `background`, so the chrome and the content read as two layers.
 - `selected` (`rgb(212 167 44 / .28)` light, `rgb(187 128 9 / .3)` dark) marks the lines of a note range. It is
   painted over the diff colours, never instead of them.
-- The radius scale comes from `--radius` (10 px) on `:root` and `:host`. Controls use the shadcn sizes, which give
-  8 px for small buttons and toggles and 10 px for inputs and default buttons. Don't override corners per component.
+- The radius scale comes from `--radius` (6 px, GitHub's own) on `:root` and `:host`. Small buttons and toggles get
+  4 px, inputs and default buttons 6 px, cards, dialogs and sheets 8 px. Badges and chips use the base radius too, so
+  nothing is drawn as a pill except switches and avatars. Don't override corners per component.
 
 ### Social cards
 
@@ -141,14 +149,14 @@ The signature move of the brand: a headline written as a two-line diff.
 
 ## Shape and space
 
-| Element                                                | Radius                         |
-| :----------------------------------------------------- | :----------------------------- |
-| Logo tile                                              | 22 % of its size               |
-| Buttons, inputs                                        | 6 px (`rounded-md`)            |
-| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)            |
-| Sibling app cards                                      | 12 px (`rounded-xl`)           |
-| Theme switch                                           | Full pill                      |
-| Extension components                                   | Base radius 10 px (`0.625rem`) |
+| Element                                                | Radius                        |
+| :----------------------------------------------------- | :---------------------------- |
+| Logo tile                                              | 22 % of its size              |
+| Buttons, inputs                                        | 6 px (`rounded-md`)           |
+| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)           |
+| Sibling app cards                                      | 12 px (`rounded-xl`)          |
+| Theme switch                                           | Full pill                     |
+| Extension components                                   | Base radius 6 px (`0.375rem`) |
 
 - Site content width 1152 px (`max-w-6xl`) with 16 px side gutters on phones and 24 px from `sm`.
 - Separate sections with space and a `line` border, not with shadows.
@@ -157,13 +165,13 @@ The signature move of the brand: a headline written as a two-line diff.
 
 All media is generated from a demo pull request by `tools/capture` (`pnpm --filter @pr-sift/capture capture`).
 
-| Asset                                            | Size                                                                                                                  | Where                  |
-| :----------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| Screenshots `media/screenshots/*.webp`           | 3200 × 2120                                                                                                           | Site, README, docs     |
-| Videos `media/videos/*.mp4` with a poster `.jpg` | 1600 × 1000, recorded at 2× and zoomed on the action                                                                  | Site                   |
-| Share image `media/og.png`                       | 1200 × 630 at 2×                                                                                                      | Open Graph and X cards |
-| Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                                                                                              | Chrome Web Store       |
-| Store screenshots `media/store/screenshot-*.png` | 1280 × 800, a headline over a cropped screenshot; the first is the diff headline over GitHub and PR Sift side by side | Chrome Web Store       |
+| Asset                                            | Size                                                                                                                             | Where                  |
+| :----------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| Screenshots `media/screenshots/*.webp`           | 3200 × 2120                                                                                                                      | Site, README, docs     |
+| Videos `media/videos/*.mp4` with a poster `.jpg` | 1600 × 1000, recorded at 2× and zoomed on the action                                                                             | Site                   |
+| Share image `media/og.png`                       | 1200 × 630 at 2×                                                                                                                 | Open Graph and X cards |
+| Store promo tiles `media/store/promo-*.png`      | 440 × 280 and 1400 × 560                                                                                                         | Chrome Web Store       |
+| Store screenshots `media/store/screenshot-*.png` | 1280 × 800, a headline with a tight crop of one feature, so the text stays readable; the first is the diff headline over PR Sift | Chrome Web Store       |
 
 - Show the extension on a real-looking pull request. Every screenshot, video, poster and README GIF has a light file
   and a `-dark` file (dark ones sit on the Tahoe Dark wallpaper). The site shows the one that matches its theme and only

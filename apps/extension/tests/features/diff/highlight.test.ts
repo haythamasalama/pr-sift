@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parsePatch } from '@pr-sift/core'
-import { highlightRows, languageFor } from '../../../src/features/diff/highlight'
+import { highlightRows, languageFor, highlightSnippet } from '../../../src/features/diff/highlight'
 
 describe('languageFor', () => {
   it.each([
@@ -45,5 +45,15 @@ describe('highlightRows', () => {
     expect(highlightRows(parsePatch('@@ -1 +1 @@\n+a'), 'a.bin').size).toBe(0)
     const huge = parsePatch('@@ -1,5000 +1,5000 @@\n' + Array.from({ length: 5000 }, () => '+x').join('\n'))
     expect(highlightRows(huge, 'a.php').size).toBe(0)
+  })
+})
+
+describe('highlightSnippet', () => {
+  it('colors code by the file it comes from', () => {
+    expect(highlightSnippet("auth()->user()->can('billing')", 'src/A.php')).toContain('hljs-string')
+  })
+
+  it('escapes code it cannot color', () => {
+    expect(highlightSnippet('<b>& more</b>', 'notes.unknown')).toBe('&lt;b&gt;&amp; more&lt;/b&gt;')
   })
 })

@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
+import { shallowRef } from 'vue'
 import { describe, expect, it } from 'vitest'
 import FileCard from '../../../src/features/diff/FileCard.vue'
+import { fileContextKey } from '../../../src/features/diff/fileContext'
 import { notesContext, provideContext } from '../../helpers/context'
 import { file } from '@pr-sift/core/testing'
 
@@ -54,5 +56,25 @@ describe('FileCard', () => {
       global: { provide: provideContext(notesContext()) },
     })
     expect(wrapper.find('[aria-label="Show this file as split"]').exists()).toBe(false)
+  })
+
+  it('shows how many GitHub comments a file has', async () => {
+    const wrapper = mount(FileCard, {
+      props: { file: file('src/A.php'), viewed: false },
+      global: {
+        provide: {
+          ...provideContext(notesContext()),
+          [fileContextKey as symbol]: {
+            canExpand: shallowRef(false),
+            loadLines: async () => [],
+            githubUrl: async () => 'https://github.com/o/r/pull/7/files#a',
+            comments: shallowRef(new Map([['src/A.php', 3]])),
+          },
+        },
+      },
+    })
+    await wrapper.vm.$nextTick()
+    const badge = wrapper.get('button[title^="3 comments on GitHub"]')
+    expect(badge.text()).toBe('3')
   })
 })

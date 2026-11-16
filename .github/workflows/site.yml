@@ -3,7 +3,7 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: ['apps/site/**', 'media/**', '.github/workflows/site.yml']
+    paths: ['apps/site/**', 'apps/extension/**', 'packages/core/**', 'tools/capture/demo-pr.mjs', 'media/**', '.github/workflows/site.yml']
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The live demo on the site runs the built extension.
+      - run: pnpm --filter @pr-sift/extension build
       - run: pnpm --filter @pr-sift/site build
       - uses: actions/upload-pages-artifact@v4
         with:

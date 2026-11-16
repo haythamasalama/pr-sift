@@ -1,342 +1,76 @@
 <script setup lang="ts">
-import { onMounted, shallowRef } from 'vue'
-import {
-  Bug,
-  CircleAlert,
-  Lightbulb,
-  CircleCheck,
-  ChevronDown,
-  Columns2,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  Monitor,
-  Moon,
-  Rows2,
-  Sun,
-} from '@lucide/vue'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
+import { Eye, FolderTree, Palette } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
-import { openReport } from '../lib/report'
+import BrandIcon from '../components/BrandIcon.vue'
+import GithubMark from '../components/GithubMark.vue'
 import { useAppearance } from '../features/appearance/useAppearance'
-import { DEFAULTS, getSettings } from '../lib/settings'
-import type { DiffMode, Settings, ThemeMode } from '../lib/types'
+import SettingsForm from '../features/settings/SettingsForm.vue'
+import { SETTINGS_TABS, TAB_OF, type SettingsSectionId, type SettingsTab } from '../features/settings/sections'
 
-const STATUSES = [
-  { value: 'added', label: 'Added files' },
-  { value: 'modified', label: 'Modified files' },
-  { value: 'removed', label: 'Deleted files' },
-  { value: 'renamed', label: 'Renamed files' },
-]
+const ICONS = { about: BrandIcon, github: GithubMark, review: Eye, files: FolderTree, appearance: Palette }
 
-const { theme, dark, setTheme } = useAppearance()
-const token = shallowRef('')
-const showToken = shallowRef(false)
-const hide = shallowRef('')
-const hideStatuses = shallowRef<string[]>([])
-const reviewMode = shallowRef(DEFAULTS.reviewMode)
-const diffView = shallowRef<DiffMode>(DEFAULTS.diffView)
-const treeIndent = shallowRef(DEFAULTS.treeIndent)
-const treeGuides = shallowRef(DEFAULTS.treeGuides)
-const presets = shallowRef('[]')
-const advancedOpen = shallowRef(false)
-const confirmReset = shallowRef(false)
-const message = shallowRef<{ ok: boolean; text: string } | null>(null)
+const { dark } = useAppearance()
+const section = (location.hash.slice(1) || undefined) as SettingsSectionId | undefined
+const form = useTemplateRef<InstanceType<typeof SettingsForm>>('form')
+const current = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
 
-function fill(settings: Settings) {
-  hide.value = settings.hide.join('\n')
-  hideStatuses.value = [...settings.hideStatuses]
-  reviewMode.value = settings.reviewMode
-  diffView.value = settings.diffView
-  treeIndent.value = settings.treeIndent
-  treeGuides.value = settings.treeGuides
-  presets.value = JSON.stringify(settings.presets, null, 2)
+let pickedAt = 0
+
+function go(id: SettingsTab) {
+  pickedAt = Date.now()
+  current.value = id
+  void form.value?.scrollToSection(id)
+  history.replaceState(null, '', `#${id}`)
 }
 
-async function load() {
-  token.value = ((await chrome.storage.local.get('token')) as { token?: string }).token ?? ''
-  fill(await getSettings())
+function track() {
+  // Scrolling to a short section near the end lands on the page bottom, which would mark the last section instead.
+  if (Date.now() - pickedAt < 800) return
+  const sections = [...document.querySelectorAll<HTMLElement>('section[data-section]')]
+  const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2
+  const passed = sections.filter((s) => s.getBoundingClientRect().top <= window.innerHeight / 3)
+  const active = atBottom ? sections.at(-1) : passed.at(-1)
+  if (active) current.value = active.dataset.section as SettingsTab
 }
 
-function flash(ok: boolean, text: string) {
-  message.value = { ok, text }
-  setTimeout(() => (message.value = null), 3000)
-}
-
-function toggleStatus(status: string, on: boolean) {
-  hideStatuses.value = on ? [...hideStatuses.value, status] : hideStatuses.value.filter((s) => s !== status)
-}
-
-async function save() {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(presets.value)
-  } catch (e) {
-    advancedOpen.value = true
-    return flash(false, 'Presets are not valid JSON: ' + (e as Error).message)
-  }
-  if (!Array.isArray(parsed)) {
-    advancedOpen.value = true
-    return flash(false, 'Presets must be a list')
-  }
-  const current = await getSettings()
-  const settings: Settings = {
-    ...current,
-    presets: parsed,
-    hide: hide.value
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean),
-    hideStatuses: hideStatuses.value,
-    reviewMode: reviewMode.value,
-    diffView: diffView.value,
-    treeIndent: treeIndent.value,
-    treeGuides: treeGuides.value,
-  }
-  await chrome.storage.local.set({ token: token.value.trim(), settings })
-  flash(true, 'Saved')
-}
-
-async function reset() {
-  if (!confirmReset.value) {
-    confirmReset.value = true
-    setTimeout(() => (confirmReset.value = false), 3000)
-    return
-  }
-  confirmReset.value = false
-  await chrome.storage.local.remove('settings')
-  fill(DEFAULTS)
-  flash(true, 'Settings reset to defaults')
-}
-
-onMounted(load)
+onMounted(() => window.addEventListener('scroll', track, { passive: true }))
+onBeforeUnmount(() => window.removeEventListener('scroll', track))
 </script>
 
 <template>
   <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }">
-    <main class="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+    <div class="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <header class="flex items-center gap-3">
-        <div class="flex size-10 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
+        <div class="flex size-9 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
           <BrandMark />
         </div>
         <div class="flex flex-col">
-          <h1 class="text-xl font-semibold">PR Sift</h1>
-          <p class="text-sm text-muted-foreground">Review big pull requests without the noise.</p>
+          <h1 class="text-lg leading-6 font-semibold">PR Sift settings</h1>
+          <p class="text-sm text-muted-foreground">Changes apply right away, here and in open reviews.</p>
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>GitHub token</CardTitle>
-          <CardDescription>Optional. Used to post notes as comments, and to read the pull request if your session can’t.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Field>
-            <FieldLabel for="token">Personal access token</FieldLabel>
-            <InputGroup>
-              <InputGroupInput
-                id="token"
-                v-model="token"
-                :type="showToken ? 'text' : 'password'"
-                autocomplete="off"
-                placeholder="github_pat_…"
-              />
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton :aria-label="showToken ? 'Hide token' : 'Show token'" size="icon-xs" @click="showToken = !showToken">
-                  <EyeOff v-if="showToken" /><Eye v-else />
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
-            <FieldDescription>Fine-grained, with Pull requests set to read and write.</FieldDescription>
-            <Button as-child variant="outline" size="sm" class="w-fit">
-              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">
-                <ExternalLink /> Create a token on GitHub
-              </a>
-            </Button>
-          </Field>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Theme</CardTitle>
-          <CardDescription>Applies right away, here and in the review.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel>Mode</FieldLabel>
-                <FieldDescription>System follows your device.</FieldDescription>
-              </FieldContent>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                :model-value="theme"
-                aria-label="Theme"
-                @update:model-value="(v) => v && setTheme(v as ThemeMode)"
-              >
-                <ToggleGroupItem value="system"><Monitor /> System</ToggleGroupItem>
-                <ToggleGroupItem value="light"><Sun /> Light</ToggleGroupItem>
-                <ToggleGroupItem value="dark"><Moon /> Dark</ToggleGroupItem>
-              </ToggleGroup>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Hidden files</CardTitle>
-          <CardDescription>Kept out of the list until you turn on “Hidden” in the review.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field>
-              <FieldLabel for="hide">Path patterns</FieldLabel>
-              <Textarea id="hide" v-model="hide" rows="6" spellcheck="false" placeholder="**/*.lock" />
-              <FieldDescription>One per line. * stays inside a folder, ** crosses folders.</FieldDescription>
-            </Field>
-            <FieldSet>
-              <FieldLegend variant="label">Hide by change type</FieldLegend>
-              <FieldGroup class="gap-3">
-                <Field v-for="s in STATUSES" :key="s.value" orientation="horizontal">
-                  <Checkbox
-                    :id="`status-${s.value}`"
-                    :model-value="hideStatuses.includes(s.value)"
-                    @update:model-value="(v) => toggleStatus(s.value, v === true)"
-                  />
-                  <FieldLabel :for="`status-${s.value}`" class="font-normal">{{ s.label }}</FieldLabel>
-                </Field>
-              </FieldGroup>
-            </FieldSet>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Defaults</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel for="review-mode">Hide viewed files</FieldLabel>
-                <FieldDescription>Files leave the list once you mark them viewed.</FieldDescription>
-              </FieldContent>
-              <Switch id="review-mode" v-model="reviewMode" />
-            </Field>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel>Diff view</FieldLabel>
-                <FieldDescription>Small windows always use Unified.</FieldDescription>
-              </FieldContent>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                :model-value="diffView"
-                aria-label="Diff view"
-                @update:model-value="(v) => v && (diffView = v as DiffMode)"
-              >
-                <ToggleGroupItem value="unified"><Rows2 /> Unified</ToggleGroupItem>
-                <ToggleGroupItem value="split"><Columns2 /> Split</ToggleGroupItem>
-              </ToggleGroup>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>File tree</CardTitle>
-          <CardDescription>How far each folder’s contents are pushed in.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field>
-              <div class="flex items-center justify-between">
-                <FieldLabel for="tree-indent">Indent</FieldLabel>
-                <span class="text-sm text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
-              </div>
-              <Slider
-                id="tree-indent"
-                :model-value="[treeIndent]"
-                :min="0"
-                :max="24"
-                :step="2"
-                aria-label="Indent"
-                @update:model-value="(v) => v && (treeIndent = v[0]!)"
-              />
-              <FieldDescription>6 px matches the tree before this setting existed.</FieldDescription>
-            </Field>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel for="tree-guides">Guide lines</FieldLabel>
-                <FieldDescription>A line under each open folder.</FieldDescription>
-              </FieldContent>
-              <Switch id="tree-guides" v-model="treeGuides" />
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <Collapsible v-model:open="advancedOpen">
-          <CardHeader>
-            <CardTitle>Presets</CardTitle>
-            <CardDescription>Named groups of paths to pick in the review.</CardDescription>
-            <CollapsibleTrigger as-child>
-              <Button variant="outline" size="sm" class="w-fit">
-                {{ advancedOpen ? 'Hide' : 'Edit' }} JSON
-                <ChevronDown />
-              </Button>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent>
-              <Field>
-                <FieldLabel for="presets">Presets JSON</FieldLabel>
-                <Textarea id="presets" v-model="presets" rows="10" spellcheck="false" />
-                <FieldDescription>Example: [{ "name": "Backend", "include": ["src/**"] }]</FieldDescription>
-              </Field>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Help</CardTitle>
-          <CardDescription>Opens a GitHub issue. Nothing from your pull requests is sent.</CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-wrap gap-2">
-          <Button variant="outline" @click="openReport('bug')"><Bug /> Report a problem</Button>
-          <Button variant="outline" @click="openReport('idea')"><Lightbulb /> Suggest an idea</Button>
-        </CardContent>
-      </Card>
-
-      <Alert v-if="message" :variant="message.ok ? 'default' : 'destructive'">
-        <CircleCheck v-if="message.ok" /><CircleAlert v-else />
-        <AlertDescription>{{ message.text }}</AlertDescription>
-      </Alert>
-
-      <div class="flex gap-2">
-        <Button @click="save">Save</Button>
-        <Button :variant="confirmReset ? 'destructive' : 'outline'" @click="reset">
-          {{ confirmReset ? 'Click again to reset' : 'Reset to defaults' }}
-        </Button>
+      <div class="grid items-start gap-8 md:grid-cols-[11rem_minmax(0,1fr)]">
+        <nav aria-label="Settings" class="flex gap-1 overflow-x-auto md:sticky md:top-10 md:flex-col md:overflow-visible">
+          <Button
+            v-for="t in SETTINGS_TABS"
+            :key="t.id"
+            variant="ghost"
+            size="sm"
+            class="justify-start"
+            :class="current === t.id ? 'bg-muted text-foreground' : 'text-muted-foreground'"
+            :aria-current="current === t.id ? 'true' : undefined"
+            @click="go(t.id)"
+          >
+            <component :is="ICONS[t.id]" class="size-4" />{{ t.label }}
+          </Button>
+        </nav>
+        <main class="min-w-0">
+          <SettingsForm ref="form" layout="page" :section="section" />
+        </main>
       </div>
-    </main>
+    </div>
   </div>
 </template>

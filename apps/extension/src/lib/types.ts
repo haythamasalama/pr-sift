@@ -1,5 +1,7 @@
 export * from '@pr-sift/core'
 
+import type { MergeMethod } from '@pr-sift/core'
+
 export type DiffMode = 'unified' | 'split'
 
 export type ExtState = 'include' | 'exclude'
@@ -27,10 +29,16 @@ export interface Settings {
   customExtensions: string[]
   hiddenTypes: string[]
   reviewMode: boolean
+  autoOpen: boolean
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
   treeIndent: number
   treeGuides: boolean
+  mergeMethod: MergeMethod
+  leaveOutCoAuthors: boolean
+  removedCoAuthors: string[]
+  keptCoAuthors: string[]
+  showResolved: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }

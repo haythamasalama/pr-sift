@@ -71,6 +71,152 @@ const NOTES = [
   },
 ]
 
+const DESCRIPTION = `<h2 dir="auto">Summary</h2>
+<ul dir="auto">
+<li><strong>Invoices</strong> now include usage lines from <code>UsageMeter</code>, priced with the account's plan.</li>
+<li>The business portal lists invoices per period, with a PDF download.</li>
+<li>Totals are rounded to the currency's precision.</li>
+</ul>
+<h2 dir="auto">How to test</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked disabled> <code>php artisan test --filter=Billing</code></li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled> Open an invoice for a metered plan and check the usage lines</li>
+</ul>
+<blockquote><p dir="auto">Runs at month end for every account, see <a href="/haythamasalama/storefront/issues/471">#471</a>.</p></blockquote>`
+
+const PAGE_DATA = {
+  payload: {
+    pullRequestsLayoutRoute: {
+      pullRequest: {
+        title: TITLE,
+        author: { login: 'haythamasalama', avatarUrl: 'https://avatars.githubusercontent.com/u/37311945?v=4' },
+        baseBranch: 'main',
+        headBranch: 'feat/usage-invoices',
+        commitsCount: 4,
+        state: 'OPEN',
+      },
+    },
+  },
+}
+
+const commit = (message, name, email, login) => ({ commit: { message, author: { name, email } }, author: { login } })
+
+const ago = (hours) => new Date(Date.now() - hours * 3600_000).toISOString()
+const AUTHOR = { login: 'haythamasalama', avatar_url: 'https://avatars.githubusercontent.com/u/37311945?v=4' }
+const person = (login) => ({ login })
+const threadUrl = (anchor) => `https://github.com/${PR.owner}/${PR.repo}/pull/${PR.number}#${anchor}`
+const reviewComment = (id, path, line, user, body, hours, extra = {}) => ({
+  id,
+  path,
+  line,
+  side: 'RIGHT',
+  body_html: body,
+  created_at: ago(hours),
+  html_url: threadUrl(`discussion_r${id}`),
+  user,
+  ...extra,
+})
+
+const API = {
+  viewer: { login: 'taylor' },
+  pull: {
+    title: TITLE,
+    body: '',
+    comments: 2,
+    review_comments: 5,
+    commits: 4,
+    mergeable_state: 'clean',
+    user: AUTHOR,
+    head: { sha: 'a1b2c3d', label: 'haythamasalama:feat/usage-invoices' },
+  },
+  issueComments: [
+    {
+      id: 701,
+      body_html: "<p>Thanks! I'll review the billing part today.</p>",
+      created_at: ago(30),
+      html_url: threadUrl('issuecomment-701'),
+      user: person('taylor'),
+    },
+    {
+      id: 702,
+      body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>',
+      created_at: ago(5),
+      html_url: threadUrl('issuecomment-702'),
+      user: AUTHOR,
+    },
+  ],
+  reviews: [
+    {
+      id: 801,
+      state: 'APPROVED',
+      body_html: '<p>Looks good to me.</p>',
+      submitted_at: ago(3),
+      html_url: threadUrl('pullrequestreview-801'),
+      user: person('lee-park'),
+    },
+  ],
+  comments: [
+    reviewComment(
+      901,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      33,
+      person('taylor'),
+      '<p>Should the currency come from the plan instead of the account? A plan change mid-period would bill in the old currency.</p>',
+      26,
+    ),
+    reviewComment(
+      902,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      33,
+      AUTHOR,
+      "<p>Plans don't have a currency yet, so the account is the source for now. I'll note it in <code>docs/billing/usage.md</code>.</p>",
+      20,
+      { in_reply_to_id: 901 },
+    ),
+    reviewComment(
+      903,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      65,
+      person('kim-dev'),
+      '<p><code>roundTo</code> should round half up for invoices. Can you add a test for <code>0.005</code>?</p>',
+      8,
+    ),
+    reviewComment(
+      904,
+      'src/Presentation/Business/Controllers/InvoiceController.php',
+      31,
+      person('lee-park'),
+      '<p>Paginate here, a business can have thousands of invoices.</p>',
+      6,
+      { start_line: 27 },
+    ),
+    reviewComment(
+      905,
+      'src/Domain/Billing/Usage/UsageRepository.php',
+      13,
+      person('taylor'),
+      '<p>Name it <code>totalsForPeriod</code>?</p>',
+      4,
+    ),
+  ],
+  commits: [
+    commit(
+      'feat(billing): add usage lines to invoices\n\nCo-Authored-By: Claude <noreply@anthropic.com>',
+      'Haytham A. Salama',
+      'haytham@storefront.dev',
+      'haythamasalama',
+    ),
+    commit('feat(billing): list invoices in the business portal', 'Taylor', 'taylor@storefront.dev', 'taylor'),
+    commit(
+      'fix(billing): round totals to the currency precision\n\nCo-authored-by: Codex <codex@openai.com>',
+      'Haytham A. Salama',
+      'haytham@storefront.dev',
+      'haythamasalama',
+    ),
+    commit('test(billing): cover month-end usage totals', 'Haytham A. Salama', 'haytham@storefront.dev', 'haythamasalama'),
+  ],
+}
+
 const githubPage = (
   title,
 ) => `<!doctype html><html><head><meta charset="utf-8"><title>${title} by haythamasalama · Pull Request #${PR.number} · ${PR.owner}/${PR.repo}</title>
@@ -90,12 +236,17 @@ const githubPage = (
 <div class="top"><b>${PR.owner} / ${PR.repo}</b> · Pull requests</div>
 <main>
   <h1 class="js-issue-title">${title}</h1>
-  <div><span class="state">Open</span> haythamasalama wants to merge 12 commits into <code>main</code></div>
-  <div class="tabs"><span>Conversation</span><span>Commits 12</span><span>Checks</span><span class="on">Files changed 41</span></div>
+  <div><span class="state">Open</span> haythamasalama wants to merge 4 commits into <code>main</code></div>
+  <div class="tabs"><span>Conversation</span><span>Commits 4</span><span>Checks</span><span class="on">Files changed 41</span></div>
+  <script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(PAGE_DATA)}</script>
+  <rails-partial data-partial-name="pullRequestsConversationsRoute.Body" hidden><div class="comment-body markdown-body js-comment-body">${DESCRIPTION}</div></rails-partial>
   ${Array.from({ length: 6 }, (_, i) => `<section class="file"><header>src/Domain/Billing/File${i + 1}.php</header><div></div></section>`).join('')}
 </main></body></html>`
 
-function chromeMock({ store }) {
+function chromeMock({ store, api = null }) {
+  // The auto open tip and the dots on new settings would sit in every shot.
+  store.autoOpenTipDismissed ??= true
+  store.seenNew ??= ['auto-open', 'co-authors', 'saved-filters', 'updates']
   const listeners = new Set()
   const local = {
     get: async (key) => (typeof key === 'string' ? (key in store ? { [key]: store[key] } : {}) : { ...store }),
@@ -115,7 +266,28 @@ function chromeMock({ store }) {
     runtime: {
       id: 'pr-sift-demo',
       getManifest: () => ({ version: '0.1.0' }),
-      sendMessage: (_m, cb) => cb && cb({ ok: false, status: 0 }),
+      sendMessage: (m, cb) => {
+        if (!cb) return
+        if (!api || m.type !== 'gh') return cb({ ok: false, status: 0 })
+        const path = m.path.split('?')[0]
+        const ok = (data) => cb({ ok: true, status: 200, data })
+        if (m.method === 'PUT' && path.endsWith('/merge')) return ok({ sha: '9f8e7d6c5b4a', merged: true })
+        if (m.method === 'POST' && path.endsWith('/reviews')) {
+          const state = { APPROVE: 'APPROVED', REQUEST_CHANGES: 'CHANGES_REQUESTED', COMMENT: 'COMMENTED' }[m.body.event]
+          api.reviews = [
+            ...api.reviews,
+            { id: 990, state, body_html: '', submitted_at: new Date().toISOString(), html_url: '#', user: api.viewer },
+          ]
+          return ok(api.reviews.at(-1))
+        }
+        if (path === '/user') return ok(api.viewer)
+        if (path.endsWith('/reviews')) return ok(api.reviews)
+        if (path.includes('/issues/')) return ok(api.issueComments)
+        if (path.endsWith('/comments')) return ok(api.comments)
+        if (path.endsWith('/commits')) return ok(api.commits)
+        if (path.includes('/pulls/')) return ok(api.pull)
+        ok({})
+      },
     },
     storage: { local, onChanged: { addListener: (l) => listeners.add(l), removeListener: (l) => listeners.delete(l) } },
   }
@@ -157,8 +329,8 @@ async function openDemo(browser, { theme = 'light', notes = true, video = null }
     colorScheme: theme,
     ...(video ? { recordVideo: { dir: `${OUT}/raw`, size: VIEWPORT } } : {}),
   })
-  const store = { settings: { theme, assistant: 'claude-code' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
-  await context.addInitScript(chromeMock, { store })
+  const store = { token: 'demo', settings: { theme, assistant: 'claude-code' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
+  await context.addInitScript(chromeMock, { store, api: API })
   if (video) await context.addInitScript(cursorScript)
   await context.route('https://github.com/**', (route) => {
     const url = route.request().url()
@@ -253,7 +425,7 @@ async function shot(browser, name, prepare, options = {}) {
 }
 
 const SCALE = 2
-const README_GIFS = ['filters', 'review', 'notes']
+const README_GIFS = ['filters', 'review', 'notes', 'merge']
 
 function videoCursor({ ringColor }) {
   const add = () => {
@@ -314,7 +486,7 @@ function videoCursor({ ringColor }) {
   else add()
 }
 
-const GENTLE_ZOOM = 1.35
+const GENTLE_ZOOM = 1.2
 let maxZoom = GENTLE_ZOOM
 
 // The frame always holds the cursor and the whole target, so zoom never cuts what the viewer should read. A zoom too
@@ -400,7 +572,7 @@ async function camera(page, target, zoom = 1.7, { follow = true } = {}) {
 }
 
 // Playwright's own recorder caps the bitrate around 1 Mbps, which blurs code text, so frames come straight from the
-// browser at full size and ffmpeg builds the video from them.
+// browser and ffmpeg builds the video from them. Frames at the output width keep the encoder fast enough for smooth motion.
 async function startCapture(page) {
   const client = await page.context().newCDPSession(page)
   const frames = []
@@ -409,7 +581,13 @@ async function startCapture(page) {
     client.send('Page.screencastFrameAck', { sessionId }).catch(() => {})
   })
   const size = page.viewportSize()
-  await client.send('Page.startScreencast', { format: 'jpeg', quality: 95, maxWidth: size.width, maxHeight: size.height })
+  const maxWidth = Math.min(size.width, 1920)
+  await client.send('Page.startScreencast', {
+    format: 'jpeg',
+    quality: 92,
+    maxWidth,
+    maxHeight: Math.round((maxWidth * size.height) / size.width),
+  })
   return {
     frames,
     async stop() {
@@ -492,10 +670,11 @@ async function record(browser, name, play, options) {
   const theme = options.theme
   const context = await browser.newContext({ viewport: big, colorScheme: theme })
   const store = {
+    token: 'demo',
     settings: { theme, assistant: 'claude-code', reviewMode: options.reviewMode ?? true },
     [`notes:${KEY}`]: options.notes ?? NOTES,
   }
-  await context.addInitScript(chromeMock, { store })
+  await context.addInitScript(chromeMock, { store, api: API })
   await context.addInitScript(videoCursor, { ringColor: theme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)' })
   await context.route('https://github.com/**', (route) =>
     route.request().url().endsWith('.diff')
@@ -559,7 +738,8 @@ async function scaleHost(page) {
   )
 }
 
-const browser = await chromium.launch()
+// Hardware compositing keeps the sheet's backdrop blur from dropping frames.
+const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'] })
 
 async function launcherShot() {
   if (only.length && !only.includes('launcher')) return
@@ -613,10 +793,52 @@ await shot(browser, 'notes', async (page) => {
   await page.locator('textarea').fill('Filter zero quantities in SQL instead of in PHP, the totals table can be large.')
 })
 
+await shot(browser, 'resolve', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: 'Mark note as resolved' }).first().click()
+  await page.getByRole('button', { name: /Notes/ }).click()
+  await page.getByLabel('Show resolved in the diff').click()
+  await page.waitForTimeout(300)
+})
+
 await shot(browser, 'ai-export', async (page) => {
   await openReview(page)
   await page.getByRole('button', { name: /Notes/ }).click()
   await page.getByRole('button', { name: 'Choose the assistant' }).click()
+})
+
+await shot(browser, 'description', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /Description/ }).click()
+})
+
+await shot(browser, 'merge', async (page) => {
+  await openReview(page)
+  await page
+    .getByRole('button', { name: /^Squash and merge/ })
+    .first()
+    .click()
+  await page.getByText('Co-authors').waitFor()
+})
+
+await shot(browser, 'approve', async (page) => {
+  await openReview(page)
+  await page.getByTitle('Approve, request changes or comment').click()
+  await page.getByRole('textbox', { name: 'Comment' }).fill('Looks good. The usage lines read well.')
+})
+
+await shot(browser, 'comments', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /^\d+ comments/ }).click()
+  await page.locator('[data-thread="901"]').scrollIntoViewIfNeeded()
+})
+
+await shot(browser, 'settings', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: 'Options' }).click()
+  await page.getByRole('menuitem', { name: 'Settings' }).click()
+  await page.getByRole('tab', { name: 'GitHub' }).click()
+  await page.getByText('Leave out AI co-authors').waitFor()
 })
 
 await shot(browser, 'split', async (page) => {
@@ -637,16 +859,11 @@ await shot(
   { theme: 'light' },
 )
 
-await shot(
-  browser,
-  'tree-viewed',
-  async (page) => {
-    await openReview(page)
-    await page.locator('#hide-viewed').click()
-    for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
-  },
-  { theme: 'light' },
-)
+await shot(browser, 'tree-viewed', async (page) => {
+  await openReview(page)
+  await page.locator('#hide-viewed').click()
+  for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
+})
 
 await shot(browser, 'copy-menu', async (page) => {
   await openReview(page)
@@ -822,6 +1039,27 @@ await clip(browser, 'resolve', async (page) => {
   await pause(page, 1100)
 })
 
+await clip(browser, 'merge', async (page) => {
+  await pause(page, 500)
+  await glide(page, page.getByRole('button', { name: /^Squash and merge/ }).first(), { steps: 30 })
+  const sheet = page.locator('[data-slot="sheet-content"]')
+  await sheet.getByText('Co-authors').waitFor()
+  await pause(page, 600)
+  const submit = sheet.getByRole('button', { name: 'Squash and merge' })
+  await glide(page, page.locator('#co-author-0'), { click: false, steps: 30 })
+  await camera(page, await around(sheet.getByText('Co-authors'), submit), 1.2, { follow: false })
+  await pause(page, 1100)
+  for (const [id, wait] of [
+    ['#co-author-2', 900],
+    ['#co-author-1', 900],
+  ]) {
+    await glide(page, page.locator(id), { click: false, steps: 26 })
+    await pause(page, wait)
+  }
+  await glide(page, submit, { steps: 30 })
+  await pause(page, 1800)
+})
+
 await clip(browser, 'claude', async (page) => {
   await glide(page, page.getByRole('button', { name: /Notes/ }))
   await pause(page, 700)
@@ -868,16 +1106,13 @@ await clip(browser, 'views', async (page) => {
   await pause(page, 600)
   await camera(page, null)
   await pause(page, 1000)
-  const copy = page.getByRole('button', { name: 'Copy' }).first()
+  const copy = page.getByRole('button', { name: 'Copy', exact: true }).first()
   await camera(page, copy, 1.9)
   await glide(page, copy)
   await pause(page, 800)
   await glide(page, page.getByRole('menuitem', { name: /Copy diff/ }))
   await pause(page, 700)
 })
-
-const fontData = (pkg, file) =>
-  `data:font/woff2;base64,${readFileSync(root(`apps/site/node_modules/@fontsource/${pkg}/files/${file}`)).toString('base64')}`
 
 const bigGithubPage = (theme) => {
   const dark = theme === 'dark'
@@ -914,26 +1149,6 @@ const bigGithubPage = (theme) => {
 </main></body></html>`
 }
 
-function storyCaption({ mono }) {
-  const style = document.createElement('style')
-  style.textContent = `
-    @font-face { font-family: PlexMono; font-weight: 500; src: url(${mono}); }
-    #story { position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 2147483600; pointer-events: none;
-      font: 500 60px/1.2 PlexMono, ui-monospace, monospace; letter-spacing: -0.01em; color: #fff; background: #000;
-      border-radius: 24px; padding: 14px; box-shadow: 0 24px 80px rgb(0 0 0 / 0.35); }
-    #story p { margin: 0; display: flex; gap: 28px; padding: 12px 28px; white-space: nowrap; transition: opacity 0.45s ease, max-height 0.45s ease; overflow: hidden; }
-    #story .del { background: rgb(248 81 73 / 0.2); border-radius: 14px 14px 0 0; }
-    #story .add { background: rgb(46 160 67 / 0.24); border-radius: 0 0 14px 14px; max-height: 0; padding-block: 0; opacity: 0; }
-    #story.done .add { max-height: 140px; padding-block: 12px; opacity: 1; }
-    #story .del span { color: #f85149; }
-    #story .add span { color: #3fb950; }`
-  document.head.appendChild(style)
-  const box = document.createElement('div')
-  box.id = 'story'
-  box.innerHTML = '<p class="del"><span>−</span>Scroll 214 changed files.</p><p class="add"><span>+</span>Review the 12 that matter.</p>'
-  document.documentElement.appendChild(box)
-}
-
 async function around(...targets) {
   const boxes = await Promise.all(targets.map((t) => t.boundingBox()))
   const x = Math.min(...boxes.map((b) => b.x))
@@ -943,7 +1158,7 @@ async function around(...targets) {
   return { x, y, width: right - x, height: bottom - y }
 }
 
-async function recordStory(theme, { caption }) {
+async function recordStory(theme) {
   const name = themedName('before-after', theme)
   const big = { width: VIEWPORT.width * SCALE, height: VIEWPORT.height * SCALE }
   const context = await browser.newContext({ viewport: big, colorScheme: theme })
@@ -958,20 +1173,19 @@ async function recordStory(theme, { caption }) {
   await page.goto(PR_URL)
   await page.addScriptTag({ path: CONTENT })
   await scaleHost(page)
-  if (caption) await page.evaluate(storyCaption, { mono: fontData('ibm-plex-mono', 'ibm-plex-mono-latin-500-normal.woff2') })
   await page.mouse.move(big.width * 0.55, big.height * 0.45)
   const capture = await startCapture(page)
   await page.waitForTimeout(600)
   const from = now()
 
-  await pause(page, 400)
+  await pause(page, 900)
   await page.evaluate(
     () =>
       new Promise((done) => {
         const end = document.documentElement.scrollHeight * 0.55
         const t0 = performance.now()
         const step = (t) => {
-          const k = Math.min(1, (t - t0) / 1300)
+          const k = Math.min(1, (t - t0) / 2200)
           scrollTo(0, end * (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2))
           if (k < 1) requestAnimationFrame(step)
           else done()
@@ -979,52 +1193,42 @@ async function recordStory(theme, { caption }) {
         requestAnimationFrame(step)
       }),
   )
-  await pause(page, 200)
-  await glide(page, launcher(page), { steps: 20 })
+  await pause(page, 300)
+  await glide(page, launcher(page), { steps: 24 })
   const clicked = now()
   await folderViewed(page, '.claude').waitFor()
   await pause(page, 100)
   const loaded = now()
-  await pause(page, 700)
+  await pause(page, 900)
 
   for (const folder of ['.claude', 'docs', 'lang', 'tests']) {
     const box = folderViewed(page, folder)
     await box.scrollIntoViewIfNeeded()
-    await glide(page, box)
-    await pause(page, 500)
+    await glide(page, box, { steps: 22 })
+    await pause(page, 150)
+    await pause(page, 650)
   }
-  await glide(page, chip(page, 'modified'))
-  await pause(page, 600)
   const quick = page
     .locator('div.group')
     .filter({ has: page.locator(`button[title="${QUICK}"]`) })
     .first()
-  await glide(page, quick.locator(`button[title="${QUICK}"]`))
-  await pause(page, 900)
-  await glide(page, quick.locator('[title="Mark as viewed"]'))
-  await pause(page, 500)
-  await glide(page, chip(page, 'modified'))
-  await pause(page, 400)
+  await glide(page, quick.locator('[title="Mark as viewed"]'), { steps: 22 })
+  await pause(page, 150)
+  await pause(page, 700)
   await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
-  await pause(page, 300)
-  if (caption) await page.evaluate(() => document.getElementById('story').classList.add('done'))
   const left = await page
     .getByText(/^\d+ left$/)
     .first()
     .boundingBox()
-  await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 14 })
-  await pause(page, 1800)
+  await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 20 })
+  await pause(page, 2600)
   const to = now()
   await capture.stop()
   await context.close()
 
-  const mp4 = caption ? `${OUT}/raw/${name}.caption.mp4` : `${OUT}/videos/${name}.mp4`
+  const mp4 = `${OUT}/videos/${name}.mp4`
   const length = writeVideo(capture.frames, { from, to, cut: [clicked + 0.5, loaded - 0.1] }, mp4)
-  if (caption) {
-    writeGif(mp4, `${OUT}/videos/${name}.gif`)
-    console.log('gif', name, length.toFixed(1) + 's')
-    return
-  }
+  writeGif(mp4, `${OUT}/videos/${name}.gif`)
   execFileSync(ffmpeg, ['-y', '-loglevel', 'error', '-sseof', '-1', '-i', mp4, '-frames:v', '1', '-q:v', '2', `${OUT}/videos/${name}.jpg`])
   console.log('video', name, length.toFixed(1) + 's')
 }
@@ -1043,10 +1247,7 @@ if (!only.length || only.includes('before-after')) {
   await launcher(warmPage).click()
   await folderViewed(warmPage, '.claude').waitFor()
   await warm.close()
-  for (const theme of THEMES) {
-    await recordStory(theme, { caption: false })
-    await recordStory(theme, { caption: true })
-  }
+  for (const theme of THEMES) await recordStory(theme)
 }
 
 await browser.close()

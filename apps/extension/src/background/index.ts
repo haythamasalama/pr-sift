@@ -1,8 +1,11 @@
+import { BADGE_KEYS, refreshBadge } from './badge'
+
 interface ApiMessage {
   type: 'gh'
   path: string
   method?: string
   body?: unknown
+  accept?: string
 }
 
 interface TextMessage {
@@ -10,7 +13,7 @@ interface TextMessage {
   url: string
 }
 
-type Message = ApiMessage | TextMessage | { type: 'options' }
+type Message = ApiMessage | TextMessage | { type: 'options'; section?: string } | { type: 'update-check' } | { type: 'apply-update' }
 
 async function api(msg: ApiMessage) {
   const { token } = (await chrome.storage.local.get('token')) as { token?: string }
@@ -21,7 +24,7 @@ async function api(msg: ApiMessage) {
     method: msg.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
+      Accept: msg.accept && ACCEPT.test(msg.accept) ? msg.accept : 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       ...(msg.body ? { 'Content-Type': 'application/json' } : {}),
     },
@@ -29,6 +32,17 @@ async function api(msg: ApiMessage) {
   })
   const data = await res.json().catch(() => null)
   return { ok: res.ok, status: res.status, data }
+}
+
+const ACCEPT = /^application\/vnd\.github(\.[a-z-]+)?\+json$/
+
+async function checkForUpdate() {
+  try {
+    const { status, version } = await chrome.runtime.requestUpdateCheck()
+    return { status, version }
+  } catch {
+    return { status: 'error' }
+  }
 }
 
 const READABLE_ORIGINS = ['https://github.com', 'https://patch-diff.githubusercontent.com']
@@ -46,8 +60,17 @@ async function fetchText(url: string) {
 chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   if (sender.id !== chrome.runtime.id) return
   if (msg.type === 'options') {
-    void chrome.runtime.openOptionsPage()
+    if (msg.section && /^[a-z]+$/.test(msg.section)) void chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${msg.section}`) })
+    else void chrome.runtime.openOptionsPage()
     return
+  }
+  if (msg.type === 'apply-update') {
+    chrome.runtime.reload()
+    return
+  }
+  if (msg.type === 'update-check') {
+    void checkForUpdate().then(send)
+    return true
   }
   const task = msg.type === 'gh' ? api(msg) : msg.type === 'text' ? fetchText(msg.url) : null
   if (!task) return
@@ -57,4 +80,24 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
 
 chrome.action.onClicked.addListener(() => {
   void chrome.runtime.openOptionsPage()
+})
+
+chrome.runtime.onUpdateAvailable.addListener((details) => {
+  void chrome.storage.local.set({ updateReady: details.version })
+})
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && BADGE_KEYS.some((key) => key in changes)) void refreshBadge()
+})
+
+chrome.runtime.onStartup.addListener(() => void refreshBadge())
+
+void refreshBadge()
+
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason !== 'update') return
+  void chrome.storage.local.remove('updateReady')
+  const version = chrome.runtime.getManifest().version
+  // Reloading an unpacked build also reports an update, with the version unchanged.
+  if (details.previousVersion !== version) void chrome.storage.local.set({ updated: { version, previous: details.previousVersion } })
 })

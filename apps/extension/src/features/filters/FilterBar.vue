@@ -8,8 +8,10 @@ import {
   MessageSquareText,
   ChevronsDownUp,
   ChevronsUpDown,
+  Bookmark,
   Plus,
   RotateCcw,
+  Settings2,
   Undo2,
   X,
 } from '@lucide/vue'
@@ -26,19 +28,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { NOTES_CHIP } from '@pr-sift/core'
 import type { ExtChip, PrFile } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
+import { useSettingsOpener } from '../settings/useSettingsOpener'
 
-const { chips } = defineProps<{
+const { chips, viewPatterns = [] } = defineProps<{
   chips: ExtChip[]
   listedCount: number
   viewedInView: PrFile[]
   hiddenCount: number
   filtersActive: boolean
+  viewPatterns?: string[]
 }>()
 const reviewMode = defineModel<boolean>('reviewMode', { required: true })
 const showHidden = defineModel<boolean>('showHidden', { required: true })
@@ -54,7 +59,20 @@ const emit = defineEmits<{
   clearAll: []
   expandCards: []
   collapseCards: []
+  saveView: [name: string]
 }>()
+
+const openSettings = useSettingsOpener()
+const saveOpen = shallowRef(false)
+const viewName = shallowRef('')
+
+function saveView() {
+  const name = viewName.value.trim()
+  if (!name) return
+  emit('saveView', name)
+  viewName.value = ''
+  saveOpen.value = false
+}
 
 const extensionChips = computed(() => chips.filter((c) => !c.ext.includes(':')))
 const statusChips = computed(() => chips.filter((c) => c.ext.includes(':')))
@@ -99,7 +117,7 @@ const chipTitle = (chip: ExtChip) =>
       : 'Click to show only this type. Shift-click or right-click to always hide it'
 const isHideGesture = (e: MouseEvent) => e.shiftKey || e.altKey || e.metaKey || e.ctrlKey
 const chipClass = (chip: ExtChip) => [
-  'h-[22px] gap-1 rounded-full px-2.5 text-[11px] font-medium shadow-none',
+  'h-[22px] gap-1 rounded-md px-2.5 text-[11px] font-medium shadow-none',
   chip.ext.includes(':') ? '' : 'font-mono',
   chip.state === 'exclude' ? 'border-destructive/40 text-destructive line-through' : '',
 ]
@@ -146,7 +164,7 @@ const chipClass = (chip: ExtChip) => [
         v-else
         variant="ghost"
         size="xs"
-        class="h-[22px] rounded-full border border-dashed px-2.5 text-[11px] text-muted-foreground"
+        class="h-[22px] rounded-md border border-dashed px-2.5 text-[11px] text-muted-foreground"
         title="Add a file type, e.g. .blade.php"
         @click="startAdding"
       >
@@ -165,7 +183,7 @@ const chipClass = (chip: ExtChip) => [
           @click="(e: MouseEvent) => emit('toggleExtension', c.ext, isHideGesture(e))"
           @contextmenu.prevent="emit('toggleExtension', c.ext, true)"
         >
-          <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-amber-600 dark:text-amber-400" />
+          <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-attention" />
           <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>
@@ -177,12 +195,37 @@ const chipClass = (chip: ExtChip) => [
         <Button
           variant="outline"
           size="xs"
-          class="h-[22px] rounded-full px-2.5 text-[11px]"
+          class="h-[22px] rounded-md px-2.5 text-[11px]"
           title="Clear every filter and go back to the defaults"
           @click="emit('resetFilters')"
         >
           <RotateCcw /> Reset filters
         </Button>
+        <Popover v-if="viewPatterns.length" v-model:open="saveOpen">
+          <PopoverTrigger as-child>
+            <Button
+              variant="outline"
+              size="xs"
+              class="ml-1.5 h-[22px] rounded-md px-2.5 text-[11px]"
+              title="Save these types and folders as a filter in the top bar"
+            >
+              <Bookmark /> Save view
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" class="w-72 gap-2.5 p-3">
+            <form class="flex flex-col gap-2.5" @submit.prevent="saveView">
+              <p class="text-sm font-medium">Save as a filter</p>
+              <Input v-model="viewName" aria-label="Filter name" placeholder="Name, such as Backend" class="h-8 text-xs md:text-xs" />
+              <p class="truncate font-mono text-[11px] text-muted-foreground" :title="viewPatterns.join('  ')">
+                {{ viewPatterns.join('  ') }}
+              </p>
+              <div class="flex justify-end gap-2">
+                <Button type="button" variant="outline" size="sm" @click="saveOpen = false">Cancel</Button>
+                <Button type="submit" size="sm" :disabled="!viewName.trim()">Save</Button>
+              </div>
+            </form>
+          </PopoverContent>
+        </Popover>
       </template>
     </div>
 
@@ -200,6 +243,16 @@ const chipClass = (chip: ExtChip) => [
         <div class="flex items-center gap-1.5" title="Show files hidden by your rules (lock files, minified files…)">
           <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
           <Label for="show-hidden" class="text-xs font-normal whitespace-nowrap text-muted-foreground">Hidden ({{ hiddenCount }})</Label>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            class="size-5 text-muted-foreground"
+            title="Choose which files are always hidden"
+            aria-label="Edit hidden files"
+            @click="openSettings('hidden')"
+          >
+            <Settings2 />
+          </Button>
         </div>
         <div class="flex items-center gap-1.5" title="Files disappear from the list and the tree as soon as you mark them viewed">
           <Switch id="hide-viewed" v-model="reviewMode" />

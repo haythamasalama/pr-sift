@@ -102,12 +102,19 @@ function splitLines(html: string): string[] {
   return lines
 }
 
+const escape = (text: string) => text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
+
 function highlightBlock(texts: string[], language: string): string[] {
   try {
     return splitLines(hljs.highlight(texts.join('\n'), { language, ignoreIllegals: true }).value)
   } catch {
-    return texts.map((t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!))
+    return texts.map(escape)
   }
+}
+
+export function highlightSnippet(code: string, filename: string): string {
+  const language = languageFor(filename)
+  return language ? highlightBlock(code.split('\n'), language).join('\n') : escape(code)
 }
 
 const MAX_ROWS = 3000

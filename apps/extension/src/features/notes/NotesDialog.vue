@@ -20,6 +20,7 @@ import type { NotePatch } from './useNotes'
 import { buildReviewPrompt, describeLines, startOf } from '@pr-sift/core'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from '../../components/Modal.vue'
+import CodeQuote from './CodeQuote.vue'
 import { getSettings, saveSetting } from '../../lib/settings'
 import { assistantById, assistantsOfKind, type AssistantId } from './assistants'
 
@@ -46,6 +47,12 @@ const confirmClear = shallowRef(false)
 const counts = computed(() => {
   const resolved = notes.filter((n) => n.resolved).length
   return { open: notes.length - resolved, resolved }
+})
+
+const resolvedLabel = computed(() => {
+  const n = counts.value.resolved
+  if (!n) return 'Show resolved in the diff · none yet'
+  return showResolved.value ? `Showing ${n} resolved in the diff, dimmed` : `Show resolved in the diff (${n})`
 })
 
 const splitPath = (file: string) => {
@@ -145,7 +152,12 @@ function clear() {
             <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="emit('remove', n.id)"><Trash2 /></Button>
           </header>
 
-          <p v-if="n.quote" class="truncate font-mono text-xs text-muted-foreground" :title="n.quote">{{ n.quote }}</p>
+          <CodeQuote
+            v-if="n.quote || n.lineText"
+            :code="(n.quote || n.lineText).trim()"
+            :filename="n.file"
+            class="line-clamp-3 rounded-md bg-muted/60 px-2 py-1"
+          />
 
           <div v-if="editingId === n.id" class="flex flex-col gap-2">
             <Textarea
@@ -169,8 +181,8 @@ function clear() {
     <template v-if="notes.length" #footer>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from the copied prompt">
-          <Switch id="show-resolved" v-model="showResolved" />
-          <Label for="show-resolved" class="text-xs font-normal">Show resolved in the diff</Label>
+          <Switch id="show-resolved" v-model="showResolved" :disabled="!counts.resolved" />
+          <Label for="show-resolved" class="text-xs font-normal" aria-live="polite">{{ resolvedLabel }}</Label>
         </div>
         <span class="flex-1" />
         <Button :variant="confirmClear ? 'destructive' : 'ghost'" size="sm" @click="clear">

@@ -1,5 +1,3 @@
-import './style.css'
-
 const html = document.documentElement
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
 const themeButtons = document.querySelectorAll('[data-theme-mode]')
@@ -37,94 +35,6 @@ if (menu) {
   })
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') menu.open = false
-  })
-}
-
-for (const root of document.querySelectorAll('[data-playground]')) {
-  const chips = [...root.querySelectorAll('[data-chip]')]
-  const files = [...root.querySelectorAll('[data-file]')]
-  const summary = root.querySelector('[data-summary]')
-  const hint = summary.textContent
-  const state = new Map()
-  const list = files[0].parentElement
-  list.style.minHeight = `${list.offsetHeight}px`
-
-  const matches = (file, key) => (key.startsWith('status:') ? file.dataset.status === key.slice(7) : file.dataset.type === key)
-
-  function render() {
-    const shown = [...state].filter(([, s]) => s === 'include').map(([k]) => k)
-    const hidden = [...state].filter(([, s]) => s === 'exclude').map(([k]) => k)
-    const groups = [shown.filter((k) => !k.startsWith('status:')), shown.filter((k) => k.startsWith('status:'))].filter((g) => g.length)
-    let visible = 0
-    for (const file of files) {
-      const show = !hidden.some((k) => matches(file, k)) && groups.every((g) => g.some((k) => matches(file, k)))
-      file.classList.toggle('is-hidden', !show)
-      if (show) visible++
-    }
-    for (const chip of chips) chip.dataset.state = state.get(chip.dataset.chip) ?? ''
-    summary.textContent = state.size ? `${visible} of ${files.length} files` : hint
-  }
-
-  let playing = root.hasAttribute('data-autoplay') && !matchMedia('(prefers-reduced-motion: reduce)').matches
-  const stop = () => (playing = false)
-  root.addEventListener('pointerdown', stop, { capture: true })
-  root.addEventListener('keydown', stop, { capture: true })
-
-  const press = (key, hide = false) => {
-    const chip = chips.find((c) => c.dataset.chip === key)
-    chip.classList.add('is-pressing')
-    setTimeout(() => chip.classList.remove('is-pressing'), 160)
-    if (hide) state.set(key, 'exclude')
-    else state.set(key, 'include')
-    render()
-  }
-
-  const SCRIPT = [
-    [1200, () => press('.lock', true)],
-    [1500, () => press('.md', true)],
-    [1500, () => press('.php')],
-    [1500, () => press('status:added')],
-    [3200, () => (state.clear(), render())],
-  ]
-
-  async function loop() {
-    const wait = (ms) => new Promise((r) => setTimeout(r, ms))
-    while (playing) {
-      for (const [delay, step] of SCRIPT) {
-        await wait(delay)
-        if (!playing) return
-        step()
-      }
-    }
-  }
-  if (playing) {
-    const seen = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        seen.disconnect()
-        loop()
-      }
-    })
-    seen.observe(root)
-  }
-
-  for (const chip of chips) {
-    const key = chip.dataset.chip
-    const toggle = (hide) => {
-      const current = state.get(key)
-      const next = hide ? (current === 'exclude' ? null : 'exclude') : current ? null : 'include'
-      if (next) state.set(key, next)
-      else state.delete(key)
-      render()
-    }
-    chip.addEventListener('click', (e) => toggle(e.shiftKey || e.altKey || e.metaKey || e.ctrlKey))
-    chip.addEventListener('contextmenu', (e) => {
-      e.preventDefault()
-      toggle(true)
-    })
-  }
-  root.querySelector('[data-reset]').addEventListener('click', () => {
-    state.clear()
-    render()
   })
 }
 
@@ -187,14 +97,6 @@ for (const bar of document.querySelectorAll('[data-areas]')) {
   }
 }
 
-fetch('https://api.github.com/repos/haythamasalama/pr-sift')
-  .then((res) => (res.ok ? res.json() : null))
-  .then((repo) => {
-    if (!repo?.stargazers_count) return
-    document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = String(repo.stargazers_count)))
-  })
-  .catch(() => undefined)
-
 const dotted = /^#v?(\d+\.\d+\.\d+)$/.exec(location.hash)
 if (dotted) {
   const target = document.getElementById(`v${dotted[1].replace(/\./g, '-')}`)
@@ -222,4 +124,53 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
       button.title = 'Copy link'
     }, 1500)
   })
+}
+
+for (const demo of document.querySelectorAll('[data-live-demo]')) {
+  const frame = demo.querySelector('[data-live-frame]')
+  // The demo loads on its own, so the wheel keeps scrolling the page until the visitor clicks into the demo.
+  let engaged = false
+  frame.addEventListener('pointerleave', () => (engaged = false))
+  const passScroll = (win) => {
+    win.addEventListener('pointerdown', () => (engaged = true), true)
+    win.addEventListener(
+      'wheel',
+      (event) => {
+        if (engaged || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return
+        event.preventDefault()
+        const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
+        window.scrollBy({ top: event.deltaY * unit, behavior: 'instant' })
+      },
+      { capture: true, passive: false },
+    )
+  }
+  const start = () => {
+    const iframe = document.createElement('iframe')
+    iframe.src = frame.dataset.src
+    iframe.title = 'PR Sift live demo'
+    iframe.allow = 'clipboard-write'
+    iframe.className = 'absolute inset-0 size-full border-0 bg-paper opacity-0 transition-opacity duration-300'
+    const reveal = () => iframe.classList.remove('opacity-0')
+    // The stand-in GitHub page and the review's loading state show for a moment first, so the frame waits for the files.
+    const reviewShown = () => Boolean(iframe.contentDocument.getElementById('pr-sift-host')?.shadowRoot?.querySelector('main [data-file]'))
+    iframe.addEventListener(
+      'load',
+      () => {
+        passScroll(iframe.contentWindow)
+        const started = performance.now()
+        const wait = () => (reviewShown() || performance.now() - started > 4000 ? reveal() : setTimeout(wait, 50))
+        wait()
+      },
+      { once: true },
+    )
+    frame.append(iframe)
+  }
+  new IntersectionObserver(
+    (entries, observer) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      observer.disconnect()
+      start()
+    },
+    { rootMargin: '300px' },
+  ).observe(frame)
 }

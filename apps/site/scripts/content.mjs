@@ -1,6 +1,8 @@
 export const SITE_URL = 'https://pr-sift.haythamasalama.me/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = 'https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln'
+// The build reads the live rating from the store and falls back to this when the store can't be reached.
+export const LAST_STORE_RATING = 5
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
 
 export const SIBLING_APPS = [
@@ -16,14 +18,20 @@ export const SIBLING_APPS = [
 export const home = {
   title: 'PR Sift: review large GitHub pull requests without the noise',
   description:
-    'Free Chrome extension for large GitHub pull requests. Filter files by type and change, track what you viewed, and send private notes to Claude Code, Codex, Cursor or ChatGPT.',
+    'Free Chrome extension for large GitHub pull requests. Filter files, track what you viewed, read comments in place, send private notes to your AI, and merge without AI co-authors.',
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
-    cta: 'Install PR Sift',
+    cta: 'Add to Chrome',
+    install: 'Add to Chrome, it’s free',
     secondary: 'Star on GitHub',
+    tryIt: 'Try it on your next big pull request.',
+  },
+  live: {
+    full: 'Full screen',
   },
   demos: [
     ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
+    ['merge', 'git-merge', 'Merge without AI co-authors', 'Claude, Codex and other AI tools start unchecked.'],
     ['tour', 'play', 'Full tour', 'A 10-file pull request, from noise to notes.'],
     ['filters', 'funnel', 'Filters', 'Include, exclude and combine types and changes.'],
     ['review', 'list-checks', 'Review', 'Mark files and whole folders as viewed.'],
@@ -40,6 +48,18 @@ export const home = {
       ],
       ['users', 'Side notes in a team review', 'Keep your own questions and reminders while the team discusses. Nobody sees them.'],
       ['send', 'Publish only what helps', 'Turn any note into a GitHub review comment in one click. The rest stay private.'],
+    ],
+  },
+  merge: {
+    removed: 'Co-authored-by: Claude <noreply@anthropic.com>',
+    added: 'Your name on your commit.',
+    title: 'Merge without AI co-authors',
+    lead: 'Approve and squash and merge from the review. Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked, so they stay out of your history unless you keep them.',
+    points: [
+      ['user-round-x', 'AI co-authors', 'start unchecked. Real people stay checked.'],
+      ['bookmark-check', 'Your choice', 'is remembered for the next merge.'],
+      ['git-merge', 'Squash, merge or rebase', 'with the method on the button.'],
+      ['check-check', 'Approve', 'request changes or comment from a small popover.'],
     ],
   },
   pain: {
@@ -69,90 +89,64 @@ export const home = {
       ],
     ],
   },
+  featuresIntro: {
+    title: 'Find the files that matter. Read each one once.',
+    lead: 'Filters, folders and progress made for pull requests with hundreds of files.',
+  },
   features: [
     {
       id: 'filters',
       icon: 'funnel',
       title: 'Include or exclude in one click',
-      text: 'Chips come from the pull request itself.',
-      points: [
-        ['mouse-pointer-click', 'Click', 'shows only that type or change.'],
-        ['eye-off', 'Shift-click', 'hides it on every pull request.'],
-        ['plus', '+ type', 'adds endings like .blade.php or .test.ts.'],
-      ],
-      video: 'filters',
+      text: 'Chips come from the pull request itself. Add endings like .blade.php with + type.',
     },
     {
       id: 'folders',
       icon: 'folder-tree',
       title: 'Open and close whole folders',
-      text: 'One folder, its subfolders, or the whole tree.',
-      points: [
-        ['folder-open', 'Subtree', 'expands or collapses everything inside.'],
-        ['chevrons-down-up', 'All folders', 'in one click.'],
-        ['search', 'Search', 'opens the tree to the match.'],
-      ],
-      video: 'folders',
+      text: 'One folder, its subfolders, or the whole tree. Search opens the tree to the match.',
     },
     {
       id: 'smart',
       icon: 'sparkles',
       title: 'Jump to a category',
-      text: 'Files grouped the way reviewers read them.',
-      points: [
-        ['flask-conical', 'Tests', 'and their helpers.'],
-        ['database', 'Migrations', 'and schema changes.'],
-        ['languages', 'Translations', 'config and CI.'],
-      ],
-      video: 'smart-filters',
+      text: 'Tests, migrations, translations, config and CI, grouped the way reviewers read them.',
     },
     {
       id: 'review',
       icon: 'list-checks',
       title: 'Never read a file twice',
       text: 'Viewed files leave the list. The ring shows what is left.',
-      points: [
-        ['check-check', 'Folders', 'marked viewed at once.'],
-        ['circle-dashed', 'Progress', 'that ignores search and filters.'],
-        ['git-compare', 'New push', 'brings changed files back.'],
-      ],
-      video: 'review',
+    },
+    {
+      id: 'comments',
+      icon: 'messages-square',
+      title: 'Comments where the code is',
+      text: 'GitHub threads show under their lines. Jump from any comment to its line.',
+    },
+    {
+      id: 'theme',
+      icon: 'sun-moon',
+      title: 'Light, dark or your system',
+      text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
     },
     {
       id: 'notes',
       icon: 'notebook-pen',
       title: 'Private notes on any lines',
       text: 'Drag from + like on GitHub. Notes stay in your browser.',
-      points: [
-        ['text-select', 'Many lines', 'with an adjustable start and end.'],
-        ['pencil', 'Edit', 'from the diff or the Notes list.'],
-        ['send', 'Post', 'one to GitHub when it is worth it.'],
-      ],
-      video: 'notes',
-    },
-    {
-      id: 'resolve',
-      icon: 'circle-check',
-      title: 'Resolve as you go',
-      text: 'Resolved notes leave the diff and the prompt.',
-      points: [
-        ['circle-check', 'Resolve', 'with one click on the note.'],
-        ['eye', 'Show resolved', 'when you want them back.'],
-        ['rotate-ccw', 'Reopen', 'any note later.'],
-      ],
-      video: 'resolve',
     },
     {
       id: 'views',
       icon: 'columns-2',
       title: 'Read it your way',
-      text: 'Unified or split, for every file or just one.',
-      points: [
-        ['columns-2', 'Split one file', 'and leave the rest unified.'],
-        ['copy', 'Copy', 'the name, path, diff or added lines.'],
-        ['file-diff', 'GitHub colors', 'and syntax highlighting.'],
-      ],
-      video: 'views',
+      text: 'Unified or split, for every file or just one. Copy the name, path, diff or added lines.',
+    },
+    {
+      id: 'settings',
+      icon: 'sliders-horizontal',
+      title: 'Settings where you need them',
+      text: 'A side sheet inside the review. Every change applies right away.',
     },
   ],
   ai: {
@@ -163,11 +157,8 @@ export const home = {
       ['message-square-text', 'Open Notes', 'all of them, by file.'],
       ['bot', 'Pick your AI', 'a coding agent or a chat.'],
       ['clipboard-check', 'Paste', 'into your agent or the chat that opens.'],
+      ['circle-check', 'Resolve', 'what got fixed. It leaves the diff and the next prompt, and you can reopen it.'],
     ],
-  },
-  theme: {
-    title: 'Light, dark or your system',
-    text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
   },
   openSource: {
     title: 'Built in the open',
@@ -181,11 +172,6 @@ export const home = {
       ['history', 'Changelog', 'changelog/'],
     ],
   },
-  how: [
-    ['download', 'Install', 'Add PR Sift to your browser.'],
-    ['github', 'Open a pull request', 'Any Files changed tab on github.com.'],
-    ['funnel', 'Press PR Sift', 'Bottom right of the page.'],
-  ],
   privacy: {
     title: 'Your code stays in your browser',
     text: 'No server, no account, no analytics. PR Sift only talks to GitHub.',
@@ -193,7 +179,14 @@ export const home = {
   faq: [
     ['Is PR Sift free?', 'Yes, for everyone, including at work. PR Sift is open source under the MIT license.'],
     ['Does it send my code anywhere?', 'No. It only talks to GitHub. Notes go to your clipboard when you copy them.'],
-    ['Do I need a GitHub token?', 'No. A token is only used to post a note as a review comment.'],
+    [
+      'Can PR Sift keep Claude or ChatGPT out of my commits?',
+      'Yes. When you squash and merge from PR Sift, AI co-authors such as Claude, ChatGPT, Gemini and Copilot start unchecked, so the commit only credits the people you keep. You can edit the list in Settings.',
+    ],
+    [
+      'Do I need a GitHub token?',
+      'Not for filters, viewed files and notes. A token lets you read comments, post notes, approve and merge from the review.',
+    ],
     [
       'How is it different from the GitHub file filter?',
       'It combines type and change filters, remembers hidden types, groups files, marks folders as viewed and adds private notes.',
@@ -204,6 +197,36 @@ export const home = {
 }
 
 export const guides = [
+  {
+    slug: 'merge-without-ai-co-authors',
+    short: 'Merge without AI co-authors',
+    title: 'Squash and merge without Claude, ChatGPT or Copilot as co-authors',
+    description: 'Keep AI tools out of the Co-authored-by lines of your merge commits, and keep the people who did the work.',
+    video: 'merge',
+    sections: [
+      [
+        'bot',
+        'Why they show up',
+        'AI coding tools often add a Co-authored-by line to the commits they help write. A squash merge gathers every one of them into your history.',
+      ],
+      [
+        'git-merge',
+        'Merge from the review',
+        'Press Squash and merge in PR Sift. The commit message and the co-authors open in a side sheet.',
+      ],
+      [
+        'user-round-x',
+        'AI tools start unchecked',
+        'Claude, ChatGPT, Gemini, Copilot, Cursor and more start unchecked. The people who wrote commits stay checked.',
+      ],
+      [
+        'bookmark-check',
+        'Your list, remembered',
+        'Uncheck anyone else once and they stay unchecked next time. Edit the list, or turn it off, in Settings.',
+      ],
+      ['key-round', 'What you need', 'A classic GitHub token with the repo scope. PR Sift’s Create a token link fills it in.'],
+    ],
+  },
   {
     slug: 'self-review-ai-generated-pull-requests',
     short: 'Self-review AI pull requests',
@@ -316,7 +339,7 @@ export const brand = {
     ['One line', 'Review large GitHub pull requests without the noise.'],
     [
       'Short',
-      'PR Sift is a free Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude Code, Codex, Cursor or ChatGPT.',
+      'PR Sift is a free Chrome extension for large GitHub pull requests: file filters, viewed tracking, private notes for your AI, and merging without AI co-authors.',
     ],
   ],
   colors: [

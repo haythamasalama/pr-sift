@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.1.0",
   "type": "module",
-  "description": "Review large GitHub pull requests faster: smart file filters, viewed tracking and private notes. Not affiliated with GitHub.",
+  "description": "Review big GitHub pull requests: filter files, track what you read, send private notes to your AI and merge without AI co-authors.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",
   "license": "MIT",
   "scripts": {
