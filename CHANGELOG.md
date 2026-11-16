@@ -46,6 +46,8 @@ goes under `## Unreleased` until the next release moves it under its version and
   the AI co-author list on or off.
 - Review: Create a token opens a classic GitHub token named PR Sift with the repo scope checked. It works for
   organization repositories without an approval step, and the review and merge prompts ask for the same token.
+- Security: You add or change the GitHub token on PR Sift's own options page. Inside the review, Settings show the
+  connection and open that page, so GitHub's page never holds the token field.
 - Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s
   new, rating, reporting a problem and suggesting an idea.
 - Review: On small screens the header keeps to two rows. The top search is gone, since the sidebar has one.
@@ -61,7 +63,13 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 ### Fixed
 
+- Review: The merge sheet no longer lists the pull request author as their own co-author when some of their commits
+  use an email GitHub does not link to them.
+- Review: People named Claude, Gemini or Copilot stay checked. The AI list now matches the tools' own addresses and bot
+  accounts, a co-author you check back stays checked next time, and merging with the list turned off keeps it as it
+  was.
 - Views: A file's header stays flush with the top while you scroll, so no code shows above it.
+- Security: Descriptions and comments drop SVG and MathML, which could carry a script link.
 
 ## 1.1.0 - 2026-11-14
 
