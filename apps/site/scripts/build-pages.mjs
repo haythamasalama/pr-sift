@@ -428,7 +428,7 @@ function homePage() {
   const sections = [
     [
       'notes',
-      `<div class="grid items-center gap-12 lg:grid-cols-12">
+      `<div class="grid gap-12 lg:grid-cols-12 lg:items-end">
         <div class="lg:col-span-5">
           ${iconBox('lock')}
           ${h2(h.notesStory.title, 'mt-5')}
@@ -454,7 +454,7 @@ function homePage() {
     ],
     [
       'merge',
-      `<div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-16">
+      `<div class="grid gap-10 lg:grid-cols-12 lg:items-end lg:gap-16">
         <div class="lg:col-span-5">
           ${iconBox('git-merge')}
           <p class="mt-6 font-mono text-[13px] leading-[1.35] font-medium">
