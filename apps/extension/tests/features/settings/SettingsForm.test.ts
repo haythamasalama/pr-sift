@@ -44,21 +44,18 @@ afterEach(() => {
 })
 
 describe('SettingsForm', () => {
-  it('groups settings by what you want to do, with a jump list', async () => {
+  it('groups settings by what you want to do and shows one group at a time', async () => {
     const wrapper = await mountForm()
-    expect(wrapper.findAll('section[data-section]').map((s) => s.attributes('data-section'))).toEqual([
-      'github',
-      'review',
-      'files',
-      'appearance',
-      'about',
-    ])
-    expect(
+    expect(wrapper.findAll('[role="tab"]').map((b) => b.text())).toEqual(['GitHub', 'Reviewing', 'Files', 'Appearance', 'About'])
+    const visible = () =>
       wrapper
-        .find('nav')
-        .findAll('button')
-        .map((b) => b.text()),
-    ).toEqual(['GitHub', 'Reviewing', 'Files', 'Appearance', 'About'])
+        .findAll('section[data-section]')
+        .filter((s) => s.isVisible())
+        .map((s) => s.attributes('data-section'))
+    expect(visible()).toEqual(['github'])
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click')
+    expect(visible()).toEqual(['review'])
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
     expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
   })
 
@@ -273,14 +270,16 @@ describe('SettingsForm sections', () => {
     expect(document.activeElement).toBe(section(wrapper, 'merging').find('h3').element)
   })
 
-  it('scrolls to a section on request, including from the jump list', async () => {
+  it('opens the tab of a section on request and scrolls to it', async () => {
     const wrapper = await mountForm()
     expect(scrolled).toEqual([])
-    wrapper.vm.scrollToSection('hidden')
+    await wrapper.vm.scrollToSection('hidden')
+    expect(section(wrapper, 'files').isVisible()).toBe(true)
+    expect(section(wrapper, 'github').isVisible()).toBe(false)
     expect(scrolled).toEqual([section(wrapper, 'hidden').element])
-    await wrapper.setProps({ section: 'token' })
-    expect(scrolled.at(-1)).toBe(section(wrapper, 'token').element)
-    await wrapper.find('nav').findAll('button')[3]!.trigger('click')
-    expect(scrolled.at(-1)).toBe(section(wrapper, 'appearance').element)
+    await wrapper.setProps({ section: 'tree' })
+    await flushPromises()
+    expect(section(wrapper, 'appearance').isVisible()).toBe(true)
+    expect(scrolled.at(-1)).toBe(section(wrapper, 'tree').element)
   })
 })

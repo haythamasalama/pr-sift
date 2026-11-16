@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { CircleCheck, Plug, RotateCcw } from '@lucide/vue'
+import { CircleCheck, Eye, FolderTree, Info, Palette, Plug, RotateCcw } from '@lucide/vue'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -20,7 +20,7 @@ import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 import ThemePreview from './ThemePreview.vue'
 import TreePreview from './TreePreview.vue'
-import { SECTION_NAV, sectionElementId, type SettingsSectionId } from './sections'
+import { SETTINGS_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
 import { useSettingsState } from './useSettingsState'
 
 const STATUSES = [
@@ -47,7 +47,10 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
   { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit' },
 ]
 
+const TAB_ICONS = { github: Plug, review: Eye, files: FolderTree, appearance: Palette, about: Info }
+
 const { section, files } = defineProps<{ section?: SettingsSectionId; files?: PrFile[] }>()
+const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'github')
 
 const { theme, setTheme } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
@@ -87,11 +90,19 @@ async function resetAll() {
   resetTimer = setTimeout(() => (notice.value = ''), 3000)
 }
 
-function scrollToSection(id: SettingsSectionId) {
+async function scrollToSection(id: SettingsSectionId) {
+  tab.value = TAB_OF[id]
+  await nextTick()
   const target = root.value?.querySelector<HTMLElement>(`#${sectionElementId(id)}`)
   if (!target) return
   target.scrollIntoView({ block: 'start' })
   target.querySelector<HTMLElement>('h2, h3')?.focus({ preventScroll: true })
+}
+
+function openTab(id: SettingsTab) {
+  if (tab.value === id) return
+  tab.value = id
+  void nextTick(() => root.value?.scrollIntoView({ block: 'start' }))
 }
 
 watch(
@@ -105,9 +116,9 @@ onMounted(async () => {
   await load()
   await nextTick()
   if (!section) return
-  scrollToSection(section)
-  // The connection row grows once GitHub answers, which pushes the sections below it down.
-  settleTimer = setTimeout(() => scrollToSection(section), 400)
+  void scrollToSection(section)
+  // The connection row grows once GitHub answers, which can push the group below it down.
+  settleTimer = setTimeout(() => void scrollToSection(section), 400)
 })
 onBeforeUnmount(() => {
   clearTimeout(resetTimer)
@@ -119,13 +130,31 @@ defineExpose({ scrollToSection })
 
 <template>
   <div ref="root" class="flex flex-col gap-8">
-    <nav aria-label="Settings sections" class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2">
-      <Button v-for="s in SECTION_NAV" :key="s.id" variant="ghost" size="xs" class="text-muted-foreground" @click="scrollToSection(s.id)">
-        {{ s.label }}
+    <nav
+      aria-label="Settings"
+      role="tablist"
+      class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2"
+    >
+      <Button
+        v-for="t in SETTINGS_TABS"
+        :key="t.id"
+        role="tab"
+        :aria-selected="tab === t.id"
+        variant="ghost"
+        size="xs"
+        :class="tab === t.id ? 'bg-muted text-foreground' : 'text-muted-foreground'"
+        @click="openTab(t.id)"
+      >
+        <component :is="TAB_ICONS[t.id]" />{{ t.label }}
       </Button>
     </nav>
 
-    <SettingsSection id="github" title="GitHub" description="Comment, review and merge without leaving the review.">
+    <SettingsSection
+      v-show="tab === 'github'"
+      id="github"
+      title="GitHub"
+      description="Comment, review and merge without leaving the review."
+    >
       <template #icon><Plug class="size-4" /></template>
       <SettingsGroup id="token" title="Connection">
         <ConnectionRow />
@@ -151,7 +180,7 @@ defineExpose({ scrollToSection })
       </SettingsGroup>
     </SettingsSection>
 
-    <SettingsSection id="review" title="Reviewing" description="How each review starts." area="files">
+    <SettingsSection v-show="tab === 'review'" id="review" title="Reviewing" description="How each review starts." area="files">
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>
@@ -172,7 +201,13 @@ defineExpose({ scrollToSection })
       </SettingsRow>
     </SettingsSection>
 
-    <SettingsSection id="files" title="Files" description="What the list leaves out, and your own filters." area="sidebar">
+    <SettingsSection
+      v-show="tab === 'files'"
+      id="files"
+      title="Files"
+      description="What the list leaves out, and your own filters."
+      area="sidebar"
+    >
       <SettingsGroup id="hidden" title="Always hidden" :description="hiddenSummary">
         <PatternList
           :model-value="settings.hide"
@@ -195,7 +230,13 @@ defineExpose({ scrollToSection })
       <SavedFiltersSection :model-value="settings.presets" :files="files" @update:model-value="(v) => update('presets', v)" />
     </SettingsSection>
 
-    <SettingsSection id="appearance" title="Appearance" description="Applies right away, here and in the review." area="all">
+    <SettingsSection
+      v-show="tab === 'appearance'"
+      id="appearance"
+      title="Appearance"
+      description="Applies right away, here and in the review."
+      area="all"
+    >
       <div class="py-3">
         <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
           <template #preview="{ value }"><ThemePreview :mode="value" /></template>
@@ -231,7 +272,7 @@ defineExpose({ scrollToSection })
       </SettingsGroup>
     </SettingsSection>
 
-    <AboutSection>
+    <AboutSection v-show="tab === 'about'">
       <SettingsRow label="Reset settings">
         <template #description>
           <span aria-live="polite" class="inline-flex items-center gap-1.5">
