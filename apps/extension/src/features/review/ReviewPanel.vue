@@ -33,6 +33,8 @@ import PrSummary from './PrSummary.vue'
 import ReviewActions from './ReviewActions.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
+import UpdateNotice from '../updates/UpdateNotice.vue'
+import { REVIEWS_URL } from '../../lib/updates'
 
 const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
@@ -321,6 +323,8 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       <AlertDescription class="flex-1 text-xs">{{ actionNote }}</AlertDescription>
     </Alert>
 
+    <UpdateNotice />
+
     <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
       <Spinner /> Loading pull request…
     </div>
@@ -430,6 +434,9 @@ watch(diffMode, (value) => saveSetting('diffView', value))
           <Button variant="outline" @click="filter.reviewMode.value = false"
             >Show the {{ filter.viewedInView.value.length }} viewed files</Button
           >
+          <Button as-child variant="link" size="sm" class="h-auto whitespace-normal text-muted-foreground">
+            <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer">Enjoying PR Sift? Rate it on the Chrome Web Store</a>
+          </Button>
         </Empty>
         <Empty v-else-if="filter.inScope.value.length === 0 && filter.filtersActive.value" class="mx-auto mt-16 max-w-sm border-0">
           <EmptyHeader>

@@ -11,6 +11,10 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: A Description button shows the pull request description above the files.
 - Review: Each file shows how many GitHub comments it has.
 - Review: Approve and Merge from the review. Squash merges leave out AI co-authors such as Claude, ChatGPT, Gemini and Copilot by default, and remember the people you uncheck.
+- Review: The options page shows your version and checks for updates. Restart into a downloaded update from there or
+  from the review menu.
+- Review: After an update, the review names the new version and links to what’s new.
+- Review: Rate PR Sift on the Chrome Web Store from the review menu or the options page.
 
 ### Changed
 

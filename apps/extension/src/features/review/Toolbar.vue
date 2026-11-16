@@ -1,5 +1,20 @@
 <script setup lang="ts">
-import { Bug, Columns2, Lightbulb, Monitor, Moon, NotebookPen, PanelLeft, Rows2, Search, Settings, Sun, X } from '@lucide/vue'
+import {
+  Bug,
+  Columns2,
+  Lightbulb,
+  Monitor,
+  Moon,
+  NotebookPen,
+  PanelLeft,
+  RotateCw,
+  Rows2,
+  Search,
+  Settings,
+  Star,
+  Sun,
+  X,
+} from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +33,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { openReport } from '../../lib/report'
 import { openOptions } from '../../lib/extension'
+import { openReviews } from '../../lib/updates'
+import { useUpdates } from '../updates/useUpdates'
 import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
@@ -37,6 +54,7 @@ const query = defineModel<string>('query', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const { theme, setTheme } = useAppearance()
+const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
 </script>
@@ -117,11 +135,22 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
-        <Button variant="outline" size="icon-sm" class="shrink-0" aria-label="Options" title="Theme, settings and help">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          class="relative shrink-0"
+          :aria-label="updateReady ? 'Options, update ready' : 'Options'"
+          :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
+        >
           <Settings />
+          <span v-if="updateReady" class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emphasis ring-2 ring-sidebar" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-52">
+      <DropdownMenuContent align="end" class="w-56">
+        <template v-if="updateReady">
+          <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </template>
         <DropdownMenuGroup>
           <DropdownMenuLabel>Theme</DropdownMenuLabel>
           <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
@@ -134,6 +163,7 @@ const emit = defineEmits<{ selectPreset: [name: string]; openNotes: []; toggleSi
         <DropdownMenuItem @select="openOptions"><Settings /> Settings</DropdownMenuItem>
         <DropdownMenuItem @select="openReport('bug')"><Bug /> Report a problem</DropdownMenuItem>
         <DropdownMenuItem @select="openReport('idea')"><Lightbulb /> Suggest an idea</DropdownMenuItem>
+        <DropdownMenuItem @select="openReviews"><Star /> Rate PR Sift</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
 

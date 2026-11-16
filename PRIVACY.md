@@ -28,6 +28,9 @@ in its dialog.
 **Copy for …** puts your notes on the clipboard. For Claude or ChatGPT it also opens the site in a new tab. PR Sift
 sends nothing to any assistant; you paste the notes yourself.
 
+**Check for updates** asks Chrome to look for a new version, as Chrome already does on its own every few hours.
+**What’s new** and **Rate PR Sift** only open a page in a new tab.
+
 ## Permissions
 
 - `storage`: the local data above.

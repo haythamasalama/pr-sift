@@ -23,6 +23,15 @@ export async function storageSet(values: Record<string, unknown>): Promise<void>
   }
 }
 
+export async function storageRemove(key: string): Promise<void> {
+  if (!alive()) return
+  try {
+    await chrome.storage.local.remove(key)
+  } catch {
+    return
+  }
+}
+
 export function onStorageKey<T>(key: string, callback: (value: T | undefined) => void): () => void {
   const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
     if (area === 'local' && key in changes) callback(changes[key]!.newValue as T | undefined)

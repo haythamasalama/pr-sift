@@ -19,15 +19,25 @@ export function installChrome(responder: Responder = () => ({ ok: false, status:
     }),
   }
 
+  const event = <T extends (...args: never[]) => unknown>() => ({ addListener: vi.fn((_listener: T) => {}) })
+
   const chrome = {
     runtime: {
       id: 'test-extension',
       lastError: undefined,
-      sendMessage: vi.fn((message: { type: string }, callback: (response: unknown) => void) => {
+      sendMessage: vi.fn((message: { type: string }, callback?: (response: unknown) => void) => {
         sent.push(message)
-        callback(responder(message))
+        callback?.(responder(message))
       }),
+      getManifest: vi.fn(() => ({ version: '1.1.0' })),
+      requestUpdateCheck: vi.fn(async (): Promise<{ status: string; version?: string }> => ({ status: 'no_update' })),
+      reload: vi.fn(),
+      openOptionsPage: vi.fn(async () => {}),
+      onMessage: event<(message: unknown, sender: { id?: string }, send: (response: unknown) => void) => boolean | void>(),
+      onUpdateAvailable: event<(details: { version: string }) => void>(),
+      onInstalled: event<(details: { reason: string; previousVersion?: string }) => void>(),
     },
+    action: { onClicked: event<() => void>() },
     storage: { local },
   }
 

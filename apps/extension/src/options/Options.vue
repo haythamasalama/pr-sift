@@ -15,7 +15,10 @@ import {
   Layers,
   Monitor,
   Moon,
+  RefreshCw,
+  RotateCw,
   Rows2,
+  Star,
   Sun,
 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -23,15 +26,18 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field'
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from '@/components/ui/field'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Slider } from '@/components/ui/slider'
+import { Spinner } from '@/components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandMark from '../components/BrandMark.vue'
 import { openReport } from '../lib/report'
 import { useAppearance } from '../features/appearance/useAppearance'
+import { useUpdates } from '../features/updates/useUpdates'
+import { CHANGELOG_URL, REVIEWS_URL } from '../lib/updates'
 import { DEFAULTS, getSettings } from '../lib/settings'
 import type { DiffMode, MergeMethod, Settings, ThemeMode } from '../lib/types'
 
@@ -43,6 +49,7 @@ const STATUSES = [
 ]
 
 const { theme, dark, setTheme } = useAppearance()
+const { version, ready, checking, status, check, restart } = useUpdates()
 const token = shallowRef('')
 const showToken = shallowRef(false)
 const hide = shallowRef('')
@@ -146,6 +153,35 @@ onMounted(load)
           <p class="text-sm text-muted-foreground">Review big pull requests without the noise.</p>
         </div>
       </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>About</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FieldGroup>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>PR Sift {{ version }}</FieldTitle>
+                <FieldDescription aria-live="polite">{{ status || 'Chrome updates it on its own every few hours.' }}</FieldDescription>
+                <FieldDescription v-if="ready">Open GitHub tabs need a reload afterwards: click Reload PR Sift.</FieldDescription>
+              </FieldContent>
+              <Button v-if="ready" @click="restart"><RotateCw /> Restart to update to {{ ready }}</Button>
+              <Button v-else variant="outline" :disabled="checking" @click="check">
+                <Spinner v-if="checking" /><RefreshCw v-else /> Check for updates
+              </Button>
+            </Field>
+            <div class="flex flex-wrap gap-2">
+              <Button as-child variant="outline" size="sm">
+                <a :href="CHANGELOG_URL" target="_blank" rel="noopener noreferrer"><ExternalLink /> What’s new</a>
+              </Button>
+              <Button as-child variant="outline" size="sm">
+                <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate PR Sift</a>
+              </Button>
+            </div>
+          </FieldGroup>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

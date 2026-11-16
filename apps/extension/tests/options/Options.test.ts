@@ -1,0 +1,62 @@
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it } from 'vitest'
+import Options from '../../src/options/Options.vue'
+import { CHANGELOG_URL, REVIEWS_URL } from '../../src/lib/updates'
+import { installChrome } from '../helpers/chrome'
+
+type Wrapper = ReturnType<typeof mount>
+
+const about = (wrapper: Wrapper) => wrapper.findAll('[data-slot="card"]').find((card) => card.text().startsWith('About'))!
+const button = (wrapper: Wrapper, label: string) =>
+  about(wrapper)
+    .findAll('button')
+    .find((b) => b.text().includes(label))
+
+async function checkWith(answer: unknown) {
+  installChrome(() => answer)
+  const wrapper = mount(Options, { attachTo: document.body })
+  await flushPromises()
+  await button(wrapper, 'Check for updates')!.trigger('click')
+  await flushPromises()
+  return wrapper
+}
+
+describe('Options about card', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shows the installed version and links to the changelog and the store reviews', async () => {
+    installChrome()
+    const wrapper = mount(Options, { attachTo: document.body })
+    await flushPromises()
+    const card = about(wrapper)
+    expect(card.text()).toContain('PR Sift 1.1.0')
+    expect(card.text()).toContain('Chrome updates it on its own every few hours.')
+    const links = Object.fromEntries(card.findAll('a').map((a) => [a.text(), a.attributes('href')]))
+    expect(links).toEqual({ 'What’s new': CHANGELOG_URL, 'Rate PR Sift': REVIEWS_URL })
+    expect(button(wrapper, 'Restart to update')).toBeUndefined()
+  })
+
+  it.each([
+    [{ status: 'no_update' }, 'You have the latest version'],
+    [{ status: 'update_available', version: '1.2.0' }, 'Downloading 1.2.0…'],
+    [{ status: 'throttled' }, 'Chrome limits how often this can run. Try again in a few minutes.'],
+    [{ status: 'error' }, 'Could not check for updates'],
+  ])('reports %o from a check', async (answer, text) => {
+    const wrapper = await checkWith(answer)
+    expect(about(wrapper).text()).toContain(text)
+  })
+
+  it('offers a restart once the update is downloaded, and restarts on click', async () => {
+    const { store, sent } = installChrome()
+    store.updateReady = '1.2.0'
+    const wrapper = mount(Options, { attachTo: document.body })
+    await flushPromises()
+    expect(about(wrapper).text()).toContain('Update ready')
+    expect(about(wrapper).text()).toContain('Open GitHub tabs need a reload afterwards: click Reload PR Sift.')
+    expect(button(wrapper, 'Check for updates')).toBeUndefined()
+    await button(wrapper, 'Restart to update to 1.2.0')!.trigger('click')
+    expect(sent).toContainEqual({ type: 'apply-update' })
+  })
+})

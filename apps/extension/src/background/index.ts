@@ -11,7 +11,7 @@ interface TextMessage {
   url: string
 }
 
-type Message = ApiMessage | TextMessage | { type: 'options' }
+type Message = ApiMessage | TextMessage | { type: 'options' } | { type: 'update-check' } | { type: 'apply-update' }
 
 async function api(msg: ApiMessage) {
   const { token } = (await chrome.storage.local.get('token')) as { token?: string }
@@ -34,6 +34,15 @@ async function api(msg: ApiMessage) {
 
 const ACCEPT = /^application\/vnd\.github(\.[a-z-]+)?\+json$/
 
+async function checkForUpdate() {
+  try {
+    const { status, version } = await chrome.runtime.requestUpdateCheck()
+    return { status, version }
+  } catch {
+    return { status: 'error' }
+  }
+}
+
 const READABLE_ORIGINS = ['https://github.com', 'https://patch-diff.githubusercontent.com']
 
 async function fetchText(url: string) {
@@ -52,6 +61,14 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
     void chrome.runtime.openOptionsPage()
     return
   }
+  if (msg.type === 'apply-update') {
+    chrome.runtime.reload()
+    return
+  }
+  if (msg.type === 'update-check') {
+    void checkForUpdate().then(send)
+    return true
+  }
   const task = msg.type === 'gh' ? api(msg) : msg.type === 'text' ? fetchText(msg.url) : null
   if (!task) return
   task.then(send).catch((e) => send({ ok: false, status: 0, data: { message: String(e) } }))
@@ -60,4 +77,16 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
 
 chrome.action.onClicked.addListener(() => {
   void chrome.runtime.openOptionsPage()
+})
+
+chrome.runtime.onUpdateAvailable.addListener((details) => {
+  void chrome.storage.local.set({ updateReady: details.version })
+})
+
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason !== 'update') return
+  void chrome.storage.local.remove('updateReady')
+  const version = chrome.runtime.getManifest().version
+  // Reloading an unpacked build also reports an update, with the version unchanged.
+  if (details.previousVersion !== version) void chrome.storage.local.set({ updated: { version, previous: details.previousVersion } })
 })
