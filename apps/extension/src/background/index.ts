@@ -1,3 +1,5 @@
+import { BADGE_KEYS, refreshBadge } from './badge'
+
 interface ApiMessage {
   type: 'gh'
   path: string
@@ -82,6 +84,14 @@ chrome.action.onClicked.addListener(() => {
 chrome.runtime.onUpdateAvailable.addListener((details) => {
   void chrome.storage.local.set({ updateReady: details.version })
 })
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && BADGE_KEYS.some((key) => key in changes)) void refreshBadge()
+})
+
+chrome.runtime.onStartup.addListener(() => void refreshBadge())
+
+void refreshBadge()
 
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason !== 'update') return

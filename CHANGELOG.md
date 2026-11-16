@@ -18,6 +18,8 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: Settings open in a side sheet inside the review, so changing one does not leave the pull request.
 - Review: Each settings section shows a small map of the part of the review it changes.
 - Review: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples.
+- Review: The PR Sift toolbar icon shows ↑ when an update is ready and NEW after one is installed. The PR Sift button on
+  GitHub shows a dot at the same time.
 
 ### Changed
 

@@ -34,7 +34,8 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 ## apps/extension
 
 - `content/` mounts the app inside a shadow root on `github.com` pull request pages (`main.ts`, `App.vue`).
-- `background/` is the service worker that talks to the GitHub API and reads cross-origin text.
+- `background/` is the service worker that talks to the GitHub API, reads cross-origin text and sets the toolbar
+  badge while an update is ready or was just installed.
 - `options/` is the settings page, a thin page around `features/settings/SettingsForm.vue`.
 - `features/` holds one folder per feature. A feature owns its components, state (`use*.ts`) and tests:
   `diff`, `tree`, `filters`, `notes`, `review`, `appearance`, `updates`, `settings`.
