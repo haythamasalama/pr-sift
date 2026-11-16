@@ -383,8 +383,6 @@ const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
             ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="A 39-file pull request reviewed in PR Sift" class="${display} absolute inset-0 size-full object-cover object-top" decoding="async" />`).join('')}
-            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-b from-transparent to-paper/95" aria-hidden="true"></div>
-            <button type="button" data-live-start class="absolute bottom-10 left-1/2 inline-flex h-12 -translate-x-1/2 items-center gap-2.5 rounded-full bg-ink px-6 text-[15px] font-medium whitespace-nowrap text-paper shadow-lg hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
           </div>
         </div>
       </div>`

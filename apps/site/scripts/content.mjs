@@ -27,7 +27,6 @@ export const home = {
     tryIt: 'Try it on your next big pull request.',
   },
   live: {
-    start: 'Try it live, no install',
     full: 'Full screen',
   },
   demos: [

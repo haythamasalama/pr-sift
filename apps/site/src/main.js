@@ -131,15 +131,31 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
 for (const demo of document.querySelectorAll('[data-live-demo]')) {
   const frame = demo.querySelector('[data-live-frame]')
   const restart = demo.querySelector('[data-live-restart]')
+  // The new frame loads over the old one, so the preview never flashes empty.
   const start = () => {
     const iframe = document.createElement('iframe')
     iframe.src = frame.dataset.src
     iframe.title = 'PR Sift live demo'
     iframe.allow = 'clipboard-write'
-    iframe.className = 'absolute inset-0 size-full border-0 bg-paper'
-    frame.replaceChildren(iframe)
+    iframe.className = 'absolute inset-0 size-full border-0 bg-paper opacity-0 transition-opacity'
+    iframe.addEventListener(
+      'load',
+      () => {
+        iframe.classList.remove('opacity-0')
+        for (const child of [...frame.children]) if (child !== iframe) child.remove()
+      },
+      { once: true },
+    )
+    frame.append(iframe)
     restart.hidden = false
   }
-  frame.querySelector('[data-live-start]')?.addEventListener('click', start)
+  new IntersectionObserver(
+    (entries, observer) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      observer.disconnect()
+      start()
+    },
+    { rootMargin: '300px' },
+  ).observe(frame)
   restart.addEventListener('click', start)
 }
