@@ -13,7 +13,7 @@ interface TextMessage {
   url: string
 }
 
-type Message = ApiMessage | TextMessage | { type: 'options' } | { type: 'update-check' } | { type: 'apply-update' }
+type Message = ApiMessage | TextMessage | { type: 'options'; section?: string } | { type: 'update-check' } | { type: 'apply-update' }
 
 async function api(msg: ApiMessage) {
   const { token } = (await chrome.storage.local.get('token')) as { token?: string }
@@ -60,7 +60,8 @@ async function fetchText(url: string) {
 chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   if (sender.id !== chrome.runtime.id) return
   if (msg.type === 'options') {
-    void chrome.runtime.openOptionsPage()
+    if (msg.section && /^[a-z]+$/.test(msg.section)) void chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${msg.section}`) })
+    else void chrome.runtime.openOptionsPage()
     return
   }
   if (msg.type === 'apply-update') {

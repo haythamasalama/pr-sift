@@ -6,11 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
-import { onStorageKey, storageGet, storageRemove, storageSet } from '../../lib/extension'
+import { onStorageKey, openOptions, storageGet, storageRemove, storageSet } from '../../lib/extension'
 import { gh } from '../review/github'
 
 // A classic token with the repo scope works for organization repositories without an approval step.
 const CREATE_TOKEN_URL = 'https://github.com/settings/tokens/new?description=PR%20Sift&scopes=repo'
+
+// Inside GitHub's page the token field would sit in an open shadow root that page scripts can read, so the token is typed
+// on PR Sift's own options page and the review only shows the connection.
+const { tokenEntry = true } = defineProps<{ tokenEntry?: boolean }>()
 
 const saved = shallowRef('')
 const draft = shallowRef('')
@@ -23,7 +27,8 @@ const checking = shallowRef(false)
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 
 const trimmed = computed(() => draft.value.trim())
-const showForm = computed(() => editing.value || !saved.value)
+const showForm = computed(() => tokenEntry && (editing.value || !saved.value))
+const changeToken = () => (tokenEntry ? (editing.value = true) : openOptions('token'))
 
 function adopt(value: string | undefined) {
   saved.value = value ?? ''
@@ -36,18 +41,21 @@ function announce(text: string) {
   noticeTimer = setTimeout(() => (notice.value = ''), 3000)
 }
 
+let check = 0
+
 async function verify(token: string) {
+  const current = ++check
   account.value = null
   problem.value = ''
+  checking.value = Boolean(token)
   if (!token) return
-  checking.value = true
   try {
     const user = await gh<{ login: string; avatar_url?: string }>('/user')
-    account.value = { login: user.login, avatar: avatarUrl(user.avatar_url) }
+    if (current === check) account.value = { login: user.login, avatar: avatarUrl(user.avatar_url) }
   } catch (e) {
-    problem.value = e instanceof Error ? e.message.replace(/^\d+: /, '') : String(e)
+    if (current === check) problem.value = e instanceof Error ? e.message.replace(/^\d+: /, '') : String(e)
   } finally {
-    checking.value = false
+    if (current === check) checking.value = false
   }
 }
 
@@ -90,7 +98,7 @@ onMounted(async () => adopt(await storageGet<string>('token')))
         <p v-if="problem" class="text-xs text-muted-foreground">{{ problem }}</p>
       </div>
       <div class="flex gap-2">
-        <Button variant="outline" size="sm" @click="editing = true">Change</Button>
+        <Button variant="outline" size="sm" @click="changeToken">Change</Button>
         <Button variant="outline" size="sm" @click="remove">Remove</Button>
       </div>
     </div>
@@ -124,6 +132,14 @@ onMounted(async () => adopt(await storageGet<string>('token')))
         </Button>
       </div>
     </form>
+
+    <div v-if="!tokenEntry && !saved" class="flex flex-col items-start gap-2">
+      <p class="text-xs text-muted-foreground">
+        Approve, comment and merge from the review with a classic GitHub token. You add it on PR Sift’s own page, which GitHub’s page can’t
+        read.
+      </p>
+      <Button size="sm" @click="openOptions('token')"><ExternalLink /> Add a token</Button>
+    </div>
 
     <p v-if="notice" aria-live="polite" class="flex items-center gap-1.5 text-xs text-muted-foreground">
       <CircleCheck class="size-3.5 text-success-fg" /> {{ notice }}

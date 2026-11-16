@@ -35,6 +35,7 @@ import ScopePanel from '../filters/ScopePanel.vue'
 import Toolbar from './Toolbar.vue'
 import SettingsSheet from '../settings/SettingsSheet.vue'
 import { settingsOpenerKey } from '../settings/useSettingsOpener'
+import { openOptions } from '../../lib/extension'
 import type { SettingsSectionId } from '../settings/sections'
 import UpdateNotice from '../updates/UpdateNotice.vue'
 import AutoOpenTip from './AutoOpenTip.vue'
@@ -138,6 +139,8 @@ function onMerged(sha: string) {
 const settingsOpen = shallowRef(false)
 const settingsSection = shallowRef<SettingsSectionId | undefined>()
 provide(settingsOpenerKey, (section) => {
+  // The token is typed on PR Sift's own page, never inside GitHub's.
+  if (section === 'token') return openOptions('token')
   settingsSection.value = section
   settingsOpen.value = true
 })

@@ -175,7 +175,7 @@ defineExpose({ scrollToSection })
     >
       <template #icon><GithubMark class="size-6" /></template>
       <SettingsGroup id="token" title="Connection">
-        <ConnectionRow />
+        <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
       <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
         <ChoiceCards

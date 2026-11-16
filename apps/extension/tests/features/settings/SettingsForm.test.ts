@@ -14,7 +14,7 @@ let store: Record<string, unknown>
 
 async function mountForm(
   stored: Record<string, unknown> = {},
-  props: { section?: SettingsSectionId; files?: PrFile[] } = {},
+  props: { section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' } = {},
   responder?: Responder,
 ) {
   store = installChrome(responder).store
@@ -167,7 +167,7 @@ describe('SettingsForm connection', () => {
       : { ok: false, status: 404, data: {} }
 
   it('connects with a trimmed token and says who you are', async () => {
-    const wrapper = await mountForm({}, {}, github)
+    const wrapper = await mountForm({}, { layout: 'page' }, github)
     await wrapper.find('#settings-token').setValue('  github_pat_abc  ')
     expect('token' in store).toBe(false)
     await buttonIn(wrapper, 'token', 'Connect')!.trigger('click')
@@ -187,8 +187,18 @@ describe('SettingsForm connection', () => {
     expect(section(wrapper, 'token').text()).toContain('Bad credentials')
   })
 
+  it('sends you to PR Sift’s own page to type a token from inside the review', async () => {
+    const wrapper = await mountForm({}, {}, github)
+    expect(wrapper.find('#settings-token').exists()).toBe(false)
+    await buttonIn(wrapper, 'token', 'Add a token')!.trigger('click')
+    expect(vi.mocked(chrome.runtime.sendMessage).mock.calls.map(([message]) => message)).toContainEqual({
+      type: 'options',
+      section: 'token',
+    })
+  })
+
   it('removes a stored token', async () => {
-    const wrapper = await mountForm({ token: 'github_pat_old' }, {}, github)
+    const wrapper = await mountForm({ token: 'github_pat_old' }, { layout: 'page' }, github)
     await buttonIn(wrapper, 'token', 'Remove')!.trigger('click')
     await flushPromises()
     expect('token' in store).toBe(false)
