@@ -146,19 +146,23 @@ for (const demo of document.querySelectorAll('[data-live-demo]')) {
       { capture: true, passive: false },
     )
   }
-  // The frame loads over the preview image, so the box never flashes empty.
   const start = () => {
     const iframe = document.createElement('iframe')
     iframe.src = frame.dataset.src
     iframe.title = 'PR Sift live demo'
     iframe.allow = 'clipboard-write'
-    iframe.className = 'absolute inset-0 size-full border-0 bg-paper opacity-0 transition-opacity'
+    iframe.className = 'absolute inset-0 size-full border-0 bg-paper opacity-0 transition-opacity duration-300'
+    const reveal = () => iframe.classList.remove('opacity-0')
+    // The stand-in GitHub page and the review's loading state show for a moment first, so the frame waits for the files.
+    const reviewShown = () =>
+      [...iframe.contentDocument.querySelectorAll('*')].some((el) => el.shadowRoot?.querySelector('main [data-file]'))
     iframe.addEventListener(
       'load',
       () => {
         passScroll(iframe.contentWindow)
-        iframe.classList.remove('opacity-0')
-        for (const child of [...frame.children]) if (child !== iframe) child.remove()
+        const started = performance.now()
+        const wait = () => (reviewShown() || performance.now() - started > 4000 ? reveal() : setTimeout(wait, 50))
+        wait()
       },
       { once: true },
     )

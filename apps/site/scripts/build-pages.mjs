@@ -385,7 +385,7 @@ const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
             <a href="${DEMO_URL}" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
-            ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="A 39-file pull request reviewed in PR Sift" class="${display} absolute inset-0 size-full object-cover object-top" decoding="async" />`).join('')}
+            <noscript>${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="A 39-file pull request reviewed in PR Sift" class="${display} absolute inset-0 size-full object-cover object-top" decoding="async" />`).join('')}</noscript>
           </div>
         </div>
       </div>`
