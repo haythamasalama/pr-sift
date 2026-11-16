@@ -118,7 +118,7 @@ const reviewComment = (id, path, line, user, body, hours, extra = {}) => ({
 })
 
 const API = {
-  viewer: { login: 'sara-ali' },
+  viewer: { login: 'taylor' },
   pull: {
     title: TITLE,
     body: '',
@@ -135,14 +135,14 @@ const API = {
       body_html: "<p>Thanks! I'll review the billing part today.</p>",
       created_at: ago(30),
       html_url: threadUrl('issuecomment-701'),
-      user: person('sara-ali'),
+      user: person('taylor'),
     },
     {
       id: 702,
       body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>',
       created_at: ago(5),
       html_url: threadUrl('issuecomment-702'),
-      user: person('tyler'),
+      user: AUTHOR,
     },
   ],
   reviews: [
@@ -160,7 +160,7 @@ const API = {
       901,
       'src/Domain/Billing/Actions/GenerateInvoice.php',
       33,
-      person('sara-ali'),
+      person('taylor'),
       '<p>Should the currency come from the plan instead of the account? A plan change mid-period would bill in the old currency.</p>',
       26,
     ),
@@ -168,7 +168,7 @@ const API = {
       902,
       'src/Domain/Billing/Actions/GenerateInvoice.php',
       33,
-      person('tyler'),
+      AUTHOR,
       "<p>Plans don't have a currency yet, so the account is the source for now. I'll note it in <code>docs/billing/usage.md</code>.</p>",
       20,
       { in_reply_to_id: 901 },
@@ -194,7 +194,7 @@ const API = {
       905,
       'src/Domain/Billing/Usage/UsageRepository.php',
       13,
-      person('sara-ali'),
+      person('taylor'),
       '<p>Name it <code>totalsForPeriod</code>?</p>',
       4,
     ),
@@ -206,7 +206,7 @@ const API = {
       'haytham@storefront.dev',
       'haythamasalama',
     ),
-    commit('feat(billing): list invoices in the business portal', 'Sara Ali', 'sara@storefront.dev', 'sara-ali'),
+    commit('feat(billing): list invoices in the business portal', 'Taylor', 'taylor@storefront.dev', 'taylor'),
     commit(
       'fix(billing): round totals to the currency precision\n\nCo-authored-by: Codex <codex@openai.com>',
       'Haytham A. Salama',

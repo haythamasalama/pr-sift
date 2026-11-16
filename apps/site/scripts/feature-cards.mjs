@@ -102,8 +102,8 @@ export function featureVisual(id, icon) {
         `${code(33, '+', '&#39;currency&#39; =&gt; $account-&gt;currency,', 'add')}
         <div class="flex flex-col gap-2.5 border-y border-line px-3 py-2.5 text-xs leading-[1.45]">
           <span class="flex items-center gap-1.5 text-muted">${icon('message-square', 'size-3')}Line 33 · 2 comments on GitHub</span>
-          ${comment('SA', 'bg-accent/15 text-accent', 'sara-ali', 'yesterday', 'Should the currency come from the plan instead of the account?')}
-          ${comment('TY', 'bg-ink/8 text-ink', 'tyler', '20 hours ago', 'Plans don’t have a currency yet, so the account is the source for now.', true)}
+          ${comment('TA', 'bg-accent/15 text-accent', 'taylor', 'yesterday', 'Should the currency come from the plan instead of the account?')}
+          ${comment('HS', 'bg-ink/8 text-ink', 'haythamasalama', '20 hours ago', 'Plans don’t have a currency yet, so the account is the source for now.', true)}
         </div>
         ${code(34, '+', ']);', 'add')}`,
       )
