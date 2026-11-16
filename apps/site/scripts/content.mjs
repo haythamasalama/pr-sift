@@ -339,7 +339,7 @@ export const brand = {
     ['One line', 'Review large GitHub pull requests without the noise.'],
     [
       'Short',
-      'PR Sift is a free Chrome extension for large GitHub pull requests: smart file filters, viewed tracking and private notes for Claude Code, Codex, Cursor or ChatGPT.',
+      'PR Sift is a free Chrome extension for large GitHub pull requests: file filters, viewed tracking, private notes for your AI, and merging without AI co-authors.',
     ],
   ],
   colors: [
