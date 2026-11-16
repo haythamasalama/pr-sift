@@ -4,6 +4,7 @@ import { CircleCheck, ExternalLink, Lock, Pencil, RotateCcw, Send, Trash2 } from
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useNotesContext } from './useNotes'
 import { describeLines, lineText, startOf, type LineRange } from '@pr-sift/core'
 import type { DiffRow, Note } from '../../lib/types'
@@ -82,43 +83,67 @@ async function post() {
     <div class="flex min-h-6 items-center gap-2">
       <Lock class="size-3.5 shrink-0 text-amber-600" />
       <p class="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-700 dark:text-amber-400">{{ describeLines(note) }}</p>
-      <div class="flex shrink-0 items-center gap-1">
-        <Badge v-if="note.postedUrl" as-child variant="secondary" class="shrink-0">
-          <a :href="note.postedUrl" target="_blank" rel="noreferrer">Posted <ExternalLink /></a>
-        </Badge>
-        <Button
-          v-else
-          size="xs"
-          :variant="armed ? 'destructive' : 'outline'"
-          class="mr-1 shrink-0"
-          :disabled="posting"
-          :aria-label="armed ? 'Click again to post publicly' : 'Post to GitHub'"
-          :title="
-            ctx.canPost.value
-              ? 'Post this note as a review comment your team can see'
-              : 'Add a token in the extension options to post. Opens the line on GitHub instead.'
-          "
-          @click="post"
-        >
-          <Spinner v-if="posting" />
-          <Send v-else />
-          <span :class="armed ? '' : 'hidden @sm:inline'">{{ armed ? 'Click again to post publicly' : 'Post to GitHub' }}</span>
-        </Button>
-        <Button variant="ghost" size="icon-xs" aria-label="Open on GitHub" title="Open this line on GitHub" @click="ctx.openOnGithub(note)"
-          ><ExternalLink
-        /></Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          :aria-label="note.resolved ? 'Reopen note' : 'Mark note as resolved'"
-          :title="note.resolved ? 'Reopen this note' : 'Resolved — hide it from the diff'"
-          @click="ctx.update(note.id, { resolved: !note.resolved })"
-        >
-          <RotateCcw v-if="note.resolved" /><CircleCheck v-else />
-        </Button>
-        <Button variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEditing"><Pencil /></Button>
-        <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="ctx.remove(note.id)"><Trash2 /></Button>
-      </div>
+      <TooltipProvider :delay-duration="300">
+        <div class="flex shrink-0 items-center gap-1">
+          <Badge v-if="note.postedUrl" as-child variant="secondary" class="shrink-0">
+            <a :href="note.postedUrl" target="_blank" rel="noreferrer">Posted <ExternalLink /></a>
+          </Badge>
+          <Button
+            v-else
+            size="xs"
+            :variant="armed ? 'destructive' : 'outline'"
+            class="mr-1 shrink-0"
+            :class="
+              armed
+                ? ''
+                : 'border-amber-500/40 bg-transparent text-amber-800 hover:bg-amber-500/15 hover:text-amber-900 dark:border-amber-400/30 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-400/10 dark:hover:text-amber-200'
+            "
+            :disabled="posting"
+            :aria-label="armed ? 'Click again to post publicly' : 'Post to GitHub'"
+            :title="
+              ctx.canPost.value
+                ? 'Post this note as a review comment your team can see'
+                : 'Add a token in the extension options to post. Opens the line on GitHub instead.'
+            "
+            @click="post"
+          >
+            <Spinner v-if="posting" />
+            <Send v-else />
+            <span :class="armed ? '' : 'hidden @sm:inline'">{{ armed ? 'Click again to post publicly' : 'Post to GitHub' }}</span>
+          </Button>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon-xs" aria-label="Open on GitHub" @click="ctx.openOnGithub(note)"><ExternalLink /></Button>
+            </TooltipTrigger>
+            <TooltipContent>Open line</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                :aria-label="note.resolved ? 'Reopen note' : 'Mark note as resolved'"
+                @click="ctx.update(note.id, { resolved: !note.resolved })"
+              >
+                <RotateCcw v-if="note.resolved" /><CircleCheck v-else />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ note.resolved ? 'Reopen' : 'Resolve' }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon-xs" aria-label="Edit note" @click="startEditing"><Pencil /></Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button variant="ghost" size="icon-xs" aria-label="Delete note" @click="ctx.remove(note.id)"><Trash2 /></Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </div>
     <div class="min-w-0 pl-[22px]">
       <CodeQuote
