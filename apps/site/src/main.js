@@ -1,5 +1,3 @@
-import './style.css'
-
 const html = document.documentElement
 const systemDark = matchMedia('(prefers-color-scheme: dark)')
 const themeButtons = document.querySelectorAll('[data-theme-mode]')

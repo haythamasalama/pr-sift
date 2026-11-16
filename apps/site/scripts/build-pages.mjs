@@ -273,6 +273,7 @@ function layout({ path, title, description, body, jsonLd = [], type = 'website',
     <meta name="twitter:description" content="${esc(description)}" />
     <meta name="twitter:image" content="${SITE_URL}media/og.png" />
     ${jsonLd.map((data) => `<script type="application/ld+json">${JSON.stringify(data)}</script>`).join('\n    ')}
+    <link rel="stylesheet" href="/src/style.css" />
     <script type="module" src="/src/main.js"></script>
   </head>
   <body class="bg-paper font-sans text-ink antialiased">
