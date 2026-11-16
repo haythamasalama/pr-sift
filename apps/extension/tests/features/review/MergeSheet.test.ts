@@ -125,7 +125,7 @@ describe('MergeSheet', () => {
     [
       404,
       'Not Found',
-      'Your token can’t see this repository. Add the repository to the token with Contents and Pull requests set to read and write.',
+      'Your token can’t see this repository. For an organization’s repository, create the token with the organization as its resource owner',
     ],
     [
       403,

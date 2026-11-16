@@ -107,7 +107,7 @@ export function explain(error: unknown, action: 'review' | 'merge'): string {
     const access = action === 'merge' ? 'Contents and Pull requests set to read and write' : 'Pull requests set to read and write'
     const advice =
       error.status === 404
-        ? `Your token can’t see this repository. Add the repository to the token with ${access}. An organization may also need to approve the token.`
+        ? `Your token can’t see this repository. For an organization’s repository, create the token with the organization as its resource owner and add this repository, with ${access}. The organization may also need to approve it.`
         : `Your token can’t ${action} here. Give it ${access}, and access to this repository.`
     return reason && !/^(not found|request failed)$/i.test(reason) ? `${advice} GitHub said: “${reason}.”` : advice
   }
