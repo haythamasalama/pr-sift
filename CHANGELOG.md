@@ -57,7 +57,7 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Notes: The code a note quotes keeps the diff's colors. "Show resolved in the diff" counts resolved notes, says when
   there are none, and says they show dimmed once it is on.
 - Notes: A note shows its lines and buttons on one row and its text below, so it stays readable in narrow windows.
-- Notes: Post to GitHub takes the note's colors.
+- Notes: Post to GitHub posts in one click and takes the note's colors. Once a note is posted, the button goes away.
 - Views: The selected choice in Unified and Split, and in the merge method, is easier to see.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 

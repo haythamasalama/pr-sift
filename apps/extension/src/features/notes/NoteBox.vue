@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue'
 import { CircleCheck, ExternalLink, Lock, Pencil, RotateCcw, Send, Trash2 } from '@lucide/vue'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -15,7 +14,6 @@ const { note, rows } = defineProps<{ note: Note; rows?: DiffRow[] }>()
 const emit = defineEmits<{ range: [range: LineRange | null] }>()
 const ctx = useNotesContext()
 const editing = shallowRef(false)
-const armed = shallowRef(false)
 const posting = shallowRef(false)
 const error = shallowRef('')
 
@@ -44,12 +42,6 @@ async function save(text: string, range?: LineRange) {
 
 async function post() {
   if (!ctx.canPost.value) return ctx.openOnGithub(note)
-  if (!armed.value) {
-    armed.value = true
-    setTimeout(() => (armed.value = false), 3000)
-    return
-  }
-  armed.value = false
   posting.value = true
   error.value = ''
   try {
@@ -85,21 +77,13 @@ async function post() {
       <p class="min-w-0 flex-1 truncate text-[11px] font-medium text-attention">{{ describeLines(note) }}</p>
       <TooltipProvider :delay-duration="300">
         <div class="flex shrink-0 items-center gap-1">
-          <Badge v-if="note.postedUrl" as-child variant="secondary" class="shrink-0">
-            <a :href="note.postedUrl" target="_blank" rel="noreferrer">Posted <ExternalLink /></a>
-          </Badge>
           <Button
-            v-else
+            v-if="!note.postedUrl"
             size="xs"
-            :variant="armed ? 'destructive' : 'outline'"
-            class="mr-1 shrink-0"
-            :class="
-              armed
-                ? ''
-                : 'border-attention/40 bg-transparent text-attention hover:bg-attention/15 hover:text-attention dark:border-attention/40 dark:bg-transparent dark:hover:bg-attention/15'
-            "
+            variant="outline"
+            class="mr-1 shrink-0 border-attention/40 bg-transparent text-attention hover:bg-attention/15 hover:text-attention dark:border-attention/40 dark:bg-transparent dark:hover:bg-attention/15"
             :disabled="posting"
-            :aria-label="armed ? 'Click again to post publicly' : 'Post to GitHub'"
+            aria-label="Post to GitHub"
             :title="
               ctx.canPost.value
                 ? 'Post this note as a review comment your team can see'
@@ -109,7 +93,7 @@ async function post() {
           >
             <Spinner v-if="posting" />
             <Send v-else />
-            <span :class="armed ? '' : 'hidden @sm:inline'">{{ armed ? 'Click again to post publicly' : 'Post to GitHub' }}</span>
+            <span class="hidden @sm:inline">Post to GitHub</span>
           </Button>
           <Tooltip>
             <TooltipTrigger as-child>
