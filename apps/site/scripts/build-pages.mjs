@@ -756,7 +756,7 @@ function changelogPage() {
             <ul class="mt-4 divide-y divide-line border-y border-line">${byArea(s.items)
               .map(
                 ([area, items]) =>
-                  `<li data-area="${area}" class="grid gap-2 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4"><span class="inline-flex items-center gap-1.5 self-start text-sm font-medium sm:mt-0.5">${icon(AREAS[area] ?? 'dot', 'size-4 text-muted')}${esc(area)}</span><ul class="flex flex-col gap-2.5">${items.map((i) => `<li class="leading-relaxed">${esc(i.text)}</li>`).join('')}</ul></li>`,
+                  `<li data-area="${area}" class="grid gap-2 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4"><span class="inline-flex items-center gap-1.5 self-start text-sm font-medium sm:mt-0.5">${icon(AREAS[area] ?? 'dot', 'size-4 text-muted')}${esc(area)}</span><ul class="flex list-disc flex-col gap-2.5 ps-5 marker:text-muted">${items.map((i) => `<li class="leading-relaxed">${esc(i.text)}</li>`).join('')}</ul></li>`,
               )
               .join('')}</ul></section>`,
           )
