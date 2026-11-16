@@ -21,10 +21,7 @@ const elementId = computed(() => sectionElementId(id))
 <template>
   <section :id="elementId" :data-section="id" :aria-labelledby="`${elementId}-title`" class="flex scroll-mt-4 flex-col">
     <header class="flex items-center gap-3 pb-3">
-      <span
-        v-if="$slots.icon"
-        class="flex h-7.5 w-11 shrink-0 items-center justify-center rounded-md border bg-muted text-muted-foreground"
-      >
+      <span v-if="$slots.icon" class="flex h-7.5 w-11 shrink-0 items-center justify-center">
         <slot name="icon" />
       </span>
       <SettingsPreview v-else :area="area" />

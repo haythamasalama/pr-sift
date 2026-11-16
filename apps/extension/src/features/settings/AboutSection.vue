@@ -15,7 +15,7 @@ const { version, ready, updated, checking, status, check, restart, dismiss } = u
 <template>
   <SettingsSection id="about" title="About" description="Your version, updates and help.">
     <template #icon>
-      <span class="flex size-5 items-center justify-center rounded-sm bg-primary p-0.5 text-primary-foreground"><BrandMark /></span>
+      <span class="flex size-7 items-center justify-center rounded-md bg-primary p-1 text-primary-foreground"><BrandMark /></span>
     </template>
     <div v-if="updated" class="flex items-center gap-2 py-3 text-xs">
       <PackageCheck class="size-4 shrink-0 text-success-fg" />

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { CircleCheck, Eye, FolderTree, Info, Palette, Plug, RotateCcw } from '@lucide/vue'
+import { CircleCheck, Eye, FolderTree, Palette, RotateCcw } from '@lucide/vue'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import BrandMark from '../../components/BrandMark.vue'
+import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
 import { useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
@@ -47,7 +49,7 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
   { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit' },
 ]
 
-const TAB_ICONS = { github: Plug, review: Eye, files: FolderTree, appearance: Palette, about: Info }
+const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandMark }
 
 const { section, files } = defineProps<{ section?: SettingsSectionId; files?: PrFile[] }>()
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'github')
@@ -155,7 +157,7 @@ defineExpose({ scrollToSection })
       title="GitHub"
       description="Comment, review and merge without leaving the review."
     >
-      <template #icon><Plug class="size-4" /></template>
+      <template #icon><GithubMark class="size-6" /></template>
       <SettingsGroup id="token" title="Connection">
         <ConnectionRow />
       </SettingsGroup>
