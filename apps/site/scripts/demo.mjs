@@ -149,29 +149,21 @@ const SEED = {
   token: 'demo',
   settings: { autoOpen: true },
   autoOpenTipDismissed: true,
-  seenNew: ['auto-open', 'co-authors', 'saved-filters', 'updates', 'report', 'idea'],
+  seenNew: ['auto-open', 'co-authors', 'saved-filters', 'updates'],
   [`notes:${DEMO_PR.owner}/${DEMO_PR.repo}#${DEMO_PR.number}`]: NOTES,
 }
 
-// Stands in for the extension's chrome.* APIs inside the page. Storage lives in localStorage, so the demo keeps its
-// state across reloads, and GitHub calls are answered from the fixtures above. Nothing leaves the browser.
+// Stands in for the extension's chrome.* APIs inside the page. Storage lives in memory, so every load starts from the
+// same example, and GitHub calls are answered from the fixtures above. Nothing leaves the browser.
 function chromeShim({ seed, api, version, optionsUrl }) {
-  const KEY = 'pr-sift-demo'
-  const read = () => {
-    try {
-      return JSON.parse(localStorage.getItem(KEY) ?? 'null') ?? structuredClone(seed)
-    } catch {
-      return structuredClone(seed)
-    }
-  }
-  let store = read()
+  let site = null
   try {
-    const site = localStorage.getItem('theme')
-    store = { ...store, settings: { ...store.settings, theme: site === 'light' || site === 'dark' ? site : 'system' } }
-    localStorage.setItem(KEY, JSON.stringify(store))
+    site = localStorage.getItem('theme')
   } catch {
-    // Private windows can refuse storage; the demo still works for this visit.
+    // Private windows can refuse storage; the demo follows the system theme then.
   }
+  let store = structuredClone(seed)
+  store.settings = { ...store.settings, theme: site === 'light' || site === 'dark' ? site : 'system' }
   const listeners = new Set()
   const emit = (changes) => listeners.forEach((l) => l(changes, 'local'))
   const write = (next) => {
@@ -179,11 +171,6 @@ function chromeShim({ seed, api, version, optionsUrl }) {
     for (const k of new Set([...Object.keys(store), ...Object.keys(next)]))
       if (JSON.stringify(store[k]) !== JSON.stringify(next[k])) changes[k] = { oldValue: store[k], newValue: next[k] }
     store = next
-    try {
-      localStorage.setItem(KEY, JSON.stringify(store))
-    } catch {
-      // Keeps working in memory.
-    }
     if (Object.keys(changes).length) emit(changes)
   }
   const ago = (hours) => new Date(Date.now() - hours * 3600_000).toISOString()
@@ -295,7 +282,7 @@ const pullPage = ({ shim, ext }) => `<!doctype html>
 ${shim}
 </head>
 <body>
-<div class="top"><b>${DEMO_PR.owner} / ${DEMO_PR.repo}</b> · PR Sift demo <button type="button" onclick="localStorage.removeItem('pr-sift-demo'); location.reload()">Reset the demo</button></div>
+<div class="top"><b>${DEMO_PR.owner} / ${DEMO_PR.repo}</b> · PR Sift demo <button type="button" onclick="location.reload()">Start over</button></div>
 <main>
   <h1 class="js-issue-title">${esc(TITLE)}</h1>
   <div><span class="state">Open</span> haythamasalama wants to merge 4 commits into <code>main</code></div>

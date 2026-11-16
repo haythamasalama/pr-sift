@@ -246,7 +246,7 @@ const githubPage = (
 function chromeMock({ store, api = null }) {
   // The auto open tip and the dots on new settings would sit in every shot.
   store.autoOpenTipDismissed ??= true
-  store.seenNew ??= ['auto-open', 'co-authors', 'saved-filters', 'updates', 'report', 'idea']
+  store.seenNew ??= ['auto-open', 'co-authors', 'saved-filters', 'updates']
   const listeners = new Set()
   const local = {
     get: async (key) => (typeof key === 'string' ? (key in store ? { [key]: store[key] } : {}) : { ...store }),

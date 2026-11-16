@@ -29,7 +29,6 @@ export const home = {
     kicker: 'Live demo',
     lead: 'The real extension on a 39-file pull request. Nothing leaves this page.',
     start: 'Try it live',
-    note: 'Filter, mark viewed, write notes, approve, merge. No install, no sign-in.',
     full: 'Open full screen',
   },
   demos: [

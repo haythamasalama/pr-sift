@@ -128,13 +128,18 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
   })
 }
 
-for (const frame of document.querySelectorAll('[data-live-frame]')) {
-  frame.querySelector('[data-live-start]')?.addEventListener('click', () => {
+for (const demo of document.querySelectorAll('[data-live-demo]')) {
+  const frame = demo.querySelector('[data-live-frame]')
+  const restart = demo.querySelector('[data-live-restart]')
+  const start = () => {
     const iframe = document.createElement('iframe')
     iframe.src = frame.dataset.src
     iframe.title = 'PR Sift live demo'
+    iframe.allow = 'clipboard-write'
     iframe.className = 'absolute inset-0 size-full border-0 bg-paper'
     frame.replaceChildren(iframe)
-    iframe.focus()
-  })
+    restart.hidden = false
+  }
+  frame.querySelector('[data-live-start]')?.addEventListener('click', start)
+  restart.addEventListener('click', start)
 }

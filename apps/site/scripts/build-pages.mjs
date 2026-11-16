@@ -20,6 +20,9 @@ const GITHUB_PATH =
   'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'
 
 function icon(name, cls = 'size-5') {
+  // Competitor logos kept in the repository, so no page loads them from another host.
+  if (name.startsWith('logo:'))
+    return readFileSync(here(`assets/brands/${name.slice(5)}.svg`), 'utf8').replace('<svg ', `<svg class="${cls}" aria-hidden="true" `)
   if (name === 'github')
     return `<svg viewBox="0 0 16 16" class="${cls}" fill="currentColor" aria-hidden="true"><path d="${GITHUB_PATH}"/></svg>`
   return readFileSync(here(`node_modules/lucide-static/icons/${name}.svg`), 'utf8')
@@ -120,8 +123,8 @@ const BROWSERS = [
   ['vivaldi', 'Vivaldi'],
 ]
 
-const browsers = () =>
-  `<ul class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" aria-label="Supported browsers">
+const browsers = (cls = '') =>
+  `<ul class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm ${cls}" aria-label="Supported browsers">
     ${BROWSERS.map(([slug, name]) => `<li class="inline-flex items-center gap-1.5">${slug === 'dia' ? `<img src="${link('brand/dia.svg')}" alt="" class="size-5 rounded grayscale" />` : brandIcon(slug)}${name}</li>`).join('')}
   </ul>`
 
@@ -371,15 +374,15 @@ const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
           <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
         </div>
         <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised">
-          <div class="flex items-center gap-3 border-b border-line px-4 py-2.5" aria-hidden="true">
-            <span class="flex gap-1.5"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
-            <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted">github.com/haythamasalama/storefront/pull/482/files</span>
+          <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
+            <span class="flex gap-1.5" aria-hidden="true"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
+            <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted" aria-hidden="true">github.com/haythamasalama/storefront/pull/482/files</span>
+            <button type="button" data-live-restart hidden class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Start over</button>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
             ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" decoding="async" />`).join('')}
             <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/60 p-6 text-center">
               <button type="button" data-live-start class="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-6 text-base font-medium text-paper hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
-              <p class="text-sm text-muted">${esc(live.note)}</p>
             </div>
           </div>
         </div>
@@ -522,19 +525,19 @@ function homePage() {
 
   const body = `
     <section class="mx-auto max-w-6xl px-4 pt-12 pb-20 sm:px-6 lg:pt-20 lg:pb-24">
-      <div class="@container max-w-3xl">
+      <div class="@container mx-auto flex max-w-3xl flex-col items-center text-center">
         <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
         </h1>
         <p class="mt-7 max-w-xl text-lg leading-relaxed text-muted">${esc(h.hero.lead)}</p>
-        <div class="mt-8 flex flex-wrap items-center gap-3">
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
           ${installButton()}
           ${githubButton()}
         </div>
         <div class="mt-4">${rating()}</div>
-        <div class="mt-10">${browsers()}</div>
+        <div class="mt-10">${browsers('justify-center')}</div>
       </div>
       ${HAS_DEMO ? liveDemo(h.live) : `<div class="mt-14">${shot('review', 'A pull request reviewed in PR Sift')}</div>`}
     </section>
