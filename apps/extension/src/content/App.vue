@@ -7,6 +7,7 @@ import BrandMark from '../components/BrandMark.vue'
 import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { useGithubDark } from '../features/appearance/useGithubDark'
+import { useUpdates } from '../features/updates/useUpdates'
 import { portalTargetKey } from '../lib/portal'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
@@ -27,6 +28,11 @@ const acknowledged = shallowRef(false)
 const externalUpdate = computed(() => githubRefresh.value && !acknowledged.value)
 watch(githubRefresh, (present) => {
   if (!present) acknowledged.value = false
+})
+const { ready: updateReady, updated } = useUpdates()
+const updateNote = computed(() => {
+  if (updateReady.value) return `PR Sift ${updateReady.value} is ready`
+  return updated.value ? `PR Sift was updated to ${updated.value.version}` : ''
 })
 
 function sync() {
@@ -64,6 +70,7 @@ onBeforeUnmount(() => {
       <Button
         variant="outline"
         class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        :title="dead ? undefined : updateNote || undefined"
         @click="dead ? reload() : (open = true)"
       >
         <span class="relative flex size-6 items-center justify-center">
@@ -81,6 +88,14 @@ onBeforeUnmount(() => {
         >
           Updated
         </Badge>
+        <span
+          v-if="updateNote && !dead"
+          data-update-dot
+          class="absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-background"
+          :class="updateReady ? 'bg-emphasis' : 'bg-success'"
+        >
+          <span class="sr-only">{{ updateNote }}</span>
+        </span>
       </Button>
     </div>
     <ReviewPanel

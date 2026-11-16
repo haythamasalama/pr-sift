@@ -6,7 +6,7 @@ import { installChrome } from '../helpers/chrome'
 
 type Wrapper = ReturnType<typeof mount>
 
-const about = (wrapper: Wrapper) => wrapper.findAll('[data-slot="card"]').find((card) => card.text().startsWith('About'))!
+const about = (wrapper: Wrapper) => wrapper.find('[data-section="about"]')
 const button = (wrapper: Wrapper, label: string) =>
   about(wrapper)
     .findAll('button')
@@ -21,9 +21,21 @@ async function checkWith(answer: unknown) {
   return wrapper
 }
 
-describe('Options about card', () => {
+describe('Options page', () => {
   afterEach(() => {
     document.body.innerHTML = ''
+  })
+
+  it('shows every settings section in one column', async () => {
+    installChrome()
+    const wrapper = mount(Options, { attachTo: document.body })
+    await flushPromises()
+    const sections = wrapper.findAll('section').map((s) => s.attributes('data-section'))
+    expect(sections).toEqual(['about', 'token', 'theme', 'hidden', 'defaults', 'merging', 'tree', 'filters', 'help'])
+    expect(wrapper.find('[data-slot="card"]').exists()).toBe(false)
+    const saveButtons = wrapper.findAll('button').filter((b) => b.text() === 'Save')
+    expect(saveButtons).toHaveLength(1)
+    expect(wrapper.find('[data-section="token"]').element.contains(saveButtons[0]!.element)).toBe(true)
   })
 
   it('shows the installed version and links to the changelog and the store reviews', async () => {
@@ -34,7 +46,7 @@ describe('Options about card', () => {
     expect(card.text()).toContain('PR Sift 1.1.0')
     expect(card.text()).toContain('Chrome updates it on its own every few hours.')
     const links = Object.fromEntries(card.findAll('a').map((a) => [a.text(), a.attributes('href')]))
-    expect(links).toEqual({ 'What’s new': CHANGELOG_URL, 'Rate PR Sift': REVIEWS_URL })
+    expect(links).toEqual({ Changelog: CHANGELOG_URL, Rate: REVIEWS_URL })
     expect(button(wrapper, 'Restart to update')).toBeUndefined()
   })
 
