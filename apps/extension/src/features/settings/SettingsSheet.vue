@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { isDemo } from '../../lib/demo'
 import type { PrFile } from '../../lib/types'
 import SettingsForm from './SettingsForm.vue'
+import SettingsLocked from './SettingsLocked.vue'
 import type { SettingsSectionId } from './sections'
 
 const open = defineModel<boolean>('open', { default: false })
+const locked = isDemo()
 const { section, files } = defineProps<{ section?: SettingsSectionId; files?: PrFile[] }>()
 
 // The form moves focus to the section it scrolls to, once its settings are loaded.
@@ -26,10 +29,13 @@ const stayOpen = (event: Event) => event.preventDefault()
     >
       <SheetHeader class="border-b pr-12">
         <SheetTitle>Settings</SheetTitle>
-        <SheetDescription class="text-xs">Changes apply right away.</SheetDescription>
+        <SheetDescription class="text-xs">{{
+          locked ? 'Available once PR Sift is installed.' : 'Changes apply right away.'
+        }}</SheetDescription>
       </SheetHeader>
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8">
-        <SettingsForm :section="section" :files="files" />
+        <SettingsLocked v-if="locked" />
+        <SettingsForm v-else :section="section" :files="files" />
       </div>
     </SheetContent>
   </Sheet>

@@ -1,5 +1,6 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { DIFF, TITLE } from '../../../tools/capture/demo-pr.mjs'
+import { INSTALL_URL } from './content.mjs'
 
 // The content script finds the pull request in the path, so the demo lives at /demo/<repo>/pull/<number>.
 export const DEMO_PR = { owner: 'demo', repo: 'storefront', number: 482 }
@@ -155,7 +156,7 @@ const SEED = {
 
 // Stands in for the extension's chrome.* APIs inside the page. Storage lives in memory, so every load starts from the
 // same example, and GitHub calls are answered from the fixtures above. Nothing leaves the browser.
-function chromeShim({ seed, api, version, optionsUrl }) {
+function chromeShim({ seed, api, version, installUrl }) {
   let site = null
   try {
     site = localStorage.getItem('theme')
@@ -222,7 +223,7 @@ function chromeShim({ seed, api, version, optionsUrl }) {
   const respond = (m) => {
     if (m.type === 'gh') return gh(m)
     if (m.type === 'options') {
-      window.open(optionsUrl, '_blank', 'noopener')
+      window.open(installUrl, '_blank', 'noopener')
       return undefined
     }
     if (m.type === 'update-check') return { status: 'no_update' }
@@ -238,7 +239,7 @@ function chromeShim({ seed, api, version, optionsUrl }) {
         const res = respond(m)
         if (cb) setTimeout(() => cb(res), 120)
       },
-      openOptionsPage: () => window.open(optionsUrl, '_blank', 'noopener'),
+      openOptionsPage: () => window.open(installUrl, '_blank', 'noopener'),
       requestUpdateCheck: async () => ({ status: 'no_update' }),
       reload: () => location.reload(),
       onMessage: event(),
@@ -305,14 +306,12 @@ export function buildDemo({ dist, pages, assets, version }) {
     return false
   }
   const ext = '/demo/ext/'
-  const shim = `<script>(${chromeShim})(${JSON.stringify({ seed: SEED, api: API, version, optionsUrl: `${ext}options.html` })})</script>`
+  const shim = `<script>(${chromeShim})(${JSON.stringify({ seed: SEED, api: API, version, installUrl: INSTALL_URL })})</script>`
   const root = `${pages}${PR_BASE}`
   mkdirSync(`${root}/files`, { recursive: true })
   mkdirSync(`${assets}/demo/ext`, { recursive: true })
   mkdirSync(`${assets}/${DEMO_PR.owner}/${DEMO_PR.repo}/pull`, { recursive: true })
   cpSync(`${dist}/content.js`, `${assets}/demo/ext/content.js`)
-  cpSync(`${dist}/assets`, `${assets}/demo/ext/assets`, { recursive: true })
-  writeFileSync(`${assets}/demo/ext/options.html`, readFileSync(`${dist}/options.html`, 'utf8').replace('<head>', `<head>${shim}`))
   writeFileSync(`${assets}${PR_BASE}.diff`, DIFF)
   writeFileSync(`${root}/index.html`, pullPage({ shim, ext }))
   writeFileSync(`${root}.html`, pullPage({ shim, ext }))

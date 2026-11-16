@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import SettingsSheet from '../../../src/features/settings/SettingsSheet.vue'
+import { DEMO_ID } from '../../../src/lib/demo'
 import { installChrome } from '../../helpers/chrome'
 
 const content = () => document.querySelector<HTMLElement>('[data-slot="sheet-content"]')
@@ -54,6 +55,15 @@ describe('SettingsSheet', () => {
     content()!.querySelector<HTMLButtonElement>('[data-slot="sheet-close"]')!.click()
     await flushPromises()
     expect(wrapper.emitted('update:open')).toEqual([[false]])
+    wrapper.unmount()
+  })
+
+  it('shows an install prompt instead of the settings on the website demo', async () => {
+    installChrome().chrome.runtime.id = DEMO_ID
+    const wrapper = mount(SettingsSheet, { props: { open: true }, attachTo: document.body })
+    await flushPromises()
+    expect(content()?.querySelector('a[href*="chromewebstore.google.com"]')?.textContent).toBe('Add to Chrome')
+    expect(sectionIn('about')).toBeNull()
     wrapper.unmount()
   })
 })
