@@ -71,6 +71,152 @@ const NOTES = [
   },
 ]
 
+const DESCRIPTION = `<h2 dir="auto">Summary</h2>
+<ul dir="auto">
+<li><strong>Invoices</strong> now include usage lines from <code>UsageMeter</code>, priced with the account's plan.</li>
+<li>The business portal lists invoices per period, with a PDF download.</li>
+<li>Totals are rounded to the currency's precision.</li>
+</ul>
+<h2 dir="auto">How to test</h2>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" checked disabled> <code>php artisan test --filter=Billing</code></li>
+<li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled> Open an invoice for a metered plan and check the usage lines</li>
+</ul>
+<blockquote><p dir="auto">Runs at month end for every account, see <a href="/haythamasalama/storefront/issues/471">#471</a>.</p></blockquote>`
+
+const PAGE_DATA = {
+  payload: {
+    pullRequestsLayoutRoute: {
+      pullRequest: {
+        title: TITLE,
+        author: { login: 'haythamasalama', avatarUrl: 'https://avatars.githubusercontent.com/u/37311945?v=4' },
+        baseBranch: 'main',
+        headBranch: 'feat/usage-invoices',
+        commitsCount: 4,
+        state: 'OPEN',
+      },
+    },
+  },
+}
+
+const commit = (message, name, email, login) => ({ commit: { message, author: { name, email } }, author: { login } })
+
+const ago = (hours) => new Date(Date.now() - hours * 3600_000).toISOString()
+const AUTHOR = { login: 'haythamasalama', avatar_url: 'https://avatars.githubusercontent.com/u/37311945?v=4' }
+const person = (login) => ({ login })
+const threadUrl = (anchor) => `https://github.com/${PR.owner}/${PR.repo}/pull/${PR.number}#${anchor}`
+const reviewComment = (id, path, line, user, body, hours, extra = {}) => ({
+  id,
+  path,
+  line,
+  side: 'RIGHT',
+  body_html: body,
+  created_at: ago(hours),
+  html_url: threadUrl(`discussion_r${id}`),
+  user,
+  ...extra,
+})
+
+const API = {
+  viewer: { login: 'sara-ali' },
+  pull: {
+    title: TITLE,
+    body: '',
+    comments: 2,
+    review_comments: 5,
+    commits: 4,
+    mergeable_state: 'clean',
+    user: AUTHOR,
+    head: { sha: 'a1b2c3d', label: 'haythamasalama:feat/usage-invoices' },
+  },
+  issueComments: [
+    {
+      id: 701,
+      body_html: "<p>Thanks! I'll review the billing part today.</p>",
+      created_at: ago(30),
+      html_url: threadUrl('issuecomment-701'),
+      user: person('sara-ali'),
+    },
+    {
+      id: 702,
+      body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>',
+      created_at: ago(5),
+      html_url: threadUrl('issuecomment-702'),
+      user: AUTHOR,
+    },
+  ],
+  reviews: [
+    {
+      id: 801,
+      state: 'APPROVED',
+      body_html: '<p>Looks good to me.</p>',
+      submitted_at: ago(3),
+      html_url: threadUrl('pullrequestreview-801'),
+      user: person('lee-park'),
+    },
+  ],
+  comments: [
+    reviewComment(
+      901,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      33,
+      person('sara-ali'),
+      '<p>Should the currency come from the plan instead of the account? A plan change mid-period would bill in the old currency.</p>',
+      26,
+    ),
+    reviewComment(
+      902,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      33,
+      AUTHOR,
+      "<p>Plans don't have a currency yet, so the account is the source for now. I'll note it in <code>docs/billing/usage.md</code>.</p>",
+      20,
+      { in_reply_to_id: 901 },
+    ),
+    reviewComment(
+      903,
+      'src/Domain/Billing/Actions/GenerateInvoice.php',
+      65,
+      person('kim-dev'),
+      '<p><code>roundTo</code> should round half up for invoices. Can you add a test for <code>0.005</code>?</p>',
+      8,
+    ),
+    reviewComment(
+      904,
+      'src/Presentation/Business/Controllers/InvoiceController.php',
+      31,
+      person('lee-park'),
+      '<p>Paginate here, a business can have thousands of invoices.</p>',
+      6,
+      { start_line: 27 },
+    ),
+    reviewComment(
+      905,
+      'src/Domain/Billing/Usage/UsageRepository.php',
+      13,
+      person('sara-ali'),
+      '<p>Name it <code>totalsForPeriod</code>?</p>',
+      4,
+    ),
+  ],
+  commits: [
+    commit(
+      'feat(billing): add usage lines to invoices\n\nCo-Authored-By: Claude <noreply@anthropic.com>',
+      'Haytham A. Salama',
+      'haytham@storefront.dev',
+      'haythamasalama',
+    ),
+    commit('feat(billing): list invoices in the business portal', 'Sara Ali', 'sara@storefront.dev', 'sara-ali'),
+    commit(
+      'fix(billing): round totals to the currency precision\n\nCo-authored-by: Codex <codex@openai.com>',
+      'Haytham A. Salama',
+      'haytham@storefront.dev',
+      'haythamasalama',
+    ),
+    commit('test(billing): cover month-end usage totals', 'Haytham A. Salama', 'haytham@storefront.dev', 'haythamasalama'),
+  ],
+}
+
 const githubPage = (
   title,
 ) => `<!doctype html><html><head><meta charset="utf-8"><title>${title} by haythamasalama · Pull Request #${PR.number} · ${PR.owner}/${PR.repo}</title>
@@ -90,12 +236,14 @@ const githubPage = (
 <div class="top"><b>${PR.owner} / ${PR.repo}</b> · Pull requests</div>
 <main>
   <h1 class="js-issue-title">${title}</h1>
-  <div><span class="state">Open</span> haythamasalama wants to merge 12 commits into <code>main</code></div>
-  <div class="tabs"><span>Conversation</span><span>Commits 12</span><span>Checks</span><span class="on">Files changed 41</span></div>
+  <div><span class="state">Open</span> haythamasalama wants to merge 4 commits into <code>main</code></div>
+  <div class="tabs"><span>Conversation</span><span>Commits 4</span><span>Checks</span><span class="on">Files changed 41</span></div>
+  <script type="application/json" data-target="react-app.embeddedData">${JSON.stringify(PAGE_DATA)}</script>
+  <rails-partial data-partial-name="pullRequestsConversationsRoute.Body" hidden><div class="comment-body markdown-body js-comment-body">${DESCRIPTION}</div></rails-partial>
   ${Array.from({ length: 6 }, (_, i) => `<section class="file"><header>src/Domain/Billing/File${i + 1}.php</header><div></div></section>`).join('')}
 </main></body></html>`
 
-function chromeMock({ store }) {
+function chromeMock({ store, api = null }) {
   const listeners = new Set()
   const local = {
     get: async (key) => (typeof key === 'string' ? (key in store ? { [key]: store[key] } : {}) : { ...store }),
@@ -115,7 +263,28 @@ function chromeMock({ store }) {
     runtime: {
       id: 'pr-sift-demo',
       getManifest: () => ({ version: '0.1.0' }),
-      sendMessage: (_m, cb) => cb && cb({ ok: false, status: 0 }),
+      sendMessage: (m, cb) => {
+        if (!cb) return
+        if (!api || m.type !== 'gh') return cb({ ok: false, status: 0 })
+        const path = m.path.split('?')[0]
+        const ok = (data) => cb({ ok: true, status: 200, data })
+        if (m.method === 'PUT' && path.endsWith('/merge')) return ok({ sha: '9f8e7d6c5b4a', merged: true })
+        if (m.method === 'POST' && path.endsWith('/reviews')) {
+          const state = { APPROVE: 'APPROVED', REQUEST_CHANGES: 'CHANGES_REQUESTED', COMMENT: 'COMMENTED' }[m.body.event]
+          api.reviews = [
+            ...api.reviews,
+            { id: 990, state, body_html: '', submitted_at: new Date().toISOString(), html_url: '#', user: api.viewer },
+          ]
+          return ok(api.reviews.at(-1))
+        }
+        if (path === '/user') return ok(api.viewer)
+        if (path.endsWith('/reviews')) return ok(api.reviews)
+        if (path.includes('/issues/')) return ok(api.issueComments)
+        if (path.endsWith('/comments')) return ok(api.comments)
+        if (path.endsWith('/commits')) return ok(api.commits)
+        if (path.includes('/pulls/')) return ok(api.pull)
+        ok({})
+      },
     },
     storage: { local, onChanged: { addListener: (l) => listeners.add(l), removeListener: (l) => listeners.delete(l) } },
   }
@@ -157,8 +326,8 @@ async function openDemo(browser, { theme = 'light', notes = true, video = null }
     colorScheme: theme,
     ...(video ? { recordVideo: { dir: `${OUT}/raw`, size: VIEWPORT } } : {}),
   })
-  const store = { settings: { theme, assistant: 'claude-code' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
-  await context.addInitScript(chromeMock, { store })
+  const store = { token: 'demo', settings: { theme, assistant: 'claude-code' }, ...(notes ? { [`notes:${KEY}`]: NOTES } : {}) }
+  await context.addInitScript(chromeMock, { store, api: API })
   if (video) await context.addInitScript(cursorScript)
   await context.route('https://github.com/**', (route) => {
     const url = route.request().url()
@@ -253,7 +422,7 @@ async function shot(browser, name, prepare, options = {}) {
 }
 
 const SCALE = 2
-const README_GIFS = ['filters', 'review', 'notes']
+const README_GIFS = ['filters', 'review', 'notes', 'merge']
 
 function videoCursor({ ringColor }) {
   const add = () => {
@@ -492,10 +661,11 @@ async function record(browser, name, play, options) {
   const theme = options.theme
   const context = await browser.newContext({ viewport: big, colorScheme: theme })
   const store = {
+    token: 'demo',
     settings: { theme, assistant: 'claude-code', reviewMode: options.reviewMode ?? true },
     [`notes:${KEY}`]: options.notes ?? NOTES,
   }
-  await context.addInitScript(chromeMock, { store })
+  await context.addInitScript(chromeMock, { store, api: API })
   await context.addInitScript(videoCursor, { ringColor: theme === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)' })
   await context.route('https://github.com/**', (route) =>
     route.request().url().endsWith('.diff')
@@ -617,6 +787,40 @@ await shot(browser, 'ai-export', async (page) => {
   await openReview(page)
   await page.getByRole('button', { name: /Notes/ }).click()
   await page.getByRole('button', { name: 'Choose the assistant' }).click()
+})
+
+await shot(browser, 'description', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /Description/ }).click()
+})
+
+await shot(browser, 'merge', async (page) => {
+  await openReview(page)
+  await page
+    .getByRole('button', { name: /^Squash and merge/ })
+    .first()
+    .click()
+  await page.getByText('Co-authors').waitFor()
+})
+
+await shot(browser, 'approve', async (page) => {
+  await openReview(page)
+  await page.getByTitle('Approve, request changes or comment').click()
+  await page.getByRole('textbox', { name: 'Comment' }).fill('Looks good. The usage lines read well.')
+})
+
+await shot(browser, 'comments', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /^\d+ comments/ }).click()
+  await page.locator('[data-thread="901"]').scrollIntoViewIfNeeded()
+})
+
+await shot(browser, 'settings', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: 'Options' }).click()
+  await page.getByRole('menuitem', { name: 'Settings' }).click()
+  await page.getByRole('tab', { name: 'GitHub' }).click()
+  await page.getByText('Leave out AI co-authors').waitFor()
 })
 
 await shot(browser, 'split', async (page) => {
@@ -822,6 +1026,25 @@ await clip(browser, 'resolve', async (page) => {
   await pause(page, 1100)
 })
 
+await clip(browser, 'merge', async (page) => {
+  await pause(page, 600)
+  const approve = page.getByTitle('Approve, request changes or comment')
+  await camera(page, approve, 1.6)
+  await glide(page, approve)
+  await pause(page, 500)
+  await glide(page, page.locator('[data-slot="popover-content"]').getByRole('button', { name: 'Approve' }))
+  await pause(page, 1200)
+  const merge = page.getByRole('button', { name: /^Squash and merge/ }).first()
+  await camera(page, merge, 1.6)
+  await glide(page, merge)
+  await page.getByText('Co-authors').waitFor()
+  await pause(page, 500)
+  await camera(page, page.locator('#co-author-0'), 1.6)
+  await pause(page, 1800)
+  await glide(page, page.locator('[data-slot="sheet-content"]').getByRole('button', { name: 'Squash and merge' }))
+  await pause(page, 1600)
+})
+
 await clip(browser, 'claude', async (page) => {
   await glide(page, page.getByRole('button', { name: /Notes/ }))
   await pause(page, 700)
@@ -868,7 +1091,7 @@ await clip(browser, 'views', async (page) => {
   await pause(page, 600)
   await camera(page, null)
   await pause(page, 1000)
-  const copy = page.getByRole('button', { name: 'Copy' }).first()
+  const copy = page.getByRole('button', { name: 'Copy', exact: true }).first()
   await camera(page, copy, 1.9)
   await glide(page, copy)
   await pause(page, 800)
