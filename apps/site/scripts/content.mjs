@@ -25,6 +25,14 @@ export const home = {
     secondary: 'Star on GitHub',
     tryIt: 'Try it on your next big pull request.',
   },
+  live: {
+    kicker: 'Live demo',
+    title: 'Try PR Sift right here',
+    lead: 'The real extension on a 39-file pull request. Filter files, mark them viewed, write notes, approve, merge and open Settings. Nothing leaves this page.',
+    start: 'Start the live demo',
+    note: 'Runs in your browser. No install, no sign-in.',
+    full: 'Open full screen',
+  },
   demos: [
     ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
     ['merge', 'git-merge', 'Merge without AI co-authors', 'Claude, Codex and other AI tools start unchecked.'],

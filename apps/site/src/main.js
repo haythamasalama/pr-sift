@@ -215,3 +215,14 @@ for (const button of document.querySelectorAll('[data-copy-link]')) {
     }, 1500)
   })
 }
+
+for (const frame of document.querySelectorAll('[data-live-frame]')) {
+  frame.querySelector('[data-live-start]')?.addEventListener('click', () => {
+    const iframe = document.createElement('iframe')
+    iframe.src = frame.dataset.src
+    iframe.title = 'PR Sift live demo'
+    iframe.className = 'absolute inset-0 size-full border-0 bg-paper'
+    frame.replaceChildren(iframe)
+    iframe.focus()
+  })
+}

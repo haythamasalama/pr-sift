@@ -45,6 +45,8 @@ export default tseslint.config(
   { files: ['**/*.config.{js,ts}', '**/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
   { files: ['apps/site/src/**/*.js'], languageOptions: { globals: globals.browser } },
   { files: ['apps/site/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
+  // The demo's chrome shim is serialised into the page and runs in the browser.
+  { files: ['apps/site/scripts/demo.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   { files: ['tools/**/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   prettier,
 )

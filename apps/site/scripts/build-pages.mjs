@@ -1,7 +1,8 @@
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
+import { DEMO_URL, buildDemo } from './demo.mjs'
 import { AUTHOR, INSTALL_URL, LAST_STORE_RATING, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
@@ -11,6 +12,9 @@ const media = (path) => `${BASE}media/${path}`
 const esc = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const YEAR = new Date().getFullYear()
 const VERSION = JSON.parse(readFileSync(here('../extension/manifest.json'), 'utf8')).version
+const EXTENSION_DIST = here('../extension/dist')
+// The extension reads the pull request from the URL path, so the demo needs the site at the domain root.
+const HAS_DEMO = BASE === '/' && existsSync(`${EXTENSION_DIST}/content.js`)
 
 const GITHUB_PATH =
   'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'
@@ -192,6 +196,7 @@ function playground() {
 }
 
 const NAV = [
+  ...(HAS_DEMO ? [['Try it', '#try']] : []),
   ['Notes', '#notes'],
   ['Features', '#features'],
   ['Guides', 'guides/'],
@@ -430,6 +435,26 @@ function matrix() {
     )}<span>From official pages, checked ${[...new Set([CHECKED, ...compare.map((c) => c.checked).filter(Boolean)])].join(' and ')}.</span></p>`
 }
 
+const liveDemo = (live) => `<section id="try" class="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20 sm:px-6">
+      <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><p class="font-mono text-sm text-muted">${esc(live.kicker)}</p>${h2(live.title, 'mt-2')}${lead(live.lead)}</div>
+        <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted hover:bg-raised hover:text-ink">${icon('maximize-2', 'size-4')}${esc(live.full)}</a>
+      </div>
+      <div data-live-demo class="mt-8 overflow-hidden rounded-xl border border-line bg-raised">
+        <div class="flex items-center gap-3 border-b border-line px-4 py-2.5" aria-hidden="true">
+          <span class="flex gap-1.5"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
+          <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted">github.com/haythamasalama/storefront/pull/482/files</span>
+        </div>
+        <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
+          ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" loading="lazy" decoding="async" />`).join('')}
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/60 p-6 text-center">
+            <button type="button" data-live-start class="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-6 text-base font-medium text-paper hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
+            <p class="text-sm text-muted">${esc(live.note)}</p>
+          </div>
+        </div>
+      </div>
+    </section>`
+
 function homePage() {
   const h = home
   const demoTabs = `<div class="grid grid-cols-1 gap-8 lg:grid-cols-[18rem_1fr]" data-demo>
@@ -583,6 +608,7 @@ function homePage() {
       </div>
       <div class="min-w-0">${playground()}</div>
     </section>
+    ${HAS_DEMO ? liveDemo(h.live) : ''}
     <section class="border-y border-line bg-raised"><div class="mx-auto max-w-6xl px-4 py-16 sm:px-6">${demoTabs}</div></section>
     ${bands(sections)}
     ${ctaBlock()}`
@@ -981,6 +1007,7 @@ rmSync(here('public'), { recursive: true, force: true })
 mkdirSync(here('public/brand'), { recursive: true })
 mkdirSync(here('public/changelog'), { recursive: true })
 cpSync(fileURLToPath(new URL('../../../media', import.meta.url)), here('public/media'), { recursive: true })
+if (HAS_DEMO) buildDemo({ dist: EXTENSION_DIST, pages: here('pages'), assets: here('public'), version: VERSION })
 cpSync(here('assets/brands/dia-favicon.svg'), here('public/brand/dia.svg'))
 writeFileSync(here('public/favicon.svg'), logoFile('#000000', '#ffffff'))
 cpSync(here('assets/icons'), here('public'), { recursive: true })
