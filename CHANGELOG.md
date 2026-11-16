@@ -33,7 +33,7 @@ goes under `## Unreleased` until the next release moves it under its version and
   GitHub shows a dot at the same time.
 - Review: New settings carry a small dot in Settings until you use them once.
 - Review: Rate PR Sift on the Chrome Web Store from About in Settings.
-- Notes: Tooltips name the open, resolve, edit and delete buttons on a note.
+- Notes: Tooltips name the resolve, edit and delete buttons on a note.
 
 ### Changed
 

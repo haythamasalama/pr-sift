@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue'
-import { CircleCheck, ExternalLink, Lock, Pencil, RotateCcw, Send, Trash2 } from '@lucide/vue'
+import { CircleCheck, Lock, Pencil, RotateCcw, Send, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -95,12 +95,6 @@ async function post() {
             <Send v-else />
             <span class="hidden @sm:inline">Post to GitHub</span>
           </Button>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button variant="ghost" size="icon-xs" aria-label="Open on GitHub" @click="ctx.openOnGithub(note)"><ExternalLink /></Button>
-            </TooltipTrigger>
-            <TooltipContent>Open line</TooltipContent>
-          </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
