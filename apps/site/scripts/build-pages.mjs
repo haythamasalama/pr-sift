@@ -490,14 +490,6 @@ function homePage() {
     ],
     features,
     [
-      'how',
-      `${h2('Three steps. No account.')}
-      <ol class="mt-10 grid gap-8 md:grid-cols-3">
-        ${h.how.map(([ic, title, text], i) => `<li class="border-t-2 border-ink pt-5"><span class="flex items-center gap-3"><span class="font-mono text-sm text-muted">${i + 1}</span>${icon(ic, 'size-[18px]')}</span><h3 class="mt-3 text-lg font-medium">${esc(title)}</h3><p class="mt-1 text-muted">${esc(text)}</p></li>`).join('\n        ')}
-      </ol>
-      <div class="mt-12">${shot('launcher', 'The PR Sift button on a real GitHub pull request')}</div>`,
-    ],
-    [
       'source-code',
       `<div class="grid gap-12 lg:grid-cols-12">
         <div class="lg:col-span-5">

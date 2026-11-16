@@ -172,11 +172,6 @@ export const home = {
       ['history', 'Changelog', 'changelog/'],
     ],
   },
-  how: [
-    ['download', 'Install', 'Add PR Sift to your browser.'],
-    ['github', 'Open a pull request', 'Any Files changed tab on github.com.'],
-    ['funnel', 'Press PR Sift', 'Bottom right of the page.'],
-  ],
   privacy: {
     title: 'Your code stays in your browser',
     text: 'No server, no account, no analytics. PR Sift only talks to GitHub.',
