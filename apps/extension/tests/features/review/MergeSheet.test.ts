@@ -5,6 +5,8 @@ import MergeSheet from '../../../src/features/review/MergeSheet.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
 import { PR } from '@pr-sift/core/testing'
 import { installChrome } from '../../helpers/chrome'
+import { explain } from '../../../src/features/review/actions'
+import { GhError } from '../../../src/features/review/github'
 
 enableAutoUnmount(afterEach)
 
@@ -112,6 +114,26 @@ describe('MergeSheet', () => {
     await vi.waitFor(() => expect(document.querySelector('#co-author-1')).not.toBeNull())
     expect(checked('co-author-0')).toBe('true')
     expect(checked('co-author-1')).toBe('true')
+  })
+
+  it.each([
+    [
+      403,
+      'Resource not accessible by personal access token',
+      'Your token can’t merge here. Give it Contents and Pull requests set to read and write, and access to this repository. GitHub said: “Resource not accessible by personal access token.”',
+    ],
+    [
+      404,
+      'Not Found',
+      'Your token can’t see this repository. Add the repository to the token with Contents and Pull requests set to read and write.',
+    ],
+    [
+      403,
+      'Resource protected by organization SAML enforcement. You must grant your Personal Access token access to this organization.',
+      'This organization uses single sign-on. On GitHub, authorize your token for the organization, then try again.',
+    ],
+  ])('says why GitHub refused to load the merge (%i: %s)', (status, message, expected) => {
+    expect(explain(new GhError(`${status}: ${message}`, status), 'merge')).toContain(expected)
   })
 
   it('explains that merging needs a token', async () => {

@@ -93,11 +93,23 @@ export async function merge(pr: PrRef, request: MergeRequest): Promise<string> {
   return result.sha
 }
 
+export const TOKENS_URL = 'https://github.com/settings/personal-access-tokens'
+
+// GitHub's own reason tells a missing permission apart from a repository the token cannot see or a pending SSO step.
 export function explain(error: unknown, action: 'review' | 'merge'): string {
   if (error instanceof GhError && (error.status === 403 || error.status === 404)) {
-    return action === 'merge'
-      ? 'Your token can’t merge here. Give it Contents and Pull requests set to read and write, and access to this repository.'
-      : 'Your token can’t review here. Give it Pull requests set to read and write, and access to this repository.'
+    const reason = error.message
+      .replace(/^\d+: /, '')
+      .replace(/\.$/, '')
+      .trim()
+    if (/saml|single sign-on|\bsso\b/i.test(reason))
+      return 'This organization uses single sign-on. On GitHub, authorize your token for the organization, then try again.'
+    const access = action === 'merge' ? 'Contents and Pull requests set to read and write' : 'Pull requests set to read and write'
+    const advice =
+      error.status === 404
+        ? `Your token can’t see this repository. Add the repository to the token with ${access}. An organization may also need to approve the token.`
+        : `Your token can’t ${action} here. Give it ${access}, and access to this repository.`
+    return reason && !/^(not found|request failed)$/i.test(reason) ? `${advice} GitHub said: “${reason}.”` : advice
   }
   if (error instanceof GhError && error.status === 409) return 'New commits were pushed. Refresh the review and try again.'
   return error instanceof Error ? error.message.replace(/^\d+: /, '') : String(error)

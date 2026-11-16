@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, shallowRef, watch } from 'vue'
-import { CircleAlert, GitMerge, KeyRound, Plus } from '@lucide/vue'
+import { CircleAlert, ExternalLink, GitMerge, KeyRound, Plus } from '@lucide/vue'
 import {
   coAuthorsOf,
   defaultSquashBody,
@@ -24,7 +24,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { DEFAULTS, getSettings, saveSetting } from '../../lib/settings'
 import type { PrInfo, PrRef } from '../../lib/types'
-import { explain, loadMergeContext, merge, type MergeContext } from './actions'
+import { TOKENS_URL, explain, loadMergeContext, merge, type MergeContext } from './actions'
 
 const {
   pr,
@@ -192,7 +192,15 @@ async function submit() {
         </Alert>
         <Alert v-else-if="loadError" variant="destructive">
           <CircleAlert />
-          <AlertDescription>{{ loadError }}</AlertDescription>
+          <AlertDescription class="flex flex-col items-start gap-2">
+            {{ loadError }}
+            <span class="flex flex-wrap gap-2">
+              <Button as-child size="sm" variant="outline">
+                <a :href="TOKENS_URL" target="_blank" rel="noopener noreferrer"><ExternalLink /> Your tokens on GitHub</a>
+              </Button>
+              <Button size="sm" variant="ghost" @click="editSettings('token')">Change token</Button>
+            </span>
+          </AlertDescription>
         </Alert>
         <div v-else-if="!context" class="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Loading the commits…</div>
         <FieldGroup v-else>
