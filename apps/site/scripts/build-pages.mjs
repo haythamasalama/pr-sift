@@ -369,15 +369,12 @@ function matrix() {
 }
 
 const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-muted">
-          <p><span class="font-mono text-ink">${esc(live.kicker)}</span> · ${esc(live.lead)}</p>
-          <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
-        </div>
         <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised">
           <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
             <span class="flex gap-1.5" aria-hidden="true"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
             <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted" aria-hidden="true">github.com/haythamasalama/storefront/pull/482/files</span>
             <button type="button" data-live-restart hidden class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Start over</button>
+            <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
             ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" decoding="async" />`).join('')}
@@ -397,8 +394,8 @@ function homePage() {
       <div>${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
     </div>
     <div class="mt-12 flex flex-col items-start gap-5 border-t border-line pt-10 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-2xl font-semibold tracking-tight text-balance">${esc(h.hero.tryIt)}</p>
-      <div class="flex flex-col items-start gap-3 sm:items-end">${installButton()}${rating()}</div>
+      <div class="flex flex-col gap-2"><p class="text-2xl font-semibold tracking-tight text-balance">${esc(h.hero.tryIt)}</p>${rating()}</div>
+      ${installButton()}
     </div>`
 
   const features = h.features
@@ -421,7 +418,7 @@ function homePage() {
   const sections = [
     [
       'notes',
-      `<div class="grid items-start gap-12 lg:grid-cols-12">
+      `<div class="grid items-center gap-12 lg:grid-cols-12">
         <div class="lg:col-span-5">
           ${iconBox('lock')}
           ${h2(h.notesStory.title, 'mt-5')}

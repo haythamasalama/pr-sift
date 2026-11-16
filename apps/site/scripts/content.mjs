@@ -26,10 +26,8 @@ export const home = {
     tryIt: 'Try it on your next big pull request.',
   },
   live: {
-    kicker: 'Live demo',
-    lead: 'The real extension on a 39-file pull request. Nothing leaves this page.',
     start: 'Try it live',
-    full: 'Open full screen',
+    full: 'Full screen',
   },
   demos: [
     ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
