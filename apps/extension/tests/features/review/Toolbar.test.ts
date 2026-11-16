@@ -16,7 +16,6 @@ const props = {
   noteCount: 0,
   compact: false,
   splitDisabled: false,
-  query: '',
   diffMode: 'unified' as const,
 }
 

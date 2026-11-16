@@ -10,7 +10,6 @@ import {
   Pencil,
   RotateCw,
   Rows2,
-  Search,
   Settings,
   Star,
   Sun,
@@ -29,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { openReport } from '../../lib/report'
@@ -51,7 +49,6 @@ defineProps<{
   splitDisabled: boolean
 }>()
 
-const query = defineModel<string>('query', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const { theme, setTheme } = useAppearance()
@@ -113,16 +110,6 @@ const openSettings = useSettingsOpener()
         @click="openSettings('filters')"
         ><Pencil
       /></Button>
-    </div>
-
-    <div v-if="compact" class="relative order-3 flex shrink-0 items-center xl:order-none">
-      <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
-      <Input
-        v-model="query"
-        type="search"
-        placeholder="Filter files…"
-        class="h-8 w-24 bg-background pl-8 text-xs sm:w-36 md:text-xs xl:w-56"
-      />
     </div>
 
     <ToggleGroup

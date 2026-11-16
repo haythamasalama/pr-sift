@@ -41,7 +41,7 @@ describe('PrSummary', () => {
 
   it('toggles the description', async () => {
     const wrapper = mount(PrSummary, { props: { info: { ...info, state: 'merged' }, conversation: null, panel: 'description' } })
-    expect(wrapper.text()).toContain('sam merged 3 commits')
+    expect(wrapper.text().replace(/\s+/g, ' ')).toContain('sam merged 3 commits')
     await wrapper.get('button[title="Show the pull request description"]').trigger('click')
     expect(wrapper.emitted('update:panel')).toEqual([[null]])
   })

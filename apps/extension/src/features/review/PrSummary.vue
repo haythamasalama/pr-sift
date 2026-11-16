@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
 import {
+  ArrowLeft,
   Check,
   ChevronDown,
   FileText,
@@ -57,7 +58,9 @@ const commentsTitle = computed(() =>
         <AvatarFallback class="text-[8px] uppercase">{{ info.author.slice(0, 1) }}</AvatarFallback>
       </Avatar>
       <span class="truncate">
-        <span class="font-medium text-foreground">{{ info.author }}</span> {{ verb }} {{ commits }}into
+        <span class="font-medium text-foreground">{{ info.author }}</span
+        >{{ ' ' }}
+        <span class="hidden xl:inline">{{ `${verb} ${commits}into ` }}</span>
         <template v-for="(branch, i) in [info.base, info.head]" :key="i">
           <button
             type="button"
@@ -68,7 +71,10 @@ const commentsTitle = computed(() =>
           >
             {{ branch }}<Check v-if="copied === branch" class="size-3" />
           </button>
-          {{ i === 0 ? ' from ' : '' }}
+          <template v-if="i === 0">
+            <span class="hidden xl:inline">{{ ' from ' }}</span>
+            <ArrowLeft class="mx-0.5 inline size-3 align-[-2px] xl:hidden" aria-label="from" />
+          </template>
         </template>
       </span>
     </span>

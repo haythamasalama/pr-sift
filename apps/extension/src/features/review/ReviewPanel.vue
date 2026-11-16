@@ -307,7 +307,6 @@ watch(
 <template>
   <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
     <Toolbar
-      v-model:query="filter.query.value"
       v-model:diff-mode="diffMode"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :presets="settings.presets"
