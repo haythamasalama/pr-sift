@@ -3,7 +3,7 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
-## Unreleased
+## 1.2.0 - 2026-11-17
 
 ### Added
 
@@ -21,8 +21,7 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: With Merge commit or Rebase, the merge sheet lists the co-authors that stay in the history and offers Squash
   instead, since only a squash can leave them out.
 - Review: Settings open in a side sheet over the review, starting on GitHub, and every change applies right away. They
-  also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in Merge and every
-  "Connect GitHub" prompt.
+  also open from where you need them: the Hidden switch, the saved filter buttons and the co-author list in Merge.
 - Review: Open PR Sift automatically, so pull requests open straight in PR Sift. Turn it on from the tip in the review
   or in Settings under Reviewing. Closing the review keeps it closed until the next pull request.
 - Review: A token saved in the settings works right away, without reloading GitHub.
@@ -46,8 +45,6 @@ goes under `## Unreleased` until the next release moves it under its version and
   the AI co-author list on or off.
 - Review: Create a token opens a classic GitHub token named PR Sift with the repo scope checked. It works for
   organization repositories without an approval step, and the review and merge prompts ask for the same token.
-- Security: You add or change the GitHub token on PR Sift's own options page. Inside the review, Settings show the
-  connection and open that page, so GitHub's page never holds the token field.
 - Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s
   new, rating, reporting a problem and suggesting an idea.
 - Review: On small screens the header keeps to two rows. The top search is gone, since the sidebar has one.
@@ -59,6 +56,8 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Notes: A note shows its lines and buttons on one row and its text below, so it stays readable in narrow windows.
 - Notes: Post to GitHub posts in one click and takes the note's colors. Once a note is posted, the button goes away.
 - Views: The selected choice in Unified and Split, and in the merge method, is easier to see.
+- Security: You add or change the GitHub token on PR Sift's own options page. Inside the review, Settings show the
+  connection and open that page, so GitHub's page never holds the token field.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
 
 ### Fixed
