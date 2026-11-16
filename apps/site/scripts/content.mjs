@@ -22,11 +22,12 @@ export const home = {
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
     cta: 'Add to Chrome',
+    install: 'Add to Chrome, it’s free',
     secondary: 'Star on GitHub',
     tryIt: 'Try it on your next big pull request.',
   },
   live: {
-    start: 'Try it live',
+    start: 'Try it live, no install',
     full: 'Full screen',
   },
   demos: [

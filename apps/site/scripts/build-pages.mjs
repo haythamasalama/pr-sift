@@ -78,14 +78,19 @@ async function readStoreRating() {
 const STORE_RATING = await readStoreRating()
 
 const installButton = (size = 'lg') =>
-  button(INSTALL_URL, `${brandIcon('googlechrome', size === 'lg' ? 'size-5' : 'size-4')}${esc(home.hero.cta)}`, 'primary', size)
+  button(
+    INSTALL_URL,
+    `${brandIcon('googlechrome', size === 'lg' ? 'size-5' : 'size-4')}${esc(size === 'lg' ? home.hero.install : home.hero.cta)}`,
+    'primary',
+    size,
+  )
 
 const githubButton = () => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, 'ghost', 'lg')
 
 const rating = () => {
   const full = Math.round(STORE_RATING)
   const stars = Array.from({ length: 5 }, (_, i) => icon('star', `size-4 ${i < full ? 'fill-current' : ''}`)).join('')
-  return `<a href="${INSTALL_URL}/reviews" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted hover:text-ink"><span class="inline-flex text-ink">${stars}</span><span><span class="font-semibold text-ink">${STORE_RATING.toFixed(1)}</span> out of 5 on the Chrome Web Store · Free</span></a>`
+  return `<a href="${INSTALL_URL}/reviews" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted hover:text-ink"><span class="inline-flex text-ink">${stars}</span><span><span class="font-semibold text-ink">${STORE_RATING.toFixed(1)}</span> out of 5 on the Chrome Web Store</span></a>`
 }
 
 // Each image and video exists in a light and a -dark version; only the one for the current theme is displayed, so only it loads.
@@ -369,18 +374,17 @@ function matrix() {
 }
 
 const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
-        <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised">
+        <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised shadow-[0_40px_80px_-40px_rgb(0_0_0/0.25)]">
           <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
-            <span class="flex gap-1.5" aria-hidden="true"><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span><span class="size-2.5 rounded-full bg-line"></span></span>
-            <span class="min-w-0 flex-1 truncate rounded-md bg-paper px-3 py-1 text-center font-mono text-xs text-muted" aria-hidden="true">github.com/haythamasalama/storefront/pull/482/files</span>
+            <span class="flex gap-1.5" aria-hidden="true"><span class="size-[11px] rounded-full bg-[#ff5f57]"></span><span class="size-[11px] rounded-full bg-[#febc2e]"></span><span class="size-[11px] rounded-full bg-[#28c840]"></span></span>
+            <span class="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-paper px-3 py-1 font-mono text-xs text-muted" aria-hidden="true">${icon('lock', 'size-3 shrink-0')}<span class="truncate">github.com/haythamasalama/storefront/pull/482/files</span></span>
             <button type="button" data-live-restart hidden class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('rotate-ccw', 'size-3.5')}Start over</button>
             <a href="${DEMO_URL}" target="_blank" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
-            ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="" class="${display} absolute inset-0 size-full object-cover object-top opacity-40" decoding="async" />`).join('')}
-            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-paper/60 p-6 text-center">
-              <button type="button" data-live-start class="inline-flex h-12 items-center gap-2 rounded-md bg-ink px-6 text-base font-medium text-paper hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
-            </div>
+            ${THEMED.map(([suffix, display]) => `<img src="${media(`videos/review${suffix}.jpg`)}" alt="A 39-file pull request reviewed in PR Sift" class="${display} absolute inset-0 size-full object-cover object-top" decoding="async" />`).join('')}
+            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-b from-transparent to-paper/95" aria-hidden="true"></div>
+            <button type="button" data-live-start class="absolute bottom-10 left-1/2 inline-flex h-12 -translate-x-1/2 items-center gap-2.5 rounded-full bg-ink px-6 text-[15px] font-medium whitespace-nowrap text-paper shadow-lg hover:opacity-85">${icon('play', 'size-4')}${esc(live.start)}</button>
           </div>
         </div>
       </div>`
@@ -523,7 +527,7 @@ function homePage() {
   const body = `
     <section class="mx-auto max-w-6xl px-4 pt-12 pb-20 sm:px-6 lg:pt-20 lg:pb-24">
       <div class="@container mx-auto flex max-w-3xl flex-col items-center text-center">
-        <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
+        <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'googlegemini', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
