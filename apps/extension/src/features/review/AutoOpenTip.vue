@@ -40,10 +40,16 @@ async function turnOn() {
     </template>
   </NoticeBar>
   <NoticeBar v-else-if="!enabled && !dismissed" title="Open PR Sift automatically?">
-    <template #icon><Zap /></template>
+    <template #icon><Zap class="fill-attention/25 text-attention" /></template>
     Pull requests will open straight in PR Sift, with no button to click.
     <template #actions>
-      <Button variant="outline" size="sm" @click="turnOn">Turn on</Button>
+      <Button variant="outline" size="sm" class="relative" @click="turnOn">
+        Turn on
+        <span class="absolute -top-1 -right-1 flex size-2.5" aria-hidden="true">
+          <span class="absolute inset-0 rounded-full bg-emphasis/60 motion-safe:animate-soft-ping" />
+          <span class="relative size-2.5 rounded-full bg-emphasis ring-2 ring-background" />
+        </span>
+      </Button>
       <Button variant="ghost" size="icon-sm" aria-label="Dismiss" title="Not now" @click="dismiss"><X /></Button>
     </template>
   </NoticeBar>
