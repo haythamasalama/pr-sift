@@ -90,7 +90,7 @@ onMounted(async () => adopt(await storageGet<string>('token')))
       </div>
       <div class="flex gap-2">
         <Button variant="outline" size="sm" @click="editing = true">Change</Button>
-        <Button variant="ghost" size="sm" @click="remove">Remove</Button>
+        <Button variant="outline" size="sm" @click="remove">Remove</Button>
       </div>
     </div>
 
@@ -117,8 +117,8 @@ onMounted(async () => adopt(await storageGet<string>('token')))
       </InputGroup>
       <div class="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" :disabled="!trimmed">Connect</Button>
-        <Button v-if="saved" type="button" variant="ghost" size="sm" @click="editing = false">Cancel</Button>
-        <Button as-child variant="ghost" size="sm">
+        <Button v-if="saved" type="button" variant="outline" size="sm" @click="editing = false">Cancel</Button>
+        <Button as-child variant="outline" size="sm">
           <a :href="CREATE_TOKEN_URL" target="_blank" rel="noopener noreferrer"><ExternalLink /> Create a token</a>
         </Button>
       </div>

@@ -220,7 +220,7 @@ const chipClass = (chip: ExtChip) => [
                 {{ viewPatterns.join('  ') }}
               </p>
               <div class="flex justify-end gap-2">
-                <Button type="button" variant="ghost" size="sm" @click="saveOpen = false">Cancel</Button>
+                <Button type="button" variant="outline" size="sm" @click="saveOpen = false">Cancel</Button>
                 <Button type="submit" size="sm" :disabled="!viewName.trim()">Save</Button>
               </div>
             </form>

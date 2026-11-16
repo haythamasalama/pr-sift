@@ -123,7 +123,7 @@ async function submit() {
         </Alert>
         <div class="flex items-center justify-end gap-2">
           <span class="mr-auto text-[11px] text-muted-foreground">Ctrl/⌘ + Enter</span>
-          <Button variant="ghost" size="sm" @click="open = false">Cancel</Button>
+          <Button variant="outline" size="sm" @click="open = false">Cancel</Button>
           <Button :variant="event === 'APPROVE' ? 'success' : 'default'" size="sm" :disabled="busy || needsComment" @click="submit">
             <Spinner v-if="busy" />
             <component :is="current.icon" v-else />

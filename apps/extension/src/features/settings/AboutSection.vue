@@ -52,8 +52,8 @@ function checkForUpdates() {
       <Button as-child variant="outline" size="sm">
         <a :href="REVIEWS_URL" target="_blank" rel="noopener noreferrer"><Star /> Rate PR Sift</a>
       </Button>
-      <Button variant="ghost" size="sm" @click="openReport('bug')"> <Bug /> Report a problem </Button>
-      <Button variant="ghost" size="sm" @click="openReport('idea')"> <Lightbulb /> Suggest an idea </Button>
+      <Button variant="outline" size="sm" @click="openReport('bug')"> <Bug /> Report a problem </Button>
+      <Button variant="outline" size="sm" @click="openReport('idea')"> <Lightbulb /> Suggest an idea </Button>
     </div>
   </SettingsSection>
 </template>
