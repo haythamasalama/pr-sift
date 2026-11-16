@@ -7,50 +7,61 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 ### Added
 
-- Review: The pull request's state, author and avatar, branches, commit count and comment count sit under the title. Click a branch to copy it.
-- Review: GitHub comment threads show inside the files, under their lines. The comment count opens the conversation and the
-  code comments in the review, and each comment jumps to its line.
+- Filters: Save the file types and folders you picked as a saved filter in the top bar with Save view.
+- Filters: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples, and show how many
+  files they match in the open pull request.
+- Review: The pull request's state, author and avatar, branches, commit count and comment count sit under the title.
+  Click a branch to copy it.
+- Review: GitHub comment threads show inside the files, under their lines. The comment count opens the conversation and
+  the code comments in the review, and each comment jumps to its line.
 - Review: A Description button shows the pull request description above the files.
 - Review: Approve, request changes or comment from a popover. Merge from a side sheet, with the merge method on the button
   and a dot when checks, reviews or conflicts may block it. Squash merges leave out AI co-authors such as Claude,
   ChatGPT, Gemini and Copilot by default, and remember the people you uncheck.
-- Review: A token saved in the options works right away, without reloading GitHub.
-- Review: The options page shows your version and checks for updates. Restart into a downloaded update from there or
+- Review: With Merge commit or Rebase, the merge sheet lists the co-authors that stay in the history and offers Squash
+  instead, since only a squash can leave them out.
+- Review: Settings open in a side sheet over the review, starting on GitHub, and every change applies right away. They
+  also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in Merge and every
+  "Connect GitHub" prompt.
+- Review: Open PR Sift automatically, so pull requests open straight in PR Sift. Turn it on from the tip in the review
+  or in Settings under Reviewing. Closing the review keeps it closed until the next pull request.
+- Review: A token saved in the settings works right away, without reloading GitHub.
+- Review: About in Settings shows your version and checks for updates. Restart into a downloaded update from there or
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.
-- Review: Rate PR Sift on the Chrome Web Store from About in Settings or the options page.
-- Review: Settings open in a side sheet over the review, starting on GitHub, and every change applies right away. They
-  also open from where you need them: the Hidden switch, the saved filter buttons, the co-author list in
-  Merge and every "Connect GitHub" prompt.
-- Review: Save the file types and folders you picked as a saved filter in the top bar with Save view.
-- Review: Saved filters start from one click with Backend, Frontend, Tests, Docs and AI examples, and show how many
-  files they match in the open pull request.
 - Review: The PR Sift toolbar icon shows ↑ when an update is ready and NEW after one is installed. The PR Sift button on
   GitHub shows a dot at the same time.
 - Review: New settings carry a small dot in Settings until you use them once.
-- Review: Open PR Sift automatically, so pull requests open straight in PR Sift. Turn it on from the tip in the review
-  or in Settings under Reviewing. Closing the review keeps it closed until the next pull request.
+- Review: Rate PR Sift on the Chrome Web Store from About in Settings.
+- Notes: Tooltips name the open, resolve, edit and delete buttons on a note.
 
 ### Changed
 
-- Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s new,
-  rating, reporting a problem and suggesting an idea.
-- Review: Create a token opens a classic GitHub token named PR Sift with the repo scope checked. It works for
-  organization repositories without an approval step.
-- Review: Settings are grouped by what you want to do (GitHub, Reviewing, Files, Appearance, About) and save as you
-  change them. The connection shows who you are on GitHub, the theme and diff view are picked from small previews, the
-  folder indentation has a live tree, and hidden paths and co-authors are chips. "Always hidden" counts the files it
-  hides in the open pull request.
-- Review: Presets are now called saved filters and are edited as a list of names and paths instead of JSON. Your
+- Filters: Presets are now called saved filters and are edited as a list of names and paths instead of JSON. Your
   existing presets stay.
-- Review: The options page is one scrolling page with About first and a menu at the side. A switch in GitHub turns
+- Review: Settings are grouped by what you want to do in tabs (GitHub, Reviewing, Files, Appearance, About), the same
+  on the options page and in the sheet, and save as you change them. The connection shows who you are on GitHub, the
+  theme and diff view are picked from small previews, the folder indentation has a live tree, and hidden paths and
+  co-authors are chips. "Always hidden" counts the files it hides in the open pull request. A switch in GitHub turns
   the AI co-author list on or off.
+- Review: Create a token opens a classic GitHub token named PR Sift with the repo scope checked. It works for
+  organization repositories without an approval step, and the review and merge prompts ask for the same token.
+- Review: The review menu holds the theme, Settings and Help and feedback. Help and feedback opens About, with what’s
+  new, rating, reporting a problem and suggesting an idea.
+- Review: On small screens the header keeps to two rows. The top search is gone, since the sidebar has one.
+- Review: The Approve popover shows each review type with a short hint.
+- Review: The merge dot sits on the corner of the Merge button, and buttons next to a main action have a border so they
+  read as buttons.
 - Notes: The code a note quotes keeps the diff's colors. "Show resolved in the diff" counts resolved notes, says when
   there are none, and says they show dimmed once it is on.
 - Notes: A note shows its lines and buttons on one row and its text below, so it stays readable in narrow windows.
-- Review: On small screens the header keeps to two rows. The top search is gone, since the sidebar has one.
-- Review: The Approve popover shows each review type with a short hint.
+- Notes: Post to GitHub takes the note's colors.
+- Views: The selected choice in Unified and Split, and in the merge method, is easier to see.
 - License: PR Sift is now open source under the MIT license, replacing PolyForm Shield 1.0.0.
+
+### Fixed
+
+- Views: A file's header stays flush with the top while you scroll, so no code shows above it.
 
 ## 1.1.0 - 2026-11-14
 
