@@ -74,8 +74,7 @@ describe('FileCard', () => {
       },
     })
     await wrapper.vm.$nextTick()
-    const badge = wrapper.get('a[title="3 comments on GitHub"]')
+    const badge = wrapper.get('button[title^="3 comments on GitHub"]')
     expect(badge.text()).toBe('3')
-    expect(badge.attributes('href')).toBe('https://github.com/o/r/pull/7/files#a')
   })
 })

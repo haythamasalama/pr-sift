@@ -91,6 +91,7 @@ The extension draws inside github.com, so it uses GitHub's Primer colours, not t
 | `success-foreground`  | `#ffffff`             | `#ffffff`                            |
 | `success-fg`          | `#1a7f37`             | `#3fb950`                            |
 | `merged`              | `#8250df`             | `#a371f7`                            |
+| `attention`           | `#9a6700`             | `#d29922`                            |
 | `destructive`         | `#cf222e`             | `#f85149`                            |
 | `add-fg` / `add-bg`   | `#1a7f37` / `#e6ffec` | `#3fb950` / `rgba(46, 160, 67, .15)` |
 | `del-fg` / `del-bg`   | `#cf222e` / `#ffebe9` | `#f85149` / `rgba(248, 81, 73, .1)`  |

@@ -37,3 +37,8 @@ export function sanitizeHtml(html: string, origin = 'https://github.com'): strin
   }
   return doc.body.innerHTML.trim()
 }
+
+export function plainText(html: string): string {
+  const doc = new DOMParser().parseFromString(`<!doctype html><body>${sanitizeHtml(html)}</body>`, 'text/html')
+  return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
+}

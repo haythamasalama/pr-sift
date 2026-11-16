@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { infoFromPagePayload, prState } from '../src/overview'
+import { avatarUrl, infoFromPagePayload, prState } from '../src/overview'
 
 describe('prState', () => {
   it('maps GitHub states, with merged and draft flags winning', () => {
@@ -18,7 +18,7 @@ describe('infoFromPagePayload', () => {
         pullRequestsLayoutRoute: {
           pullRequest: {
             title: 'feat: invoices',
-            author: { login: 'haytham' },
+            author: { login: 'haytham', avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4' },
             baseBranch: 'main',
             headBranch: 'feat/invoices',
             commitsCount: 4,
@@ -30,6 +30,7 @@ describe('infoFromPagePayload', () => {
     expect(infoFromPagePayload(data)).toEqual({
       title: 'feat: invoices',
       author: 'haytham',
+      authorAvatar: 'https://avatars.githubusercontent.com/u/1?v=4&s=40',
       base: 'main',
       head: 'feat/invoices',
       commits: 4,
@@ -41,5 +42,15 @@ describe('infoFromPagePayload', () => {
     expect(infoFromPagePayload(null)).toEqual({})
     expect(infoFromPagePayload({ payload: {} })).toEqual({})
     expect(infoFromPagePayload({ payload: { pullRequestsLayoutRoute: { pullRequest: { title: 5 } } } })).toEqual({})
+  })
+})
+
+describe('avatarUrl', () => {
+  it("only accepts GitHub's avatar hosts over https, at a small size", () => {
+    expect(avatarUrl('https://avatars.githubusercontent.com/u/1?v=4', 20)).toBe('https://avatars.githubusercontent.com/u/1?v=4&s=20')
+    expect(avatarUrl('http://avatars.githubusercontent.com/u/1')).toBeUndefined()
+    expect(avatarUrl('https://evil.example/u/1')).toBeUndefined()
+    expect(avatarUrl('javascript:alert(1)')).toBeUndefined()
+    expect(avatarUrl(5)).toBeUndefined()
   })
 })

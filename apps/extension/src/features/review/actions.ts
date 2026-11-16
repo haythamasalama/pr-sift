@@ -1,4 +1,4 @@
-import type { CommitSummary, MergeMethod, SquashMessageMode, SquashTitleMode } from '@pr-sift/core'
+import type { CommitSummary, MergeMethod, ReviewEvent, SquashMessageMode, SquashTitleMode } from '@pr-sift/core'
 import { GhError, gh } from './github'
 import type { PrRef } from '../../lib/types'
 
@@ -69,9 +69,9 @@ export async function loadMergeContext(pr: PrRef): Promise<MergeContext> {
   }
 }
 
-export function approve(pr: PrRef, sha: string, comment: string) {
+export function submitReview(pr: PrRef, sha: string, event: ReviewEvent, comment: string) {
   return gh(`${pullPath(pr)}/reviews`, 'POST', {
-    event: 'APPROVE',
+    event,
     ...(sha ? { commit_id: sha } : {}),
     ...(comment.trim() ? { body: comment.trim() } : {}),
   })
@@ -93,7 +93,7 @@ export async function merge(pr: PrRef, request: MergeRequest): Promise<string> {
   return result.sha
 }
 
-export function explain(error: unknown, action: 'approve' | 'merge'): string {
+export function explain(error: unknown, action: 'review' | 'merge'): string {
   if (error instanceof GhError && (error.status === 403 || error.status === 404)) {
     return action === 'merge'
       ? 'Your token can’t merge here. Give it Contents and Pull requests set to read and write, and access to this repository.'

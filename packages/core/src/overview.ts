@@ -7,9 +7,21 @@ export function prState(state: string | undefined, flags: { merged?: boolean; dr
   return undefined
 }
 
+export function avatarUrl(value: unknown, size = 40): string | undefined {
+  if (typeof value !== 'string') return undefined
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' || !url.hostname.endsWith('.githubusercontent.com')) return undefined
+    url.searchParams.set('s', String(size))
+    return url.href
+  } catch {
+    return undefined
+  }
+}
+
 interface PagePull {
   title?: unknown
-  author?: { login?: unknown }
+  author?: { login?: unknown; avatarUrl?: unknown }
   baseBranch?: unknown
   headBranch?: unknown
   commitsCount?: unknown
@@ -26,6 +38,7 @@ export function infoFromPagePayload(data: unknown): Partial<PrInfo> {
   const info: Partial<PrInfo> = {
     title: text(pull.title),
     author: text(pull.author?.login),
+    authorAvatar: avatarUrl(pull.author?.avatarUrl),
     base: text(pull.baseBranch),
     head: text(pull.headBranch),
     commits: typeof pull.commitsCount === 'number' ? pull.commitsCount : undefined,

@@ -28,6 +28,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-success-fg: var(--success-fg);
   --color-merged: var(--merged);
+  --color-attention: var(--attention);
   --color-add-bg: var(--add-bg);
   --color-del-bg: var(--del-bg);
   --color-add-fg: var(--add-fg);
@@ -117,6 +118,7 @@
   --success-foreground: #ffffff;
   --success-fg: #1a7f37;
   --merged: #8250df;
+  --attention: #9a6700;
   --add-bg: #e6ffec;
   --del-bg: #ffebe9;
   --add-fg: #1a7f37;
@@ -163,6 +165,7 @@
   --success-foreground: #ffffff;
   --success-fg: #3fb950;
   --merged: #a371f7;
+  --attention: #d29922;
   --add-bg: rgba(46, 160, 67, 0.15);
   --del-bg: rgba(248, 81, 73, 0.1);
   --add-fg: #3fb950;

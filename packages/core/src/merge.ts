@@ -13,6 +13,20 @@ export interface CommitSummary {
 export type SquashTitleMode = 'PR_TITLE' | 'COMMIT_OR_PR_TITLE'
 export type SquashMessageMode = 'PR_BODY' | 'COMMIT_MESSAGES' | 'BLANK'
 
+export type MergeReadiness = 'ready' | 'checks' | 'blocked' | 'behind' | 'conflicts' | 'draft' | 'unknown'
+
+const READINESS: Record<string, MergeReadiness> = {
+  clean: 'ready',
+  has_hooks: 'ready',
+  unstable: 'checks',
+  blocked: 'blocked',
+  behind: 'behind',
+  dirty: 'conflicts',
+  draft: 'draft',
+}
+
+export const mergeReadiness = (state: string | undefined): MergeReadiness => READINESS[state ?? ''] ?? 'unknown'
+
 export const DEFAULT_REMOVED_CO_AUTHORS = [
   'claude',
   'anthropic.com',

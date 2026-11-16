@@ -7,10 +7,14 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 ### Added
 
-- Review: The pull request's state, author, branches, commit count and comment count sit under the title.
+- Review: The pull request's state, author and avatar, branches, commit count and comment count sit under the title. Click a branch to copy it.
+- Review: GitHub comment threads show inside the files, under their lines. The comment count opens the conversation and the
+  code comments in the review, and each comment jumps to its line.
 - Review: A Description button shows the pull request description above the files.
-- Review: Each file shows how many GitHub comments it has.
-- Review: Approve and Merge from the review. Squash merges leave out AI co-authors such as Claude, ChatGPT, Gemini and Copilot by default, and remember the people you uncheck.
+- Review: Approve, request changes or comment from a popover. Merge from a side sheet, with the merge method on the button
+  and a dot when checks, reviews or conflicts may block it. Squash merges leave out AI co-authors such as Claude,
+  ChatGPT, Gemini and Copilot by default, and remember the people you uncheck.
+- Review: A token saved in the options works right away, without reloading GitHub.
 - Review: The options page shows your version and checks for updates. Restart into a downloaded update from there or
   from the review menu.
 - Review: After an update, the review names the new version and links to what’s new.

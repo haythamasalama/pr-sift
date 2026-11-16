@@ -19,16 +19,16 @@ import { useViewed } from './useViewed'
 import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
-import { fetchConversation, type Conversation } from './conversation'
+import { fetchConversation, type Conversation, type Thread } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
-import { prKey, type DiffMode, type PrRef, type Settings } from '../../lib/types'
+import { prKey, type DiffMode, type MergeMethod, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
 import FileList from '../diff/FileList.vue'
 import FileTree from '../tree/FileTree.vue'
 import FilterBar from '../filters/FilterBar.vue'
 import NotesDialog from '../notes/NotesDialog.vue'
-import DescriptionPanel from './DescriptionPanel.vue'
+import PrPanel from './PrPanel.vue'
 import PrSummary from './PrSummary.vue'
 import ReviewActions from './ReviewActions.vue'
 import ScopePanel from '../filters/ScopePanel.vue'
@@ -82,7 +82,7 @@ const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpa
 
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
-const descriptionOpen = shallowRef(false)
+const panel = shallowRef<'description' | 'conversation' | null>(null)
 const conversation = shallowRef<Conversation | null>(null)
 const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
 const actionNote = shallowRef('')
@@ -99,6 +99,30 @@ async function loadConversation() {
 function announce(text: string) {
   actionNote.value = text
   setTimeout(() => (actionNote.value = ''), 10_000)
+}
+
+const mergeMethod = computed<MergeMethod>({
+  get: () => settings.value.mergeMethod,
+  set: (value) => {
+    settings.value = { ...settings.value, mergeMethod: value }
+    void saveSetting('mergeMethod', value)
+  },
+})
+
+const REVIEWED: Record<ReviewEvent, string> = {
+  APPROVE: 'You approved this pull request.',
+  REQUEST_CHANGES: 'You requested changes.',
+  COMMENT: 'Your review comment is on GitHub.',
+}
+
+function onReviewed(event: ReviewEvent) {
+  announce(REVIEWED[event])
+  void loadConversation()
+}
+
+async function goToThread(thread: Thread) {
+  await goToFile(thread.path)
+  setTimeout(() => main.value?.querySelector(`[data-thread="${thread.id}"]`)?.scrollIntoView({ block: 'center' }), 250)
 }
 
 function onMerged(sha: string) {
@@ -136,6 +160,7 @@ provide(fileContextKey, {
   },
   githubUrl: (filename) => githubFileUrl(pr, filename),
   comments: computed(() => conversation.value?.byFile ?? new Map<string, number>()),
+  threads: computed(() => conversation.value?.threads ?? new Map<string, Thread[]>()),
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
@@ -259,32 +284,32 @@ watch(diffMode, (value) => saveSetting('diffView', value))
       @close="emit('close')"
     >
       <template #meta>
-        <PrSummary
-          v-if="status === 'ready'"
-          v-model:description-open="descriptionOpen"
-          :info="info"
-          :conversation="conversation"
-          :conversation-url="conversationUrl"
-        />
+        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :info="info" :conversation="conversation" />
       </template>
       <template #actions>
         <ReviewActions
           v-if="status === 'ready'"
+          v-model:method="mergeMethod"
           :pr="pr"
           :info="info"
           :head-sha="headSha"
           :can-act="tokenAvailable"
-          @approved="announce('You approved this pull request.')"
+          :conversation="conversation"
+          @reviewed="onReviewed"
           @merged="onMerged"
         />
       </template>
     </Toolbar>
 
-    <DescriptionPanel
-      v-if="descriptionOpen && status === 'ready'"
+    <PrPanel
+      v-if="panel && status === 'ready'"
+      :tab="panel"
       :html="info?.descriptionHtml"
       :url="conversationUrl"
-      @close="descriptionOpen = false"
+      :conversation="conversation"
+      @update:tab="panel = $event"
+      @close="panel = null"
+      @jump="goToThread"
     />
 
     <FilterBar

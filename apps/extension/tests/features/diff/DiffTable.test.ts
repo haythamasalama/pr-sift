@@ -145,4 +145,42 @@ describe('DiffTable', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('line 31'))
     expect(wrapper.text()).not.toContain('line 32')
   })
+
+  it('shows GitHub comment threads under their line, in both views', async () => {
+    const threads = new Map([
+      [
+        'a.php',
+        [
+          {
+            id: 9,
+            path: 'a.php',
+            side: 'new' as const,
+            line: 2,
+            comments: [{ id: 9, author: 'sam', bodyHtml: '<p>Why the rename?</p>', createdAt: '2026-11-01T00:00:00Z', url: 'u' }],
+          },
+        ],
+      ],
+    ])
+    for (const mode of ['unified', 'split'] as const) {
+      const wrapper = mount(DiffTable, {
+        props: { filename: 'a.php', patch, mode },
+        global: {
+          provide: {
+            ...provideContext(notesContext(), mode),
+            [fileContextKey as symbol]: {
+              canExpand: shallowRef(false),
+              loadLines: async () => [],
+              githubUrl: async () => '',
+              threads: shallowRef(threads),
+            },
+          },
+        },
+      })
+      const thread = wrapper.get('[data-thread="9"]')
+      expect(thread.text()).toContain('Why the rename?')
+      expect(thread.text()).toContain('Line 2')
+      const row = thread.element.closest('tr')!.previousElementSibling!
+      expect(row.textContent).toContain('new')
+    }
+  })
 })

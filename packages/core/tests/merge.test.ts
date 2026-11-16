@@ -5,6 +5,7 @@ import {
   defaultSquashBody,
   defaultSquashTitle,
   isRemovedCoAuthor,
+  mergeReadiness,
   parsePerson,
   stripCoAuthors,
   withCoAuthors,
@@ -90,5 +91,15 @@ describe('parsePerson', () => {
   it('reads "Name <email>"', () => {
     expect(parsePerson(' Sam Lee <sam@x.dev> ')).toEqual({ name: 'Sam Lee', email: 'sam@x.dev' })
     expect(parsePerson('sam@x.dev')).toBeNull()
+  })
+})
+
+describe('mergeReadiness', () => {
+  it("reads GitHub's mergeable state", () => {
+    expect(mergeReadiness('clean')).toBe('ready')
+    expect(mergeReadiness('unstable')).toBe('checks')
+    expect(mergeReadiness('dirty')).toBe('conflicts')
+    expect(mergeReadiness('blocked')).toBe('blocked')
+    expect(mergeReadiness(undefined)).toBe('unknown')
   })
 })

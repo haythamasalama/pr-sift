@@ -1,7 +1,7 @@
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { shallowRef } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import MergeDialog from '../../../src/features/review/MergeDialog.vue'
+import MergeSheet from '../../../src/features/review/MergeSheet.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
 import { PR } from '@pr-sift/core/testing'
 import { installChrome } from '../../helpers/chrome'
@@ -37,7 +37,7 @@ function github() {
 function mountDialog(canAct = true) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  return mount(MergeDialog, {
+  return mount(MergeSheet, {
     props: { pr: PR, info: { title: 'Ship invoices', base: 'main', head: 'feat/x' }, canAct },
     global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
     attachTo: document.body,
@@ -47,7 +47,7 @@ function mountDialog(canAct = true) {
 const button = (text: string) => [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === text)!
 const checked = (id: string) => document.querySelector(`#${id}`)?.getAttribute('aria-checked')
 
-describe('MergeDialog', () => {
+describe('MergeSheet', () => {
   it('leaves AI co-authors out of a squash merge by default', async () => {
     const { sent, store } = github()
     const wrapper = mountDialog()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
 import {
   Check,
   ChevronDown,
@@ -104,6 +104,12 @@ function reveal() {
   seen.value = true
 }
 
+async function showComments() {
+  reveal()
+  await nextTick()
+  el.value?.querySelector('[data-thread]')?.scrollIntoView({ block: 'center' })
+}
+
 function flash() {
   flashing.value = true
   setTimeout(() => (flashing.value = false), 1400)
@@ -139,16 +145,15 @@ defineExpose({ reveal, flash, el })
       >
         Updated since viewed
       </Badge>
-      <a
+      <button
         v-if="commentCount"
-        :href="githubUrl"
-        target="_blank"
-        rel="noreferrer"
+        type="button"
         class="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        :title="`${commentCount} comment${commentCount === 1 ? '' : 's'} on GitHub`"
+        :title="`${commentCount} comment${commentCount === 1 ? '' : 's'} on GitHub. Show them.`"
+        @click="showComments"
       >
         <MessageSquare class="size-3.5" />{{ commentCount }}
-      </a>
+      </button>
       <span class="text-xs font-medium text-add-fg">+{{ file.additions }}</span>
       <span class="text-xs font-medium text-del-fg">−{{ file.deletions }}</span>
       <Button

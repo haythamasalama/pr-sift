@@ -19,6 +19,7 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 
 | Module       | Responsibility                                                      |
 | ------------ | ------------------------------------------------------------------- |
+| `comments`   | Group GitHub review comments into threads; relative times           |
 | `diff`       | Parse GitHub patches into rows; build split rows; hash file content |
 | `tree`       | Build the folder tree and collect files below a node                |
 | `scopes`     | Smart filters: categories, repeated folders, folder grouping        |
@@ -28,6 +29,7 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 | `notes`      | Note anchors, the prompt exported to an assistant, GitHub line URLs |
 | `overview`   | Pull request state, author and branches from GitHub's page data     |
 | `range`      | Multi-line note ranges                                              |
+| `reviews`    | Each reviewer's latest verdict, approvals and your own review       |
 | `testing`    | Fixtures shared by tests (`@pr-sift/core/testing`)                  |
 
 ## apps/extension
@@ -43,7 +45,8 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 ## Data flow
 
 1. `usePullRequest` loads the pull request (`.diff` through the page session, the API as a fallback). The same page
-   gives the author, branches, state and description. With a token, comment counts come from the API.
+   gives the author, branches, state and description. With a token, `fetchConversation` reads comment threads, the
+   conversation, reviews and merge readiness from the API.
 2. `useFileFilter` derives the visible files from filters, search, hidden rules and viewed marks.
 3. `FileList` renders cards progressively; `DiffTable` renders rows and notes.
 4. Settings, viewed marks and notes are stored in `chrome.storage.local`. Open reviews listen for storage changes.

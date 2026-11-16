@@ -8,6 +8,8 @@ import { whenIdle } from '../../lib/idle'
 import type { DiffMode, DiffRow, Note } from '../../lib/types'
 import NoteBox from '../notes/NoteBox.vue'
 import NoteEditor from '../notes/NoteEditor.vue'
+import GithubThread from '../review/GithubThread.vue'
+import type { Thread } from '../review/conversation'
 import ExpandControl from './ExpandControl.vue'
 import { useFileContext } from './fileContext'
 import { Button } from '@/components/ui/button'
@@ -97,6 +99,18 @@ const notesByRow = computed(() => {
   }
   return map
 })
+
+const threadsByRow = computed(() => {
+  const map = new Map<number, Thread[]>()
+  for (const t of fileContext?.threads?.value.get(filename) ?? []) {
+    const i = rowAt.value.get(`${t.side}:${t.line}`)
+    if (i !== undefined) map.set(i, [...(map.get(i) ?? []), t])
+  }
+  return map
+})
+
+const threadsFor = (...indexes: (number | null)[]) =>
+  [...new Set(indexes)].filter((i): i is number => i !== null).flatMap((i) => threadsByRow.value.get(i) ?? [])
 
 const notesFor = (...indexes: (number | null)[]) =>
   [...new Set(indexes)].filter((i): i is number => i !== null).flatMap((i) => notesByRow.value.get(i) ?? [])
@@ -275,6 +289,13 @@ function cellClass(index: number | null, side: 'left' | 'right') {
             <td v-if="highlighted.has(i)" class="pr-3 whitespace-pre" v-html="highlighted.get(i)" />
             <td v-else class="pr-3 whitespace-pre">{{ row.text }}</td>
           </tr>
+          <tr v-for="t in threadsFor(i)" :key="`thread-${t.id}`">
+            <td :colspan="unifiedColumns" class="p-0">
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <GithubThread :thread="t" />
+              </div>
+            </td>
+          </tr>
           <tr v-for="n in notesFor(i)" :key="n.id">
             <td :colspan="unifiedColumns" class="p-0">
               <div class="sticky left-0" :style="{ width: viewport }">
@@ -381,6 +402,13 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               ><span v-if="row.right !== null && highlighted.has(row.right)" v-html="highlighted.get(row.right)" /><template v-else>{{
                 row.right !== null ? rows[row.right]!.text : ''
               }}</template>
+            </td>
+          </tr>
+          <tr v-for="t in threadsFor(row.left, row.right)" :key="`thread-${t.id}`">
+            <td colspan="4" class="p-0">
+              <div class="sticky left-0" :style="{ width: viewport }">
+                <GithubThread :thread="t" />
+              </div>
             </td>
           </tr>
           <tr v-for="n in notesFor(row.left, row.right)" :key="n.id">

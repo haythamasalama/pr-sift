@@ -38,8 +38,8 @@ export default tseslint.config(
     rules: { 'vue/no-v-html': 'off' },
   },
   {
-    // GitHub renders the description and sanitizeHtml cleans it again before v-html.
-    files: ['**/DescriptionPanel.vue'],
+    // GitHub renders descriptions and comments; sanitizeHtml cleans them again before v-html.
+    files: ['**/PrPanel.vue', '**/GithubComment.vue'],
     rules: { 'vue/no-v-html': 'off' },
   },
   { files: ['**/*.config.{js,ts}', '**/scripts/**/*.mjs'], languageOptions: { globals: globals.node } },

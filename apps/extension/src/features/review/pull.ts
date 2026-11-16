@@ -1,5 +1,5 @@
 import { backgroundText, gh, hasToken } from './github'
-import { hashText, infoFromPagePayload, parseDiff, prState } from '@pr-sift/core'
+import { avatarUrl, hashText, infoFromPagePayload, parseDiff, prState } from '@pr-sift/core'
 import type { PrFile, PrInfo, PrRef, Via } from '../../lib/types'
 
 export interface Loaded {
@@ -59,7 +59,7 @@ interface ApiPull {
   changed_files: number
   head: { sha: string; ref?: string }
   base?: { ref?: string }
-  user?: { login?: string } | null
+  user?: { login?: string; avatar_url?: string } | null
   commits?: number
   state?: string
   merged?: boolean
@@ -100,6 +100,7 @@ async function loadViaApi(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const info: PrInfo = {
     title: data.title,
     author: data.user?.login,
+    authorAvatar: avatarUrl(data.user?.avatar_url),
     base: data.base?.ref,
     head: data.head.ref,
     commits: data.commits,

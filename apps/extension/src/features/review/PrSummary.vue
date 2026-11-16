@@ -10,18 +10,16 @@ import {
   GitPullRequestDraft,
   MessageSquare,
 } from '@lucide/vue'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { PrInfo } from '../../lib/types'
 import type { Conversation } from './conversation'
 
-const { info, conversation, conversationUrl } = defineProps<{
-  info: PrInfo | null
-  conversation: Conversation | null
-  conversationUrl: string
-}>()
-const descriptionOpen = defineModel<boolean>('descriptionOpen', { default: false })
+const { info, conversation } = defineProps<{ info: PrInfo | null; conversation: Conversation | null }>()
+const panel = defineModel<'description' | 'conversation' | null>('panel', { default: null })
+const toggle = (tab: 'description' | 'conversation') => (panel.value = panel.value === tab ? null : tab)
 
 const STATES = {
-  open: { label: 'Open', icon: GitPullRequest, tone: 'text-success' },
+  open: { label: 'Open', icon: GitPullRequest, tone: 'text-success-fg' },
   draft: { label: 'Draft', icon: GitPullRequestDraft, tone: 'text-muted-foreground' },
   merged: { label: 'Merged', icon: GitMerge, tone: 'text-merged' },
   closed: { label: 'Closed', icon: GitPullRequestClosed, tone: 'text-destructive' },
@@ -43,7 +41,7 @@ const commits = computed(() => (info?.commits === undefined ? '' : `${info.commi
 const comments = computed(() => (conversation ? conversation.conversation + conversation.code : 0))
 const commentsTitle = computed(() =>
   conversation
-    ? `${comments.value} comments on GitHub: ${conversation.conversation} in the conversation, ${conversation.code} on the code`
+    ? `${comments.value} comments: ${conversation.conversation} in the conversation, ${conversation.code} on the code. Show them here.`
     : '',
 )
 </script>
@@ -53,42 +51,49 @@ const commentsTitle = computed(() =>
     <span v-if="state" class="inline-flex shrink-0 items-center gap-1 font-medium" :class="state.tone">
       <component :is="state.icon" class="size-3" />{{ state.label }}
     </span>
-    <span v-if="info?.author && info.base && info.head" class="hidden min-w-0 truncate md:inline">
-      <span class="font-medium text-foreground">{{ info.author }}</span> {{ verb }} {{ commits }}into
-      <template v-for="(branch, i) in [info.base, info.head]" :key="i">
-        <button
-          type="button"
-          class="inline-flex items-center gap-0.5 rounded-sm bg-emphasis/10 px-1 font-mono text-emphasis hover:bg-emphasis/20"
-          :title="copied === branch ? 'Copied' : 'Copy the branch name'"
-          :aria-label="`Copy ${branch}`"
-          @click="copyBranch(branch)"
-        >
-          {{ branch }}<Check v-if="copied === branch" class="size-3" />
-        </button>
-        {{ i === 0 ? ' from ' : '' }}
-      </template>
+    <span v-if="info?.author && info.base && info.head" class="hidden min-w-0 items-center gap-1 truncate md:flex">
+      <Avatar class="size-4">
+        <AvatarImage v-if="info.authorAvatar" :src="info.authorAvatar" alt="" />
+        <AvatarFallback class="text-[8px] uppercase">{{ info.author.slice(0, 1) }}</AvatarFallback>
+      </Avatar>
+      <span class="truncate">
+        <span class="font-medium text-foreground">{{ info.author }}</span> {{ verb }} {{ commits }}into
+        <template v-for="(branch, i) in [info.base, info.head]" :key="i">
+          <button
+            type="button"
+            class="inline-flex items-center gap-0.5 rounded-sm bg-emphasis/10 px-1 font-mono text-emphasis hover:bg-emphasis/20"
+            :title="copied === branch ? 'Copied' : 'Copy the branch name'"
+            :aria-label="`Copy ${branch}`"
+            @click="copyBranch(branch)"
+          >
+            {{ branch }}<Check v-if="copied === branch" class="size-3" />
+          </button>
+          {{ i === 0 ? ' from ' : '' }}
+        </template>
+      </span>
     </span>
-    <a
+    <button
       v-if="conversation"
-      :href="conversationUrl"
-      target="_blank"
-      rel="noreferrer"
+      type="button"
       class="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
+      :class="panel === 'conversation' ? 'text-foreground' : ''"
+      :aria-expanded="panel === 'conversation'"
       :title="commentsTitle"
       :aria-label="commentsTitle"
+      @click="toggle('conversation')"
     >
       <MessageSquare class="size-3" />{{ comments }}
-    </a>
+    </button>
     <button
       type="button"
       class="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
-      :class="descriptionOpen ? 'text-foreground' : ''"
-      :aria-expanded="descriptionOpen"
+      :class="panel === 'description' ? 'text-foreground' : ''"
+      :aria-expanded="panel === 'description'"
       title="Show the pull request description"
-      @click="descriptionOpen = !descriptionOpen"
+      @click="toggle('description')"
     >
       <FileText class="size-3" />Description
-      <ChevronDown class="size-3 transition-transform" :class="descriptionOpen ? 'rotate-180' : ''" />
+      <ChevronDown class="size-3 transition-transform" :class="panel === 'description' ? 'rotate-180' : ''" />
     </button>
   </div>
 </template>

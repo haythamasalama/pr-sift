@@ -20,13 +20,23 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import Modal from '../../components/Modal.vue'
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { openOptions } from '../../lib/extension'
 import { DEFAULTS, getSettings, saveSetting } from '../../lib/settings'
 import type { PrInfo, PrRef } from '../../lib/types'
 import { explain, loadMergeContext, merge, type MergeContext } from './actions'
 
-const { pr, info, canAct } = defineProps<{ pr: PrRef; info: PrInfo | null; canAct: boolean }>()
+const {
+  pr,
+  info,
+  canAct,
+  method: initialMethod,
+} = defineProps<{
+  pr: PrRef
+  info: PrInfo | null
+  canAct: boolean
+  method?: MergeMethod
+}>()
 const emit = defineEmits<{ close: []; merged: [sha: string] }>()
 
 const METHODS: { value: MergeMethod; label: string; action: string; hint: string }[] = [
@@ -87,7 +97,8 @@ async function load() {
   removed.value = settings.removedCoAuthors
   try {
     const ctx = await loadMergeContext(pr)
-    const preferred = ctx.allowed[settings.mergeMethod] ? settings.mergeMethod : METHODS.find((m) => ctx.allowed[m.value])?.value
+    const wanted = initialMethod ?? settings.mergeMethod
+    const preferred = ctx.allowed[wanted] ? wanted : METHODS.find((m) => ctx.allowed[m.value])?.value
     method.value = preferred ?? 'merge'
     people.value = coAuthorsOf(ctx.commits, ctx.author).map((person) => ({ person, keep: !isRemovedCoAuthor(person, removed.value) }))
     fillMessage(ctx)
@@ -158,95 +169,102 @@ async function submit() {
 </script>
 
 <template>
-  <Modal title="Merge pull request" :description="description" @close="emit('close')">
-    <Alert v-if="!canAct">
-      <KeyRound />
-      <AlertDescription class="flex flex-col items-start gap-2">
-        Merging from the review needs a GitHub token with Contents and Pull requests set to read and write.
-        <Button size="sm" variant="outline" @click="openOptions">Open settings</Button>
-      </AlertDescription>
-    </Alert>
-    <Alert v-else-if="loadError" variant="destructive">
-      <CircleAlert />
-      <AlertDescription>{{ loadError }}</AlertDescription>
-    </Alert>
-    <div v-else-if="!context" class="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Loading the commits…</div>
-    <FieldGroup v-else>
-      <Alert v-if="warning">
-        <TriangleAlert />
-        <AlertDescription>{{ warning }}</AlertDescription>
-      </Alert>
+  <Sheet :open="true" @update:open="(open) => !open && emit('close')">
+    <SheetContent side="right" class="w-full gap-0 sm:max-w-md">
+      <SheetHeader class="border-b pr-12">
+        <SheetTitle>{{ current.action }}</SheetTitle>
+        <SheetDescription class="text-xs">{{ description }}</SheetDescription>
+      </SheetHeader>
+      <div class="min-h-0 flex-1 overflow-y-auto p-4">
+        <Alert v-if="!canAct">
+          <KeyRound />
+          <AlertDescription class="flex flex-col items-start gap-2">
+            Merging from the review needs a GitHub token with Contents and Pull requests set to read and write.
+            <Button size="sm" variant="outline" @click="openOptions">Open settings</Button>
+          </AlertDescription>
+        </Alert>
+        <Alert v-else-if="loadError" variant="destructive">
+          <CircleAlert />
+          <AlertDescription>{{ loadError }}</AlertDescription>
+        </Alert>
+        <div v-else-if="!context" class="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Loading the commits…</div>
+        <FieldGroup v-else>
+          <Alert v-if="warning">
+            <TriangleAlert />
+            <AlertDescription>{{ warning }}</AlertDescription>
+          </Alert>
 
-      <Field>
-        <FieldLabel>Merge method</FieldLabel>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          class="w-fit"
-          :model-value="method"
-          aria-label="Merge method"
-          @update:model-value="(v) => v && choose(v as MergeMethod)"
-        >
-          <ToggleGroupItem v-for="m in METHODS" :key="m.value" :value="m.value" :disabled="!context.allowed[m.value]">
-            {{ m.label }}
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <FieldDescription>{{ current.hint }}</FieldDescription>
-      </Field>
-
-      <template v-if="method !== 'rebase'">
-        <Field>
-          <FieldLabel for="merge-title">Commit title</FieldLabel>
-          <Input id="merge-title" v-model="title" />
-        </Field>
-        <Field>
-          <FieldLabel for="merge-body">Commit message</FieldLabel>
-          <Textarea id="merge-body" v-model="body" rows="6" class="font-mono text-xs" spellcheck="false" />
-        </Field>
-      </template>
-
-      <FieldSet v-if="method === 'squash'">
-        <FieldLegend variant="label">Co-authors</FieldLegend>
-        <FieldDescription>
-          Checked people are added as Co-authored-by lines. Anyone you uncheck stays unchecked next time. Edit the list in Settings.
-        </FieldDescription>
-        <FieldGroup class="gap-2">
-          <p v-if="!people.length" class="text-xs text-muted-foreground">No other authors in these commits.</p>
-          <Field v-for="(row, i) in people" :key="row.person.email" orientation="horizontal">
-            <Checkbox :id="`co-author-${i}`" :model-value="row.keep" @update:model-value="(v) => toggle(i, v === true)" />
-            <FieldLabel :for="`co-author-${i}`" class="font-mono text-xs font-normal break-all">{{ formatPerson(row.person) }}</FieldLabel>
+          <Field>
+            <FieldLabel>Merge method</FieldLabel>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              class="w-fit"
+              :model-value="method"
+              aria-label="Merge method"
+              @update:model-value="(v) => v && choose(v as MergeMethod)"
+            >
+              <ToggleGroupItem v-for="m in METHODS" :key="m.value" :value="m.value" :disabled="!context.allowed[m.value]">
+                {{ m.label }}
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <FieldDescription>{{ current.hint }}</FieldDescription>
           </Field>
+
+          <template v-if="method !== 'rebase'">
+            <Field>
+              <FieldLabel for="merge-title">Commit title</FieldLabel>
+              <Input id="merge-title" v-model="title" />
+            </Field>
+            <Field>
+              <FieldLabel for="merge-body">Commit message</FieldLabel>
+              <Textarea id="merge-body" v-model="body" rows="6" class="font-mono text-xs" spellcheck="false" />
+            </Field>
+          </template>
+
+          <FieldSet v-if="method === 'squash'">
+            <FieldLegend variant="label">Co-authors</FieldLegend>
+            <FieldDescription>
+              Checked people are added as Co-authored-by lines. Anyone you uncheck stays unchecked next time. Edit the list in Settings.
+            </FieldDescription>
+            <FieldGroup class="gap-2">
+              <p v-if="!people.length" class="text-xs text-muted-foreground">No other authors in these commits.</p>
+              <Field v-for="(row, i) in people" :key="row.person.email" orientation="horizontal">
+                <Checkbox :id="`co-author-${i}`" :model-value="row.keep" @update:model-value="(v) => toggle(i, v === true)" />
+                <FieldLabel :for="`co-author-${i}`" class="font-mono text-xs font-normal break-all">{{
+                  formatPerson(row.person)
+                }}</FieldLabel>
+              </Field>
+            </FieldGroup>
+            <Field>
+              <div class="flex gap-2">
+                <Input
+                  v-model="custom"
+                  placeholder="Name <email@example.com>"
+                  aria-label="Add a co-author"
+                  @keydown.enter.prevent="addCustom"
+                />
+                <Button variant="outline" @click="addCustom"><Plus /> Add</Button>
+              </div>
+              <FieldDescription v-if="customError" class="text-destructive">{{ customError }}</FieldDescription>
+            </Field>
+          </FieldSet>
+
+          <Alert v-if="error" variant="destructive">
+            <CircleAlert />
+            <AlertDescription>{{ error }}</AlertDescription>
+          </Alert>
         </FieldGroup>
-        <Field>
-          <div class="flex gap-2">
-            <Input
-              v-model="custom"
-              placeholder="Name <email@example.com>"
-              aria-label="Add a co-author"
-              @keydown.enter.prevent="addCustom"
-            />
-            <Button variant="outline" @click="addCustom"><Plus /> Add</Button>
-          </div>
-          <FieldDescription v-if="customError" class="text-destructive">{{ customError }}</FieldDescription>
-        </Field>
-      </FieldSet>
-
-      <Alert v-if="error" variant="destructive">
-        <CircleAlert />
-        <AlertDescription>{{ error }}</AlertDescription>
-      </Alert>
-    </FieldGroup>
-
-    <template #footer>
-      <div class="flex justify-end gap-2">
+      </div>
+      <SheetFooter class="flex-row justify-end border-t bg-muted/40 p-3">
         <Button variant="outline" size="sm" @click="emit('close')">Cancel</Button>
         <Button variant="success" size="sm" :disabled="!context || busy" @click="submit">
           <Spinner v-if="busy" />
           <GitMerge v-else />
           {{ current.action }}
         </Button>
-      </div>
-    </template>
-  </Modal>
+      </SheetFooter>
+    </SheetContent>
+  </Sheet>
 </template>
