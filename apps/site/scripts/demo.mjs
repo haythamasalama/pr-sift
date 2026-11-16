@@ -65,7 +65,13 @@ const API = {
   },
   issueComments: [
     { id: 701, body_html: "<p>Thanks! I'll review the billing part today.</p>", hoursAgo: 30, html_url: '#', user: person('sara-ali') },
-    { id: 702, body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>', hoursAgo: 5, html_url: '#', user: me },
+    {
+      id: 702,
+      body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>',
+      hoursAgo: 5,
+      html_url: '#',
+      user: person('tyler'),
+    },
   ],
   reviews: [{ id: 801, state: 'APPROVED', body_html: '<p>Looks good to me.</p>', hoursAgo: 3, html_url: '#', user: person('lee-park') }],
   comments: [
@@ -81,7 +87,7 @@ const API = {
       902,
       'src/Domain/Billing/Actions/GenerateInvoice.php',
       33,
-      me,
+      person('tyler'),
       "<p>Plans don't have a currency yet, so the account is the source for now. I'll note it in <code>docs/billing/usage.md</code>.</p>",
       20,
       { in_reply_to_id: 901 },

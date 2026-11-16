@@ -142,7 +142,7 @@ const API = {
       body_html: '<p>Rebased on <code>main</code> and fixed the totals rounding.</p>',
       created_at: ago(5),
       html_url: threadUrl('issuecomment-702'),
-      user: AUTHOR,
+      user: person('tyler'),
     },
   ],
   reviews: [
@@ -168,7 +168,7 @@ const API = {
       902,
       'src/Domain/Billing/Actions/GenerateInvoice.php',
       33,
-      AUTHOR,
+      person('tyler'),
       "<p>Plans don't have a currency yet, so the account is the source for now. I'll note it in <code>docs/billing/usage.md</code>.</p>",
       20,
       { in_reply_to_id: 901 },
