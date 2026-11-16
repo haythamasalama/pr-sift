@@ -381,7 +381,7 @@ const liveDemo = (live) => `<div id="try" class="mt-14 scroll-mt-24">
         <div data-live-demo class="overflow-hidden rounded-xl border border-line bg-raised shadow-[0_40px_80px_-40px_rgb(0_0_0/0.25)]">
           <div class="flex items-center gap-3 border-b border-line px-4 py-2.5">
             <span class="flex gap-1.5" aria-hidden="true"><span class="size-[11px] rounded-full bg-[#ff5f57]"></span><span class="size-[11px] rounded-full bg-[#febc2e]"></span><span class="size-[11px] rounded-full bg-[#28c840]"></span></span>
-            <span class="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-paper px-3 py-1 font-mono text-xs text-muted" aria-hidden="true">${icon('lock', 'size-3 shrink-0')}<span class="truncate">github.com/haythamasalama/storefront/pull/482/files</span></span>
+            <a href="${REPO_URL}" target="_blank" rel="noopener" class="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-paper px-3 py-1 font-mono text-xs text-muted hover:text-ink">${icon('lock', 'size-3 shrink-0')}<span class="truncate">${REPO_URL.replace('https://', '')}</span></a>
             <a href="${DEMO_URL}" class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">${icon('maximize-2', 'size-3.5')}${esc(live.full)}</a>
           </div>
           <div class="relative h-[70vh] max-h-[760px] min-h-[520px]" data-live-frame data-src="${DEMO_URL}">
