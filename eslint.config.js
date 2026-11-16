@@ -34,7 +34,7 @@ export default tseslint.config(
   },
   {
     // highlight.js escapes the code it returns, so rendering it with v-html is safe here.
-    files: ['**/DiffTable.vue'],
+    files: ['**/DiffTable.vue', '**/CodeQuote.vue'],
     rules: { 'vue/no-v-html': 'off' },
   },
   {

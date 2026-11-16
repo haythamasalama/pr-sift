@@ -8,6 +8,7 @@ import { useNotesContext } from './useNotes'
 import { describeLines, lineText, startOf, type LineRange } from '@pr-sift/core'
 import type { DiffRow, Note } from '../../lib/types'
 import NoteEditor from './NoteEditor.vue'
+import CodeQuote from './CodeQuote.vue'
 
 const { note, rows } = defineProps<{ note: Note; rows?: DiffRow[] }>()
 const emit = defineEmits<{ range: [range: LineRange | null] }>()
@@ -80,13 +81,12 @@ async function post() {
   >
     <Lock class="mt-0.5 size-3.5 shrink-0 text-amber-600" />
     <div class="min-w-0 flex-1">
-      <p
+      <CodeQuote
         v-if="note.quote"
-        class="mb-1 truncate border-l-2 border-amber-500 pl-2 font-mono text-[11px] text-muted-foreground"
-        :title="note.quote"
-      >
-        {{ note.quote }}
-      </p>
+        :code="note.quote"
+        :filename="note.file"
+        class="mb-1 truncate border-l-2 border-amber-500 pl-2 text-[11px] whitespace-pre"
+      />
       <p v-if="startOf(note) < note.line" class="mb-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
         {{ describeLines(note) }}
       </p>
