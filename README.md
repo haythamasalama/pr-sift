@@ -7,10 +7,10 @@
 <p align="center"><strong>Review large GitHub pull requests without the noise.</strong></p>
 
 <p align="center">
-  <a href="https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln"><strong>Add to Chrome, it’s free</strong></a> ·
-  <a href="https://pr-sift.haythamasalama.me/">Website</a> ·
-  <a href="docs/USAGE.md">Guide</a> ·
-  <a href="CHANGELOG.md">Changelog</a>
+  <a href="https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln"><strong>🧩 Add to Chrome, it’s free</strong></a> ·
+  <a href="https://pr-sift.haythamasalama.me/">🌐 Website</a> ·
+  <a href="docs/USAGE.md">📖 Guide</a> ·
+  <a href="CHANGELOG.md">📝 Changelog</a>
 </p>
 
 <p align="center">
@@ -32,9 +32,9 @@
 Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them
 when you choose.
 
-## What it does
+## ✨ What it does
 
-### Write notes on the code. Your AI fixes them.
+### 🗒️ Write notes on the code. Your AI fixes them.
 
 Write on any lines while you review. Notes stay in your browser until you decide otherwise. Copy them as one prompt for
 Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT, resolve what got fixed, or post one to GitHub.
@@ -44,7 +44,7 @@ Claude Code, Codex, Cursor, Copilot, Claude or ChatGPT, resolve what got fixed, 
   <img src="media/videos/notes.gif" alt="Writing a private note and sending it to an assistant" />
 </picture>
 
-### Merge without AI co-authors
+### 🔀 Merge without AI co-authors
 
 ```diff
 - Co-authored-by: Claude <noreply@anthropic.com>
@@ -59,7 +59,7 @@ they stay out of your history unless you keep them.
   <img src="media/videos/merge.gif" alt="Squash and merge with Claude and Codex left unchecked as co-authors" />
 </picture>
 
-### Find the files that matter
+### 🔍 Find the files that matter
 
 Click a type or change to show only that. Shift-click hides it on every pull request. Open or close whole folders, or
 jump straight to tests, migrations, translations, config and CI.
@@ -69,7 +69,7 @@ jump straight to tests, migrations, translations, config and CI.
   <img src="media/videos/filters.gif" alt="Filtering by type and change status" />
 </picture>
 
-### Read each file once
+### ✅ Read each file once
 
 Mark files or whole folders as viewed and they leave the list. The ring shows what is left, and a new push brings
 changed files back.
@@ -79,7 +79,7 @@ changed files back.
   <img src="media/videos/review.gif" alt="Marking folders as viewed" />
 </picture>
 
-### Comments where the code is
+### 💬 Comments where the code is
 
 GitHub threads show under their lines, and the conversation opens above the files. No trip back to GitHub.
 
@@ -88,31 +88,31 @@ GitHub threads show under their lines, and the conversation opens above the file
   <img src="media/screenshots/comments.webp" alt="A GitHub comment thread under its line, and the conversation above the files" />
 </picture>
 
-### And more
+### 🧰 And more
 
-- Unified or split diffs, for every file or just one
-- Copy a file's name, path, diff or added lines
-- The pull request description one click away
-- Saved filters as buttons in the top bar
-- Settings in a side sheet, opened right where you need them
-- Pull requests that open straight in PR Sift, if you want
-- Light, dark or your system's theme
+- 🪟 Unified or split diffs, for every file or just one
+- 📋 Copy a file's name, path, diff or added lines
+- 📄 The pull request description one click away
+- 🔖 Saved filters as buttons in the top bar
+- ⚙️ Settings in a side sheet, opened right where you need them
+- ⚡ Pull requests that open straight in PR Sift, if you want
+- 🌓 Light, dark or your system's theme
 
 See them all on the [website](https://pr-sift.haythamasalama.me/).
 
-## Install
+## 📦 Install
 
 Add PR Sift from the [Chrome Web Store](https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln),
 then open any pull request on github.com and press **PR Sift** at the bottom right. It works in Chrome and Chromium
 browsers such as Edge, Brave, Arc, Dia, Opera and Vivaldi.
 
-### Connect GitHub (optional)
+### 🔑 Connect GitHub (optional)
 
 Filtering, viewed files and notes work without a token. To approve, comment, post notes and merge from the review, open
 Settings › GitHub and press **Create a token**. GitHub opens a classic token named PR Sift with the `repo` scope checked.
 Create it and paste it back in PR Sift.
 
-### Install by hand
+### 🛠️ Install by hand
 
 1. Download `pr-sift-<version>.zip` from the [latest release](https://github.com/haythamasalama/pr-sift/releases/latest)
    and unzip it.
@@ -131,16 +131,16 @@ pnpm build
 What changed in each version is in the [changelog](CHANGELOG.md), and the [guide](docs/USAGE.md) covers every action and
 setting.
 
-## Privacy
+## 🔒 Privacy
 
 Your code stays in your browser. PR Sift talks only to GitHub, stores filters, viewed marks and notes locally, and has
 no server, account or analytics. A GitHub token is optional. Details in [PRIVACY.md](PRIVACY.md).
 
-## Contributing
+## 🤝 Contributing
 
 How it works is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), and how to help is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
+## ⚖️ License
 
 [MIT](LICENSE): free and open source. Use it, change it and share it. Not affiliated with GitHub.
 
