@@ -102,7 +102,7 @@ export const home = {
         ['eye-off', 'Shift-click', 'hides it on every pull request.'],
         ['plus', '+ type', 'adds endings like .blade.php or .test.ts.'],
       ],
-      shot: 'filters',
+      shot: 'feature-filters',
     },
     {
       id: 'folders',
@@ -114,7 +114,7 @@ export const home = {
         ['chevrons-down-up', 'All folders', 'in one click.'],
         ['search', 'Search', 'opens the tree to the match.'],
       ],
-      shot: 'tree-viewed',
+      shot: 'feature-folders',
     },
     {
       id: 'smart',
@@ -126,7 +126,7 @@ export const home = {
         ['database', 'Migrations', 'and schema changes.'],
         ['languages', 'Translations', 'config and CI.'],
       ],
-      shot: 'smart-filters',
+      shot: 'feature-smart',
     },
     {
       id: 'review',
@@ -138,7 +138,7 @@ export const home = {
         ['circle-dashed', 'Progress', 'that ignores search and filters.'],
         ['git-compare', 'New push', 'brings changed files back.'],
       ],
-      shot: 'review',
+      shot: 'feature-viewed',
     },
     {
       id: 'comments',
@@ -150,7 +150,7 @@ export const home = {
         ['messages-square', 'Conversation', 'and reviews in one panel.'],
         ['corner-down-right', 'Jump', 'from any comment to its line.'],
       ],
-      shot: 'comments',
+      shot: 'feature-comments',
     },
     {
       id: 'notes',
@@ -162,7 +162,7 @@ export const home = {
         ['pencil', 'Edit', 'from the diff or the Notes list.'],
         ['send', 'Post', 'one to GitHub when it is worth it.'],
       ],
-      shot: 'notes',
+      shot: 'feature-notes',
     },
     {
       id: 'views',
@@ -174,7 +174,7 @@ export const home = {
         ['copy', 'Copy', 'the name, path, diff or added lines.'],
         ['file-diff', 'GitHub colors', 'and syntax highlighting.'],
       ],
-      shot: 'split',
+      shot: 'feature-split',
     },
     {
       id: 'settings',
@@ -186,7 +186,7 @@ export const home = {
         ['eye-off', 'Always hidden', 'paths, counted for this pull request.'],
         ['bookmark', 'Save view', 'turns your filters into a top bar button.'],
       ],
-      shot: 'settings',
+      video: 'settings',
     },
   ],
   ai: {
