@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CHECKED, FEATURES, compare, prSift } from './compare.mjs'
-import { AUTHOR, INSTALL_URL, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
+import { AUTHOR, INSTALL_URL, LAST_STORE_RATING, REPO_URL, SITE_URL, SIBLING_APPS, brand, guides, home } from './content.mjs'
 
 const here = (path) => fileURLToPath(new URL(`../${path}`, import.meta.url))
 const BASE = process.env.SITE_BASE ?? '/'
@@ -48,8 +48,38 @@ const logo = (cls = 'size-7') =>
 const logoFile = (bg, fg) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="${bg}"/><path d="${MARK}" fill="none" stroke="${fg}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
-const button = (href, text, primary = true) =>
-  `<a href="${href}" class="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-[15px] font-medium transition-colors ${primary ? 'bg-ink text-paper hover:opacity-85' : 'border border-line bg-paper text-ink hover:bg-raised'}">${text}</a>`
+const BUTTON = {
+  primary: 'bg-ink text-paper hover:opacity-85',
+  secondary: 'border border-line bg-paper text-ink hover:bg-raised',
+  ghost: 'text-muted hover:bg-raised hover:text-ink',
+}
+
+const button = (href, text, variant = 'primary', size = 'md') =>
+  `<a href="${href}" class="inline-flex items-center gap-2 rounded-md font-medium transition-colors ${size === 'lg' ? 'h-12 px-6 text-base' : 'px-4 py-2.5 text-[15px]'} ${BUTTON[variant]}">${text}</a>`
+
+async function readStoreRating() {
+  const page = await fetch(`${INSTALL_URL}?hl=en`, { signal: AbortSignal.timeout(8000) })
+    .then((res) => (res.ok ? res.text() : ''))
+    .catch(() => '')
+  const id = INSTALL_URL.split('/').pop()
+  const match = new RegExp(`Average rating ([\\d.]+) out of 5 stars\\.[\\s\\S]{0,1500}?${id}/reviews`).exec(page)
+  if (match) return Number(match[1])
+  console.warn(`Chrome Web Store rating not found, using ${LAST_STORE_RATING}`)
+  return LAST_STORE_RATING
+}
+
+const STORE_RATING = await readStoreRating()
+
+const installButton = (size = 'lg') =>
+  button(INSTALL_URL, `${brandIcon('googlechrome', size === 'lg' ? 'size-5' : 'size-4')}${esc(home.hero.cta)}`, 'primary', size)
+
+const githubButton = () => button(REPO_URL, `${icon('github', 'size-4')}${esc(home.hero.secondary)}`, 'ghost', 'lg')
+
+const rating = () => {
+  const full = Math.round(STORE_RATING)
+  const stars = Array.from({ length: 5 }, (_, i) => icon('star', `size-4 ${i < full ? 'fill-current' : ''}`)).join('')
+  return `<a href="${INSTALL_URL}/reviews" class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted hover:text-ink"><span class="inline-flex text-ink">${stars}</span><span><span class="font-semibold text-ink">${STORE_RATING.toFixed(1)}</span> out of 5 on the Chrome Web Store · Free</span></a>`
+}
 
 // Each image and video exists in a light and a -dark version; only the one for the current theme is displayed, so only it loads.
 const THEMED = [
@@ -178,7 +208,8 @@ const header = () => `<header class="sticky top-0 z-30 border-b border-line bg-p
         ${NAV.map(([label, href]) => `<a href="${navHref(href)}" class="whitespace-nowrap hover:text-ink">${label}</a>`).join('')}
       </div>
       <span class="flex-1"></span>
-      <a href="${REPO_URL}" aria-label="Star PR Sift on GitHub" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md border border-line px-3 text-sm font-medium hover:bg-raised">${icon('github', 'size-4')}<span class="h-4 w-px bg-line" aria-hidden="true"></span><span class="flex items-center gap-1.5">${icon('star', 'size-3.5')}Star</span><span data-stars class="text-muted empty:hidden"></span></a>
+      <a href="${REPO_URL}" aria-label="PR Sift on GitHub" title="PR Sift on GitHub" class="hidden size-8 shrink-0 items-center justify-center rounded-md text-muted hover:bg-raised hover:text-ink sm:inline-flex">${icon('github', 'size-4')}</a>
+      <a href="${INSTALL_URL}" class="inline-flex h-8 shrink-0 items-center gap-2 rounded-md bg-ink px-3 text-sm font-medium text-paper hover:opacity-85">${brandIcon('googlechrome', 'size-4')}<span class="hidden sm:inline">${esc(home.hero.cta)}</span><span class="sm:hidden">Install</span></a>
       <details data-menu class="relative md:hidden">
         <summary aria-label="Menu" class="flex size-8 cursor-pointer list-none items-center justify-center rounded-md border border-line text-muted hover:text-ink [&::-webkit-details-marker]:hidden">${icon('menu', 'size-4')}</summary>
         <div class="absolute right-0 top-full mt-2 flex w-48 flex-col rounded-lg border border-line bg-paper p-1.5 shadow-lg">
@@ -354,9 +385,12 @@ const appLd = {
 const ctaBlock = () => `<section class="border-t border-line">
       <div class="mx-auto flex max-w-6xl flex-col items-start gap-8 px-4 py-20 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex items-center gap-5">${logo('size-12 shrink-0')}<h2 class="max-w-xl text-3xl font-semibold tracking-tight text-balance">Make your next big review the easy one.</h2></div>
+        <div class="flex flex-col items-start gap-3 lg:items-end">
         <div class="flex flex-wrap gap-3">
-          ${button(INSTALL_URL, `${icon('download', 'size-4')}Install PR Sift`)}
-          ${button(REPO_URL, `${icon('github', 'size-4')}Star on GitHub`, false)}
+          ${installButton()}
+          ${githubButton()}
+        </div>
+        ${rating()}
         </div>
       </div>
     </section>`
@@ -401,6 +435,10 @@ function homePage() {
         ${h.demos.map(([id, ic, title, text], i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-video="${id}" class="demo-tab flex shrink-0 items-center gap-3 rounded-lg lg:items-start border border-transparent p-3 text-left transition aria-selected:border-line aria-selected:bg-paper lg:w-full">${iconBox(ic)}<span><span class="block font-medium">${esc(title)}</span><span class="hidden text-sm text-muted lg:block">${esc(text)}</span></span></button>`).join('\n        ')}
       </div>
       <div>${video(h.demos[0][0], h.demos[0][2], 'data-demo-video')}</div>
+    </div>
+    <div class="mt-12 flex flex-col items-start gap-5 border-t border-line pt-10 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-2xl font-semibold tracking-tight text-balance">${esc(h.hero.tryIt)}</p>
+      <div class="flex flex-col items-start gap-3 sm:items-end">${installButton()}${rating()}</div>
     </div>`
 
   const features = h.features
@@ -462,7 +500,7 @@ function homePage() {
             ${h.merge.points.map(([ic, a, b]) => `<li class="flex gap-3">${icon(ic, 'mt-0.5 size-[18px] shrink-0 text-muted')}<span><strong class="font-medium">${esc(a)}</strong> <span class="text-muted">${esc(b)}</span></span></li>`).join('\n            ')}
           </ul>
         </div>
-        <div class="lg:col-span-7">${video('merge', 'Approving, then squashing without the AI co-authors')}</div>
+        <div class="lg:col-span-7">${video('merge', 'Squash and merge with Claude and Codex left unchecked as co-authors')}</div>
       </div>`,
     ],
     [
@@ -535,9 +573,10 @@ function homePage() {
         </h1>
         <p class="mt-7 max-w-xl text-lg leading-relaxed text-muted">${esc(h.hero.lead)}</p>
         <div class="mt-8 flex flex-wrap items-center gap-3">
-          ${button(INSTALL_URL, `${icon('download', 'size-4')}${esc(h.hero.cta)}`)}
-          ${button(REPO_URL, `${icon('github', 'size-4')}${esc(h.hero.secondary)}`, false)}
+          ${installButton()}
+          ${githubButton()}
         </div>
+        <div class="mt-4">${rating()}</div>
         <div class="mt-10">${browsers()}</div>
       </div>
       <div class="min-w-0">${playground()}</div>
@@ -765,7 +804,7 @@ function changelogPage() {
       </article>`,
     )
     .join('')
-  const subscribe = `<div class="mt-6 flex flex-wrap gap-3">${button(`${SITE_URL}changelog/feed.xml`, `${icon('rss', 'size-4')}Subscribe`, false)}${button(`${REPO_URL}/releases`, `${icon('github', 'size-4')}Releases on GitHub`, false)}</div>`
+  const subscribe = `<div class="mt-6 flex flex-wrap gap-3">${button(`${SITE_URL}changelog/feed.xml`, `${icon('rss', 'size-4')}Subscribe`, 'secondary')}${button(`${REPO_URL}/releases`, `${icon('github', 'size-4')}Releases on GitHub`, 'secondary')}</div>`
   return article({
     path: 'changelog/',
     crumbs: [

@@ -187,14 +187,6 @@ for (const bar of document.querySelectorAll('[data-areas]')) {
   }
 }
 
-fetch('https://api.github.com/repos/haythamasalama/pr-sift')
-  .then((res) => (res.ok ? res.json() : null))
-  .then((repo) => {
-    if (!repo?.stargazers_count) return
-    document.querySelectorAll('[data-stars]').forEach((el) => (el.textContent = String(repo.stargazers_count)))
-  })
-  .catch(() => undefined)
-
 const dotted = /^#v?(\d+\.\d+\.\d+)$/.exec(location.hash)
 if (dotted) {
   const target = document.getElementById(`v${dotted[1].replace(/\./g, '-')}`)

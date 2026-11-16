@@ -1,6 +1,8 @@
 export const SITE_URL = 'https://pr-sift.haythamasalama.me/'
 export const REPO_URL = 'https://github.com/haythamasalama/pr-sift'
 export const INSTALL_URL = 'https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln'
+// The build reads the live rating from the store and falls back to this when the store can't be reached.
+export const LAST_STORE_RATING = 5
 export const AUTHOR = { name: 'Haytham A. Salama', url: 'https://haythamasalama.me/', x: 'https://x.com/haythamasalama' }
 
 export const SIBLING_APPS = [
@@ -19,12 +21,13 @@ export const home = {
     'Free Chrome extension for large GitHub pull requests. Filter files, track what you viewed, read comments in place, send private notes to your AI, and merge without AI co-authors.',
   hero: {
     lead: 'Cut a pull request down to the files that matter, and keep notes only you can see. Send them to your AI, or post them when you choose.',
-    cta: 'Install PR Sift',
+    cta: 'Add to Chrome',
     secondary: 'Star on GitHub',
+    tryIt: 'Try it on your next big pull request.',
   },
   demos: [
     ['before-after', 'list-filter', 'Before and after', '214 changed files in, the 12 that matter out.'],
-    ['merge', 'git-merge', 'Merge', 'Approve, then squash without AI co-authors.'],
+    ['merge', 'git-merge', 'Merge without AI co-authors', 'Claude, Codex and other AI tools start unchecked.'],
     ['tour', 'play', 'Full tour', 'A 10-file pull request, from noise to notes.'],
     ['filters', 'funnel', 'Filters', 'Include, exclude and combine types and changes.'],
     ['review', 'list-checks', 'Review', 'Mark files and whole folders as viewed.'],
