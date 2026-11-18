@@ -1,84 +1,80 @@
-import hljs from 'highlight.js/lib/core'
-import bash from 'highlight.js/lib/languages/bash'
-import css from 'highlight.js/lib/languages/css'
-import dockerfile from 'highlight.js/lib/languages/dockerfile'
-import go from 'highlight.js/lib/languages/go'
-import ini from 'highlight.js/lib/languages/ini'
-import java from 'highlight.js/lib/languages/java'
-import javascript from 'highlight.js/lib/languages/javascript'
-import json from 'highlight.js/lib/languages/json'
-import markdown from 'highlight.js/lib/languages/markdown'
-import php from 'highlight.js/lib/languages/php'
-import phpTemplate from 'highlight.js/lib/languages/php-template'
-import python from 'highlight.js/lib/languages/python'
-import ruby from 'highlight.js/lib/languages/ruby'
-import rust from 'highlight.js/lib/languages/rust'
-import scss from 'highlight.js/lib/languages/scss'
-import sql from 'highlight.js/lib/languages/sql'
-import typescript from 'highlight.js/lib/languages/typescript'
-import xml from 'highlight.js/lib/languages/xml'
-import yaml from 'highlight.js/lib/languages/yaml'
+import hljs from 'highlight.js'
 import type { DiffRow } from '../../lib/types'
 
-const languages = {
-  bash,
-  css,
-  dockerfile,
-  go,
-  ini,
-  java,
-  javascript,
-  json,
-  markdown,
-  php,
-  'php-template': phpTemplate,
-  python,
-  ruby,
-  rust,
-  scss,
-  sql,
-  typescript,
-  xml,
-  yaml,
-}
-for (const [name, definition] of Object.entries(languages)) hljs.registerLanguage(name, definition)
-
-const BY_SUFFIX: [string, string][] = [
-  ['.blade.php', 'php-template'],
-  ['.php', 'php'],
-  ['.tsx', 'typescript'],
-  ['.ts', 'typescript'],
-  ['.jsx', 'javascript'],
-  ['.mjs', 'javascript'],
-  ['.cjs', 'javascript'],
-  ['.js', 'javascript'],
-  ['.vue', 'xml'],
-  ['.html', 'xml'],
-  ['.xml', 'xml'],
-  ['.svg', 'xml'],
-  ['.scss', 'scss'],
-  ['.css', 'css'],
-  ['.json', 'json'],
-  ['.md', 'markdown'],
-  ['.mdx', 'markdown'],
-  ['.yml', 'yaml'],
-  ['.yaml', 'yaml'],
-  ['.sh', 'bash'],
-  ['.sql', 'sql'],
-  ['.py', 'python'],
-  ['.rb', 'ruby'],
-  ['.go', 'go'],
-  ['.java', 'java'],
-  ['.rs', 'rust'],
-  ['.ini', 'ini'],
-  ['.env', 'ini'],
-]
+const SFC = 'sfc'
+const SFC_EXTENSIONS = new Set(['vue', 'svelte', 'astro'])
 
 export function languageFor(filename: string): string | null {
-  const lower = filename.toLowerCase()
-  if (lower.endsWith('dockerfile')) return 'dockerfile'
-  return BY_SUFFIX.find(([suffix]) => lower.endsWith(suffix))?.[1] ?? null
+  const base = filename.toLowerCase().split('/').pop()!
+  if (base.endsWith('.blade.php')) return 'php-template'
+  const extension = base.slice(base.lastIndexOf('.') + 1)
+  if (SFC_EXTENSIONS.has(extension)) return SFC
+  if (hljs.getLanguage(extension)) return extension
+  const name = base.split('.')[0]!
+  return name && hljs.getLanguage(name) ? name : null
 }
+
+const DETECT_SAMPLE = 4000
+const MIN_RELEVANCE = 8
+// Guessing among every language picks rare ones for ordinary code (TypeScript came out as Dart), so guesses stay
+// within the languages most code is written in.
+const GUESSABLE = [
+  'bash',
+  'c',
+  'cpp',
+  'csharp',
+  'css',
+  'dockerfile',
+  'go',
+  'graphql',
+  'ini',
+  'java',
+  'javascript',
+  'json',
+  'kotlin',
+  'less',
+  'lua',
+  'makefile',
+  'markdown',
+  'objectivec',
+  'perl',
+  'php',
+  'python',
+  'r',
+  'ruby',
+  'rust',
+  'scss',
+  'sql',
+  'swift',
+  'typescript',
+  'xml',
+  'yaml',
+]
+
+const INTERPRETER_LANGUAGE: Record<string, string> = { node: 'javascript', deno: 'typescript', bun: 'typescript' }
+
+function shebangLanguage(code: string): string | null {
+  const first = code.trimStart().split('\n', 1)[0]!
+  if (!first.startsWith('#!')) return null
+  const [program = '', ...args] = first.slice(2).trim().split(/\s+/)
+  const name = program.split('/').pop()!
+  const interpreter = name === 'env' ? (args.find((arg) => !arg.startsWith('-')) ?? '') : name
+  const bare = interpreter.replace(/[\d.]+$/, '')
+  const language = INTERPRETER_LANGUAGE[bare] ?? bare
+  return hljs.getLanguage(language) ? language : null
+}
+
+// Files whose name says nothing (README, Gemfile, .bashrc, an unknown extension) are colored by their shebang or by
+// the language the code looks like, and left plain when nothing matches well enough to trust.
+function detectLanguage(code: string): string | null {
+  if (!code.trim()) return null
+  const fromShebang = shebangLanguage(code)
+  if (fromShebang) return fromShebang
+  const guess = hljs.highlightAuto(code.slice(0, DETECT_SAMPLE), GUESSABLE)
+  return guess.language && guess.relevance >= MIN_RELEVANCE ? guess.language : null
+}
+
+const resolveLanguage = (filename: string, code: () => string) => languageFor(filename) ?? detectLanguage(code())
 
 function splitLines(html: string): string[] {
   const lines: string[] = []
@@ -105,6 +101,7 @@ function splitLines(html: string): string[] {
 const escape = (text: string) => text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
 
 function highlightBlock(texts: string[], language: string): string[] {
+  if (language === SFC) return highlightSfc(texts)
   try {
     return splitLines(hljs.highlight(texts.join('\n'), { language, ignoreIllegals: true }).value)
   } catch {
@@ -112,17 +109,76 @@ function highlightBlock(texts: string[], language: string): string[] {
   }
 }
 
+type Section = 'markup' | 'script' | 'style'
+
+const SECTION_TAG = /^<(\/?)(script|style|template)\b/
+
+const styleLanguage = (tag: string) => {
+  const lang = tag.match(/\blang=["']?(\w+)/)?.[1]
+  if (lang === 'sass') return 'scss'
+  return lang && hljs.getLanguage(lang) ? lang : 'css'
+}
+
+// A hunk often starts inside <script> or <style> without the tag itself, so the section is guessed from the first
+// top-level tag in the hunk, or from the code when the hunk has none.
+function startingSection(texts: string[]): Section {
+  for (const text of texts) {
+    const tag = text.match(SECTION_TAG)
+    if (!tag) continue
+    if (!tag[1] || tag[2] === 'template') return 'markup'
+    return tag[2] as Section
+  }
+  const guess = hljs.highlightAuto(texts.join('\n'), ['typescript', 'xml', 'css', 'scss']).language
+  if (guess === 'typescript') return 'script'
+  return guess === 'css' || guess === 'scss' ? 'style' : 'markup'
+}
+
+function highlightSfc(texts: string[]): string[] {
+  let section = startingSection(texts)
+  let style = 'css'
+  const out: string[] = []
+  let segment: string[] = []
+  let segmentLanguage = ''
+  for (const text of texts) {
+    const tag = text.match(SECTION_TAG)
+    let language: string
+    if (tag) {
+      language = 'xml'
+      if (tag[1] || tag[2] === 'template') section = 'markup'
+      else if (tag[2] === 'script') section = text.includes('</script>') ? 'markup' : 'script'
+      else {
+        style = styleLanguage(text)
+        section = text.includes('</style>') ? 'markup' : 'style'
+      }
+    } else language = section === 'script' ? 'typescript' : section === 'style' ? style : 'xml'
+    if (language !== segmentLanguage && segment.length) {
+      out.push(...highlightBlock(segment, segmentLanguage))
+      segment = []
+    }
+    segmentLanguage = language
+    segment.push(text)
+  }
+  if (segment.length) out.push(...highlightBlock(segment, segmentLanguage))
+  return out
+}
+
 export function highlightSnippet(code: string, filename: string): string {
-  const language = languageFor(filename)
+  const language = resolveLanguage(filename, () => code)
   return language ? highlightBlock(code.split('\n'), language).join('\n') : escape(code)
 }
 
 const MAX_ROWS = 3000
 
 export function highlightRows(rows: DiffRow[], filename: string): Map<number, string> {
-  const language = languageFor(filename)
   const result = new Map<number, string>()
-  if (!language || rows.length > MAX_ROWS) return result
+  if (rows.length > MAX_ROWS) return result
+  const language = resolveLanguage(filename, () =>
+    rows
+      .filter((row) => row.kind !== 'hunk')
+      .map((row) => row.text)
+      .join('\n'),
+  )
+  if (!language) return result
 
   let start = 0
   const flush = (end: number) => {
