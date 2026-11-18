@@ -1,5 +1,5 @@
 import { shallowRef } from 'vue'
-import { fetchSignature, loadPr } from './pull'
+import { fetchProbe, loadPr } from './pull'
 import { prKey, type PrFile, type PrInfo, type PrRef, type Via } from '../../lib/types'
 
 export interface RefreshSummary {
@@ -42,7 +42,9 @@ export function usePullRequest() {
   async function hasUpdate(pr: PrRef): Promise<boolean> {
     if (status.value !== 'ready') return false
     try {
-      return (await fetchSignature(pr, via.value)) !== signature.value
+      const probe = await fetchProbe(pr, via.value)
+      if (probe.state && info.value && probe.state !== info.value.state) info.value = { ...info.value, state: probe.state }
+      return probe.signature !== signature.value
     } catch {
       return false
     }
