@@ -371,8 +371,9 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               class="border-r border-border pr-2 pl-1 whitespace-pre-wrap break-all"
               :class="cellClass(row.left, 'left')"
             >
-              <span v-if="row.left !== null" class="mr-1 text-del-fg select-none">{{ rows[row.left]!.kind === 'del' ? '−' : '' }}</span
-              ><span v-if="row.left !== null && highlighted.has(row.left)" v-html="highlighted.get(row.left)" /><template v-else>{{
+              <span v-if="row.left !== null" class="mr-1 text-del-fg select-none">{{
+                rows[row.left]!.kind === 'del' ? '−' : ''
+              }}</span><span v-if="row.left !== null && highlighted.has(row.left)" v-html="highlighted.get(row.left)" /><template v-else>{{
                 row.left !== null ? rows[row.left]!.text : ''
               }}</template>
             </td>
@@ -398,10 +399,12 @@ function cellClass(index: number | null, side: 'left' | 'right') {
               </Button>
             </td>
             <td :data-i="row.right ?? undefined" class="pr-2 pl-1 whitespace-pre-wrap break-all" :class="cellClass(row.right, 'right')">
-              <span v-if="row.right !== null" class="mr-1 text-add-fg select-none">{{ rows[row.right]!.kind === 'add' ? '+' : '' }}</span
-              ><span v-if="row.right !== null && highlighted.has(row.right)" v-html="highlighted.get(row.right)" /><template v-else>{{
-                row.right !== null ? rows[row.right]!.text : ''
-              }}</template>
+              <span v-if="row.right !== null" class="mr-1 text-add-fg select-none">{{
+                rows[row.right]!.kind === 'add' ? '+' : ''
+              }}</span><span v-if="row.right !== null && highlighted.has(row.right)" v-html="highlighted.get(row.right)" /><template
+                v-else
+                >{{ row.right !== null ? rows[row.right]!.text : '' }}</template
+              >
             </td>
           </tr>
           <tr v-for="t in threadsFor(row.left, row.right)" :key="`thread-${t.id}`">

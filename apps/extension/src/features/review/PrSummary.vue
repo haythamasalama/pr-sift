@@ -58,8 +58,7 @@ const commentsTitle = computed(() =>
         <AvatarFallback class="text-[8px] uppercase">{{ info.author.slice(0, 1) }}</AvatarFallback>
       </Avatar>
       <span class="truncate">
-        <span class="font-medium text-foreground">{{ info.author }}</span
-        >{{ ' ' }}
+        <span class="font-medium text-foreground">{{ info.author }}</span>{{ ' ' }}
         <span class="hidden xl:inline">{{ `${verb} ${commits}into ` }}</span>
         <template v-for="(branch, i) in [info.base, info.head]" :key="i">
           <button

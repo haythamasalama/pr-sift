@@ -70,7 +70,7 @@ const grouped = computed(() => {
 
 const assistant = shallowRef(assistantById(undefined))
 const idleLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copy prompt' : `Copy for ${assistant.value.label}`))
-const copiedLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copied' : `Copied, paste it into ${assistant.value.label}`))
+const copiedLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copied' : `Paste in ${assistant.value.label}`))
 const clipboardOnly = assistantById('clipboard')
 onMounted(async () => (assistant.value = assistantById((await getSettings()).assistant)))
 
@@ -181,13 +181,15 @@ function clear() {
     </div>
 
     <template v-if="notes.length" #footer>
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="flex items-center gap-2" title="Resolved notes stay here but disappear from the diff and from the copied prompt">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex min-w-0 flex-1 items-center gap-2"
+          title="Resolved notes stay here but disappear from the diff and from the copied prompt"
+        >
           <Switch id="show-resolved" v-model="showResolved" :disabled="!counts.resolved" />
-          <Label for="show-resolved" class="text-xs font-normal" aria-live="polite">{{ resolvedLabel }}</Label>
+          <Label for="show-resolved" class="min-w-0 truncate text-xs font-normal" aria-live="polite">{{ resolvedLabel }}</Label>
         </div>
-        <span class="flex-1" />
-        <Button :variant="confirmClear ? 'destructive' : 'ghost'" size="sm" @click="clear">
+        <Button :variant="confirmClear ? 'destructive' : 'outline'" size="sm" class="shrink-0" @click="clear">
           <Trash2 /> {{ confirmClear ? 'Click again to delete all' : 'Delete all' }}
         </Button>
         <div class="flex shrink-0">
