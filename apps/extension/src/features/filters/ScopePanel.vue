@@ -106,8 +106,9 @@ const prefix = (path: string) => (path.includes('/') ? path.slice(0, path.lastIn
             @click="g.parent && emit('toggle', 'path:' + g.parent)"
           >
             <template v-if="g.parent">
-              <span class="truncate text-muted-foreground">{{ prefix(g.parent) }}</span
-              ><span class="font-semibold">{{ lastSegment(g.parent) }}</span>
+              <span class="truncate text-muted-foreground">{{ prefix(g.parent) }}</span><span class="font-semibold">{{
+                lastSegment(g.parent)
+              }}</span>
             </template>
             <span v-else class="font-semibold">Top level</span>
           </button>

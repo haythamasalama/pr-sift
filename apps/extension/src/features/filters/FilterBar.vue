@@ -274,8 +274,7 @@ const chipClass = (chip: ExtChip) => [
         <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
           <DropdownMenuTrigger as-child>
             <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: restore one, restore all, or clear">
-              <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span
-              ><ChevronDown />
+              <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span><ChevronDown />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-80">
