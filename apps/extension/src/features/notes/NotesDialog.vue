@@ -69,6 +69,8 @@ const grouped = computed(() => {
 })
 
 const assistant = shallowRef(assistantById(undefined))
+const idleLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copy prompt' : `Copy for ${assistant.value.label}`))
+const copiedLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copied' : `Copied, paste it into ${assistant.value.label}`))
 const clipboardOnly = assistantById('clipboard')
 onMounted(async () => (assistant.value = assistantById((await getSettings()).assistant)))
 
@@ -188,7 +190,7 @@ function clear() {
         <Button :variant="confirmClear ? 'destructive' : 'ghost'" size="sm" @click="clear">
           <Trash2 /> {{ confirmClear ? 'Click again to delete all' : 'Delete all' }}
         </Button>
-        <div class="flex">
+        <div class="flex shrink-0">
           <Button
             size="sm"
             class="rounded-r-none"
@@ -198,15 +200,10 @@ function clear() {
           >
             <Check v-if="copied" />
             <ClipboardCopy v-else />
-            {{
-              copied
-                ? assistant.kind === 'clipboard'
-                  ? 'Copied'
-                  : `Copied, paste it into ${assistant.label}`
-                : assistant.kind === 'clipboard'
-                  ? 'Copy prompt'
-                  : `Copy for ${assistant.label}`
-            }}
+            <span class="grid">
+              <span class="col-start-1 row-start-1" :class="{ invisible: copied }">{{ idleLabel }}</span>
+              <span class="col-start-1 row-start-1" :class="{ invisible: !copied }" :aria-hidden="!copied">{{ copiedLabel }}</span>
+            </span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
