@@ -125,6 +125,30 @@ describe('member and call coloring', () => {
     expect(out).toContain('<span class="hljs-title function_">defineProps</span>')
     expect(out).toContain('<span class="hljs-title function_">ref</span>')
   })
+
+  it('keeps coloring the lines after a call with a union type argument', () => {
+    const out = html('const a = ref<Point | null>(null);\nconst b = computed(() => 1);', 'a.ts').split('\n')[1]!
+    expect(out).toContain('<span class="hljs-keyword">const</span>')
+    expect(out).toContain('<span class="hljs-title function_">computed</span>')
+    expect(out).not.toContain('language-xml')
+  })
+
+  it('colors operators and arrows like GitHub', () => {
+    const out = html('const a = b === null || !c ? d ?? 0 : x.y?.z;\nconst f = () => 1;', 'a.ts')
+    for (const op of ['=', '===', '||', '!', '?', '??', '=&gt;']) expect(out).toContain(`<span class="hljs-operator">${op}</span>`)
+    expect(out).not.toContain('<span class="hljs-operator">?.</span>')
+  })
+
+  it('leaves jsx tags and comments alone', () => {
+    const out = html('const el = <div>{a > 1}</div>; // note', 'a.tsx')
+    expect(out).toContain('<span class="hljs-name">div</span>')
+    expect(out).toContain('<span class="hljs-comment">// note</span>')
+  })
+
+  it('colors php operators', () => {
+    const out = html('$x = !$a && $b ?? [1 => 2];', 'a.php')
+    for (const op of ['=', '!', '&amp;&amp;', '??', '=&gt;']) expect(out).toContain(`<span class="hljs-operator">${op}</span>`)
+  })
 })
 
 describe('highlightSnippet', () => {

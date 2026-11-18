@@ -213,6 +213,7 @@
 }
 
 .ps-root .hljs-keyword,
+.ps-root .hljs-operator,
 .ps-root .hljs-selector-tag,
 .ps-root .hljs-template-tag,
 .ps-root .hljs-template-variable.hljs-keyword {
@@ -266,7 +267,8 @@
   color: var(--hl-variable);
 }
 
-.ps-root .hljs-variable.language_ {
+.ps-root .hljs-variable.language_,
+.ps-root .hljs-variable.constant_ {
   color: var(--hl-constant);
 }
 

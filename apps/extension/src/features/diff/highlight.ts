@@ -1,4 +1,5 @@
 import hljs, { type LanguageFn, type Mode } from 'highlight.js'
+import javascript from 'highlight.js/lib/languages/javascript'
 import php from 'highlight.js/lib/languages/php'
 import typescript from 'highlight.js/lib/languages/typescript'
 import type { DiffRow } from '../../lib/types'
@@ -26,6 +27,13 @@ const withModes =
     return language
   }
 
+// GitHub colors operators like keywords. A lone `<` or `/` is left out, and so is an operator right before one: the
+// grammar needs to see those to find JSX tags, regexes and comments.
+const OPERATOR: Mode = {
+  match: /(?:=>|[=!]=?=?|<=|>=|&&|\|\||\?\?=?|\*\*=?|[-+*%&|^]=?|\?(?![.?>])|>)(?!\s*[</])/,
+  scope: 'operator',
+}
+
 const PHP_NAME = /[a-zA-Z_\x7f-\xff][\w\x7f-\xff]*/
 
 // highlight.js colors a member named like a keyword ($table->string(), ->and()) as that keyword, and leaves the
@@ -36,14 +44,52 @@ hljs.registerLanguage(
     { match: [/\?->|->|::/, /\s*/, new RegExp(`${PHP_NAME.source}(?=\\s*\\()`)], scope: { 3: 'title.function.invoke' } },
     { match: [/\?->|->/, /\s*/, PHP_NAME], scope: { 3: 'property' } },
     { match: /\bfunction\b(?=\s*(?:use\b|\())/, scope: 'keyword' },
+    OPERATOR,
   ]),
 )
 
-// A call with type arguments, like defineProps<{ a: string }>() or ref<number>(0), is not seen as a call.
-hljs.registerLanguage(
-  'typescript',
-  withModes(typescript, [{ match: /\b[A-Za-z_$][\w$]*(?=<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>\s*\()/, scope: 'title.function' }]),
-)
+const TYPE_ARGUMENTS_AHEAD = /(?=<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>\s*\()/
+
+const TYPE_ARGUMENTS: Mode = {
+  begin: /</,
+  end: />/,
+  beginScope: 'operator',
+  endScope: 'operator',
+  contains: [
+    'self',
+    { match: /\b(?:null|undefined|true|false)\b/, scope: 'literal' },
+    { match: /\b(?:string|number|boolean|bigint|symbol|object|any|unknown|never|void)\b/, scope: 'built_in' },
+    { match: /[|&]/, scope: 'operator' },
+  ],
+}
+
+// Without these, the type arguments of a call like ref<Point | null>(null) are read as a JSX tag, and every line
+// after it loses its colors.
+const SCRIPT_MODES: Mode[] = [
+  { match: new RegExp(`\\b[A-Za-z_$][\\w$]*${TYPE_ARGUMENTS_AHEAD.source}`), scope: 'title.function' },
+  { ...TYPE_ARGUMENTS, begin: new RegExp(`(?<=[\\w$])${TYPE_ARGUMENTS_AHEAD.source}<`) },
+  { match: [/\bMath\b/, /\./, /[A-Za-z_$][\w$]*/], scope: { 1: 'variable.constant', 3: 'variable.constant' } },
+  OPERATOR,
+]
+
+// The `=>` of an arrow function is swallowed by the mode that finds its parameters, so it is colored there.
+const withArrows =
+  (base: LanguageFn): LanguageFn =>
+  (api) => {
+    const language = base(api)
+    const seen = new Set<object>()
+    const visit = (mode: Mode) => {
+      if (seen.has(mode)) return
+      seen.add(mode)
+      if (mode.end === '\\s*=>') mode.endScope = 'operator'
+      for (const child of [...(mode.contains ?? []), ...(mode.variants ?? [])]) if (typeof child === 'object') visit(child)
+    }
+    visit(language as Mode)
+    return language
+  }
+
+hljs.registerLanguage('typescript', withModes(withArrows(typescript), SCRIPT_MODES))
+hljs.registerLanguage('javascript', withModes(withArrows(javascript), SCRIPT_MODES))
 
 const SFC = 'sfc'
 const SFC_EXTENSIONS = new Set(['vue', 'svelte', 'astro'])
