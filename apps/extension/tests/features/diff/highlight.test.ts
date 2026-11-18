@@ -105,6 +105,28 @@ describe('highlightRows for files whose name says nothing', () => {
   })
 })
 
+describe('member and call coloring', () => {
+  const html = (code: string, file: string) => highlightSnippet(code, file)
+
+  it('colors php members named like keywords as members', () => {
+    const out = html("$table->string('metric');\nexpect($a)->and($b);\n$invoice->lines;", 'a.php')
+    expect(out).toContain('<span class="hljs-title function_ invoke__">string</span>')
+    expect(out).toContain('<span class="hljs-title function_ invoke__">and</span>')
+    expect(out).toContain('<span class="hljs-property">lines</span>')
+    expect(out).toContain('<span class="hljs-variable">$table</span>')
+  })
+
+  it('colors the function keyword of a php closure', () => {
+    expect(html("it('bills', function () {});", 'a.php')).toContain('<span class="hljs-keyword">function</span>')
+  })
+
+  it('colors typescript calls with type arguments', () => {
+    const out = html('defineProps<{ a?: boolean }>()\nref<number | null>(null)', 'a.ts')
+    expect(out).toContain('<span class="hljs-title function_">defineProps</span>')
+    expect(out).toContain('<span class="hljs-title function_">ref</span>')
+  })
+})
+
 describe('highlightSnippet', () => {
   it('colors code by the file it comes from', () => {
     expect(highlightSnippet("auth()->user()->can('billing')", 'src/A.php')).toContain('hljs-string')

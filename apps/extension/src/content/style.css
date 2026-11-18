@@ -149,6 +149,7 @@
   --hl-string: #0a3069;
   --hl-comment: #6e7781;
   --hl-tag: #116329;
+  --hl-variable: #953800;
   position: relative;
   z-index: 2147483000;
   font-family: var(--font-sans);
@@ -198,6 +199,7 @@
   --hl-string: #a5d6ff;
   --hl-comment: #8b949e;
   --hl-tag: #7ee787;
+  --hl-variable: #ffa657;
 }
 
 /* Painted as an image so the added and removed colours stay visible under a selected range. */
@@ -257,6 +259,15 @@
 .ps-root .hljs-name,
 .ps-root .hljs-tag {
   color: var(--hl-tag);
+}
+
+.ps-root .hljs-variable,
+.ps-root .hljs-template-variable {
+  color: var(--hl-variable);
+}
+
+.ps-root .hljs-variable.language_ {
+  color: var(--hl-constant);
 }
 
 .ps-root .hljs-emphasis {

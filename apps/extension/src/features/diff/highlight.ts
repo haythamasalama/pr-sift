@@ -1,5 +1,49 @@
-import hljs from 'highlight.js'
+import hljs, { type LanguageFn, type Mode } from 'highlight.js'
+import php from 'highlight.js/lib/languages/php'
+import typescript from 'highlight.js/lib/languages/typescript'
 import type { DiffRow } from '../../lib/types'
+
+const TEXT_SCOPES = new Set(['string', 'comment', 'regexp', 'doctag'])
+
+// Nested code, like call arguments, has its own list of modes, so the extra modes go into every list that reuses the
+// language's own top-level modes, skipping strings and comments.
+const withModes =
+  (base: LanguageFn, modes: Mode[]): LanguageFn =>
+  (api) => {
+    const language = base(api)
+    const topLevel = new Set(language.contains ?? [])
+    const seen = new Set<object>()
+    const visit = (mode: Mode) => {
+      if (seen.has(mode)) return
+      seen.add(mode)
+      const scope = mode.scope ?? mode.className
+      if (typeof scope === 'string' && TEXT_SCOPES.has(scope)) return
+      const contains = mode.contains ?? []
+      for (const child of contains) if (typeof child === 'object') visit(child)
+      if (mode === language || contains.some((child) => topLevel.has(child))) mode.contains = [...modes, ...contains]
+    }
+    visit(language as Mode)
+    return language
+  }
+
+const PHP_NAME = /[a-zA-Z_\x7f-\xff][\w\x7f-\xff]*/
+
+// highlight.js colors a member named like a keyword ($table->string(), ->and()) as that keyword, and leaves the
+// `function` of a closure uncolored.
+hljs.registerLanguage(
+  'php',
+  withModes(php, [
+    { match: [/\?->|->|::/, /\s*/, new RegExp(`${PHP_NAME.source}(?=\\s*\\()`)], scope: { 3: 'title.function.invoke' } },
+    { match: [/\?->|->/, /\s*/, PHP_NAME], scope: { 3: 'property' } },
+    { match: /\bfunction\b(?=\s*(?:use\b|\())/, scope: 'keyword' },
+  ]),
+)
+
+// A call with type arguments, like defineProps<{ a: string }>() or ref<number>(0), is not seen as a call.
+hljs.registerLanguage(
+  'typescript',
+  withModes(typescript, [{ match: /\b[A-Za-z_$][\w$]*(?=<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>\s*\()/, scope: 'title.function' }]),
+)
 
 const SFC = 'sfc'
 const SFC_EXTENSIONS = new Set(['vue', 'svelte', 'astro'])
