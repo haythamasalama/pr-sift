@@ -3,6 +3,20 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## 1.3.0 - 2026-11-18
+
+### Added
+
+- Review: Code in the diff is colored for every language, found from the file name, its first `#!` line or the code
+  itself, and each part of a Vue, Svelte or Astro file gets its own language.
+
+### Fixed
+
+- Review: Code colors match GitHub's: variables, operators, methods and properties, and calls with type arguments such
+  as `ref<Point | null>()`, which no longer leave the lines after them uncolored.
+- Notes: The Show resolved switch, Delete all and the copy button stay on one row, and the copy button is only as wide
+  as its label.
+
 ## 1.2.1 - 2026-11-18
 
 ### Fixed
