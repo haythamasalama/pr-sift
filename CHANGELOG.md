@@ -9,6 +9,7 @@ goes under `## Unreleased` until the next release moves it under its version and
 
 - Review: Add a token and Change in the review open the PR Sift settings page instead of a blank tab.
 - Notes: The copy button in Private notes keeps its width after you copy, so it no longer drops to a new line.
+- Review: The pull request state (Merged, Closed, Draft) now updates by itself while the review is open, without a reload.
 
 ## 1.2.0 - 2026-11-17
 

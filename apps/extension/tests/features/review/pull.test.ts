@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchSignature, loadPr } from '../../../src/features/review/pull'
+import { fetchProbe, loadPr } from '../../../src/features/review/pull'
 import { installChrome } from '../../helpers/chrome'
 import { PR, SAMPLE_DIFF } from '@pr-sift/core/testing'
 
@@ -123,20 +123,33 @@ describe('loadPr', () => {
   })
 })
 
-describe('fetchSignature', () => {
+describe('fetchProbe', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('changes when the diff changes', async () => {
+  const pageWith = (state: string) =>
+    `<html><body><script type="application/json" data-target="react-app.embeddedData">${JSON.stringify({
+      payload: { pullRequestsLayoutRoute: { pullRequest: { state } } },
+    })}</script></body></html>`
+
+  it('changes the signature when the diff changes', async () => {
     installChrome()
-    mockFetch(() => new Response(SAMPLE_DIFF))
-    const a = await fetchSignature(PR, 'session')
-    mockFetch(() => new Response(SAMPLE_DIFF + '\n+x'))
-    const b = await fetchSignature(PR, 'session')
-    expect(a).not.toBe(b)
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF) : new Response(pageWith('OPEN'))))
+    const a = await fetchProbe(PR, 'session')
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF + '\n+x') : new Response(pageWith('OPEN'))))
+    const b = await fetchProbe(PR, 'session')
+    expect(a.signature).not.toBe(b.signature)
   })
 
-  it('uses the head commit when reading through the API', async () => {
-    installChrome(() => ({ ok: true, status: 200, data: { head: { sha: 'abc' } } }))
-    expect(await fetchSignature(PR, 'api')).toBe('abc')
+  it('reports the state from the page, so a merge or close shows up', async () => {
+    installChrome()
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF) : new Response(pageWith('MERGED'))))
+    expect((await fetchProbe(PR, 'session')).state).toBe('merged')
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF) : new Response(pageWith('CLOSED'))))
+    expect((await fetchProbe(PR, 'session')).state).toBe('closed')
+  })
+
+  it('uses the head commit and the state when reading through the API', async () => {
+    installChrome(() => ({ ok: true, status: 200, data: { head: { sha: 'abc' }, state: 'closed', merged: true } }))
+    expect(await fetchProbe(PR, 'api')).toEqual({ signature: 'abc', state: 'merged' })
   })
 })

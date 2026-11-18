@@ -125,9 +125,23 @@ export async function loadPr(pr: PrRef): Promise<Loaded> {
   return { ...(await loadViaApi(pr)), via: 'api' }
 }
 
-export async function fetchSignature(pr: PrRef, via: Via): Promise<string> {
-  if (via === 'api') return (await gh<ApiPull>(`/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`)).head.sha
-  return hashText(await fetchDiff(basePath(pr), true))
+export interface Probe {
+  signature: string
+  state: PrInfo['state']
+}
+
+export async function fetchProbe(pr: PrRef, via: Via): Promise<Probe> {
+  if (via === 'api') {
+    const data = await gh<ApiPull>(`/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`)
+    return { signature: data.head.sha, state: prState(data.state, { merged: data.merged, draft: data.draft }) }
+  }
+  const base = basePath(pr)
+  const [diffText, pageRes] = await Promise.all([
+    fetchDiff(base, true),
+    fetch(base, { credentials: 'same-origin', cache: 'no-store' }).catch(() => null),
+  ])
+  const doc = new DOMParser().parseFromString(pageRes?.ok ? await pageRes.text() : '', 'text/html')
+  return { signature: hashText(diffText), state: pageInfo(doc).state }
 }
 
 function decodeBase64(content: string): string {
