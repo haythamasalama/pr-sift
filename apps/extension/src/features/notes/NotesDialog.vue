@@ -70,7 +70,7 @@ const grouped = computed(() => {
 
 const assistant = shallowRef(assistantById(undefined))
 const idleLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copy prompt' : `Copy for ${assistant.value.label}`))
-const copiedLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copied' : `Copied, paste it into ${assistant.value.label}`))
+const copiedLabel = computed(() => (assistant.value.kind === 'clipboard' ? 'Copied' : `Paste in ${assistant.value.label}`))
 const clipboardOnly = assistantById('clipboard')
 onMounted(async () => (assistant.value = assistantById((await getSettings()).assistant)))
 
