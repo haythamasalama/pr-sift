@@ -60,7 +60,8 @@ async function fetchText(url: string) {
 chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   if (sender.id !== chrome.runtime.id) return
   if (msg.type === 'options') {
-    if (msg.section && /^[a-z]+$/.test(msg.section)) void chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${msg.section}`) })
+    if (msg.section && /^[a-z]+$/.test(msg.section))
+      void chrome.tabs.create({ url: chrome.runtime.getURL(`dist/options.html#${msg.section}`) })
     else void chrome.runtime.openOptionsPage()
     return
   }
