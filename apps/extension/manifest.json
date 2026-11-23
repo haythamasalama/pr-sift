@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PR Sift",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Review big GitHub pull requests: filter files, track what you read, send private notes to your AI and merge without AI co-authors.",
   "homepage_url": "https://pr-sift.haythamasalama.me/",
   "permissions": ["storage"],
