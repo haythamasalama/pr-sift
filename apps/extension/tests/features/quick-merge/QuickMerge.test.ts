@@ -87,6 +87,16 @@ describe('findMergeButton', () => {
     expect(match.disabled).toBe(false)
   })
 
+  it("goes up to GitHub's flex row so it sits beside the button, not under it", () => {
+    const row = document.createElement('div')
+    row.style.display = 'flex'
+    row.innerHTML =
+      '<div class="column"><div class="group"><button>Squash and merge</button><button aria-haspopup="true">▾</button></div></div><p>You can also merge this with the command line.</p>'
+    document.body.appendChild(row)
+
+    expect(findMergeButton()!.anchor).toBe(row.querySelector('.column'))
+  })
+
   it('reports a disabled merge button and skips other labels', () => {
     mergeBox('Merge pull request', true)
     expect(findMergeButton()!.disabled).toBe(true)
