@@ -24,6 +24,7 @@ defineProps<{
   title: string
   presets: Preset[]
   activePreset: string
+  hiddenPresets?: string[]
   done: number
   total: number
   inView: number
@@ -80,7 +81,12 @@ const openSettings = useSettingsOpener()
         :key="p.name"
         size="sm"
         :variant="p.name === activePreset ? 'default' : 'outline'"
-        title="Click to list only its files. Right-click to hide them"
+        :class="hiddenPresets?.includes(p.name) ? 'border-destructive/40 text-destructive line-through' : ''"
+        :title="
+          hiddenPresets?.includes(p.name)
+            ? 'Its files are hidden. Click to show them again'
+            : 'Click to list only its files. Right-click to hide them'
+        "
         @click="emit('selectPreset', p.name)"
         @contextmenu.prevent="emit('hidePreset', p.name)"
       >

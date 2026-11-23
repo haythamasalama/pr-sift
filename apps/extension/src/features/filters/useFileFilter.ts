@@ -53,17 +53,6 @@ export function useFileFilter(
         custom: false,
       }))
       .filter((c) => c.count > 0 || c.state)
-    const presetChips = hiddenPresets.value.map((name) => {
-      const preset = settings.value.presets.find((p) => p.name === name)
-      const inPreset = preset ? matcher(preset.include) : () => false
-      return {
-        ext: PRESET_CHIP + name,
-        label: name,
-        count: files.value.filter((f) => inPreset(f.filename)).length,
-        state: stateOf(PRESET_CHIP + name),
-        custom: false,
-      }
-    })
     const folderChips = [...new Set(active.filter((k) => k.startsWith(FOLDER_CHIP)))].map((key) => ({
       ext: key,
       label: key.slice(FOLDER_CHIP.length),
@@ -78,7 +67,7 @@ export function useFileFilter(
       state: stateOf(NOTES_CHIP),
       custom: false,
     }
-    return [...extChips, ...statusChips, ...folderChips, ...presetChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
+    return [...extChips, ...statusChips, ...folderChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
   })
 
   const shownGroups = computed(() => {

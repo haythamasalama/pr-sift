@@ -321,6 +321,7 @@ watch(
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :presets="settings.presets"
       :active-preset="filter.activePreset.value?.name ?? ''"
+      :hidden-presets="filter.hiddenPresets.value"
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
       :in-view="filter.inScope.value.length"
