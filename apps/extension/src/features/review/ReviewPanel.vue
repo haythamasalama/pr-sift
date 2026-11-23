@@ -16,7 +16,7 @@ import { usePullRequest } from './usePullRequest'
 import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
-import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
+import { buildTree, folderChip, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
 import { fetchConversation, type Conversation, type Thread } from './conversation'
@@ -238,6 +238,12 @@ function jumpToFolder(path: string) {
 
 function selectFolder(path: string) {
   filter.setScopes(path ? ['path:' + path] : [])
+}
+
+function hideFolder(path: string) {
+  const selected = filter.selectedFolder.value
+  if (selected === path || selected.startsWith(path + '/')) filter.setScopes([])
+  return filter.toggleChip(folderChip(path), true)
 }
 
 function toggleFolder(path: string, value: boolean) {
@@ -482,6 +488,7 @@ watch(
               "
               @toggle-viewed="toggleFolder"
               @toggle-file="setViewed"
+              @hide-folder="hideFolder"
             />
           </TabsContent>
           <TabsContent value="smart" class="min-h-0 flex-1">

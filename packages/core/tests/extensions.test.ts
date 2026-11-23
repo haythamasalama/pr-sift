@@ -44,6 +44,12 @@ describe('matchesChip', () => {
     expect(matchesChip(file('a.php'), 'status:removed')).toBe(false)
   })
 
+  it('matches folder chips against everything inside the folder', () => {
+    expect(matchesChip(file('lang/ar/businesses.php'), 'folder:lang')).toBe(true)
+    expect(matchesChip(file('lang.php'), 'folder:lang')).toBe(false)
+    expect(matchesChip(file('src/lang/en.php'), 'folder:lang')).toBe(false)
+  })
+
   it('falls back to extension matching', () => {
     expect(matchesChip(file('a.php'), '.php')).toBe(true)
   })

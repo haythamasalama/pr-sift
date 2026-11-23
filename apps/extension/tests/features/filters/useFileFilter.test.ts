@@ -92,6 +92,24 @@ describe('useFileFilter', () => {
     expect(chrome.store.settings).toMatchObject({ hiddenTypes: ['.md'] })
   })
 
+  it('always hides a folder, shows it as a chip and brings it back on click', async () => {
+    const chrome = installChrome()
+    const filter = useFileFilter(
+      shallowRef([file('lang/ar/a.php'), file('lang/en/a.php'), file('src/a.php')]),
+      shallowRef(DEFAULTS),
+      () => false,
+    )
+    filter.reviewMode.value = false
+    await filter.toggleChip('folder:lang', true)
+    expect(names(filter.inScope.value)).toEqual(['src/a.php'])
+    expect(chrome.store.settings).toMatchObject({ hiddenTypes: ['folder:lang'] })
+    const chip = filter.chips.value.find((c) => c.ext === 'folder:lang')!
+    expect(chip).toMatchObject({ label: 'lang', count: 2, state: 'exclude' })
+    expect(filter.chips.value.some((c) => c.label === 'folder:lang')).toBe(false)
+    await filter.toggleChip('folder:lang')
+    expect(filter.inScope.value).toHaveLength(3)
+  })
+
   it('clicking a hidden type brings it back', async () => {
     const { filter } = setup(files)
     await filter.toggleChip('.md', true)

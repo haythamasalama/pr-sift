@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Eye,
   FileText,
+  Folder,
   MessageSquareText,
   ChevronsDownUp,
   ChevronsUpDown,
@@ -32,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { NOTES_CHIP } from '@pr-sift/core'
+import { FOLDER_CHIP, NOTES_CHIP } from '@pr-sift/core'
 import type { ExtChip, PrFile } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
@@ -109,12 +110,14 @@ function clearAll(e: Event) {
 }
 
 const chipVariant = (chip: ExtChip) => (chip.state === 'include' ? 'default' : chip.state === 'exclude' ? 'outline' : 'secondary')
-const chipTitle = (chip: ExtChip) =>
-  chip.state === 'include'
-    ? 'Showing only this type. Click to undo'
+const chipTitle = (chip: ExtChip) => {
+  const kind = chip.ext.startsWith(FOLDER_CHIP) ? 'folder' : 'type'
+  return chip.state === 'include'
+    ? `Showing only this ${kind}. Click to undo`
     : chip.state === 'exclude'
       ? 'Always hidden. Click to show again'
-      : 'Click to show only this type. Shift-click or right-click to always hide it'
+      : `Click to show only this ${kind}. Shift-click or right-click to always hide it`
+}
 const isHideGesture = (e: MouseEvent) => e.shiftKey || e.altKey || e.metaKey || e.ctrlKey
 const chipClass = (chip: ExtChip) => [
   'h-[22px] gap-1 rounded-md px-2.5 text-[11px] font-medium shadow-none',
@@ -184,6 +187,7 @@ const chipClass = (chip: ExtChip) => [
           @contextmenu.prevent="emit('toggleExtension', c.ext, true)"
         >
           <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-attention" />
+          <Folder v-else-if="c.ext.startsWith(FOLDER_CHIP)" class="size-3.5 text-muted-foreground" />
           <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>
