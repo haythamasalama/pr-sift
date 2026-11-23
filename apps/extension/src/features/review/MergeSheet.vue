@@ -2,16 +2,16 @@
 import { computed, shallowRef, watch } from 'vue'
 import { CircleAlert, ExternalLink, GitMerge, KeyRound, Plus } from '@lucide/vue'
 import {
-  coAuthorsOf,
-  defaultSquashBody,
-  defaultSquashTitle,
+  chooseMergeMethod,
+  coAuthorChoices,
+  defaultMergeMessage,
   formatPerson,
-  keepsCoAuthor,
+  MERGE_ACTIONS,
+  mergeCommitMessage,
   parsePerson,
   rememberCoAuthors,
-  withCoAuthors,
+  type CoAuthorChoice,
   type MergeMethod,
-  type Person,
 } from '@pr-sift/core'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -48,9 +48,9 @@ function editSettings(section: 'token' | 'merging') {
 }
 
 const METHODS: { value: MergeMethod; label: string; action: string; hint: string }[] = [
-  { value: 'squash', label: 'Squash', action: 'Squash and merge', hint: 'Combines every commit into one commit on the base branch.' },
-  { value: 'merge', label: 'Merge commit', action: 'Merge pull request', hint: 'Keeps every commit as it is, with its own co-authors.' },
-  { value: 'rebase', label: 'Rebase', action: 'Rebase and merge', hint: 'Adds every commit to the base branch as it is.' },
+  { value: 'squash', label: 'Squash', action: MERGE_ACTIONS.squash, hint: 'Combines every commit into one commit on the base branch.' },
+  { value: 'merge', label: 'Merge commit', action: MERGE_ACTIONS.merge, hint: 'Keeps every commit as it is, with its own co-authors.' },
+  { value: 'rebase', label: 'Rebase', action: MERGE_ACTIONS.rebase, hint: 'Adds every commit to the base branch as it is.' },
 ]
 
 const WARNINGS: Record<string, { text: string; tone: string }> = {
@@ -61,11 +61,6 @@ const WARNINGS: Record<string, { text: string; tone: string }> = {
   draft: { text: 'This pull request is a draft', tone: 'bg-muted-foreground' },
 }
 
-interface CoAuthorRow {
-  person: Person
-  keep: boolean
-}
-
 const context = shallowRef<MergeContext | null>(null)
 const loadError = shallowRef('')
 const leaveOut = shallowRef(DEFAULTS.leaveOutCoAuthors)
@@ -74,7 +69,7 @@ const kept = shallowRef<string[]>(DEFAULTS.keptCoAuthors)
 const method = shallowRef<MergeMethod>(DEFAULTS.mergeMethod)
 const title = shallowRef('')
 const body = shallowRef('')
-const people = shallowRef<CoAuthorRow[]>([])
+const people = shallowRef<CoAuthorChoice[]>([])
 const custom = shallowRef('')
 const customError = shallowRef('')
 const busy = shallowRef(false)
@@ -87,13 +82,10 @@ const description = computed(() =>
 )
 
 function fillMessage(ctx: MergeContext) {
-  if (method.value === 'squash') {
-    title.value = defaultSquashTitle(ctx.title, pr.number, ctx.commits, ctx.squashTitle)
-    body.value = defaultSquashBody(ctx.commits, ctx.body, ctx.squashMessage)
-  } else if (method.value === 'merge') {
-    title.value = `Merge pull request #${pr.number} from ${ctx.headLabel}`
-    body.value = ctx.title
-  }
+  if (method.value === 'rebase') return
+  const next = defaultMergeMessage(method.value, pr.number, ctx)
+  title.value = next.title
+  body.value = next.body
 }
 
 function choose(value: MergeMethod) {
@@ -109,13 +101,8 @@ async function load() {
   kept.value = settings.keptCoAuthors
   try {
     const ctx = await loadMergeContext(pr)
-    const wanted = initialMethod ?? settings.mergeMethod
-    const preferred = ctx.allowed[wanted] ? wanted : METHODS.find((m) => ctx.allowed[m.value])?.value
-    method.value = preferred ?? 'merge'
-    people.value = coAuthorsOf(ctx.commits, ctx.author).map((person) => ({
-      person,
-      keep: !leaveOut.value || keepsCoAuthor(person, removed.value, kept.value),
-    }))
+    method.value = chooseMergeMethod(initialMethod ?? settings.mergeMethod, ctx.allowed)
+    people.value = coAuthorChoices(ctx.commits, ctx.author, { leaveOut: leaveOut.value, removed: removed.value, kept: kept.value })
     fillMessage(ctx)
     context.value = ctx
   } catch (e) {
@@ -161,13 +148,12 @@ async function submit() {
   if (!ctx) return
   busy.value = true
   error.value = ''
-  const coAuthors = people.value.filter((row) => row.keep).map((row) => row.person)
   try {
     const sha = await merge(pr, {
       method: method.value,
       sha: ctx.headSha,
       title: title.value.trim(),
-      message: method.value === 'squash' ? withCoAuthors(body.value, coAuthors) : body.value.trim(),
+      message: mergeCommitMessage(method.value, body.value, people.value),
     })
     await remember()
     emit('merged', sha)
