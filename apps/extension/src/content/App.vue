@@ -12,6 +12,7 @@ import { portalTargetKey } from '../lib/portal'
 import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
+import QuickMerge from '../features/quick-merge/QuickMerge.vue'
 
 const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/
 
@@ -109,6 +110,7 @@ onBeforeUnmount(() => {
         </span>
       </Button>
     </div>
+    <QuickMerge v-if="pr && !open && !dead" :key="`quick-${prKey(pr)}`" :pr="pr" :dark="githubDark" />
     <ReviewPanel
       v-if="pr && open && !dead"
       :key="prKey(pr)"

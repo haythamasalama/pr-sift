@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { ignoreInvalidatedContext } from '../lib/extension'
 import { isolateKeyboard } from '../lib/isolate'
+import { contentStylesKey } from '../lib/shadow'
 import styles from './style.css?inline'
 
 ignoreInvalidatedContext()
@@ -26,7 +27,7 @@ const mountPoint = document.createElement('div')
 shadow.appendChild(mountPoint)
 document.documentElement.appendChild(host)
 
-createApp(App).mount(mountPoint)
+createApp(App).provide(contentStylesKey, styles).mount(mountPoint)
 
 setInterval(() => {
   if (!host.isConnected) document.documentElement.appendChild(host)
