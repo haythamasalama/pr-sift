@@ -43,8 +43,13 @@ export function matchesExtension(filename: string, ext: string): boolean {
 }
 
 export const NOTES_CHIP = 'has:notes'
+export const FOLDER_CHIP = 'folder:'
+export const PRESET_CHIP = 'preset:'
+
+export const folderChip = (path: string) => FOLDER_CHIP + path
 
 export function matchesChip(file: PrFile, key: string, noted: ReadonlyMap<string, number> = new Map()): boolean {
   if (key === NOTES_CHIP) return (noted.get(file.filename) ?? 0) > 0
+  if (key.startsWith(FOLDER_CHIP)) return file.filename.startsWith(key.slice(FOLDER_CHIP.length) + '/')
   return key.startsWith('status:') ? file.status === key.slice(7) : matchesExtension(file.filename, key)
 }

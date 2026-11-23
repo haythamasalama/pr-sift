@@ -3,6 +3,21 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## Unreleased
+
+### Added
+
+- Tree: Right-click a folder, or use the hide button that shows on hover, to always hide it. It shows as a crossed-out
+  chip in the filter bar, and a click brings it back.
+- Filters: Right-click a saved filter to hide its files. Its button is crossed out until you click it again.
+- Review: A Merge without AI button next to GitHub's merge button merges straight from the pull request page, with
+  the AI co-authors left out of the commit message.
+
+### Fixed
+
+- Filters: Changes to hidden paths and saved filters apply to the open review right away.
+- Filters: Typing in a saved filter no longer loses focus when the settings are saved.
+
 ## 1.3.0 - 2026-11-18
 
 ### Added

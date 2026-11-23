@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { DEFAULTS, getSettings, saveSetting } from '../../src/lib/settings'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../src/lib/settings'
 import { installChrome } from '../helpers/chrome'
 
 describe('settings storage', () => {
@@ -25,6 +25,16 @@ describe('settings storage', () => {
     delete (chrome.chrome.runtime as { id?: string }).id
     await expect(saveSetting('sidebarWidth', 300)).resolves.toBeUndefined()
     expect(await getSettings()).toEqual(DEFAULTS)
+  })
+
+  it('tells listeners in the same page about a write without waiting for the storage event', async () => {
+    const heard = vi.fn()
+    const stop = onSettingsChange(heard)
+    await saveSetting('hide', ['lang/**'])
+    expect(heard).toHaveBeenLastCalledWith(expect.objectContaining({ hide: ['lang/**'], reviewMode: DEFAULTS.reviewMode }))
+    stop()
+    await saveSetting('hide', [])
+    expect(heard).toHaveBeenCalledTimes(1)
   })
 
   it('keeps both values when two settings are saved at the same time', async () => {

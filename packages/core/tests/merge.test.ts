@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_REMOVED_CO_AUTHORS,
+  chooseMergeMethod,
+  coAuthorChoices,
   coAuthorsOf,
+  defaultMergeMessage,
+  mergeCommitMessage,
   defaultSquashBody,
   defaultSquashTitle,
   isRemovedCoAuthor,
@@ -135,5 +139,45 @@ describe('mergeReadiness', () => {
     expect(mergeReadiness('dirty')).toBe('conflicts')
     expect(mergeReadiness('blocked')).toBe('blocked')
     expect(mergeReadiness(undefined)).toBe('unknown')
+  })
+})
+
+describe('chooseMergeMethod', () => {
+  it('uses the wanted method when the repository allows it, else the first allowed one', () => {
+    expect(chooseMergeMethod('squash', { squash: true, merge: true, rebase: true })).toBe('squash')
+    expect(chooseMergeMethod('squash', { squash: false, merge: false, rebase: true })).toBe('rebase')
+    expect(chooseMergeMethod('rebase', { squash: false, merge: false, rebase: false })).toBe('merge')
+  })
+})
+
+describe('defaultMergeMessage', () => {
+  const source = { title: 'Ship invoices', body: '', headLabel: 'haytham/feat/x', commits: [commit('feat: a'), commit('fix: b')] }
+
+  it('fills a squash, a merge commit and leaves a rebase empty', () => {
+    expect(defaultMergeMessage('squash', 7, source)).toEqual({ title: 'Ship invoices (#7)', body: '* feat: a\n\n* fix: b' })
+    expect(defaultMergeMessage('merge', 7, source)).toEqual({ title: 'Merge pull request #7 from haytham/feat/x', body: 'Ship invoices' })
+    expect(defaultMergeMessage('rebase', 7, source)).toEqual({ title: '', body: '' })
+  })
+})
+
+describe('coAuthorChoices and mergeCommitMessage', () => {
+  const commits = [
+    commit('feat: a\n\nCo-Authored-By: Claude <noreply@anthropic.com>'),
+    commit('fix: b', { name: 'Sam', email: 'sam@x.dev' }),
+  ]
+
+  it('unchecks AI co-authors and keeps the rest in a squash message', () => {
+    const choices = coAuthorChoices(commits, 'haytham', { leaveOut: true, removed: DEFAULT_REMOVED_CO_AUTHORS, kept: [] })
+    expect(choices.map((c) => [c.person.email, c.keep])).toEqual([
+      ['noreply@anthropic.com', false],
+      ['sam@x.dev', true],
+    ])
+    expect(mergeCommitMessage('squash', 'Body', choices)).toBe('Body\n\nCo-authored-by: Sam <sam@x.dev>')
+    expect(mergeCommitMessage('merge', ' Body ', choices)).toBe('Body')
+  })
+
+  it('keeps everyone when leaving out co-authors is off', () => {
+    const choices = coAuthorChoices(commits, 'haytham', { leaveOut: false, removed: DEFAULT_REMOVED_CO_AUTHORS, kept: [] })
+    expect(choices.every((c) => c.keep)).toBe(true)
   })
 })

@@ -31,6 +31,7 @@ const emit = defineEmits<{
   selectFile: [name: string]
   toggleViewed: [path: string, value: boolean]
   toggleFile: [file: PrFile, value: boolean]
+  hideFolder: [path: string]
 }>()
 
 const expand = shallowRef<ExpandCommand>({ open: true, n: 0 })
@@ -95,6 +96,7 @@ const rootState = computed(() => {
       @select-file="emit('selectFile', $event)"
       @toggle-viewed="(path, value) => emit('toggleViewed', path, value)"
       @toggle-file="(file, value) => emit('toggleFile', file, value)"
+      @hide-folder="emit('hideFolder', $event)"
     />
     <TreeFile
       v-for="f in tree.files"

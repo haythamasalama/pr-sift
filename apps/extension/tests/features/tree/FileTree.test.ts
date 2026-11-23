@@ -105,4 +105,17 @@ describe('FileTree', () => {
     const row = core.element.parentElement!
     expect(row.querySelector('[role=checkbox]')!.getAttribute('aria-checked')).toBe('true')
   })
+
+  it('asks to hide a folder on right-click', async () => {
+    const wrapper = mountTree()
+    const order = wrapper.findAll('button').find((b) => b.text().startsWith('Order'))!
+    await order.trigger('contextmenu')
+    expect(wrapper.emitted('hideFolder')).toEqual([['src/Domain/Order']])
+  })
+
+  it('hides a folder from its hide button too', async () => {
+    const wrapper = mountTree()
+    await wrapper.find('[aria-label="Hide folder"]').trigger('click')
+    expect(wrapper.emitted('hideFolder')).toEqual([['src']])
+  })
 })

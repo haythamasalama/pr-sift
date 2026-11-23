@@ -174,3 +174,59 @@ export function withCoAuthors(body: string, people: Person[]): string {
   const trailers = unique(people).map((p) => `Co-authored-by: ${formatPerson(p)}`)
   return [body.trim(), trailers.join('\n')].filter(Boolean).join('\n\n')
 }
+
+export const MERGE_METHODS: MergeMethod[] = ['squash', 'merge', 'rebase']
+
+export const MERGE_ACTIONS: Record<MergeMethod, string> = {
+  squash: 'Squash and merge',
+  merge: 'Merge pull request',
+  rebase: 'Rebase and merge',
+}
+
+export const chooseMergeMethod = (wanted: MergeMethod, allowed: Record<MergeMethod, boolean>): MergeMethod =>
+  allowed[wanted] ? wanted : (MERGE_METHODS.find((m) => allowed[m]) ?? 'merge')
+
+export interface MergeSource {
+  title: string
+  body: string
+  headLabel: string
+  commits: CommitSummary[]
+  squashTitle?: SquashTitleMode
+  squashMessage?: SquashMessageMode
+}
+
+// A rebase keeps every commit as it is, so it has no message of its own.
+export function defaultMergeMessage(method: MergeMethod, number: number, source: MergeSource): { title: string; body: string } {
+  if (method === 'squash')
+    return {
+      title: defaultSquashTitle(source.title, number, source.commits, source.squashTitle),
+      body: defaultSquashBody(source.commits, source.body, source.squashMessage),
+    }
+  if (method === 'merge') return { title: `Merge pull request #${number} from ${source.headLabel}`, body: source.title }
+  return { title: '', body: '' }
+}
+
+export interface CoAuthorRules {
+  leaveOut: boolean
+  removed: string[]
+  kept: string[]
+}
+
+export interface CoAuthorChoice {
+  person: Person
+  keep: boolean
+}
+
+export const coAuthorChoices = (commits: CommitSummary[], prAuthor: string | undefined, rules: CoAuthorRules): CoAuthorChoice[] =>
+  coAuthorsOf(commits, prAuthor).map((person) => ({
+    person,
+    keep: !rules.leaveOut || keepsCoAuthor(person, rules.removed, rules.kept),
+  }))
+
+export const mergeCommitMessage = (method: MergeMethod, body: string, choices: CoAuthorChoice[]): string =>
+  method === 'squash'
+    ? withCoAuthors(
+        body,
+        choices.filter((c) => c.keep).map((c) => c.person),
+      )
+    : body.trim()

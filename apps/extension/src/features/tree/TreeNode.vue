@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, provide, shallowRef, watch } from 'vue'
-import { Check, ChevronRight, ChevronsDownUp, ChevronsUpDown, Folder, Minus } from '@lucide/vue'
+import { Check, ChevronRight, ChevronsDownUp, ChevronsUpDown, EyeOff, Folder, Minus } from '@lucide/vue'
 import { Checkbox } from '@/components/ui/checkbox'
 import { treeExpandKey, treeLayoutKey, useExpandCommand, type ExpandCommand } from './expandContext'
 import { collectFiles } from '@pr-sift/core'
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   selectFile: [name: string]
   toggleViewed: [path: string, value: boolean]
   toggleFile: [file: PrFile, value: boolean]
+  hideFolder: [path: string]
 }>()
 
 const expand = useExpandCommand(treeExpandKey)
@@ -60,6 +61,7 @@ function jump() {
     <div
       class="group flex cursor-pointer items-center gap-1 rounded px-1 py-[3px] hover:bg-border/40"
       :class="selected === node.path ? 'bg-primary/15 text-primary' : ''"
+      @contextmenu.prevent="emit('hideFolder', node.path)"
     >
       <button
         type="button"
@@ -106,6 +108,15 @@ function jump() {
         >
           <ChevronsDownUp :size="13" />
         </button>
+        <button
+          type="button"
+          class="flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+          title="Always hide this folder. Right-click the folder does the same"
+          aria-label="Hide folder"
+          @click="emit('hideFolder', node.path)"
+        >
+          <EyeOff :size="13" />
+        </button>
       </span>
     </div>
 
@@ -126,6 +137,7 @@ function jump() {
         @select-file="emit('selectFile', $event)"
         @toggle-viewed="(path, value) => emit('toggleViewed', path, value)"
         @toggle-file="(file, value) => emit('toggleFile', file, value)"
+        @hide-folder="emit('hideFolder', $event)"
       />
       <TreeFile
         v-for="f in node.files"

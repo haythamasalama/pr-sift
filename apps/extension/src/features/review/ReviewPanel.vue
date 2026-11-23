@@ -16,7 +16,7 @@ import { usePullRequest } from './usePullRequest'
 import { useResizable } from './useResizable'
 import { useUpdateWatcher } from './useUpdateWatcher'
 import { useViewed } from './useViewed'
-import { buildTree, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
+import { buildTree, folderChip, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
 import { fetchConversation, type Conversation, type Thread } from './conversation'
@@ -240,6 +240,12 @@ function selectFolder(path: string) {
   filter.setScopes(path ? ['path:' + path] : [])
 }
 
+function hideFolder(path: string) {
+  const selected = filter.selectedFolder.value
+  if (selected === path || selected.startsWith(path + '/')) filter.setScopes([])
+  return filter.toggleChip(folderChip(path), true)
+}
+
 function toggleFolder(path: string, value: boolean) {
   const inside = filter.pool.value.filter((f) => !path || f.filename.startsWith(path + '/'))
   return setMany(inside, value)
@@ -315,6 +321,7 @@ watch(
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :presets="settings.presets"
       :active-preset="filter.activePreset.value?.name ?? ''"
+      :hidden-presets="filter.hiddenPresets.value"
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
       :in-view="filter.inScope.value.length"
@@ -323,6 +330,7 @@ watch(
       :split-disabled="narrow"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
       @select-preset="filter.togglePreset"
+      @hide-preset="filter.hidePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
@@ -482,6 +490,7 @@ watch(
               "
               @toggle-viewed="toggleFolder"
               @toggle-file="setViewed"
+              @hide-folder="hideFolder"
             />
           </TabsContent>
           <TabsContent value="smart" class="min-h-0 flex-1">

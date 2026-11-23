@@ -1,5 +1,5 @@
 import { computed, shallowRef, type Ref } from 'vue'
-import { NOTES_CHIP, buildSmartScopes, extensionsOf, matcher, matchesChip, matchesScope } from '@pr-sift/core'
+import { FOLDER_CHIP, NOTES_CHIP, PRESET_CHIP, buildSmartScopes, extensionsOf, matcher, matchesChip, matchesScope } from '@pr-sift/core'
 import { saveSetting } from '../../lib/settings'
 import type { ExtChip, PrFile, Settings } from '../../lib/types'
 
@@ -31,6 +31,8 @@ export function useFileFilter(
   const stateOf = (key: string): ExtChip['state'] =>
     shownOnly.value.includes(key) ? 'include' : alwaysHidden.value.includes(key) ? 'exclude' : undefined
 
+  const hiddenPresets = computed(() => alwaysHidden.value.filter((k) => k.startsWith(PRESET_CHIP)).map((k) => k.slice(PRESET_CHIP.length)))
+
   const chips = computed<ExtChip[]>(() => {
     const custom = settings.value.customExtensions
     const counts = new Map<string, number>()
@@ -38,7 +40,7 @@ export function useFileFilter(
       for (const ext of extensionsOf(f.filename, custom)) counts.set(ext, (counts.get(ext) ?? 0) + 1)
     }
     const active = [...shownOnly.value, ...alwaysHidden.value]
-    for (const c of [...custom, ...active.filter((k) => !k.startsWith('status:') && k !== NOTES_CHIP)]) if (!counts.has(c)) counts.set(c, 0)
+    for (const c of [...custom, ...active.filter((k) => !k.includes(':'))]) if (!counts.has(c)) counts.set(c, 0)
     const extChips = [...counts]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([ext, count]) => ({ ext, label: ext, count, state: stateOf(ext), custom: custom.includes(ext) }))
@@ -51,6 +53,13 @@ export function useFileFilter(
         custom: false,
       }))
       .filter((c) => c.count > 0 || c.state)
+    const folderChips = [...new Set(active.filter((k) => k.startsWith(FOLDER_CHIP)))].map((key) => ({
+      ext: key,
+      label: key.slice(FOLDER_CHIP.length),
+      count: presetFiles.value.filter((f) => matchesChip(f, key)).length,
+      state: stateOf(key),
+      custom: false,
+    }))
     const notesChip = {
       ext: NOTES_CHIP,
       label: 'with notes',
@@ -58,7 +67,7 @@ export function useFileFilter(
       state: stateOf(NOTES_CHIP),
       custom: false,
     }
-    return [...extChips, ...statusChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
+    return [...extChips, ...statusChips, ...folderChips, ...(notesChip.count > 0 || notesChip.state ? [notesChip] : [])]
   })
 
   const shownGroups = computed(() => {
@@ -70,9 +79,15 @@ export function useFileFilter(
     return [...groups.values()]
   })
 
+  const inHiddenPreset = computed(() => {
+    const patterns = settings.value.presets.filter((p) => hiddenPresets.value.includes(p.name)).flatMap((p) => p.include)
+    return patterns.length ? matcher(patterns) : () => false
+  })
+
   const byChip = computed(() =>
     presetFiles.value.filter((f) => {
-      if (alwaysHidden.value.some((k) => matchesChip(f, k, openNotes.value))) return false
+      if (inHiddenPreset.value(f.filename)) return false
+      if (alwaysHidden.value.some((k) => !k.startsWith(PRESET_CHIP) && matchesChip(f, k, openNotes.value))) return false
       return shownGroups.value.every((keys) => keys.some((k) => matchesChip(f, k, openNotes.value)))
     }),
   )
@@ -146,7 +161,15 @@ export function useFileFilter(
   }
 
   const setScopes = (keys: string[]) => (scopes.value = keys)
-  const togglePreset = (name: string) => (presetName.value = presetName.value === name ? '' : name)
+  function togglePreset(name: string) {
+    if (hiddenPresets.value.includes(name)) return toggleChip(PRESET_CHIP + name, true)
+    presetName.value = presetName.value === name ? '' : name
+  }
+
+  function hidePreset(name: string) {
+    if (presetName.value === name) presetName.value = ''
+    return toggleChip(PRESET_CHIP + name, true)
+  }
 
   return {
     activePreset,
@@ -170,5 +193,7 @@ export function useFileFilter(
     toggleScope,
     setScopes,
     togglePreset,
+    hiddenPresets,
+    hidePreset,
   }
 }
