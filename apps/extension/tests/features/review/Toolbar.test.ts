@@ -61,3 +61,16 @@ describe('Toolbar settings menu', () => {
     expect(sent).toContainEqual({ type: 'apply-update' })
   })
 })
+
+describe('Toolbar saved filters', () => {
+  it('asks to hide a saved filter on right-click', async () => {
+    installChrome()
+    const wrapper = mount(Toolbar, {
+      props: { ...props, presets: [{ name: 'Tests', include: ['tests/**'] }] },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(document.createElement('div')) } },
+    })
+    const button = wrapper.findAll('button').find((b) => b.text() === 'Tests')!
+    await button.trigger('contextmenu')
+    expect(wrapper.emitted('hidePreset')).toEqual([['Tests']])
+  })
+})
