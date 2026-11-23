@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateR
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import BrandMark from '../components/BrandMark.vue'
+import BrandPulse from '../components/BrandPulse.vue'
 import { useGithubRefreshSignal } from '../features/review/useGithubRefreshSignal'
 import { useAppearance } from '../features/appearance/useAppearance'
 import { useGithubDark } from '../features/appearance/useGithubDark'
@@ -91,13 +92,10 @@ onBeforeUnmount(() => {
         :title="dead ? undefined : updateNote || undefined"
         @click="dead ? reload() : (open = true)"
       >
-        <span class="relative flex size-6 items-center justify-center">
-          <span class="absolute inset-0 rounded-md bg-primary/40 motion-safe:animate-soft-ping" />
-          <span class="relative flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <RefreshCw v-if="dead" />
-            <BrandMark v-else class="size-3.5" />
-          </span>
-        </span>
+        <BrandPulse class="size-6">
+          <RefreshCw v-if="dead" />
+          <BrandMark v-else class="size-3.5" />
+        </BrandPulse>
         {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
         <Badge v-if="externalUpdate && !dead" variant="outline" class="border-attention/50 bg-attention/15 text-attention"> Updated </Badge>
         <span

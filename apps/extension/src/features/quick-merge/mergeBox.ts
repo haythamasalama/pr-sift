@@ -19,6 +19,23 @@ function groupOf(button: HTMLButtonElement): Element {
   return button
 }
 
+const isRow = (el: Element) => {
+  const style = getComputedStyle(el)
+  return style.display.includes('flex') && !style.flexDirection.startsWith('column')
+}
+
+// GitHub keeps the button group in its own block next to the command line hint. Going up to the nearest flex row puts
+// PR Sift's button on the same line instead of under GitHub's.
+function rowItemOf(group: Element): Element {
+  let el = group
+  for (let depth = 0; depth < 3 && el.parentElement; depth++) {
+    if (isRow(el.parentElement)) return el
+    if (el.parentElement.querySelectorAll('button').length > 3) break
+    el = el.parentElement
+  }
+  return group
+}
+
 export function findMergeButton(root: ParentNode = document): MergeBoxButton | null {
   for (const button of root.querySelectorAll('button')) {
     if (!LABEL.test((button.textContent ?? '').trim())) continue
@@ -26,7 +43,7 @@ export function findMergeButton(root: ParentNode = document): MergeBoxButton | n
     if (!button.getClientRects().length) continue
     return {
       button,
-      anchor: groupOf(button),
+      anchor: rowItemOf(groupOf(button)),
       disabled: button.disabled || button.getAttribute('aria-disabled') === 'true',
     }
   }

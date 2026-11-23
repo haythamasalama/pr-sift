@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Spinner } from '@/components/ui/spinner'
 import BrandMark from '../../components/BrandMark.vue'
+import BrandPulse from '../../components/BrandPulse.vue'
 import { contentStylesKey } from '../../lib/shadow'
 import type { PrRef } from '../../lib/types'
 import { watchToken } from '../review/github'
@@ -62,11 +63,17 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport :to="target">
-    <div v-if="visible && plan" class="ps-root" :class="{ dark }">
+    <div v-if="visible && plan" class="ps-root flex items-center" :class="{ dark }">
       <Popover v-model:open="open">
         <PopoverTrigger as-child>
-          <Button variant="outline" title="Merge with PR Sift, leaving out the co-authors on your list">
-            <BrandMark class="size-3.5" />
+          <Button
+            variant="outline"
+            class="h-8 gap-2 rounded-md bg-popover pr-3 pl-1.5 align-middle text-popover-foreground shadow-xs hover:border-muted-foreground/40 hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"
+            title="Merge with PR Sift, leaving out the co-authors on your list"
+          >
+            <BrandPulse class="size-5">
+              <BrandMark class="size-3" />
+            </BrandPulse>
             {{ label }}
           </Button>
         </PopoverTrigger>

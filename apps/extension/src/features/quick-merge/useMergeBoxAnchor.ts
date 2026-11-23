@@ -7,7 +7,8 @@ import { findMergeButton } from './mergeBox'
 export function useMergeBoxAnchor(css: string) {
   const { host, target } = createShadowHost('span', css)
   host.dataset.prSift = 'quick-merge'
-  host.style.cssText = 'display:inline-flex;vertical-align:middle;margin-inline-start:8px'
+  host.style.cssText =
+    'display:inline-flex;align-items:center;align-self:center;flex-shrink:0;vertical-align:middle;margin-inline-start:8px'
 
   const found = shallowRef(false)
   const enabled = shallowRef(false)
