@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef, type Ref } from 'vue'
 import { Plus, Trash2 } from '@lucide/vue'
 import { cleanSavedFilters, matcher, missingExamples, splitLines, type SavedFilter } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
@@ -41,15 +41,19 @@ const toFilter = (draft: FilterDraft): SavedFilter => ({
 
 const { isNew, markSeen } = useNewMarks()
 
+let current: Ref<FilterDraft[]> | undefined
+
+// Rows keep their keys when a stored value replaces the draft, so the field being typed in is not rebuilt and keeps focus.
 const { draft, schedule, flush, save } = useDraft({
   source: () => model.value,
   commit: (value) => {
     model.value = value
     void markSeen('saved-filters')
   },
-  toDraft: (filters) => filters.map(toDraft),
+  toDraft: (filters) => filters.map((filter, i) => ({ ...toDraft(filter), key: current?.value[i]?.key ?? nextKey++ })),
   fromDraft: (drafts) => cleanSavedFilters(drafts.map(toFilter)),
 })
+current = draft
 
 const examples = computed(() => missingExamples(draft.value))
 const root = useTemplateRef<InstanceType<typeof SettingsGroup>>('root')

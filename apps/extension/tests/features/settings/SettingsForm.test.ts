@@ -253,6 +253,17 @@ describe('SettingsForm saved filters', () => {
     expect(saved().presets).toEqual([{ name: 'Server', include: ['api/**'], includeHidden: true }])
   })
 
+  it('keeps focus in the paths box when another stored value arrives while typing', async () => {
+    const wrapper = await mountForm({ settings: { presets: [{ name: 'Lang', include: ['lang/**'] }] } }, { section: 'filters' })
+    const box = rows(wrapper)[0]!.find('textarea').element as HTMLTextAreaElement
+    box.focus()
+    const listeners = vi.mocked(chrome.storage.onChanged.addListener).mock.calls.map(([listener]) => listener)
+    for (const listener of listeners) listener({ settings: { newValue: { presets: [{ name: 'Lang', include: ['old/**'] }] } } }, 'local')
+    await flushPromises()
+    expect(rows(wrapper)[0]!.find('textarea').element).toBe(box)
+    expect(document.activeElement).toBe(box)
+  })
+
   it('deletes a filter', async () => {
     const wrapper = await mountForm({
       settings: {
