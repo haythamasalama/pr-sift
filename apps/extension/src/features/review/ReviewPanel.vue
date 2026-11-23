@@ -329,6 +329,7 @@ watch(
       :split-disabled="narrow"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
       @select-preset="filter.togglePreset"
+      @hide-preset="filter.hidePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >

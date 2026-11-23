@@ -33,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { FOLDER_CHIP, NOTES_CHIP } from '@pr-sift/core'
+import { FOLDER_CHIP, NOTES_CHIP, PRESET_CHIP } from '@pr-sift/core'
 import type { ExtChip, PrFile } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
@@ -111,7 +111,7 @@ function clearAll(e: Event) {
 
 const chipVariant = (chip: ExtChip) => (chip.state === 'include' ? 'default' : chip.state === 'exclude' ? 'outline' : 'secondary')
 const chipTitle = (chip: ExtChip) => {
-  const kind = chip.ext.startsWith(FOLDER_CHIP) ? 'folder' : 'type'
+  const kind = chip.ext.startsWith(FOLDER_CHIP) ? 'folder' : chip.ext.startsWith(PRESET_CHIP) ? 'saved filter' : 'type'
   return chip.state === 'include'
     ? `Showing only this ${kind}. Click to undo`
     : chip.state === 'exclude'
@@ -188,6 +188,7 @@ const chipClass = (chip: ExtChip) => [
         >
           <MessageSquareText v-if="c.ext === NOTES_CHIP" class="size-3 text-attention" />
           <Folder v-else-if="c.ext.startsWith(FOLDER_CHIP)" class="size-3.5 text-muted-foreground" />
+          <Bookmark v-else-if="c.ext.startsWith(PRESET_CHIP)" class="size-3.5 text-muted-foreground" />
           <FileStatusIcon v-else :status="c.ext.slice(7)" decorative class="size-3.5" />
           {{ c.label }} <span class="tabular-nums opacity-60">{{ c.count }}</span>
         </Button>

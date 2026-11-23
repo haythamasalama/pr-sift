@@ -44,6 +44,7 @@ export function matchesExtension(filename: string, ext: string): boolean {
 
 export const NOTES_CHIP = 'has:notes'
 export const FOLDER_CHIP = 'folder:'
+export const PRESET_CHIP = 'preset:'
 
 export const folderChip = (path: string) => FOLDER_CHIP + path
 

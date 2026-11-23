@@ -110,6 +110,25 @@ describe('useFileFilter', () => {
     expect(filter.inScope.value).toHaveLength(3)
   })
 
+  it('hides the files of a saved filter and brings them back on a click', async () => {
+    const { filter } = setup([file('src/a.php'), file('tests/aTest.php'), file('docs/readme.md')], {
+      presets: [{ name: 'Tests', include: ['tests/**'] }],
+    })
+    filter.togglePreset('Tests')
+    await filter.hidePreset('Tests')
+    expect(filter.activePreset.value).toBeUndefined()
+    expect(filter.hiddenPresets.value).toEqual(['Tests'])
+    expect(names(filter.inScope.value)).toEqual(['src/a.php', 'docs/readme.md'])
+    expect(filter.chips.value.find((c) => c.ext === 'preset:Tests')).toMatchObject({ label: 'Tests', count: 1, state: 'exclude' })
+    await filter.toggleChip('preset:Tests')
+    expect(filter.inScope.value).toHaveLength(3)
+    await filter.hidePreset('Tests')
+    await filter.togglePreset('Tests')
+    expect(filter.hiddenPresets.value).toEqual([])
+    expect(filter.activePreset.value).toBeUndefined()
+    expect(filter.inScope.value).toHaveLength(3)
+  })
+
   it('clicking a hidden type brings it back', async () => {
     const { filter } = setup(files)
     await filter.toggleChip('.md', true)
