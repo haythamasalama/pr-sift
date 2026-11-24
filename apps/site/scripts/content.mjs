@@ -54,7 +54,7 @@ export const home = {
     removed: 'Co-authored-by: Claude <noreply@anthropic.com>',
     added: 'Your name on your commit.',
     title: 'Merge without AI co-authors',
-    lead: 'Approve and squash and merge from the review. Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked, so they stay out of your history unless you keep them.',
+    lead: 'Approve and squash and merge from the review, or press Merge without AI right next to GitHub’s merge button. Claude, ChatGPT, Gemini, Copilot and other AI tools start unchecked, so they stay out of your history unless you keep them.',
     points: [
       ['user-round-x', 'AI co-authors', 'start unchecked. Real people stay checked.'],
       ['bookmark-check', 'Your choice', 'is remembered for the next merge.'],
@@ -103,8 +103,8 @@ export const home = {
     {
       id: 'folders',
       icon: 'folder-tree',
-      title: 'Open and close whole folders',
-      text: 'One folder, its subfolders, or the whole tree. Search opens the tree to the match.',
+      title: 'Open, close or hide whole folders',
+      text: 'One folder, its subfolders, or the whole tree. Right-click a folder to hide it. Search opens the tree to the match.',
     },
     {
       id: 'smart',
@@ -215,6 +215,11 @@ export const guides = [
         'Press Squash and merge in PR Sift. The commit message and the co-authors open in a side sheet.',
       ],
       [
+        'mouse-pointer-click',
+        'Or from GitHub’s page',
+        'Without opening the review, press Merge without AI next to GitHub’s merge button. It shows the message and who is left out before it merges.',
+      ],
+      [
         'user-round-x',
         'AI tools start unchecked',
         'Claude, ChatGPT, Gemini, Copilot, Cursor and more start unchecked. The people who wrote commits stay checked.',
@@ -293,6 +298,11 @@ export const guides = [
         'Shift-click or right-click a chip such as .lock. It stays hidden on every pull request.',
       ],
       ['settings', 'Hide by path', 'In the options, add patterns such as **/*.lock or **/generated/**.'],
+      [
+        'eye-off',
+        'Hide a folder or a saved filter',
+        'Right-click a folder in the tree, or a saved filter such as Tests, to hide its files. Click it again to bring them back.',
+      ],
       ['eye', 'Peek when needed', 'Tick Hidden in the toolbar to see them without changing your rules.'],
     ],
   },
