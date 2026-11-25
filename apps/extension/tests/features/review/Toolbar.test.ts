@@ -59,3 +59,17 @@ describe('Toolbar settings menu', () => {
     expect(sent).toContainEqual({ type: 'apply-update' })
   })
 })
+
+describe('Toolbar while loading', () => {
+  it('shows placeholders instead of the title and the progress', () => {
+    installChrome()
+    const wrapper = mount(Toolbar, {
+      props: { ...props, loading: true },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(null) } },
+    })
+    expect(wrapper.find('h1').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('0/3')
+    expect(wrapper.findAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(2)
+    expect(wrapper.find('[aria-label="Close"]').exists()).toBe(true)
+  })
+})
