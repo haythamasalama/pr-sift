@@ -303,7 +303,7 @@ export const guides = [
         'Hide a folder or a saved filter',
         'Right-click a folder in the tree, or a saved filter such as Tests, to hide its files. Click it again to bring them back.',
       ],
-      ['eye', 'Peek when needed', 'Tick Hidden in the toolbar to see them without changing your rules.'],
+      ['eye', 'Peek when needed', 'Click the hidden count in the filter bar to see them without changing your rules.'],
     ],
   },
   {

@@ -264,7 +264,7 @@ const chipClass = (chip: ExtChip) => [
               variant="outline"
               size="xs"
               class="ml-1.5 h-[22px] rounded-md px-2.5 text-[11px]"
-              title="Save these types and folders as a filter in the top bar"
+              title="Save these types and folders as a filter beside the file types"
             >
               <Bookmark /> Save view
             </Button>
