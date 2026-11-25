@@ -1,6 +1,6 @@
 # PR Sift: notes for contributors and coding agents
 
-PR Sift is a Chrome extension that helps review large GitHub pull requests. Read `docs/ARCHITECTURE.md` first, and
+PR Sift is a Chrome extension that helps review large GitHub pull requests, with a desktop app in `apps/desktop`. Read `docs/ARCHITECTURE.md` first, and
 `BRAND.md` before any visual or copy change.
 
 ## Commands
@@ -15,6 +15,8 @@ pnpm build      # builds apps/extension/dist; load apps/extension as an unpacked
 
 - Pure logic goes in `packages/core` and must not import Vue, `chrome` or the DOM.
 - Feature code goes in `apps/extension/src/features/<feature>` with tests in `apps/extension/tests/features/<feature>`.
+- Desktop code: main process in `apps/desktop/src/main`, UI in `apps/desktop/src/renderer`. Every new IPC channel goes in
+  `apps/desktop/src/shared/ipc.ts`. The extension never imports from the desktop app.
 - Use shadcn-vue components and semantic color tokens. No raw colors, no `space-y-*`.
 - Comments only for a non-obvious reason. No comments that restate the code.
 - Commits follow Conventional Commits (`.claude/skills/commit`). Short subjects, no AI attribution lines.

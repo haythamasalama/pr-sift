@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["chrome", "node", "vite/client"],
+    "paths": {
+      "@/*": ["../extension/src/*"],
+      "~/*": ["./src/renderer/*"],
+      "#shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "electron.vite.config.ts", "vitest.config.ts"]
+}

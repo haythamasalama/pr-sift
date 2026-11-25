@@ -8,3 +8,5 @@ apps/extension/src/content/shadcn.css
 apps/site/public
 media
 apps/site/pages
+apps/desktop/out
+apps/desktop/release

@@ -1,17 +1,19 @@
 # Architecture
 
-PR Sift is a pnpm workspace with one app and one package.
+PR Sift is a pnpm workspace with two apps and one package.
 
 ```
 packages/core        pure TypeScript, no DOM, no chrome.*, no Vue
 apps/extension       the Chrome extension (Vue 3, Vite, Tailwind 4, shadcn-vue)
+apps/desktop         the desktop app (Electron), reusing the extension's UI through a chrome shim
 apps/site            the static website (English and Arabic), deployed to GitHub Pages
 tools/capture        Playwright script that records every screenshot and video from a demo pull request
 ```
 
 ## Dependency rule
 
-`apps/extension` depends on `packages/core`. `packages/core` depends on nothing in the repository. Browser APIs are
+`apps/extension` depends on `packages/core`. `apps/desktop` imports extension UI through its `@` alias; the extension
+never imports from the desktop app. `packages/core` depends on nothing in the repository. Browser APIs are
 only touched in `apps/extension/src/lib/extension.ts` (storage), `apps/extension/src/lib/updates.ts` (version and
 updates) and `apps/extension/src/background` (network), so everything else can be tested without a browser.
 
@@ -62,3 +64,13 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 GitHub's CSS must not leak into the interface and ours must not leak out. Tailwind's `@property` rules are registered
 on the document. Overlays teleport into a dedicated container inside the shadow root (`portalTargetKey`), never into
 the element Vue patches.
+
+## apps/desktop
+
+- `src/main` owns the token, the network, git and the disk. `src/renderer` only draws, and reaches the main process
+  through `window.prSift` (`src/preload`), whose channels are listed in `src/shared/ipc.ts`.
+- `src/renderer/shim/chrome.ts` gives extension code `chrome.storage.local` and `chrome.runtime.sendMessage`, backed by
+  the main process. Reads of the `token` key return a placeholder, so the token never reaches the window.
+- Worktrees are found with `git worktree list --porcelain`. Removing one copies git's admin folder aside, moves the
+  folder to the Trash and runs `git worktree prune`; Undo restores the admin folder and runs `git worktree repair`.
+- Leftovers are folders and files git does not track (`git check-ignore`), matched by name and a file beside them.

@@ -18,7 +18,9 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "capture": "pnpm build && pnpm --filter @pr-sift/capture capture",
     "release:version": "node scripts/set-version.mjs",
-    "release:notes": "node scripts/release-notes.mjs"
+    "release:notes": "node scripts/release-notes.mjs",
+    "desktop:dev": "pnpm --filter @pr-sift/desktop dev",
+    "desktop:dist": "pnpm --filter @pr-sift/desktop dist"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -41,6 +43,8 @@
       "editorconfig>minimatch": "^11.0.6"
     },
     "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
       "ffmpeg-static"
     ]
   }
