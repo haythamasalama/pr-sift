@@ -766,7 +766,7 @@ await launcherShot()
 
 await shot(browser, 'review', async (page) => {
   await openReview(page)
-  await page.getByRole('button', { name: 'Collapse folder tree' }).first().waitFor({ state: 'attached' })
+  await page.locator('[aria-label="Collapse folder tree"]').first().waitFor({ state: 'attached' })
   await folderViewed(page, 'lang').click()
 })
 

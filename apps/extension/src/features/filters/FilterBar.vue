@@ -330,9 +330,8 @@ const chipClass = (chip: ExtChip) => [
         </Button>
         <Toggle
           v-model="reviewMode"
-          variant="outline"
           size="sm"
-          class="h-6 min-w-0 gap-1.5 rounded-sm bg-background px-2 text-xs font-normal data-[state=off]:text-foreground dark:bg-input/30 [&_svg]:size-[13px]"
+          class="h-6 min-w-0 gap-1.5 rounded-sm bg-muted px-2 text-xs font-normal text-foreground hover:bg-accent hover:text-foreground data-[state=on]:bg-accent data-[state=on]:[&_svg]:text-success-fg [&_svg]:size-[13px]"
           title="Files disappear from the list and the tree as soon as you mark them viewed"
         >
           <CheckCheck /> Hide viewed
