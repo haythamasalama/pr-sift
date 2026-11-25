@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
+import { ArrowLeft, CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -29,6 +29,8 @@ defineProps<{
   noteCount: number
   compact: boolean
   loading?: boolean
+  /** In the desktop app the panel is a page, so it leaves with a Back arrow on the left instead of a close button. */
+  back?: boolean
 }>()
 
 const { theme, setTheme } = useAppearance()
@@ -51,12 +53,23 @@ const openSettings = useSettingsOpener()
     >
       <PanelLeft />
     </Button>
+    <Button
+      v-if="back"
+      variant="ghost"
+      size="icon-sm"
+      class="order-1 shrink-0 text-muted-foreground xl:order-none"
+      aria-label="Back"
+      @click="emit('close')"
+      ><ArrowLeft
+    /></Button>
     <div class="order-1 flex min-w-0 flex-1 flex-col xl:order-none xl:flex-initial">
       <div v-if="loading" class="flex h-5 items-center"><Skeleton class="h-3 w-[min(30rem,60vw)]" /></div>
       <h1 v-else class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
-    <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button v-if="!back" variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"
+      ><X
+    /></Button>
     <div class="order-2 basis-full xl:hidden" />
 
     <Skeleton v-if="loading" class="order-3 h-4 w-11 xl:order-none" />
@@ -125,6 +138,8 @@ const openSettings = useSettingsOpener()
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <Button variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"><X /></Button>
+    <Button v-if="!back" variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"
+      ><X
+    /></Button>
   </header>
 </template>

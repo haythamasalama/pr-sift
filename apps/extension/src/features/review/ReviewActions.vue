@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
 import { ChevronDown, GitMerge } from '@lucide/vue'
-import type { MergeMethod, ReviewEvent, ReviewVerdict } from '@pr-sift/core'
+import { approveBlockReason, mergeBlockReason, type MergeMethod, type ReviewEvent, type ReviewVerdict } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -38,15 +38,17 @@ const verdict = shallowRef<ReviewVerdict | null | undefined>(undefined)
 const open = computed(() => info?.state !== 'merged' && info?.state !== 'closed')
 const isAuthor = computed(() => !!conversation?.viewer && !!info?.author && conversation.viewer.toLowerCase() === info.author.toLowerCase())
 const mine = computed(() => (verdict.value === undefined ? (conversation?.reviews.mine ?? null) : verdict.value))
-const showReview = computed(() => !isAuthor.value)
-const mergeIsPrimary = computed(() => !showReview.value || mine.value === 'approved')
+const approveHold = computed(() => approveBlockReason({ isAuthor: isAuthor.value, draft: conversation?.readiness === 'draft' }))
+const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
 const readiness = computed(() =>
   conversation?.readiness === 'checks' ? { tone: 'bg-attention', text: 'Some checks are failing or still running' } : null,
 )
-// Merge shows only when GitHub would take it now: you can push, and nothing such as a missing approval holds it back.
-const canMerge = computed(() => !!conversation?.canMerge && (conversation.readiness === 'ready' || conversation.readiness === 'checks'))
-const mergeTitle = computed(() => [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
+// Merge always shows. When GitHub would refuse it, such as without an approval or push access, it is disabled and says why.
+const mergeHold = computed(() =>
+  conversation ? mergeBlockReason(conversation.readiness, { canPush: conversation.canMerge }) : 'GitHub is still checking it',
+)
+const mergeTitle = computed(() => mergeHold.value ?? [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
 
 function onReviewed(event: ReviewEvent) {
   if (event === 'APPROVE') verdict.value = 'approved'
@@ -57,27 +59,29 @@ function onReviewed(event: ReviewEvent) {
 
 <template>
   <template v-if="open">
-    <ReviewPopover v-if="showReview" :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" @reviewed="onReviewed" />
-    <div v-if="canMerge" class="flex shrink-0">
+    <ReviewPopover :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" :hold="approveHold" @reviewed="onReviewed" />
+    <div class="flex shrink-0" :title="mergeHold ?? undefined">
       <Button
-        :variant="mergeIsPrimary ? 'success' : 'outline'"
+        :variant="mergeIsPrimary && !mergeHold ? 'success' : 'outline'"
         size="sm"
         class="relative rounded-r-none"
+        :disabled="!!mergeHold"
         :title="mergeTitle"
         :aria-label="mergeTitle"
         @click="sheetOpen = true"
       >
-        <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full" :class="readiness.tone" />
+        <span v-if="readiness && !mergeHold" class="absolute -top-1 -left-1 size-2 rounded-full" :class="readiness.tone" />
         <GitMerge />
         <span class="hidden sm:inline lg:hidden">Merge</span><span class="hidden lg:inline">{{ current.action }}</span>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <Button
-            :variant="mergeIsPrimary ? 'success' : 'outline'"
+            :variant="mergeIsPrimary && !mergeHold ? 'success' : 'outline'"
             size="icon-sm"
             class="w-6 rounded-l-none border-l"
-            :class="mergeIsPrimary ? 'border-l-success-foreground/25' : ''"
+            :class="mergeIsPrimary && !mergeHold ? 'border-l-success-foreground/25' : ''"
+            :disabled="!!mergeHold"
             aria-label="Choose how to merge"
           >
             <ChevronDown />

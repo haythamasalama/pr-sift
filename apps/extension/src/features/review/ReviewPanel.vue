@@ -43,7 +43,7 @@ import AutoOpenTip from './AutoOpenTip.vue'
 import NoticeBar from '../../components/NoticeBar.vue'
 import { REVIEWS_URL } from '../../lib/updates'
 
-const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
+const { pr, externalUpdate = false, back = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean; back?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
 let stopWatchingSettings = () => {}
 let stopWatchingToken = () => {}
@@ -324,6 +324,7 @@ watch(
       :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
       :loading="status === 'loading'"
+      :back="back"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
       @open-notes="notesOpen = true"
       @close="emit('close')"

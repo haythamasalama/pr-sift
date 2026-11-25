@@ -13,7 +13,20 @@ import { useSettingsOpener } from '../settings/useSettingsOpener'
 import type { PrRef } from '../../lib/types'
 import { explain, submitReview } from './actions'
 
-const { pr, headSha, canAct, mine } = defineProps<{ pr: PrRef; headSha: string; canAct: boolean; mine: ReviewVerdict | null }>()
+// hold: why you can't review, such as your own pull request. The button stays, disabled, and says so.
+const {
+  pr,
+  headSha,
+  canAct,
+  mine,
+  hold = null,
+} = defineProps<{
+  pr: PrRef
+  headSha: string
+  canAct: boolean
+  mine: ReviewVerdict | null
+  hold?: string | null
+}>()
 const emit = defineEmits<{ reviewed: [event: ReviewEvent] }>()
 
 const EVENTS: { value: ReviewEvent; label: string; hint: string; icon: Component; tone: string }[] = [
@@ -70,7 +83,12 @@ async function submit() {
 </script>
 
 <template>
-  <Popover v-model:open="open">
+  <span v-if="hold" class="flex shrink-0" :title="hold">
+    <Button variant="outline" size="sm" disabled :aria-label="`Approve. ${hold}`">
+      <Check /><span class="hidden sm:inline">Approve</span>
+    </Button>
+  </span>
+  <Popover v-else v-model:open="open">
     <PopoverTrigger v-if="mine" as-child>
       <Button
         v-if="mine === 'approved'"

@@ -159,6 +159,14 @@ await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 await page.getByText('Add a shopping cart').waitFor()
 await page.screenshot({ path: join(shots, '2-inbox.png') })
+// Merge stays in place while GitHub would refuse it, and says why.
+await page
+  .locator('span[tabindex="0"]')
+  .filter({ has: page.getByRole('button', { name: /^Merge/ }) })
+  .hover()
+await page.getByRole('tooltip').getByText('Needs an approval').first().waitFor()
+await page.screenshot({ path: join(shots, '2b-inbox-merge-reason.png') })
+await page.mouse.move(0, 0)
 
 await page.getByText('Add a shopping cart').click()
 await page.getByText('src/cart.js').first().waitFor({ timeout: 15_000 })
@@ -195,6 +203,11 @@ await page.getByRole('button', { name: 'feature/cart', exact: true }).click()
 await page.getByText('remember the milk').waitFor()
 await page.waitForTimeout(500)
 await page.screenshot({ path: join(shots, '7-worktree-changes.png') })
+// The More menu opens, rather than a tooltip catching the click.
+await page.getByRole('button', { name: 'More', exact: true }).click()
+await page.getByRole('menuitem', { name: 'Copy the branch name' }).waitFor()
+await page.screenshot({ path: join(shots, '7m-worktree-more.png') })
+await page.keyboard.press('Escape')
 await page.getByRole('group', { name: 'Show' }).getByText('Whole branch').click()
 await page.waitForTimeout(500)
 await page.getByRole('group', { name: 'Show' }).getByText('Uncommitted').click()
@@ -261,6 +274,10 @@ await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '12w2-auto-approve-wide-scrolled.png') })
 await page.evaluate(() => document.querySelector('main')?.scrollTo(0, 0))
 await page.getByRole('button', { name: 'More conditions' }).click()
+// A laptop-sized window still has room for the preview beside the rule.
+await page.setViewportSize({ width: 1250, height: 800 })
+await page.waitForTimeout(300)
+await page.screenshot({ path: join(shots, '12m-auto-approve-medium.png') })
 await page.setViewportSize({ width: 1180, height: 780 })
 await page.getByRole('button', { name: 'Repositories' }).click()
 await page.getByLabel('Search repositories').waitFor()
@@ -298,6 +315,33 @@ await page.screenshot({ path: join(shots, '16-all-worktrees.png') })
 await page.getByRole('button', { name: 'Settings' }).click()
 await page.waitForTimeout(400)
 await page.screenshot({ path: join(shots, '11-settings.png') })
+await page.getByRole('button', { name: 'Hide the sidebar' }).click()
+await page.getByRole('button', { name: 'Needs you' }).click()
+await page.waitForTimeout(400)
+await page.screenshot({ path: join(shots, '17-sidebar-collapsed.png') })
+await page.getByRole('button', { name: 'Show the sidebar' }).click()
+
+// A busy rule, to check the list stays easy to read.
+await page.evaluate(async () => {
+  const { config } = await window.prSift.invoke('autoapprove:status')
+  const rule = {
+    ...config.rules[0],
+    name: 'vue-port-rule',
+    repos: ['acme/shop'],
+    baseBranches: ['main', 'master'],
+    labels: ['bug', 'ui-style', 'vue-port'],
+    authors: ['teammate', 'octo-test', 'sam', 'lee', 'kim', 'ana', 'omar'],
+    paths: [],
+    blockedPaths: ['**/composer.json'],
+    requireChecks: false,
+  }
+  await window.prSift.invoke('autoapprove:save', { ...config, rules: [rule, ...config.rules] })
+})
+await page.getByRole('button', { name: 'Needs you' }).click()
+await page.getByRole('button', { name: 'Auto-approve' }).click()
+await page.getByText('vue-port-rule').waitFor()
+await page.waitForTimeout(600)
+await page.screenshot({ path: join(shots, '12e-auto-approve-list-busy.png') })
 
 await electronApp.close()
 if (errors.length) {

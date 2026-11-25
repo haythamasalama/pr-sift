@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef, watch } from 'vue'
 import { Check, CircleAlert, GitMerge } from '@lucide/vue'
-import { MERGE_ACTIONS, formatPerson } from '@pr-sift/core'
+import { MERGE_ACTIONS, approveBlockReason, formatPerson, mergeBlockReason, mergeReadiness } from '@pr-sift/core'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -13,7 +13,7 @@ import type { PullItem } from '~/github'
 import { useAuth } from '~/useAuth'
 import Hint from './Hint.vue'
 
-// Approve and merge straight from a list, offered only when GitHub would allow it.
+// Approve and merge straight from a list. Both stay in place; when GitHub would refuse, they are disabled and say why.
 const { pull } = defineProps<{ pull: PullItem }>()
 const emit = defineEmits<{ changed: [] }>()
 
@@ -27,10 +27,14 @@ const approveError = shallowRef('')
 const merged = shallowRef('')
 
 const isAuthor = computed(() => !!me.value && pull.author?.login.toLowerCase() === me.value)
-const canApprove = computed(() => !pull.draft && !isAuthor.value && !merged.value)
-// Merge is offered only when GitHub would take it now. Green when nothing is off, amber when only optional checks failed or you bypass the rules.
+const approveHold = computed(() => approveBlockReason({ isAuthor: isAuthor.value, draft: pull.draft }))
+// Green when nothing is off, amber when only optional checks failed or you bypass the rules.
 const ready = computed(() => pull.mergeState === 'CLEAN' || pull.mergeState === 'HAS_HOOKS')
-const canMerge = computed(() => pull.mergeableNow && !merged.value)
+const mergeHold = computed(() =>
+  pull.mergeableNow
+    ? null
+    : mergeBlockReason(pull.draft ? 'draft' : mergeReadiness(pull.mergeState?.toLowerCase()), { canPush: pull.canMerge }, pull.decision),
+)
 const mergeNote = computed(() =>
   ready.value ? 'ready to merge' : pull.mergeState === 'BLOCKED' ? 'you can bypass the branch rules' : 'some optional checks did not pass',
 )
@@ -77,8 +81,13 @@ async function confirm() {
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
     <template v-else>
+      <Hint v-if="approveHold" :text="approveHold">
+        <span tabindex="0" class="rounded-md"
+          ><Button variant="outline" size="sm" disabled aria-label="Approve"><Check />Approve</Button></span
+        >
+      </Hint>
       <Button
-        v-if="canApprove"
+        v-else
         :variant="approved || approveError ? 'outline' : 'success'"
         size="sm"
         :class="approved ? 'text-success-fg' : approveError ? 'text-destructive' : ''"
@@ -89,7 +98,14 @@ async function confirm() {
         <Spinner v-if="approving" /><Check v-else />{{ approved ? 'Approved' : 'Approve' }}
       </Button>
 
-      <Popover v-if="canMerge" v-model:open="open">
+      <Hint v-if="mergeHold" :text="mergeHold">
+        <span tabindex="0" class="rounded-md"
+          ><Button variant="outline" size="sm" disabled class="@max-3xl:w-7 @max-3xl:px-0" :aria-label="label"
+            ><GitMerge /><span class="@max-3xl:hidden">{{ label }}</span></Button
+          ></span
+        >
+      </Hint>
+      <Popover v-else v-model:open="open">
         <Hint :text="`${label} · ${mergeNote}`">
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" class="relative @max-3xl:w-7 @max-3xl:px-0" :aria-label="label"

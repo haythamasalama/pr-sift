@@ -274,6 +274,24 @@ function sentence(r: AutoApproveRule): Part[] {
   parts.push({ text: '.' })
   return parts
 }
+// The same rule as short labelled rows for the list, where a long sentence is hard to scan.
+type Fact = { label: string; kind: 'repo' | 'branch' | 'label' | 'person' | 'path' | 'text'; values: string[]; note?: string }
+function facts(r: AutoApproveRule): Fact[] {
+  const rows: Fact[] = [
+    r.repos.length
+      ? { label: 'Repository', kind: 'repo', values: r.repos }
+      : { label: 'Repository', kind: 'text', values: ['Any that asks for your review'] },
+  ]
+  if (r.baseBranches.length) rows.push({ label: 'Into', kind: 'branch', values: r.baseBranches })
+  if (r.labels.length) rows.push({ label: 'Labels', kind: 'label', values: r.labels, note: r.labels.length > 1 ? 'any of' : undefined })
+  if (r.authors.length) rows.push({ label: 'From', kind: 'person', values: r.authors })
+  if (r.paths.length) rows.push({ label: 'Only changes', kind: 'path', values: r.paths })
+  if (r.blockedPaths.length) rows.push({ label: 'Never changes', kind: 'path', values: r.blockedPaths })
+  if (r.requireChecks) rows.push({ label: 'Checks', kind: 'text', values: ['Must pass'] })
+  return rows
+}
+const PEOPLE_SHOWN = 4
+const avatarOf = (login: string) => `https://avatars.githubusercontent.com/${encodeURIComponent(login.replace('[bot]', ''))}?s=40`
 const initial = (login: string) => (login.replace(/\[bot\]$/, '')[0] ?? '?').toUpperCase()
 
 const openPull = (e: Evaluation) => openReview({ owner: e.pull.owner, repo: e.pull.repo, number: e.pull.number })
@@ -406,8 +424,8 @@ onBeforeUnmount(() => {
       >
 
       <div class="@container/page flex-1">
-        <div class="grid items-start @5xl/page:grid-cols-[minmax(0,760px)_minmax(340px,1fr)]">
-          <div class="@container flex min-w-0 flex-col gap-7 px-8 pt-6 pb-7 @5xl/page:pb-24">
+        <div class="grid items-start @4xl/page:grid-cols-[minmax(0,760px)_minmax(320px,1fr)]">
+          <div class="@container flex min-w-0 flex-col gap-7 px-8 pt-6 pb-7 @4xl/page:pb-24">
             <p class="rounded-lg bg-muted px-3.5 py-3 text-[13px] leading-5">
               Approves
               <template v-for="(p, i) in sentence(rule)" :key="i"
@@ -571,7 +589,7 @@ onBeforeUnmount(() => {
 
           <aside
             aria-label="Would approve now"
-            class="flex min-w-0 flex-col gap-3 px-8 pb-24 @5xl/page:sticky @5xl/page:top-0 @5xl/page:h-[calc(100vh-4rem)] @5xl/page:overflow-y-auto @5xl/page:border-l @5xl/page:border-accent @5xl/page:pt-6"
+            class="flex min-w-0 flex-col gap-3 px-8 pb-24 @4xl/page:sticky @4xl/page:top-0 @4xl/page:h-[calc(100vh-4rem)] @4xl/page:overflow-y-auto @4xl/page:border-l @4xl/page:border-accent @4xl/page:pt-6"
           >
             <div class="flex items-center gap-2">
               <SectionLabel>Would approve now</SectionLabel>
@@ -725,7 +743,7 @@ onBeforeUnmount(() => {
         <li
           v-for="r in draft.rules"
           :key="r.id"
-          class="flex items-center gap-4 border-t border-accent p-4 first:border-t-0 hover:bg-muted/60"
+          class="flex items-start gap-4 border-t border-accent p-4 first:border-t-0 hover:bg-muted/60"
         >
           <Switch
             :model-value="r.enabled"
@@ -734,12 +752,38 @@ onBeforeUnmount(() => {
           />
           <button type="button" class="flex min-w-0 flex-1 flex-col gap-1 text-left" @click="autoRule = r.id">
             <span class="text-sm font-semibold" :class="r.enabled ? '' : 'text-muted-foreground'">{{ r.name || 'Untitled rule' }}</span>
-            <span class="text-[13px] leading-5 text-muted-foreground"
-              ><template v-for="(p, i) in sentence(r)" :key="i"
-                ><b v-if="p.bold" class="font-medium text-foreground">{{ p.text }}</b
-                ><template v-else>{{ p.text }}</template></template
-              ></span
-            >
+            <dl class="mt-1 grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 text-[13px]">
+              <template v-for="f in facts(r)" :key="f.label">
+                <dt class="pt-0.5 text-xs text-muted-foreground">{{ f.label }}</dt>
+                <dd class="flex min-w-0 flex-wrap items-center gap-1">
+                  <template v-if="f.kind === 'person'">
+                    <span
+                      v-for="login in f.values.slice(0, PEOPLE_SHOWN)"
+                      :key="login"
+                      class="flex h-6 items-center gap-1.5 rounded-md border border-border bg-muted px-1.5 text-xs"
+                      ><img :src="avatarOf(login)" alt="" class="size-4 rounded-full" />{{ login }}</span
+                    >
+                    <span
+                      v-if="f.values.length > PEOPLE_SHOWN"
+                      class="text-xs text-muted-foreground"
+                      :title="f.values.slice(PEOPLE_SHOWN).join(', ')"
+                      >+{{ f.values.length - PEOPLE_SHOWN }} more</span
+                    >
+                  </template>
+                  <span v-else-if="f.kind === 'text'" class="text-foreground">{{ f.values[0] }}</span>
+                  <template v-else>
+                    <span
+                      v-for="v in f.values"
+                      :key="v"
+                      class="flex h-6 items-center rounded-md border border-border bg-muted px-1.5 text-xs"
+                      :class="f.kind === 'branch' || f.kind === 'path' ? 'font-mono' : f.kind === 'repo' ? 'font-medium' : ''"
+                      >{{ v }}</span
+                    >
+                    <span v-if="f.note" class="text-xs text-muted-foreground">{{ f.note }}</span>
+                  </template>
+                </dd>
+              </template>
+            </dl>
           </button>
           <Badge v-if="!r.enabled" variant="secondary" class="bg-muted font-normal text-muted-foreground">Paused</Badge>
           <Badge v-else-if="matchCount(r)" variant="secondary" class="bg-add-bg font-normal text-success-fg"

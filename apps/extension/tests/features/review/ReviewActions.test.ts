@@ -49,9 +49,11 @@ describe('ReviewActions', () => {
     expect(mergeButton(after).attributes('data-variant')).toBe('success')
   })
 
-  it('hides Approve from the author of the pull request', () => {
+  it('keeps Approve for the author, disabled with the reason', () => {
     const wrapper = mountActions({ conversation: conversation({ viewer: 'Sam' }) })
-    expect(wrapper.text()).not.toContain('Approve')
+    const approve = wrapper.find('button[aria-label^="Approve"]')
+    expect(approve.attributes('disabled')).toBeDefined()
+    expect(approve.attributes('aria-label')).toContain('your own pull request')
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 
@@ -60,15 +62,22 @@ describe('ReviewActions', () => {
     expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · Some checks are failing or still running')
   })
 
-  it.each(['blocked', 'behind', 'conflicts', 'draft', 'unknown'] as const)('hides Merge while GitHub would refuse it (%s)', (readiness) => {
+  it.each([
+    ['blocked', 'Needs an approval or required checks first'],
+    ['behind', 'Update the branch from its base first'],
+    ['conflicts', 'Has merge conflicts'],
+    ['draft', 'Still a draft'],
+    ['unknown', 'GitHub is still checking it'],
+  ] as const)('keeps Merge disabled while GitHub would refuse it (%s)', (readiness, reason) => {
     const wrapper = mountActions({ conversation: conversation({ readiness }) })
-    expect(wrapper.find('button[aria-label^="Squash and merge"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Approve')
+    const merge = wrapper.find(`button[aria-label="${reason}"]`)
+    expect(merge.exists()).toBe(true)
+    expect(merge.attributes('disabled')).toBeDefined()
   })
 
-  it('hides Merge when you cannot push to the repository', () => {
+  it('keeps Merge disabled when you cannot push to the repository', () => {
     const wrapper = mountActions({ conversation: conversation({ canMerge: false }) })
-    expect(wrapper.find('button[aria-label^="Squash and merge"]').exists()).toBe(false)
+    expect(wrapper.find('button[aria-label="You don’t have permission to merge here"]').attributes('disabled')).toBeDefined()
   })
 
   it('shows nothing once the pull request is merged', () => {
