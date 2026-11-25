@@ -1,18 +1,8 @@
 <script setup lang="ts">
+import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
+import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import {
-  Check,
-  ChevronDown,
-  Columns2,
-  Copy,
-  ExternalLink,
-  FileDiff,
-  FileText,
-  FolderTree,
-  ListPlus,
-  MessageSquare,
-  Rows2,
-} from '@lucide/vue'
+import { Check, ChevronDown, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, MessageSquare } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -164,8 +154,8 @@ defineExpose({ reveal, flash, el })
         :aria-label="mode === 'split' ? 'Show this file as unified' : 'Show this file as split'"
         @click="override = mode === 'split' ? 'unified' : 'split'"
       >
-        <Rows2 v-if="mode === 'split'" />
-        <Columns2 v-else />
+        <DiffUnifiedIcon v-if="mode === 'split'" />
+        <DiffSplitIcon v-else />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>

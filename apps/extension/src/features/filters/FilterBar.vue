@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
+import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
 import {
   CheckCheck,
@@ -9,8 +11,6 @@ import {
   MessageSquareText,
   EyeOff,
   Pencil,
-  Columns2,
-  Rows2,
   Bookmark,
   Plus,
   RotateCcw,
@@ -61,8 +61,8 @@ const showHidden = defineModel<boolean>('showHidden', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const DIFF_MODES = [
-  { value: 'unified', label: 'Unified', title: 'Unified diff', icon: Rows2 },
-  { value: 'split', label: 'Split', title: 'Split diff', icon: Columns2 },
+  { value: 'unified', label: 'Unified', title: 'Unified diff', icon: DiffUnifiedIcon },
+  { value: 'split', label: 'Split', title: 'Split diff', icon: DiffSplitIcon },
 ] as const
 
 const emit = defineEmits<{
