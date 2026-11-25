@@ -7,17 +7,17 @@ import {
   FileText,
   Folder,
   MessageSquareText,
-  ChevronsDownUp,
-  ChevronsUpDown,
+  EyeOff,
+  Pencil,
+  Columns2,
+  Rows2,
   Bookmark,
   Plus,
   RotateCcw,
-  Settings2,
   Undo2,
   X,
 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,16 +30,26 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
+import { Toggle } from '@/components/ui/toggle'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { FOLDER_CHIP, NOTES_CHIP } from '@pr-sift/core'
-import type { ExtChip, PrFile } from '../../lib/types'
+import type { DiffMode, ExtChip, PrFile, Preset } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 
-const { chips, viewPatterns = [] } = defineProps<{
+const {
+  chips,
+  viewPatterns = [],
+  presets = [],
+  activePreset = '',
+  hiddenPresets = [],
+} = defineProps<{
   chips: ExtChip[]
+  presets?: Preset[]
+  activePreset?: string
+  hiddenPresets?: string[]
+  splitDisabled?: boolean
   listedCount: number
   viewedInView: PrFile[]
   hiddenCount: number
@@ -48,6 +58,7 @@ const { chips, viewPatterns = [] } = defineProps<{
 }>()
 const reviewMode = defineModel<boolean>('reviewMode', { required: true })
 const showHidden = defineModel<boolean>('showHidden', { required: true })
+const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const emit = defineEmits<{
   toggleExtension: [ext: string, hide: boolean]
@@ -58,12 +69,14 @@ const emit = defineEmits<{
   unmarkViewed: []
   unmarkFile: [file: PrFile]
   clearAll: []
-  expandCards: []
-  collapseCards: []
   saveView: [name: string]
+  selectPreset: [name: string]
+  hidePreset: [name: string]
 }>()
 
 const openSettings = useSettingsOpener()
+const presetTitle = (name: string) =>
+  hiddenPresets.includes(name) ? 'Its files are hidden. Click to show them again' : 'Click to list only its files. Right-click to hide them'
 const saveOpen = shallowRef(false)
 const viewName = shallowRef('')
 
@@ -174,6 +187,46 @@ const chipClass = (chip: ExtChip) => [
         <Plus /> type
       </Button>
 
+      <template v-if="presets.length">
+        <Separator orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
+        <span class="mr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Saved</span>
+        <div role="group" aria-label="Saved filters" class="inline-flex gap-0.5 rounded-md bg-muted p-0.5">
+          <Button
+            size="xs"
+            variant="ghost"
+            :aria-pressed="!activePreset"
+            class="h-[22px] rounded-sm px-2 text-[11px] text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+            title="Show every file"
+            @click="activePreset && emit('selectPreset', activePreset)"
+          >
+            All
+          </Button>
+          <Button
+            v-for="p in presets"
+            :key="p.name"
+            size="xs"
+            variant="ghost"
+            :aria-pressed="p.name === activePreset"
+            class="h-[22px] rounded-sm px-2 text-[11px] text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+            :class="hiddenPresets.includes(p.name) ? 'text-destructive line-through' : ''"
+            :title="presetTitle(p.name)"
+            @click="emit('selectPreset', p.name)"
+            @contextmenu.prevent="emit('hidePreset', p.name)"
+          >
+            {{ p.name }}
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="size-[22px] text-muted-foreground"
+          title="Edit saved filters"
+          aria-label="Edit saved filters"
+          @click="openSettings('filters')"
+          ><Pencil
+        /></Button>
+      </template>
+
       <template v-if="statusChips.length">
         <Separator orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
         <Button
@@ -234,54 +287,65 @@ const chipClass = (chip: ExtChip) => [
     </div>
 
     <div class="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2 text-xs">
-      <div class="flex items-center">
-        <Button variant="ghost" size="icon-xs" title="Expand all files" aria-label="Expand all files" @click="emit('expandCards')"
-          ><ChevronsUpDown
-        /></Button>
-        <Button variant="ghost" size="icon-xs" title="Collapse all files" aria-label="Collapse all files" @click="emit('collapseCards')"
-          ><ChevronsDownUp
-        /></Button>
+      <div class="flex items-center gap-1">
+        <ToggleGroup
+          v-if="!splitDisabled"
+          type="single"
+          variant="outline"
+          size="sm"
+          class="h-7"
+          :model-value="diffMode"
+          aria-label="Diff display"
+          @update:model-value="(v) => v && (diffMode = v as DiffMode)"
+        >
+          <ToggleGroupItem value="unified" class="h-7 px-2" title="Unified diff" aria-label="Unified"><Rows2 /></ToggleGroupItem>
+          <ToggleGroupItem value="split" class="h-7 px-2" title="Split diff" aria-label="Split"><Columns2 /></ToggleGroupItem>
+        </ToggleGroup>
       </div>
       <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5" title="Show files hidden by your rules (lock files, minified files…)">
-          <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
-          <Label for="show-hidden" class="text-xs font-normal whitespace-nowrap text-muted-foreground">Hidden ({{ hiddenCount }})</Label>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            class="size-5 text-muted-foreground"
-            title="Choose which files are always hidden"
-            aria-label="Edit hidden files"
-            @click="openSettings('hidden')"
-          >
-            <Settings2 />
-          </Button>
-        </div>
-        <div class="flex items-center gap-1.5" title="Files disappear from the list and the tree as soon as you mark them viewed">
-          <Switch id="hide-viewed" v-model="reviewMode" />
-          <Label for="hide-viewed" class="text-xs font-normal whitespace-nowrap">Hide viewed</Label>
-        </div>
+      <div class="flex items-center gap-1.5">
+        <Button
+          v-if="hiddenCount || showHidden"
+          variant="ghost"
+          size="xs"
+          class="h-7 px-2 text-xs text-muted-foreground"
+          :aria-pressed="showHidden"
+          :title="
+            showHidden
+              ? 'Hide the files your rules hide again'
+              : 'Files hidden by your rules (lock files, minified files…). Click to show them'
+          "
+          @click="showHidden = !showHidden"
+        >
+          <Eye v-if="showHidden" /><EyeOff v-else />
+          {{ showHidden ? `Showing ${hiddenCount} hidden` : `${hiddenCount} hidden` }}
+        </Button>
+        <Toggle
+          v-model="reviewMode"
+          variant="outline"
+          size="sm"
+          class="h-7 gap-1.5 px-2 text-xs font-normal"
+          title="Files disappear from the list and the tree as soon as you mark them viewed"
+        >
+          <CheckCheck /> Hide viewed
+        </Toggle>
       </div>
       <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
       <div class="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="xs"
-          class="h-7 px-2 text-xs"
-          :title="`Mark the ${listedCount} files in this view as viewed`"
-          :disabled="!listedCount"
-          @click="emit('markListed')"
-        >
-          <CheckCheck /> Mark all
-        </Button>
         <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
           <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: restore one, restore all, or clear">
+            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: mark all, restore one, restore all, or clear">
               <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span><ChevronDown />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-80">
+            <DropdownMenuGroup>
+              <DropdownMenuItem :disabled="!listedCount" @select="emit('markListed')">
+                <CheckCheck /> Mark all in view as viewed
+                <DropdownMenuShortcut class="tracking-normal">{{ listedCount }}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuLabel>Restore a file</DropdownMenuLabel>
               <div v-if="viewedInView.length" class="max-h-64 overflow-y-auto">

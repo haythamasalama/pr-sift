@@ -22,7 +22,7 @@ const buttons = (text: string) =>
   [...document.querySelectorAll<HTMLButtonElement>('[data-slot="popover-content"] button')].filter((b) => b.textContent?.trim() === text)
 
 async function openPopover(wrapper: ReturnType<typeof mountPopover>) {
-  await wrapper.get('button').trigger('click')
+  await wrapper.get('[aria-label="Approve with a comment, request changes or comment"]').trigger('click')
   await vi.waitFor(() => expect(document.querySelector('[aria-label="Comment"]')).not.toBeNull())
 }
 
@@ -47,6 +47,18 @@ describe('ReviewPopover', () => {
       method: 'POST',
       body: { event: 'APPROVE', commit_id: 'abc', body: 'Looks good' },
     })
+  })
+
+  it('approves in one click from the main button, without a comment', async () => {
+    const { sent } = installChrome(() => ({ ok: true, status: 200, data: {} }))
+    const wrapper = mountPopover()
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Approve')!
+      .trigger('click')
+    await vi.waitFor(() => expect(wrapper.emitted('reviewed')).toEqual([['APPROVE']]))
+    expect(sent[0]).toMatchObject({ method: 'POST', body: { event: 'APPROVE', commit_id: 'abc' } })
+    expect(sent[0]!.body).not.toHaveProperty('body')
   })
 
   it('asks for a comment before requesting changes', async () => {

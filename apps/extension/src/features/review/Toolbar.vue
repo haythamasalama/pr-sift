@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { CircleHelp, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Pencil, RotateCw, Rows2, Settings, Sun, X } from '@lucide/vue'
+import { CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,32 +14,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
+import type { ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
   title: string
-  presets: Preset[]
-  activePreset: string
-  hiddenPresets?: string[]
   done: number
   total: number
   inView: number
   noteCount: number
   compact: boolean
-  splitDisabled: boolean
 }>()
-
-const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const { theme, setTheme } = useAppearance()
 const { ready: updateReady, restart } = useUpdates()
 
-const emit = defineEmits<{ selectPreset: [name: string]; hidePreset: [name: string]; openNotes: []; toggleSidebar: []; close: [] }>()
+const emit = defineEmits<{ openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
 </script>
 
@@ -63,77 +57,43 @@ const openSettings = useSettingsOpener()
     <div class="order-2 basis-full xl:hidden" />
 
     <div
-      class="order-3 flex shrink-0 items-center gap-2 xl:order-none xl:border-l xl:pl-3"
-      :title="`${done} of ${total} files viewed · ${inView} in the current view`"
+      class="order-3 flex shrink-0 items-center gap-1.5 text-xs font-semibold tabular-nums xl:order-none"
+      :title="`${done} of ${total} files viewed · ${total - done} left · ${inView} in the current view`"
     >
       <ProgressRing :done="done" :total="total" />
-      <div class="leading-tight">
-        <p class="text-xs font-semibold whitespace-nowrap">{{ total - done }}<span class="hidden sm:inline"> left</span></p>
-        <p class="hidden text-[11px] whitespace-nowrap text-muted-foreground xl:block">{{ done }} of {{ total }} done</p>
-      </div>
+      <span
+        >{{ done }}<span class="font-normal text-muted-foreground">/{{ total }}</span></span
+      >
     </div>
 
     <div class="order-3 flex-1 xl:order-none" />
 
-    <div v-if="presets.length" class="order-3 flex shrink-0 gap-1 xl:order-none">
-      <Button
-        v-for="p in presets"
-        :key="p.name"
-        size="sm"
-        :variant="p.name === activePreset ? 'default' : 'outline'"
-        :class="hiddenPresets?.includes(p.name) ? 'border-destructive/40 text-destructive line-through' : ''"
-        :title="
-          hiddenPresets?.includes(p.name)
-            ? 'Its files are hidden. Click to show them again'
-            : 'Click to list only its files. Right-click to hide them'
-        "
-        @click="emit('selectPreset', p.name)"
-        @contextmenu.prevent="emit('hidePreset', p.name)"
-      >
-        {{ p.name }}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        title="Edit saved filters"
-        aria-label="Edit saved filters"
-        class="text-muted-foreground"
-        @click="openSettings('filters')"
-        ><Pencil
-      /></Button>
-    </div>
-
-    <ToggleGroup
-      v-if="!splitDisabled"
-      type="single"
-      variant="outline"
-      size="sm"
-      class="order-3 shrink-0 xl:order-none"
-      :model-value="diffMode"
-      aria-label="Diff display"
-      @update:model-value="(v) => v && (diffMode = v as DiffMode)"
-    >
-      <ToggleGroupItem value="unified" title="Unified diff for all files" aria-label="Unified"
-        ><Rows2 /><span class="hidden xl:inline">Unified</span></ToggleGroupItem
-      >
-      <ToggleGroupItem value="split" title="Split diff for all files" aria-label="Split"
-        ><Columns2 /><span class="hidden xl:inline">Split</span></ToggleGroupItem
-      >
-    </ToggleGroup>
-
     <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
 
-    <Button variant="outline" size="sm" class="order-3 shrink-0 xl:order-none" title="Your private notes" @click="emit('openNotes')">
-      <NotebookPen /><span class="hidden xl:inline">Notes</span>
-      <Badge v-if="noteCount" class="h-4 min-w-4 px-1.5 text-[11px]">{{ noteCount }}</Badge>
+    <Separator orientation="vertical" class="order-3 hidden h-5 sm:block xl:order-none data-[orientation=vertical]:self-center" />
+
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
+      title="Your private notes"
+      :aria-label="noteCount ? `Notes, ${noteCount} open` : 'Notes'"
+      @click="emit('openNotes')"
+    >
+      <NotepadText />
+      <Badge
+        v-if="noteCount"
+        class="pointer-events-none absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-semibold ring-2 ring-sidebar"
+        >{{ noteCount }}</Badge
+      >
     </Button>
 
     <DropdownMenu>
       <DropdownMenuTrigger as-child>
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon-sm"
-          class="relative order-3 shrink-0 xl:order-none"
+          class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
           :aria-label="updateReady ? 'Options, update ready' : 'Options'"
           :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
         >

@@ -8,8 +8,6 @@ import { installChrome } from '../../helpers/chrome'
 
 const props = {
   title: '#1 Title',
-  presets: [],
-  activePreset: '',
   done: 0,
   total: 3,
   inView: 3,
@@ -59,19 +57,5 @@ describe('Toolbar settings menu', () => {
     expect(wrapper.find('[aria-label="Options, update ready"]').exists()).toBe(true)
     item('Restart to update to 1.2.0')!.click()
     expect(sent).toContainEqual({ type: 'apply-update' })
-  })
-})
-
-describe('Toolbar saved filters', () => {
-  it('hides a saved filter on right-click and crosses out its button', async () => {
-    installChrome()
-    const wrapper = mount(Toolbar, {
-      props: { ...props, presets: [{ name: 'Tests', include: ['tests/**'] }], hiddenPresets: ['Tests'] },
-      global: { provide: { [portalTargetKey as symbol]: shallowRef(document.createElement('div')) } },
-    })
-    const button = wrapper.findAll('button').find((b) => b.text() === 'Tests')!
-    expect(button.classes()).toContain('line-through')
-    await button.trigger('contextmenu')
-    expect(wrapper.emitted('hidePreset')).toEqual([['Tests']])
   })
 })

@@ -12,10 +12,11 @@ import {
   MessageSquare,
 } from '@lucide/vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { PrInfo } from '../../lib/types'
+import type { PrInfo, PrRef } from '../../lib/types'
+import LinkedIssues from './LinkedIssues.vue'
 import type { Conversation } from './conversation'
 
-const { info, conversation } = defineProps<{ info: PrInfo | null; conversation: Conversation | null }>()
+const { info, conversation, pr } = defineProps<{ info: PrInfo | null; conversation: Conversation | null; pr?: PrRef }>()
 const panel = defineModel<'description' | 'conversation' | null>('panel', { default: null })
 const toggle = (tab: 'description' | 'conversation') => (panel.value = panel.value === tab ? null : tab)
 
@@ -39,7 +40,7 @@ async function copyBranch(branch: string) {
 const state = computed(() => (info?.state ? STATES[info.state] : null))
 const verb = computed(() => (info?.state === 'merged' ? 'merged' : 'wants to merge'))
 const commits = computed(() => (info?.commits === undefined ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `))
-const comments = computed(() => (conversation ? conversation.conversation + conversation.code : 0))
+const comments = computed(() => (conversation?.conversation ?? 0) + (conversation?.code ?? 0))
 const commentsTitle = computed(() =>
   conversation
     ? `${comments.value} comments: ${conversation.conversation} in the conversation, ${conversation.code} on the code. Show them here.`
@@ -89,6 +90,7 @@ const commentsTitle = computed(() =>
     >
       <MessageSquare class="size-3" />{{ comments }}
     </button>
+    <LinkedIssues v-if="pr" :key="`${pr.owner}/${pr.repo}#${pr.number}`" :pr="pr" />
     <button
       type="button"
       class="inline-flex shrink-0 items-center gap-1 hover:text-foreground"

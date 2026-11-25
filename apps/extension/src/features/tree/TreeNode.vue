@@ -86,8 +86,9 @@ function jump() {
       </Checkbox>
       <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 text-left" @click="jump">
         <Folder :size="14" class="shrink-0 text-muted-foreground" />
-        <span class="truncate">{{ node.name }}</span>
-        <span class="ml-auto shrink-0 text-[11px] text-muted-foreground">{{ node.count }}</span>
+        <span class="truncate" :class="viewedState === 'all' ? 'text-muted-foreground' : ''">{{ node.name }}</span>
+        <Check v-if="viewedState === 'all'" :size="13" class="ml-auto shrink-0 text-success-fg" aria-label="All viewed" />
+        <span v-else class="ml-auto shrink-0 text-[11px] text-muted-foreground">{{ node.count }}</span>
       </button>
       <span class="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <button

@@ -42,6 +42,16 @@ watch(open, (value) => {
   if (value) error.value = ''
 })
 
+async function approveNow() {
+  if (!canAct) {
+    open.value = true
+    return
+  }
+  event.value = 'APPROVE'
+  await submit()
+  if (error.value) open.value = true
+}
+
 async function submit() {
   if (!canAct || busy.value || needsComment.value) return
   busy.value = true
@@ -61,7 +71,7 @@ async function submit() {
 
 <template>
   <Popover v-model:open="open">
-    <PopoverTrigger as-child>
+    <PopoverTrigger v-if="mine" as-child>
       <Button
         v-if="mine === 'approved'"
         variant="outline"
@@ -80,10 +90,30 @@ async function submit() {
       >
         <FileDiff /><span class="hidden sm:inline">Changes requested</span>
       </Button>
-      <Button v-else variant="success" size="sm" class="shrink-0" title="Approve, request changes or comment">
-        <Check /><span class="hidden sm:inline">Approve</span><ChevronDown class="opacity-80" />
-      </Button>
     </PopoverTrigger>
+    <div v-if="!mine" class="flex shrink-0">
+      <Button
+        variant="success"
+        size="sm"
+        class="rounded-r-none"
+        :disabled="busy"
+        :title="canAct ? 'Approve this pull request' : 'Approve, request changes or comment'"
+        @click="approveNow"
+      >
+        <Spinner v-if="busy" /><Check v-else /><span class="hidden sm:inline">Approve</span>
+      </Button>
+      <PopoverTrigger as-child>
+        <Button
+          variant="success"
+          size="icon-sm"
+          class="w-6 rounded-l-none border-l border-l-success-foreground/25"
+          aria-label="Approve with a comment, request changes or comment"
+          title="Approve with a comment, request changes or comment"
+        >
+          <ChevronDown />
+        </Button>
+      </PopoverTrigger>
+    </div>
     <PopoverContent align="end" class="w-80 gap-3 p-3">
       <p class="text-sm font-medium">Review this pull request</p>
       <template v-if="canAct">
