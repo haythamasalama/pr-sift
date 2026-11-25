@@ -280,6 +280,27 @@ function chromeMock({ store, api = null }) {
           ]
           return ok(api.reviews.at(-1))
         }
+        if (path === '/graphql' && m.body?.query?.includes('closingIssuesReferences'))
+          return ok({
+            data: {
+              repository: {
+                pullRequest: {
+                  closingIssuesReferences: {
+                    nodes: [
+                      {
+                        number: 471,
+                        title: 'Bill business accounts by usage',
+                        url: '#',
+                        state: 'OPEN',
+                        repository: { nameWithOwner: 'haythamasalama/storefront' },
+                        assignees: { nodes: [{ login: api.viewer.login, avatarUrl: api.viewer.avatar_url }] },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          })
         if (path === '/user') return ok(api.viewer)
         if (path.endsWith('/reviews')) return ok(api.reviews)
         if (path.includes('/issues/')) return ok(api.issueComments)
