@@ -106,3 +106,39 @@ describe('WorktreeService', () => {
     expect(after.worktrees).toHaveLength(1)
   })
 })
+
+describe('WorktreeService details actions', () => {
+  it('lists changes and diffs only listed files', async () => {
+    const shop = makeRepo(root, 'shop')
+    const cart = join(root, 'shop-cart')
+    sh(shop, 'worktree', 'add', '-q', cart, '-b', 'cart')
+    write(join(cart, 'README.md'), 'hello\nworld\n')
+    write(join(cart, 'new.txt'), 'fresh\n')
+    await service.scan()
+    const changes = await service.changes(cart)
+    expect(changes.files).toEqual([
+      { path: 'README.md', status: ' M' },
+      { path: 'new.txt', status: '??' },
+    ])
+    expect(changes.commits[0]).toMatchObject({ subject: 'init', author: 'Test' })
+    expect(await service.diff(cart, 'README.md')).toContain('+world')
+    expect(await service.diff(cart, 'new.txt')).toContain('+fresh')
+    await expect(service.diff(cart, '../secret')).rejects.toThrow(/not in the list/)
+  })
+
+  it('renames the folder and the branch, and names a detached worktree', async () => {
+    const shop = makeRepo(root, 'shop')
+    sh(shop, 'worktree', 'add', '-q', join(root, 'old-name'), '-b', 'cart')
+    sh(shop, 'worktree', 'add', '-q', '--detach', join(root, 'loose'))
+    await service.scan()
+    let repo = await service.rename(join(root, 'old-name'), 'new-name')
+    expect(existsSync(join(root, 'new-name'))).toBe(true)
+    expect(repo.worktrees.some((w) => w.path === join(root, 'new-name'))).toBe(true)
+    await expect(service.rename(join(root, 'new-name'), '../escape')).rejects.toThrow(/letters/)
+    await expect(service.rename(shop, 'x')).rejects.toThrow(/main folder/)
+    repo = await service.renameBranch(join(root, 'new-name'), 'feature/cart')
+    expect(repo.worktrees.find((w) => w.path === join(root, 'new-name'))?.branch).toBe('feature/cart')
+    repo = await service.renameBranch(join(root, 'loose'), 'rescued')
+    expect(repo.worktrees.find((w) => w.path === join(root, 'loose'))?.branch).toBe('rescued')
+  })
+})

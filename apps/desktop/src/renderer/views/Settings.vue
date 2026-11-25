@@ -34,7 +34,9 @@ const short = (path: string) => shortPath(path, appInfo.home)
     <section class="flex flex-col gap-3">
       <div class="flex flex-col gap-0.5">
         <h2 class="font-semibold">Project folders</h2>
-        <p class="text-muted-foreground">Worktrees and Cleanup look inside these folders.</p>
+        <p class="text-muted-foreground">
+          Add projects suggests repositories from these folders, and All worktrees and Cleanup look inside them.
+        </p>
       </div>
       <ul v-if="settings?.roots.length" class="divide-y divide-border rounded-lg border border-border">
         <li v-for="root in settings.roots" :key="root" class="flex items-center gap-2 px-4 py-2">

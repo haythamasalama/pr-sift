@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, shallowRef } from 'vue'
+import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
 import { CircleAlert, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Trash2, Undo2 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,12 @@ import { useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
+import WorktreeSheet from '~/components/WorktreeSheet.vue'
+import GithubMark from '@/components/GithubMark.vue'
+import type { PullItem } from '~/github'
+
+// With `projectPath`, shows that one project; without it, every repository in the project folders.
+const { projectPath: only, pulls = [] } = defineProps<{ projectPath?: string; pulls?: PullItem[] }>()
 
 const { settings, ready } = useProjectFolders()
 const repos = shallowRef<Repo[]>([])
@@ -26,19 +32,42 @@ const undoList = shallowRef<UndoEntry[]>([])
 const target = shallowRef<{ repo: Repo; worktree: Worktree } | null>(null)
 const removing = shallowRef(false)
 
-const withWorktrees = computed(() => repos.value.filter((r) => r.worktrees.length > 1 || r.error))
+const withWorktrees = computed(() => (only ? repos.value : repos.value.filter((r) => r.worktrees.length > 1 || r.error)))
 const plainRepos = computed(() => repos.value.filter((r) => r.worktrees.length <= 1 && !r.error))
 const linked = computed(() => withWorktrees.value.flatMap((r) => r.worktrees.filter((w) => !w.main)))
 const totalSize = computed(() => linked.value.reduce((sum, w) => sum + (details.get(w.path)?.size ?? 0), 0))
 const summary = computed(() => {
   if (!scanned.value) return 'Every git worktree in your project folders.'
   const count = linked.value.length
+  if (only)
+    return count
+      ? `${count} ${count === 1 ? 'worktree' : 'worktrees'} besides the main folder${totalSize.value ? ` · ${formatBytes(totalSize.value)}` : ''}`
+      : 'No worktrees besides the main folder.'
   const size = totalSize.value ? ` · ${formatBytes(totalSize.value)}` : ''
   return `${count} ${count === 1 ? 'worktree' : 'worktrees'} in ${withWorktrees.value.length} of ${repos.value.length} repositories${size}`
 })
 
 const short = (path: string) => shortPath(path, appInfo.home)
-const label = (w: Worktree) => w.branch ?? (w.detached ? `detached at ${w.head.slice(0, 7)}` : w.head.slice(0, 7))
+const folderName = (w: Worktree) => w.path.split(/[\\/]/).pop() ?? w.path
+const label = (w: Worktree) => w.branch ?? folderName(w)
+const pullFor = (w: Worktree) => (w.branch ? pulls.find((p) => p.branch === w.branch) : undefined)
+// Where the GitHub icon goes: the pull request, else the branch, else the commit.
+function githubUrl(repo: Repo, w: Worktree) {
+  if (!repo.github) return undefined
+  const pull = pullFor(w)
+  if (pull) return pull.url
+  const base = `https://github.com/${repo.github.owner}/${repo.github.repo}`
+  return w.branch ? `${base}/tree/${w.branch.split('/').map(encodeURIComponent).join('/')}` : `${base}/commit/${w.head}`
+}
+
+const sheet = shallowRef<{ repo: Repo; worktree: Worktree } | null>(null)
+const sheetOpen = computed({ get: () => sheet.value !== null, set: (v) => !v && (sheet.value = null) })
+function onUpdated(next: Repo, path: string) {
+  repos.value = repos.value.map((r) => (r.path === next.path ? next : r))
+  const w = next.worktrees.find((x) => x.path === path) ?? null
+  sheet.value = w ? { repo: next, worktree: w } : null
+  if (w) void loadDetails([w])
+}
 
 async function loadDetails(list: Worktree[]) {
   await Promise.all(
@@ -57,11 +86,12 @@ async function scan() {
   scanning.value = true
   error.value = ''
   try {
-    repos.value = await bridge.invoke('worktrees:scan')
+    repos.value = only ? [await bridge.invoke('worktrees:list', only)] : await bridge.invoke('worktrees:scan')
     details.clear()
     scanned.value = true
-    undoList.value = await bridge.invoke('worktrees:undo-list')
-    void loadDetails(repos.value.flatMap((r) => (r.worktrees.length > 1 ? r.worktrees.filter((w) => !w.main) : [])))
+    const undos = await bridge.invoke('worktrees:undo-list')
+    undoList.value = only ? undos.filter((u) => u.repo === only) : undos
+    void loadDetails(repos.value.flatMap((r) => (r.worktrees.length > 1 || only ? r.worktrees.filter((w) => !w.main) : [])))
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -119,13 +149,18 @@ async function prune(repo: Repo) {
 const reveal = (path: string) => bridge.invoke('shell:reveal', path)
 
 onMounted(async () => {
+  if (only) return scan()
   await ready
   if (settings.value?.roots.length) await scan()
 })
+watch(
+  () => only,
+  () => only && scan(),
+)
 </script>
 
 <template>
-  <PageHeader title="Worktrees" :description="summary">
+  <PageHeader v-if="!only" title="All worktrees" :description="summary">
     <Button v-if="settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
       <Spinner v-if="scanning" />
       <RefreshCw v-else />
@@ -142,9 +177,17 @@ onMounted(async () => {
     </template>
   </NoticeBar>
 
-  <NoFolders v-if="settings && !settings.roots.length" @added="scan" />
+  <NoFolders v-if="!only && settings && !settings.roots.length" @added="scan" />
 
-  <div v-else class="flex flex-col gap-6 p-6">
+  <div v-else class="flex flex-col gap-6" :class="only ? '' : 'p-6'">
+    <div v-if="only" class="flex items-center gap-3">
+      <p class="flex-1 text-muted-foreground">{{ summary }}</p>
+      <Button size="sm" variant="outline" :disabled="scanning" @click="scan">
+        <Spinner v-if="scanning" />
+        <RefreshCw v-else />
+        Rescan
+      </Button>
+    </div>
     <Alert v-if="error" variant="destructive">
       <CircleAlert />
       <AlertDescription>{{ error }}</AlertDescription>
@@ -152,7 +195,7 @@ onMounted(async () => {
 
     <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking for repositories…</div>
 
-    <p v-if="scanned && !withWorktrees.length" class="text-muted-foreground">
+    <p v-if="scanned && !withWorktrees.length && !only" class="text-muted-foreground">
       None of your {{ repos.length }} repositories has extra worktrees.
     </p>
 
@@ -176,14 +219,20 @@ onMounted(async () => {
         <li
           v-for="w in repo.worktrees"
           :key="w.path"
-          class="flex items-center gap-3 px-4 py-2.5"
+          class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-accent/50"
           :class="{ 'text-muted-foreground': w.main }"
+          title="Show details"
+          @click="sheet = { repo, worktree: w }"
         >
           <GitBranch class="size-4 shrink-0 text-muted-foreground" />
           <div class="flex min-w-0 flex-1 flex-col gap-0.5">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="truncate font-medium" :class="{ 'font-normal': w.main }">{{ label(w) }}</span>
+              <Badge v-if="!w.branch && !w.bare" variant="outline" title="No branch is checked out here, only a commit"
+                >No branch · {{ w.head.slice(0, 7) }}</Badge
+              >
               <Badge v-if="w.main" variant="outline">Main folder</Badge>
+              <Badge v-if="pullFor(w)" variant="outline" class="border-emphasis/40 text-emphasis">PR #{{ pullFor(w)!.number }}</Badge>
               <Badge v-if="w.prunable" variant="destructive">Folder missing</Badge>
               <Badge v-if="w.locked" variant="outline"><Lock /> Locked</Badge>
               <template v-if="!w.main && details.get(w.path)">
@@ -198,6 +247,16 @@ onMounted(async () => {
             </div>
             <span class="truncate text-xs text-muted-foreground">{{ short(w.path) }}</span>
           </div>
+          <Button
+            v-if="githubUrl(repo, w)"
+            size="icon-sm"
+            variant="ghost"
+            as-child
+            :title="pullFor(w) ? 'Open the pull request on GitHub' : w.branch ? 'Open the branch on GitHub' : 'Open the commit on GitHub'"
+            @click.stop
+          >
+            <a :href="githubUrl(repo, w)" target="_blank" rel="noreferrer" aria-label="Open on GitHub"><GithubMark class="size-4" /></a>
+          </Button>
           <template v-if="!w.main">
             <div class="flex w-36 shrink-0 flex-col items-end gap-0.5 text-xs">
               <span v-if="details.get(w.path)?.size !== undefined" class="font-medium tabular-nums">{{
@@ -212,7 +271,7 @@ onMounted(async () => {
               :disabled="w.prunable"
               aria-label="Show in folder"
               title="Show in folder"
-              @click="reveal(w.path)"
+              @click.stop="reveal(w.path)"
             >
               <FolderOpen />
             </Button>
@@ -222,7 +281,7 @@ onMounted(async () => {
               :disabled="w.prunable || w.locked"
               aria-label="Move to Trash"
               title="Move to Trash"
-              @click="target = { repo, worktree: w }"
+              @click.stop="target = { repo, worktree: w }"
             >
               <Trash2 />
             </Button>
@@ -231,7 +290,7 @@ onMounted(async () => {
       </ul>
     </section>
 
-    <p v-if="plainRepos.length && withWorktrees.length" class="text-xs text-muted-foreground">
+    <p v-if="!only && plainRepos.length && withWorktrees.length" class="text-xs text-muted-foreground">
       {{ plainRepos.length }} more {{ plainRepos.length === 1 ? 'repository has' : 'repositories have' }} no extra worktrees.
     </p>
 
@@ -249,6 +308,15 @@ onMounted(async () => {
       </ul>
     </section>
   </div>
+
+  <WorktreeSheet
+    v-model:open="sheetOpen"
+    :worktree="sheet?.worktree ?? null"
+    :details="sheet ? details.get(sheet.worktree.path) : undefined"
+    :pull="sheet ? pullFor(sheet.worktree) : undefined"
+    @updated="onUpdated"
+    @remove="sheet && ((target = sheet), (sheet = null))"
+  />
 
   <ConfirmDialog
     :open="target !== null"

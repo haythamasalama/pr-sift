@@ -53,6 +53,7 @@ export interface Repo {
   path: string
   name: string
   worktrees: Worktree[]
+  github?: { owner: string; repo: string }
   error?: string
 }
 
@@ -90,6 +91,56 @@ export interface TrashResult {
   failed: { path: string; error: string }[]
 }
 
+export interface Project {
+  path: string
+  name: string
+  // The GitHub repository behind `origin` (or the first GitHub remote), when there is one.
+  github?: { owner: string; repo: string }
+  branch?: string
+  missing?: boolean
+}
+
+export interface Branch {
+  name: string
+  current: boolean
+  // The folder of the worktree that has this branch checked out, when one does.
+  worktree?: string
+  upstream?: string
+  // The upstream branch was deleted on the remote, usually after its pull request merged.
+  gone: boolean
+  ahead: number
+  behind: number
+  merged: boolean
+  lastCommit: number
+  subject: string
+}
+
+export interface ChangedFile {
+  path: string
+  // Two-letter porcelain status, such as ` M`, `A `, `??`.
+  status: string
+}
+
+export interface Commit {
+  sha: string
+  subject: string
+  author: string
+  date: number
+}
+
+export interface WorktreeChanges {
+  files: ChangedFile[]
+  commits: Commit[]
+}
+
+export type OpenTarget = 'editor' | 'terminal'
+
+export interface OpenResult {
+  ok: boolean
+  app?: string
+  error?: string
+}
+
 export interface ApiRequest {
   type: 'gh'
   path: string
@@ -124,7 +175,20 @@ export interface Channels {
   'worktrees:undo-list': { args: []; result: UndoEntry[] }
   'worktrees:undo': { args: [id: string]; result: { ok: boolean; error?: string } }
   'worktrees:prune': { args: [repo: string]; result: Repo }
-  'leftovers:scan': { args: []; result: Leftover[] }
+  'projects:list': { args: []; result: Project[] }
+  'projects:candidates': { args: []; result: string[] }
+  'projects:browse': { args: []; result: string[] | null }
+  'projects:add': { args: [paths: string[]]; result: Project[] }
+  'projects:remove': { args: [path: string]; result: Project[] }
+  'worktrees:list': { args: [repo: string]; result: Repo }
+  'worktrees:changes': { args: [path: string]; result: WorktreeChanges }
+  'worktrees:diff': { args: [path: string, file: string]; result: string }
+  'worktrees:rename': { args: [path: string, name: string]; result: Repo }
+  'worktrees:rename-branch': { args: [path: string, name: string]; result: Repo }
+  'worktrees:open': { args: [path: string, target: OpenTarget]; result: OpenResult }
+  'branches:list': { args: [repo: string]; result: Branch[] }
+  'branches:delete': { args: [repo: string, name: string, force: boolean]; result: { ok: boolean; error?: string } }
+  'leftovers:scan': { args: [root?: string]; result: Leftover[] }
   'leftovers:size': { args: [path: string]; result: number }
   'leftovers:trash': { args: [paths: string[]]; result: TrashResult }
   'shell:reveal': { args: [path: string]; result: void }
@@ -153,6 +217,19 @@ export const CHANNELS = [
   'worktrees:undo-list',
   'worktrees:undo',
   'worktrees:prune',
+  'projects:list',
+  'projects:candidates',
+  'projects:browse',
+  'projects:add',
+  'projects:remove',
+  'worktrees:list',
+  'worktrees:changes',
+  'worktrees:diff',
+  'worktrees:rename',
+  'worktrees:rename-branch',
+  'worktrees:open',
+  'branches:list',
+  'branches:delete',
   'leftovers:scan',
   'leftovers:size',
   'leftovers:trash',
@@ -169,11 +246,12 @@ export interface Events {
   'store:changed': Record<string, StorageChange>
   'auth:changed': AuthStatus
   navigate: { view: string; section?: string }
+  'projects:changed': Project[]
 }
 
 export type EventName = keyof Events
 
-export const EVENTS = ['store:changed', 'auth:changed', 'navigate'] as const satisfies readonly EventName[]
+export const EVENTS = ['store:changed', 'auth:changed', 'navigate', 'projects:changed'] as const satisfies readonly EventName[]
 
 export interface Bridge {
   invoke<C extends Channel>(channel: C, ...args: Channels[C]['args']): Promise<Channels[C]['result']>

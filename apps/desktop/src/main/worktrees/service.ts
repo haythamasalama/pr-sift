@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { cp, readFile, rm, stat } from 'node:fs/promises'
-import { basename, isAbsolute, join, resolve } from 'node:path'
-import type { Repo, UndoEntry, Worktree, WorktreeDetails } from '#shared/ipc'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import type { ChangedFile, Repo, UndoEntry, Worktree, WorktreeChanges, WorktreeDetails } from '#shared/ipc'
+import { validBranchName } from '../projects/branches'
+import { pickGithubRemote } from '../projects/remote'
 import { git } from '../exec'
 import { diskUsage, limiter } from '../size'
 import type { Store } from '../store'
@@ -24,6 +26,23 @@ export interface WorktreeDeps {
 }
 
 const norm = (p: string) => resolve(p)
+const SEP = '\u001f'
+const DIFF_LIMIT = 2 * 1024 * 1024
+const FOLDER_NAME = /^(?!\.)[A-Za-z0-9._-]{1,120}$/
+
+// `git status --porcelain=v1 -z`: `XY path\0`, with the old path after renames and copies.
+export function parseStatus(out: string): ChangedFile[] {
+  const parts = out.split('\0')
+  const files: ChangedFile[] = []
+  for (let i = 0; i < parts.length; i++) {
+    const entry = parts[i]!
+    if (entry.length < 4) continue
+    const status = entry.slice(0, 2)
+    files.push({ path: entry.slice(3), status })
+    if (status[0] === 'R' || status[0] === 'C') i++
+  }
+  return files
+}
 
 async function exists(path: string) {
   try {
@@ -46,23 +65,31 @@ export class WorktreeService {
   // Only paths found by the last scan can be inspected or removed, so the window can't ask for an arbitrary folder.
   private known = new Map<string, { repo: string; worktree: Worktree }>()
   private sizes = limiter(4)
+  // The changed files last listed per worktree; only these can be diffed.
+  private changed = new Map<string, Set<string>>()
 
   constructor(private readonly deps: WorktreeDeps) {}
 
   async listRepo(repo: string): Promise<Repo> {
-    const res = await git(repo, ['worktree', 'list', '--porcelain'])
+    const [res, remotes] = await Promise.all([git(repo, ['worktree', 'list', '--porcelain']), git(repo, ['remote', '-v'])])
+    const github = remotes.code === 0 ? pickGithubRemote(remotes.stdout) : undefined
     if (res.code !== 0) return { path: repo, name: basename(repo), worktrees: [], error: res.stderr.trim() || 'git failed' }
     const worktrees = parseWorktreeList(res.stdout).map((w) => ({ ...w, path: norm(w.path) }))
     for (const [path, entry] of this.known) if (entry.repo === repo) this.known.delete(path)
     for (const worktree of worktrees) this.known.set(worktree.path, { repo, worktree })
-    return { path: repo, name: basename(repo), worktrees }
+    return { path: repo, name: basename(repo), worktrees, github }
   }
 
   async scan(): Promise<Repo[]> {
     const { roots, depth } = await this.deps.roots()
-    this.known.clear()
     const repos = await findRepos(roots, depth)
     return Promise.all(repos.map((repo) => this.listRepo(repo)))
+  }
+
+  // The normalised path when it is a known worktree folder that exists in the last listing.
+  knows(path: string): string | undefined {
+    const found = this.known.get(norm(path))
+    return found && !found.worktree.prunable ? found.worktree.path : undefined
   }
 
   private entry(path: string) {
@@ -152,6 +179,69 @@ export class WorktreeService {
     await rm(entry.backup, { recursive: true, force: true })
     await this.deps.store.set({ [UNDO_KEY]: entries.filter((e) => e.id !== id) })
     return { ok: true }
+  }
+
+  // Files with changes, and the latest commits, so the person can see what a worktree holds before deciding.
+  async changes(path: string): Promise<WorktreeChanges> {
+    const { worktree } = this.entry(path)
+    if (worktree.prunable || !(await exists(worktree.path))) return { files: [], commits: [] }
+    const [status, log] = await Promise.all([
+      git(worktree.path, ['status', '--porcelain=v1', '-z', '--untracked-files=all']),
+      git(worktree.path, ['log', '-15', `--format=%H${SEP}%s${SEP}%an${SEP}%ct`]),
+    ])
+    const files = status.code === 0 ? parseStatus(status.stdout) : []
+    this.changed.set(worktree.path, new Set(files.map((f) => f.path)))
+    const commits =
+      log.code === 0
+        ? log.stdout
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              const [sha = '', subject = '', author = '', date] = line.split(SEP)
+              return { sha, subject, author, date: Number(date) * 1000 || 0 }
+            })
+        : []
+    return { files, commits }
+  }
+
+  async diff(path: string, file: string): Promise<string> {
+    const { worktree } = this.entry(path)
+    if (!this.changed.get(worktree.path)?.has(file)) throw new Error('This file is not in the list of changes. Refresh and try again.')
+    const status = await git(worktree.path, ['status', '--porcelain=v1', '-z', '--', file])
+    const untracked = status.stdout.startsWith('??')
+    const res = untracked
+      ? await git(worktree.path, ['diff', '--no-color', '--no-index', '--', '/dev/null', file])
+      : await git(worktree.path, ['diff', '--no-color', 'HEAD', '--', file])
+    const text = res.stdout
+    return text.length > DIFF_LIMIT ? text.slice(0, DIFF_LIMIT) : text
+  }
+
+  // Renames the worktree's folder in place with `git worktree move`, which keeps git's records right.
+  async rename(path: string, name: string): Promise<Repo> {
+    const { repo, worktree } = this.entry(path)
+    if (worktree.main) throw new Error('The main folder is renamed in Finder or Explorer, not here.')
+    if (worktree.locked) throw new Error('This worktree is locked. Unlock it with git first.')
+    if (worktree.prunable) throw new Error('The folder is missing.')
+    const clean = name.trim()
+    if (!FOLDER_NAME.test(clean)) throw new Error('Use letters, numbers, dots, dashes and underscores only.')
+    const target = join(dirname(worktree.path), clean)
+    if (target === worktree.path) return this.listRepo(repo)
+    if (await exists(target)) throw new Error('A folder with that name is already there.')
+    const res = await git(repo, ['worktree', 'move', worktree.path, target])
+    if (res.code !== 0) throw new Error(res.stderr.trim() || 'git worktree move failed.')
+    return this.listRepo(repo)
+  }
+
+  // Renames the branch checked out in this worktree, or creates one there when it's detached.
+  async renameBranch(path: string, name: string): Promise<Repo> {
+    const { repo, worktree } = this.entry(path)
+    const clean = name.trim()
+    if (!validBranchName(clean)) throw new Error('That is not a valid branch name.')
+    const res = worktree.branch
+      ? await git(worktree.path, ['branch', '-m', '--', worktree.branch, clean])
+      : await git(worktree.path, ['switch', '-c', clean])
+    if (res.code !== 0) throw new Error(res.stderr.trim() || 'git failed.')
+    return this.listRepo(repo)
   }
 
   async prune(repo: string): Promise<Repo> {

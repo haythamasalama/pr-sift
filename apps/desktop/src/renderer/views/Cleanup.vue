@@ -28,6 +28,8 @@ const KINDS: { id: LeftoverKind | 'all'; label: string }[] = [
 ]
 const KIND_LABEL: Record<LeftoverKind, string> = { dependencies: 'Dependencies', build: 'Build output', cache: 'Cache', media: 'Media' }
 
+// With `root`, only that project's folder is searched.
+const { root } = defineProps<{ root?: string }>()
 const { settings, ready } = useProjectFolders()
 const items = shallowRef<Leftover[]>([])
 const sizes = reactive(new Map<string, number>())
@@ -71,7 +73,7 @@ async function scan() {
   selected.clear()
   sizes.clear()
   try {
-    items.value = await bridge.invoke('leftovers:scan')
+    items.value = await bridge.invoke('leftovers:scan', root)
     scanned.value = true
     const folders = items.value.filter((i) => i.size === undefined)
     measuring.value = folders.length
@@ -130,13 +132,14 @@ async function trash() {
 const reveal = (path: string) => bridge.invoke('shell:reveal', path)
 
 onMounted(async () => {
+  if (root) return scan()
   await ready
   if (settings.value?.roots.length) await scan()
 })
 </script>
 
 <template>
-  <PageHeader title="Cleanup" :description="summary">
+  <PageHeader v-if="!root" title="Cleanup" :description="summary">
     <Button v-if="settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
       <Spinner v-if="scanning" />
       <RefreshCw v-else />
@@ -153,9 +156,20 @@ onMounted(async () => {
     <template #actions><Button size="xs" variant="ghost" @click="notice = ''">Dismiss</Button></template>
   </NoticeBar>
 
-  <NoFolders v-if="settings && !settings.roots.length" @added="scan" />
+  <NoFolders v-if="!root && settings && !settings.roots.length" @added="scan" />
 
-  <div v-else class="flex flex-col gap-4 p-6">
+  <div v-else class="flex flex-col gap-4" :class="root ? '' : 'p-6'">
+    <div v-if="root" class="flex flex-wrap items-center gap-3">
+      <p class="flex-1 text-muted-foreground">{{ summary }}</p>
+      <Button size="sm" variant="outline" :disabled="scanning" @click="scan">
+        <Spinner v-if="scanning" />
+        <RefreshCw v-else />
+        Rescan
+      </Button>
+      <Button v-if="selectedItems.length" size="sm" variant="destructive" @click="confirming = true">
+        <Trash2 /> Move {{ selectedItems.length }} to Trash · {{ formatBytes(selectedSize) }}
+      </Button>
+    </div>
     <Alert v-if="error" variant="destructive">
       <CircleAlert />
       <AlertDescription>{{ error }}</AlertDescription>

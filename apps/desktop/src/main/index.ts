@@ -14,6 +14,9 @@ import { Store } from './store'
 import { run } from './exec'
 import { TokenVault } from './token'
 import { WorktreeService } from './worktrees/service'
+import { ProjectService } from './projects/service'
+import { deleteBranch, listBranches } from './projects/branches'
+import { openIn } from './launch'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const platform = process.platform
@@ -37,6 +40,12 @@ const worktrees = new WorktreeService({
   trash: (path) => shell.trashItem(path),
   roots: () => readSettings(internal),
 })
+async function pickFolder(title: string) {
+  const options = { properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[], title }
+  const picked = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
+  return picked.canceled ? null : (picked.filePaths[0] ?? null)
+}
+const projects = new ProjectService({ store: internal, roots: () => readSettings(internal), pickFolder: () => pickFolder('Add a project') })
 const leftovers = new Map<string, Leftover>()
 const sizes = limiter(4)
 
@@ -125,13 +134,29 @@ function registerHandlers() {
 
   h('settings:get', () => readSettings(internal))
   h('settings:set', (_e, next) => writeSettings(internal, next ?? {}))
-  h('dialog:pick-folder', async () => {
-    const options = { properties: ['openDirectory', 'createDirectory'] as const, title: 'Add a project folder' }
-    const picked = window
-      ? await dialog.showOpenDialog(window, { ...options, properties: [...options.properties] })
-      : await dialog.showOpenDialog({ ...options, properties: [...options.properties] })
-    return picked.canceled ? null : (picked.filePaths[0] ?? null)
+  h('dialog:pick-folder', () => pickFolder('Add a folder to look in'))
+
+  const projectsChanged = (list: Awaited<ReturnType<typeof projects.list>>) => {
+    send('projects:changed', list)
+    return list
+  }
+  h('projects:list', () => projects.list())
+  h('projects:candidates', () => projects.candidates())
+  h('projects:browse', () => projects.browse())
+  h('projects:add', async (_e, paths) => projectsChanged(await projects.add(Array.isArray(paths) ? paths.map(String) : [])))
+  h('projects:remove', async (_e, path) => projectsChanged(await projects.remove(String(path))))
+  h('worktrees:list', async (_e, repo) => worktrees.listRepo(await projects.require(String(repo))))
+  h('worktrees:changes', (_e, path) => worktrees.changes(String(path)))
+  h('worktrees:diff', (_e, path, file) => worktrees.diff(String(path), String(file)))
+  h('worktrees:rename', (_e, path, name) => worktrees.rename(String(path), String(name)))
+  h('worktrees:rename-branch', (_e, path, name) => worktrees.renameBranch(String(path), String(name)))
+  h('worktrees:open', (_e, path, target) => {
+    const known = worktrees.knows(String(path))
+    if (!known) throw new Error('This folder is not in the last scan.')
+    return openIn(target === 'terminal' ? 'terminal' : 'editor', known, platform, process.env)
   })
+  h('branches:list', async (_e, repo) => listBranches(await projects.require(String(repo))))
+  h('branches:delete', async (_e, repo, name, force) => deleteBranch(await projects.require(String(repo)), String(name), force === true))
 
   h('worktrees:scan', () => worktrees.scan())
   h('worktrees:details', (_e, path) => worktrees.details(String(path)))
@@ -140,9 +165,10 @@ function registerHandlers() {
   h('worktrees:undo', (_e, id) => worktrees.undo(String(id)))
   h('worktrees:prune', (_e, repo) => worktrees.prune(String(repo)))
 
-  h('leftovers:scan', async () => {
+  h('leftovers:scan', async (_e, root) => {
     const settings = await readSettings(internal)
-    const found = await scanLeftovers({ roots: settings.roots, depth: Math.max(settings.depth + 4, 8), platform, home, env: process.env })
+    const roots = root === undefined || root === null ? settings.roots : [await projects.require(String(root))]
+    const found = await scanLeftovers({ roots, depth: Math.max(settings.depth + 4, 8), platform, home, env: process.env })
     leftovers.clear()
     for (const item of found) leftovers.set(item.path, item)
     return found

@@ -1,5 +1,6 @@
-// Launches the built app with a throwaway profile, signs in against a stubbed GitHub, and walks through every screen.
+// Launches the built app with a throwaway profile against a stubbed GitHub, and walks through every screen.
 // Usage: node tests/e2e/smoke.mjs <projects folder> <screenshots folder>
+// The projects folder needs a repository `shop` (origin github.com/acme/shop) with a worktree on `feature/cart`.
 import { _electron as electron } from 'playwright'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,11 +17,60 @@ const electronApp = await electron.launch({
 })
 const errors = []
 await electronApp.evaluate(() => {
-  globalThis.fetch = async () =>
-    new Response(JSON.stringify({ login: 'octo-test', name: 'Octo Test', avatar_url: null }), {
-      status: 200,
-      headers: { 'content-type': 'application/json', 'x-oauth-scopes': 'repo, read:org' },
-    })
+  const json = (body, headers = {}) =>
+    new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json', ...headers } })
+  const pull = {
+    number: 7,
+    title: 'Add a shopping cart',
+    url: 'https://github.com/acme/shop/pull/7',
+    isDraft: false,
+    updatedAt: new Date(Date.now() - 3_600_000).toISOString(),
+    reviewDecision: 'REVIEW_REQUIRED',
+    headRefName: 'feature/cart',
+    baseRefName: 'main',
+    additions: 2,
+    deletions: 0,
+    mergeable: 'MERGEABLE',
+    repository: { name: 'shop', owner: { login: 'acme' } },
+    author: { login: 'teammate', avatarUrl: null },
+    labels: { nodes: [{ name: 'feature', color: '0e8a16' }] },
+    comments: { totalCount: 2 },
+    reviewRequests: { nodes: [{ requestedReviewer: { login: 'octo-test' } }] },
+    commits: { nodes: [{ commit: { statusCheckRollup: { state: 'SUCCESS' } } }] },
+  }
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input))
+    if (url.pathname === '/user')
+      return json({ login: 'octo-test', name: 'Octo Test', avatar_url: null }, { 'x-oauth-scopes': 'repo, read:org' })
+    if (url.pathname === '/graphql') {
+      const query = JSON.parse(init.body).query
+      if (query.includes('review:')) return json({ data: { review: { nodes: [pull] }, mine: { nodes: [] }, assigned: { nodes: [] } } })
+      return json({ data: { repository: { defaultBranchRef: { name: 'main' }, pullRequests: { nodes: [pull] }, issues: { nodes: [] } } } })
+    }
+    if (url.pathname === '/repos/acme/shop/pulls/7')
+      return json({
+        title: 'Add a shopping cart',
+        changed_files: 1,
+        head: { sha: 'abc123', ref: 'feature/cart' },
+        base: { ref: 'main' },
+        user: { login: 'teammate' },
+        state: 'open',
+        body_html: '<p>Adds a cart.</p>',
+      })
+    if (url.pathname === '/repos/acme/shop/pulls/7/files')
+      return json([
+        {
+          filename: 'src/cart.js',
+          status: 'added',
+          additions: 2,
+          deletions: 0,
+          patch: '@@ -0,0 +1,2 @@\n+export const cart = []\n+export const add = (x) => cart.push(x)',
+          sha: '1',
+          blob_url: 'https://github.com/acme/shop/blob/abc123/src/cart.js',
+        },
+      ])
+    return json([])
+  }
 })
 const page = await electronApp.firstWindow()
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
@@ -34,30 +84,66 @@ await electronApp.evaluate(async ({ BrowserWindow }) => {
 await page.screenshot({ path: join(shots, '1-sign-in.png') })
 await page.getByLabel('Personal access token').fill('ghp_example_token_for_smoke_test')
 await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-await page.getByRole('heading', { name: 'Worktrees' }).waitFor()
+await page.getByRole('heading', { name: 'Needs you' }).waitFor()
+await page.getByText('Add a shopping cart').waitFor()
+await page.screenshot({ path: join(shots, '2-inbox.png') })
 
-await page.evaluate((roots) => window.prSift.invoke('settings:set', { roots: [roots] }), projects)
-await page.reload()
-await page.getByText('feature/cart').waitFor()
+await page.getByText('Add a shopping cart').click()
+await page.getByText('src/cart.js').first().waitFor({ timeout: 15_000 })
+await page.waitForTimeout(600)
+await page.screenshot({ path: join(shots, '3-review.png') })
+await page.keyboard.press('Escape')
+await page.getByRole('heading', { name: 'Needs you' }).waitFor()
+
+await page.evaluate(async (root) => {
+  await window.prSift.invoke('settings:set', { roots: [root] })
+}, projects)
+await page.getByRole('button', { name: 'Add projects' }).click()
+await page.getByRole('dialog').getByText('shop', { exact: true }).click()
+await page.screenshot({ path: join(shots, '4-add-project.png') })
+await page
+  .getByRole('dialog')
+  .getByRole('button', { name: /^Add 1 project/ })
+  .click()
+await page.getByRole('heading', { name: 'shop' }).waitFor()
+await page.getByText('Waiting for your review').waitFor()
+await page.screenshot({ path: join(shots, '5-project-pulls.png') })
+
+await page.getByRole('button', { name: 'Worktrees', exact: true }).click()
+await page.getByText('feature/cart').first().waitFor()
 await page.waitForTimeout(800)
-await page.screenshot({ path: join(shots, '2-worktrees.png') })
+await page.screenshot({ path: join(shots, '6-project-worktrees.png') })
+await page.locator('li', { hasText: 'shop-cart' }).first().click()
+await page.getByText('Changes not committed').waitFor()
+await page.getByRole('button', { name: /notes\.txt/ }).click()
+await page.getByText('remember the milk').waitFor()
+await page.screenshot({ path: join(shots, '7-worktree-sheet.png') })
+await page.getByRole('button', { name: 'Rename' }).click()
+await page.getByLabel('Folder name').fill('shop-cart-v2')
+await page.getByRole('button', { name: 'Save' }).click()
+await page.getByText('shop-cart-v2').first().waitFor()
+await page.screenshot({ path: join(shots, '8-renamed.png') })
+await page.keyboard.press('Escape')
 
-const row = page.locator('li', { hasText: 'feature/cart' })
+await page.getByRole('button', { name: 'Branches', exact: true }).click()
+await page.getByText('old-merged').waitFor()
+await page.screenshot({ path: join(shots, '9-branches.png') })
+
+await page.getByRole('button', { name: 'Worktrees', exact: true }).click()
+const row = page.locator('li', { hasText: 'shop-cart-v2' }).first()
 await row.getByRole('button', { name: 'Move to Trash' }).click()
-await page.screenshot({ path: join(shots, '3-confirm.png') })
 await page.getByRole('dialog').getByRole('button', { name: 'Move to Trash' }).click()
-await page.waitForTimeout(800)
-await page.screenshot({ path: join(shots, '4-removed.png') })
+await page.getByText('Moved feature/cart to the Trash').waitFor()
 
-await page.getByRole('button', { name: 'Cleanup' }).click()
+await page.getByRole('button', { name: 'Hidden files', exact: true }).click()
 await page.getByText('Build output').first().waitFor({ timeout: 20_000 })
 await page.waitForTimeout(800)
-await page.screenshot({ path: join(shots, '5-cleanup.png') })
+await page.screenshot({ path: join(shots, '10-hidden-files.png') })
 
+await page.getByRole('button', { name: 'All worktrees' }).click()
+await page.getByRole('heading', { name: 'All worktrees' }).waitFor()
 await page.getByRole('button', { name: 'Settings' }).click()
-await page.screenshot({ path: join(shots, '6-settings.png') })
-await page.getByRole('button', { name: 'octo-test' }).click()
-await page.screenshot({ path: join(shots, '7-account.png') })
+await page.screenshot({ path: join(shots, '11-settings.png') })
 
 await electronApp.close()
 if (errors.length) {
