@@ -31,6 +31,8 @@ defineProps<{
   loading?: boolean
   /** In the desktop app the panel is a page, so it leaves with a Back arrow on the left instead of a close button. */
   back?: boolean
+  /** Leaves out notes and the options menu, which a worktree in the desktop app does not have. */
+  bare?: boolean
 }>()
 
 const { theme, setTheme } = useAppearance()
@@ -92,55 +94,57 @@ const openSettings = useSettingsOpener()
 
     <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
 
-    <Separator orientation="vertical" class="order-3 hidden h-5 sm:block xl:order-none data-[orientation=vertical]:self-center" />
+    <template v-if="!bare">
+      <Separator orientation="vertical" class="order-3 hidden h-5 sm:block xl:order-none data-[orientation=vertical]:self-center" />
 
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
-      title="Your private notes"
-      :aria-label="noteCount ? `Notes, ${noteCount} open` : 'Notes'"
-      @click="emit('openNotes')"
-    >
-      <NotepadText />
-      <Badge
-        v-if="noteCount"
-        class="pointer-events-none absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-semibold ring-2 ring-sidebar"
-        >{{ noteCount }}</Badge
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
+        title="Your private notes"
+        :aria-label="noteCount ? `Notes, ${noteCount} open` : 'Notes'"
+        @click="emit('openNotes')"
       >
-    </Button>
-
-    <DropdownMenu>
-      <DropdownMenuTrigger as-child>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
-          :aria-label="updateReady ? 'Options, update ready' : 'Options'"
-          :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
+        <NotepadText />
+        <Badge
+          v-if="noteCount"
+          class="pointer-events-none absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-semibold ring-2 ring-sidebar"
+          >{{ noteCount }}</Badge
         >
-          <Settings />
-          <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-emphasis" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-56">
-        <template v-if="updateReady">
-          <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
+      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="relative order-3 shrink-0 text-muted-foreground xl:order-none"
+            :aria-label="updateReady ? 'Options, update ready' : 'Options'"
+            :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
+          >
+            <Settings />
+            <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-emphasis" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-56">
+          <template v-if="updateReady">
+            <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </template>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+            <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
+              <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-        </template>
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Theme</DropdownMenuLabel>
-          <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
-            <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
-        <DropdownMenuItem @select="openSettings('about')"><CircleHelp /> Help and feedback</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
+          <DropdownMenuItem @select="openSettings('about')"><CircleHelp /> Help and feedback</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </template>
 
     <Button v-if="!back" variant="ghost" size="icon-sm" class="hidden shrink-0 xl:inline-flex" aria-label="Close" @click="emit('close')"
       ><X

@@ -1,43 +1,69 @@
 <script setup lang="ts">
-import { computed, provide, shallowRef, useTemplateRef, watch } from 'vue'
-import { ArrowLeft, CircleAlert, Code, Copy, Ellipsis, ExternalLink, FolderOpen, GitPullRequest, Search, SquareTerminal } from '@lucide/vue'
-import { buildTree } from '@pr-sift/core'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Code,
+  Copy,
+  Ellipsis,
+  ExternalLink,
+  FolderOpen,
+  FolderTree,
+  GitCommitHorizontal,
+  GitPullRequest,
+  Search,
+  Sparkles,
+  SquareTerminal,
+  X,
+} from '@lucide/vue'
+import { buildTree, cleanSavedFilters, folderChip, normalizeExtension, patternsFromView } from '@pr-sift/core'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import FileList from '@/features/diff/FileList.vue'
 import FileTree from '@/features/tree/FileTree.vue'
+import FilterBar from '@/features/filters/FilterBar.vue'
+import ScopePanel from '@/features/filters/ScopePanel.vue'
+import Toolbar from '@/features/review/Toolbar.vue'
+import { useFileFilter } from '@/features/filters/useFileFilter'
 import { diffModeKey } from '@/features/diff/diffMode'
 import { fileContextKey } from '@/features/diff/fileContext'
 import { cardsExpandKey, type ExpandCommand } from '@/features/tree/expandContext'
 import { notesKey, useNotes } from '@/features/notes/useNotes'
+import { useResizable } from '@/features/review/useResizable'
 import { useViewed } from '@/features/review/useViewed'
-import type { DiffMode, PrFile } from '@/lib/types'
+import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '@/lib/settings'
+import type { DiffMode, PrFile, Settings } from '@/lib/types'
 import { bridge } from '~/bridge'
 import { readCache } from '~/cache'
 import { errorText, formatAgo } from '~/format'
 import type { RepoActivity } from '~/github'
-import { canGoBack, goBack, project } from '~/navigation'
-import type { PatchMode, WorktreePatch } from '#shared/ipc'
+import { goBack, project } from '~/navigation'
+import type { Commit, PatchMode, WorktreePatch } from '#shared/ipc'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Hint from '~/components/Hint.vue'
 import PathText from '~/components/PathText.vue'
 import Segmented from '~/components/Segmented.vue'
 
-// A worktree's changes, read like a pull request: the files on the left, their diffs on the right.
+// A worktree read the way PR Sift reads a pull request: the same header, type filters, tree and diff cards.
+// What is shown is the worktree's own: uncommitted changes, the whole branch, or one of its commits.
 const { path } = defineProps<{ path: string }>()
 
 const mode = shallowRef<PatchMode>('uncommitted')
+const commitSha = shallowRef('')
 const data = shallowRef<WorktreePatch | null>(null)
 const loading = shallowRef(false)
 const error = shallowRef('')
 const note = shallowRef('')
-const query = shallowRef('')
-const loadedAt = shallowRef<number | null>(null)
 const discarding = shallowRef<string | null>(null)
 const busy = shallowRef(false)
 let noteTimer: ReturnType<typeof setTimeout> | undefined
@@ -49,13 +75,14 @@ function flash(text: string) {
 }
 
 async function fetchPatch() {
+  const sha = mode.value === 'commit' ? commitSha.value : undefined
   try {
-    return await bridge.invoke('worktrees:patch', path, mode.value)
+    return await bridge.invoke('worktrees:patch', path, mode.value, sha)
   } catch (e) {
     // The main process only works on folders from its last listing, which a fresh start does not have yet.
     if (!project.value) throw e
     await bridge.invoke('worktrees:list', project.value)
-    return await bridge.invoke('worktrees:patch', path, mode.value)
+    return await bridge.invoke('worktrees:patch', path, mode.value, sha)
   }
 }
 
@@ -64,23 +91,56 @@ async function load() {
   error.value = ''
   try {
     data.value = await fetchPatch()
-    loadedAt.value = Date.now()
   } catch (e) {
     error.value = errorText(e)
   } finally {
     loading.value = false
   }
 }
-watch(mode, load, { immediate: true })
+watch([mode, commitSha], load, { immediate: true })
 
 const github = computed(() => data.value?.github)
 const branch = computed(() => data.value?.worktree.branch ?? '')
+const title = computed(() => branch.value || (data.value?.worktree.detached ? 'Detached HEAD' : (path.split(/[\\/]/).pop() ?? '')))
 const pull = computed(() => {
   const gh = github.value
   if (!gh || !branch.value) return undefined
   const activity = readCache<RepoActivity>(`repo:${gh.owner}/${gh.repo}`.toLowerCase())?.value
   return activity?.pulls.find((p) => p.branch === branch.value)
 })
+
+// ── What to show: uncommitted, the whole branch, or one commit. ──
+const commits = computed(() => data.value?.commits ?? [])
+const MODES = computed(() => [
+  { value: 'uncommitted' as const, label: 'Uncommitted', count: data.value?.counts.uncommitted },
+  { value: 'branch' as const, label: 'Whole branch', count: data.value?.counts.branch },
+])
+const shownMode = computed({
+  get: () => (mode.value === 'commit' ? ('' as 'uncommitted') : (mode.value as 'uncommitted' | 'branch')),
+  set: (value: 'uncommitted' | 'branch') => {
+    mode.value = value
+    commitSha.value = ''
+  },
+})
+const current = computed(() => (mode.value === 'commit' ? commits.value.find((c) => c.sha === commitSha.value) : undefined))
+const commitsOpen = shallowRef(false)
+function showCommit(c: Commit) {
+  commitSha.value = c.sha
+  mode.value = 'commit'
+  commitsOpen.value = false
+}
+// Commits are listed newest first, so "older" is further down the list.
+const step = (by: 1 | -1) => {
+  const i = commits.value.findIndex((c) => c.sha === commitSha.value)
+  const next = commits.value[i + by]
+  if (next) showCommit(next)
+}
+const initial = (name: string) => (name.trim()[0] ?? '?').toUpperCase()
+
+// ── The review: same filters, tree and cards as a pull request. ──
+const settings = shallowRef<Settings>(DEFAULTS)
+let stopWatchingSettings = () => {}
+onBeforeUnmount(() => stopWatchingSettings())
 
 const files = computed<PrFile[]>(() =>
   (data.value?.files ?? []).map((f) => ({
@@ -93,32 +153,29 @@ const files = computed<PrFile[]>(() =>
     blob_url: '',
   })),
 )
-const shown = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return q ? files.value.filter((f) => f.filename.toLowerCase().includes(q)) : files.value
-})
-const tree = computed(() => buildTree(shown.value))
-const totals = computed(() => ({
-  additions: files.value.reduce((n, f) => n + f.additions, 0),
-  deletions: files.value.reduce((n, f) => n + f.deletions, 0),
-}))
-const MODES = computed(() => [
-  { value: 'uncommitted' as const, label: 'Uncommitted', count: data.value?.counts.uncommitted },
-  { value: 'branch' as const, label: 'Whole branch', count: data.value?.counts.branch },
-])
+const viewedKey = computed(() => `worktree:${path}:${mode.value === 'commit' ? `commit:${commitSha.value}` : mode.value}`)
+const { viewed, isViewed, setViewed, setMany, clearAll } = useViewed(viewedKey)
+const notesStore = useNotes(computed(() => `worktree:${path}`))
+const filter = useFileFilter(files, settings, isViewed)
+const tree = computed(() => buildTree(filter.pool.value))
+
+const list = useTemplateRef<InstanceType<typeof FileList>>('list')
+const main = useTemplateRef<HTMLElement>('main')
+const sidebar = shallowRef<'smart' | 'tree'>('tree')
+const compact = useMediaQuery('(max-width: 1100px)')
+const narrow = useMediaQuery('(max-width: 960px)')
+const sidebarOpen = shallowRef(false)
+const sidebarSize = useResizable(DEFAULTS.sidebarWidth, 220, 640, (width) => saveSetting('sidebarWidth', width))
 
 const diffMode = shallowRef<DiffMode>('unified')
-const DIFF_MODES = [
-  { value: 'unified' as const, label: 'Unified' },
-  { value: 'split' as const, label: 'Split' },
-]
-provide(diffModeKey, diffMode)
+provide(
+  diffModeKey,
+  computed<DiffMode>(() => (narrow.value ? 'unified' : diffMode.value)),
+)
+watch(diffMode, (value) => saveSetting('diffView', value))
 const cardsExpand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(cardsExpandKey, cardsExpand)
 
-const key = computed(() => `worktree:${path}:${mode.value}`)
-const { viewed, isViewed, setViewed, setMany } = useViewed(key)
-const notesStore = useNotes(computed(() => `worktree:${path}`))
 provide(notesKey, {
   notes: notesStore.notes,
   canPost: shallowRef(false),
@@ -134,8 +191,9 @@ provide(fileContextKey, {
   loadLines: async () => [],
   githubUrl: async (filename) => {
     const gh = github.value
-    if (!gh || !branch.value) return ''
-    return `https://github.com/${gh.owner}/${gh.repo}/blob/${encodeURIComponent(branch.value)}/${filename.split('/').map(encodeURIComponent).join('/')}`
+    const ref = current.value?.sha ?? branch.value
+    if (!gh || !ref) return ''
+    return `https://github.com/${gh.owner}/${gh.repo}/blob/${encodeURIComponent(ref)}/${filename.split('/').map(encodeURIComponent).join('/')}`
   },
   // Only the uncommitted view shows changes that can be thrown away; committed ones stay.
   discard: (filename) => {
@@ -144,14 +202,70 @@ provide(fileContextKey, {
   },
 })
 
-const list = useTemplateRef<InstanceType<typeof FileList>>('list')
-function toggleFolder(folder: string, value: boolean) {
-  void setMany(
-    shown.value.filter((f) => !folder || f.filename.startsWith(folder + '/')),
+const viewPatterns = computed(() =>
+  patternsFromView(
+    filter.chips.value.filter((c) => c.state === 'include' && c.ext.startsWith('.')).map((c) => c.ext),
+    filter.scopes.value.filter((k) => k.startsWith('path:')).map((k) => k.slice(5)),
+  ),
+)
+async function saveView(name: string) {
+  const others = settings.value.presets.filter((p) => p.name.trim().toLowerCase() !== name.toLowerCase())
+  const presets = cleanSavedFilters([...others, { name, include: viewPatterns.value }])
+  settings.value = { ...settings.value, presets }
+  await saveSetting('presets', presets)
+  flash(`Saved “${name}” as a filter`)
+}
+function setReviewMode(value: boolean) {
+  filter.reviewMode.value = value
+  return saveSetting('reviewMode', value)
+}
+async function goToFile(name: string) {
+  if (!filter.inScope.value.some((f) => f.filename === name)) {
+    await filter.resetFilters({ persist: false })
+    if (!filter.inScope.value.some((f) => f.filename === name)) {
+      filter.reviewMode.value = false
+      filter.showHidden.value = true
+    }
+  }
+  await nextTick()
+  await list.value?.scrollTo(name)
+}
+function jumpToFolder(folder: string) {
+  if (folder) list.value?.scrollToFolder(folder)
+  else main.value?.scrollTo({ top: 0 })
+}
+const selectFolder = (folder: string) => filter.setScopes(folder ? ['path:' + folder] : [])
+function hideFolder(folder: string) {
+  const selected = filter.selectedFolder.value
+  if (selected === folder || selected.startsWith(folder + '/')) filter.setScopes([])
+  return filter.toggleChip(folderChip(folder), true)
+}
+const toggleFolder = (folder: string, value: boolean) =>
+  setMany(
+    filter.pool.value.filter((f) => !folder || f.filename.startsWith(folder + '/')),
     value,
   )
+async function setCustomExtensions(next: string[]) {
+  settings.value = { ...settings.value, customExtensions: next }
+  await saveSetting('customExtensions', next)
 }
+function addExtension(raw: string) {
+  const ext = normalizeExtension(raw)
+  if (ext && !settings.value.customExtensions.includes(ext)) return setCustomExtensions([...settings.value.customExtensions, ext])
+}
+const removeExtension = (ext: string) => setCustomExtensions(settings.value.customExtensions.filter((e) => e !== ext))
+const allReviewed = computed(() => filter.inScope.value.length === 0 && filter.viewedInView.value.length > 0)
 
+onMounted(async () => {
+  stopWatchingSettings = onSettingsChange((next) => (settings.value = next))
+  settings.value = await getSettings()
+  filter.loadHiddenTypes(settings.value.hiddenTypes)
+  filter.reviewMode.value = settings.value.reviewMode
+  diffMode.value = settings.value.diffView
+  sidebarSize.set(settings.value.sidebarWidth)
+})
+
+// ── Actions on the folder. ──
 async function confirmDiscard() {
   const file = discarding.value
   if (!file) return
@@ -178,152 +292,352 @@ async function openIn(target: 'editor' | 'terminal') {
   }
 }
 
-async function copyBranch() {
-  await navigator.clipboard.writeText(branch.value)
-  flash('Branch name copied')
+async function copy(text: string, what: string) {
+  await navigator.clipboard.writeText(text)
+  flash(`${what} copied`)
 }
 </script>
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <header class="flex items-center gap-3 border-b border-border px-6 py-4">
-      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
-        ><ArrowLeft class="size-4"
-      /></Button>
-
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <div class="flex min-w-0 items-center gap-2.5">
-          <h1 class="truncate font-mono text-[15px] leading-[22px] font-semibold">
-            {{ branch || (data?.worktree.detached ? 'Detached HEAD' : path.split(/[\\/]/).pop()) }}
-          </h1>
-          <Badge v-if="data && data.counts.uncommitted" variant="secondary" class="bg-attention/15 text-attention"
-            >{{ data.counts.uncommitted }} uncommitted</Badge
+    <Toolbar
+      :title="title"
+      :done="filter.progress.value.done"
+      :total="filter.progress.value.total"
+      :in-view="filter.inScope.value.length"
+      :note-count="0"
+      :compact="compact"
+      :loading="loading && !data"
+      back
+      bare
+      @toggle-sidebar="sidebarOpen = !sidebarOpen"
+      @close="goBack"
+    >
+      <template #meta>
+        <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs leading-4 whitespace-nowrap text-muted-foreground">
+          <a
+            v-if="pull"
+            :href="pull.url"
+            target="_blank"
+            rel="noreferrer"
+            class="inline-flex shrink-0 items-center gap-1 text-success-fg hover:underline"
+            ><GitPullRequest class="size-3.5" />#{{ pull.number }} {{ pull.draft ? 'Draft' : 'Open' }}</a
           >
-        </div>
-        <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
+          <span v-if="data?.base" class="shrink-0">into {{ data.base }}</span>
+          <span v-if="pull || data?.base" aria-hidden="true">·</span>
           <PathText :path="path" />
-          <template v-if="pull">
-            <span aria-hidden="true">·</span>
-            <a :href="pull.url" target="_blank" rel="noreferrer" class="inline-flex items-center gap-1 text-success-fg hover:underline"
-              ><GitPullRequest class="size-3.5" />#{{ pull.number }} {{ pull.draft ? 'Draft' : 'Open' }}</a
-            >
-          </template>
-          <template v-if="data?.base">
-            <span aria-hidden="true">·</span>
-            <span>into {{ data.base }}</span>
-          </template>
-          <template v-if="loadedAt">
-            <span aria-hidden="true">·</span>
-            <span>Checked {{ formatAgo(loadedAt) }}</span>
-          </template>
         </div>
-      </div>
-      <div class="flex shrink-0 items-center gap-1">
+      </template>
+      <template #actions>
         <Transition
           enter-from-class="opacity-0"
           leave-to-class="opacity-0"
           enter-active-class="transition-opacity"
           leave-active-class="transition-opacity duration-500"
         >
-          <span v-if="note" class="mr-1 text-xs text-muted-foreground">{{ note }}</span>
+          <span v-if="note" class="text-xs whitespace-nowrap text-muted-foreground">{{ note }}</span>
         </Transition>
-        <Hint text="Open in your editor">
-          <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="Open in editor" @click="openIn('editor')"
-            ><Code
+        <div class="flex items-center gap-0.5">
+          <Hint text="Open in your editor">
+            <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Open in editor" @click="openIn('editor')"
+              ><Code
+            /></Button>
+          </Hint>
+          <Hint text="Open a terminal here">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              class="text-muted-foreground"
+              aria-label="Open a terminal here"
+              @click="openIn('terminal')"
+              ><SquareTerminal
+            /></Button>
+          </Hint>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            class="text-muted-foreground"
+            aria-label="Show the folder"
+            @click="bridge.invoke('shell:reveal', path)"
+            ><FolderOpen
           /></Button>
-        </Hint>
-        <Hint text="Open a terminal here">
-          <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="Open a terminal here" @click="openIn('terminal')"
-            ><SquareTerminal
-          /></Button>
-        </Hint>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-56">
+              <DropdownMenuItem v-if="github && branch" as-child
+                ><a
+                  :href="`https://github.com/${github.owner}/${github.repo}/tree/${encodeURIComponent(branch)}`"
+                  target="_blank"
+                  rel="noreferrer"
+                  ><ExternalLink /> Open the branch on GitHub</a
+                ></DropdownMenuItem
+              >
+              <DropdownMenuItem v-if="github && current" as-child
+                ><a :href="`https://github.com/${github.owner}/${github.repo}/commit/${current.sha}`" target="_blank" rel="noreferrer"
+                  ><ExternalLink /> Open this commit on GitHub</a
+                ></DropdownMenuItem
+              >
+              <DropdownMenuItem v-if="branch" @select="copy(branch, 'Branch name')"><Copy /> Copy the branch name</DropdownMenuItem>
+              <DropdownMenuItem v-if="current" @select="copy(current.sha, 'Commit hash')"><Copy /> Copy the commit hash</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </template>
+    </Toolbar>
 
+    <div class="flex h-11 shrink-0 items-center gap-1.5 border-b px-3 sm:px-4" role="toolbar" aria-label="What to show">
+      <Segmented v-model="shownMode" :options="MODES" label="Show" />
+      <Popover v-model:open="commitsOpen">
+        <PopoverTrigger as-child>
+          <Button
+            size="sm"
+            :variant="current ? 'secondary' : 'ghost'"
+            class="max-w-72 gap-1.5 text-xs"
+            :class="current ? '' : 'text-muted-foreground'"
+            :disabled="!commits.length"
+            :aria-label="current ? `Commit ${current.subject}` : 'Commits'"
+          >
+            <GitCommitHorizontal />
+            <template v-if="current"
+              ><span class="font-mono">{{ current.sha.slice(0, 7) }}</span
+              ><span class="truncate">{{ current.subject }}</span></template
+            >
+            <template v-else
+              >Commits <Badge variant="secondary" class="min-w-5 px-1.5 tabular-nums">{{ commits.length }}</Badge></template
+            >
+            <ChevronDown class="text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" class="w-[420px] gap-0 p-0">
+          <div class="border-b border-border px-3 py-2.5">
+            <p class="text-sm font-medium">Commits on {{ branch || 'this branch' }}</p>
+            <p class="text-xs text-muted-foreground">
+              {{ data?.base ? `Since it left ${data.base}, newest first.` : 'The latest commits, newest first.' }} Pick one to see only its
+              changes.
+            </p>
+          </div>
+          <ul class="max-h-[360px] overflow-y-auto p-1">
+            <li v-for="c in commits" :key="c.sha">
+              <button
+                type="button"
+                class="flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left hover:bg-accent"
+                :class="c.sha === commitSha ? 'bg-accent' : ''"
+                @click="showCommit(c)"
+              >
+                <span
+                  class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground"
+                  aria-hidden="true"
+                  >{{ initial(c.author) }}</span
+                >
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span class="truncate text-[13px] font-medium">{{ c.subject }}</span>
+                  <span class="truncate text-xs text-muted-foreground">{{ c.author }} · {{ formatAgo(c.date) }}</span>
+                </span>
+                <span class="mt-0.5 shrink-0 font-mono text-xs text-muted-foreground">{{ c.sha.slice(0, 7) }}</span>
+              </button>
+            </li>
+          </ul>
+        </PopoverContent>
+      </Popover>
+      <template v-if="current">
         <Button
-          size="icon"
+          size="icon-sm"
           variant="ghost"
           class="text-muted-foreground"
-          aria-label="Show the folder"
-          @click="bridge.invoke('shell:reveal', path)"
-          ><FolderOpen
+          aria-label="Older commit"
+          :disabled="commits.at(-1)?.sha === current.sha"
+          @click="step(1)"
+          ><ChevronLeft
         /></Button>
-
-        <span class="mx-1 h-5 w-px bg-border" aria-hidden="true" />
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end" class="w-56">
-            <DropdownMenuItem v-if="github && branch" as-child
-              ><a
-                :href="`https://github.com/${github.owner}/${github.repo}/tree/${encodeURIComponent(branch)}`"
-                target="_blank"
-                rel="noreferrer"
-                ><ExternalLink /> Open the branch on GitHub</a
-              ></DropdownMenuItem
-            >
-            <DropdownMenuItem v-if="branch" @select="copyBranch"><Copy /> Copy the branch name</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
-
-    <div class="flex h-12 shrink-0 items-center gap-3 border-b border-accent px-6">
-      <Segmented v-model="mode" :options="MODES" label="Show" />
-      <span v-if="data" class="text-xs whitespace-nowrap text-muted-foreground"
-        >{{ files.length }} file{{ files.length === 1 ? '' : 's' }} · <span class="text-add-fg">+{{ totals.additions }}</span>
-        <span class="text-del-fg">−{{ totals.deletions }}</span></span
-      >
-      <Spinner v-if="loading" class="text-muted-foreground" />
-      <span class="flex-1" />
-      <Segmented v-model="diffMode" :options="DIFF_MODES" label="Diff view" />
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          class="text-muted-foreground"
+          aria-label="Newer commit"
+          :disabled="commits[0]?.sha === current.sha"
+          @click="step(-1)"
+          ><ChevronRight
+        /></Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          class="text-muted-foreground"
+          aria-label="Back to the whole branch"
+          @click="shownMode = 'branch'"
+          ><X
+        /></Button>
+      </template>
     </div>
 
-    <Alert v-if="error" variant="destructive" class="mx-6 mt-4 w-auto"
+    <FilterBar
+      v-if="data"
+      v-model:show-hidden="filter.showHidden.value"
+      v-model:diff-mode="diffMode"
+      :split-disabled="narrow"
+      :review-mode="filter.reviewMode.value"
+      :hidden-count="filter.hiddenCount.value"
+      :filters-active="filter.filtersActive.value"
+      :chips="filter.chips.value"
+      :presets="settings.presets"
+      :active-preset="filter.activePreset.value?.name ?? ''"
+      :hidden-presets="filter.hiddenPresets.value"
+      :view-patterns="viewPatterns"
+      :listed-count="filter.inScope.value.length"
+      :viewed-in-view="filter.viewedInView.value"
+      @update:review-mode="setReviewMode"
+      @toggle-extension="filter.toggleChip"
+      @reset-filters="filter.resetFilters"
+      @add-extension="addExtension"
+      @remove-extension="removeExtension"
+      @mark-listed="setMany(filter.inScope.value, true)"
+      @unmark-viewed="setMany(filter.viewedInView.value, false)"
+      @unmark-file="(file) => setViewed(file, false)"
+      @clear-all="clearAll"
+      @save-view="saveView"
+      @select-preset="filter.togglePreset"
+      @hide-preset="filter.hidePreset"
+    />
+
+    <Alert v-if="error" variant="destructive" class="mx-auto mt-6 max-w-xl"
       ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
     >
 
-    <div class="flex min-h-0 flex-1">
-      <aside class="flex w-[280px] shrink-0 flex-col gap-2 border-r border-accent p-3 @max-3xl:hidden">
-        <InputGroup>
-          <InputGroupAddon><Search /></InputGroupAddon>
-          <InputGroupInput v-model="query" placeholder="Filter files" aria-label="Filter files" />
-        </InputGroup>
-        <div class="min-h-0 flex-1 [&>nav]:p-0">
-          <FileTree
-            v-if="shown.length"
-            :tree="tree"
-            :search="query"
-            selected=""
-            :is-viewed="isViewed"
-            @select-folder="() => {}"
-            @jump-folder="(folder: string) => list?.scrollToFolder(folder)"
-            @select-file="(name: string) => list?.scrollTo(name)"
-            @toggle-viewed="toggleFolder"
-            @toggle-file="setViewed"
+    <div v-if="loading && !data" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
+      <Spinner /> Reading the changes…
+    </div>
+
+    <div
+      v-else-if="data"
+      class="relative grid min-h-0 flex-1"
+      :class="sidebarSize.dragging.value ? 'select-none' : ''"
+      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarSize.width.value}px 1fr` }"
+    >
+      <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
+      <aside
+        v-show="!compact || sidebarOpen"
+        class="min-h-0 border-r bg-sidebar"
+        :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
+      >
+        <div
+          v-if="!compact"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          class="group/resize absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize transition-colors hover:bg-emphasis/25"
+          :class="sidebarSize.dragging.value ? 'bg-emphasis/35' : ''"
+          @pointerdown.prevent="sidebarSize.start"
+          @dblclick="sidebarSize.set(DEFAULTS.sidebarWidth)"
+        >
+          <span
+            class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
           />
-          <p v-else-if="data" class="px-1.5 text-xs text-muted-foreground">No files match.</p>
         </div>
+        <Tabs v-model="sidebar" class="h-full gap-0">
+          <div class="border-b p-2">
+            <div class="relative flex items-center">
+              <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+              <Input
+                v-model="filter.query.value"
+                placeholder="Search files…"
+                aria-label="Search files"
+                class="h-8 pr-7 pl-8 text-xs md:text-xs"
+              />
+              <Button
+                v-if="filter.query.value"
+                variant="ghost"
+                size="icon-xs"
+                class="absolute right-1"
+                aria-label="Clear search"
+                @click="filter.query.value = ''"
+              >
+                <X />
+              </Button>
+            </div>
+          </div>
+          <div class="p-2 pb-1">
+            <TabsList class="w-full">
+              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
+              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="tree" class="min-h-0 flex-1">
+            <FileTree
+              :tree="tree"
+              :search="filter.query.value"
+              :selected="filter.selectedFolder.value"
+              :is-viewed="isViewed"
+              :indent="settings.treeIndent"
+              :guides="settings.treeGuides"
+              @select-folder="selectFolder"
+              @jump-folder="
+                (folder: string) => {
+                  jumpToFolder(folder)
+                  sidebarOpen = false
+                }
+              "
+              @select-file="
+                (name: string) => {
+                  goToFile(name)
+                  sidebarOpen = false
+                }
+              "
+              @toggle-viewed="toggleFolder"
+              @toggle-file="setViewed"
+              @hide-folder="hideFolder"
+            />
+          </TabsContent>
+          <TabsContent value="smart" class="min-h-0 flex-1">
+            <ScopePanel
+              :smart="filter.smart.value"
+              :selected="filter.scopes.value"
+              @toggle="filter.toggleScope"
+              @clear="filter.setScopes([])"
+            />
+          </TabsContent>
+        </Tabs>
       </aside>
-      <main class="min-h-0 flex-1 overflow-auto px-4 pt-4 pb-4">
-        <div v-if="loading && !data" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Reading the changes…</div>
-        <Empty v-else-if="data && !files.length" class="mx-auto mt-16 max-w-sm border-0">
+      <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
+        <Empty v-if="!files.length" class="mx-auto mt-16 max-w-sm border-0">
           <EmptyHeader>
-            <EmptyTitle class="text-sm">{{ mode === 'uncommitted' ? 'Nothing uncommitted' : 'No changes on this branch' }}</EmptyTitle>
-            <EmptyDescription>{{
+            <EmptyTitle class="text-sm">{{
+              mode === 'uncommitted'
+                ? 'Nothing uncommitted'
+                : mode === 'commit'
+                  ? 'This commit changes no files'
+                  : 'No changes on this branch'
+            }}</EmptyTitle>
+            <EmptyDescription v-if="mode !== 'commit'">{{
               mode === 'uncommitted'
                 ? 'Every change in this folder is committed.'
                 : `This branch has nothing that ${data.base ?? 'its base'} does not have.`
             }}</EmptyDescription>
           </EmptyHeader>
-          <Button v-if="mode === 'uncommitted' && data.counts.branch" variant="outline" @click="mode = 'branch'"
+          <Button v-if="mode === 'uncommitted' && data.counts.branch" variant="outline" @click="shownMode = 'branch'"
             >Show the whole branch</Button
           >
         </Empty>
-        <template v-else>
-          <p v-if="data?.truncated" class="mb-3 text-xs text-muted-foreground">Some new files are left out: there are too many to show.</p>
-          <FileList ref="list" :files="shown" :viewed="viewed" @set-viewed="setViewed" />
-        </template>
+        <Empty v-else-if="allReviewed" class="mx-auto mt-16 max-w-sm border-0">
+          <EmptyHeader>
+            <EmptyTitle class="text-sm">Everything in this view is viewed</EmptyTitle>
+            <EmptyDescription>Nothing left to look at here.</EmptyDescription>
+          </EmptyHeader>
+          <Button variant="outline" @click="filter.reviewMode.value = false"
+            >Show the {{ filter.viewedInView.value.length }} viewed files</Button
+          >
+        </Empty>
+        <Empty v-else-if="filter.inScope.value.length === 0 && filter.filtersActive.value" class="mx-auto mt-16 max-w-sm border-0">
+          <EmptyHeader>
+            <EmptyTitle class="text-sm">No files match these filters</EmptyTitle>
+            <EmptyDescription>Nothing here fits the current type, folder or search filters.</EmptyDescription>
+          </EmptyHeader>
+          <Button variant="outline" @click="filter.resetFilters">Reset filters</Button>
+        </Empty>
+        <div v-else class="pt-4">
+          <p v-if="data.truncated" class="mb-3 text-xs text-muted-foreground">Some files are left out: there are too many to show.</p>
+          <FileList ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
+        </div>
       </main>
     </div>
   </div>

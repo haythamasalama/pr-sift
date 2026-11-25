@@ -200,6 +200,26 @@ describe('WorktreeService changes like a pull request', () => {
     await expect(service.discard(cart, '../escape')).rejects.toThrow()
   })
 
+  it('lists the branch commits and shows one commit on its own', async () => {
+    const shop = makeRepo(root, 'shop')
+    const cart = join(root, 'shop-cart')
+    sh(shop, 'worktree', 'add', '-q', cart, '-b', 'cart')
+    write(join(cart, 'cart.txt'), 'one\n')
+    sh(cart, 'add', '.')
+    sh(cart, 'commit', '-q', '-m', 'Add the cart')
+    write(join(cart, 'pay.txt'), 'pay\n')
+    sh(cart, 'add', '.')
+    sh(cart, 'commit', '-q', '-m', 'Add payment')
+    await service.scan()
+
+    const { commits } = await service.patch(cart, 'branch')
+    expect(commits.map((c) => c.subject)).toEqual(['Add payment', 'Add the cart'])
+    const first = await service.patch(cart, 'commit', commits[1]!.sha.slice(0, 7))
+    expect(first.commit?.subject).toBe('Add the cart')
+    expect(first.files.map((f) => f.filename)).toEqual(['cart.txt'])
+    await expect(service.patch(cart, 'commit', 'HEAD~5')).rejects.toThrow(/not on this branch/)
+  })
+
   it('makes a worktree next to the project and says when its branch is merged', async () => {
     const shop = makeRepo(root, 'shop')
     await service.scan()

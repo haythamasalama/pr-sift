@@ -2,6 +2,7 @@ import { readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import type {
   ChangedFile,
+  Commit,
   PatchFile,
   PatchMode,
   Repo,
@@ -201,19 +202,36 @@ export class WorktreeService {
   }
 
   // Every changed file with its diff, either what is not committed yet or everything since the branch left its base.
-  async patch(path: string, mode: PatchMode): Promise<WorktreePatch> {
+  // The branch's commits, newest first. Since the base when there is one, otherwise the latest few.
+  private async branchCommits(cwd: string, since: string): Promise<Commit[]> {
+    const range = since ? [`${since}..HEAD`] : ['-30', 'HEAD']
+    const log = await git(cwd, ['log', '--no-color', '-200', `--format=%H${SEP}%s${SEP}%an${SEP}%ae${SEP}%ct`, ...range])
+    if (log.code !== 0) return []
+    return log.stdout
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [sha = '', subject = '', author = '', email = '', date] = line.split(SEP)
+        return { sha, subject, author, email, date: Number(date) * 1000 || 0 }
+      })
+  }
+
+  async patch(path: string, mode: PatchMode, commit?: string): Promise<WorktreePatch> {
     const { repo, worktree } = this.entry(path)
     const remotes = await git(repo, ['remote', '-v'])
     const github = remotes.code === 0 ? pickGithubRemote(remotes.stdout) : undefined
-    const empty = { repo, worktree, github, mode, files: [], counts: { uncommitted: 0, branch: 0 }, truncated: false }
+    const empty = { repo, worktree, github, mode, files: [], counts: { uncommitted: 0, branch: 0 }, commits: [], truncated: false }
     if (worktree.prunable || !(await exists(worktree.path))) return empty
     const cwd = worktree.path
     const base = worktree.main ? undefined : await defaultBranch(repo)
     const since = base ? (await git(cwd, ['merge-base', 'HEAD', base])).stdout.trim() : ''
+    const commits = await this.branchCommits(cwd, since)
     const untracked = (await git(cwd, ['ls-files', '--others', '--exclude-standard', '-z'])).stdout.split('\0').filter(Boolean)
     const names = async (from: string) =>
       (await git(cwd, ['diff', '--name-only', '-z', '-M', from])).stdout.split('\0').filter(Boolean).length + untracked.length
     const [uncommitted, branch] = await Promise.all([names('HEAD'), since ? names(since) : Promise.resolve(0)])
+    const counts = { uncommitted, branch }
+    if (mode === 'commit') return this.commitPatch({ repo, worktree, github, base: since ? base : undefined, commits, counts }, commit)
     const from = mode === 'branch' && since ? since : 'HEAD'
     const tracked = await git(cwd, ['diff', '--no-color', '--no-ext-diff', '-M', from])
     let text = tracked.stdout
@@ -236,7 +254,22 @@ export class WorktreeService {
     }
     files.sort((a, b) => a.filename.localeCompare(b.filename))
     this.changed.set(worktree.path, new Set(files.map((f) => f.filename)))
-    return { repo, worktree, github, base: since ? base : undefined, mode, files, counts: { uncommitted, branch }, truncated }
+    return { repo, worktree, github, base: since ? base : undefined, mode, files, counts, commits, truncated }
+  }
+
+  // One commit's own changes. Only commits on this branch are shown, so a stray value can't name anything else.
+  private async commitPatch(
+    known: Pick<WorktreePatch, 'repo' | 'worktree' | 'github' | 'base' | 'commits' | 'counts'>,
+    sha: string | undefined,
+  ): Promise<WorktreePatch> {
+    const commit = known.commits.find((c) => !!sha && /^[0-9a-f]{7,40}$/i.test(sha) && c.sha.startsWith(sha.toLowerCase()))
+    if (!commit) throw new Error('That commit is not on this branch. Refresh and try again.')
+    const res = await git(known.worktree.path, ['show', '--no-color', '--no-ext-diff', '-M', '--format=', commit.sha])
+    let text = res.stdout
+    const truncated = text.length > DIFF_LIMIT * 4
+    if (truncated) text = text.slice(0, text.lastIndexOf('\ndiff --git ', DIFF_LIMIT * 4) + 1)
+    const files = splitPatch(text).sort((a, b) => a.filename.localeCompare(b.filename))
+    return { ...known, mode: 'commit', commit, files, truncated }
   }
 
   // Throws away the uncommitted changes to one file: tracked files go back to the last commit, new files go to the Trash.

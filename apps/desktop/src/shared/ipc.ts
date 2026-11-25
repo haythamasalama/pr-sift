@@ -152,6 +152,8 @@ export interface Commit {
   subject: string
   author: string
   date: number
+  // GitHub login-like handle from the author's email when it is a GitHub noreply address, for the avatar.
+  email?: string
 }
 
 // One changed file in a worktree, shaped like GitHub's pull request files so the review's diff cards can show it.
@@ -165,7 +167,7 @@ export interface PatchFile {
   hash: string
 }
 
-export type PatchMode = 'uncommitted' | 'branch'
+export type PatchMode = 'uncommitted' | 'branch' | 'commit'
 
 export interface WorktreePatch {
   repo: string
@@ -174,9 +176,13 @@ export interface WorktreePatch {
   // The branch the worktree's branch started from, which `branch` mode compares with.
   base?: string
   mode: PatchMode
+  // In commit mode, the commit shown.
+  commit?: Commit
   files: PatchFile[]
-  // How many files each mode shows, for the counts beside the toggle.
-  counts: Record<PatchMode, number>
+  // How many files the uncommitted and branch modes show, for the counts beside the toggle.
+  counts: { uncommitted: number; branch: number }
+  // The branch's own commits, newest first: since it left its base, or the latest ones for the main folder.
+  commits: Commit[]
   truncated: boolean
 }
 
@@ -336,7 +342,7 @@ export interface Channels {
   'worktrees:list': { args: [repo: string]; result: Repo }
   'worktrees:changes': { args: [path: string]; result: WorktreeChanges }
   'worktrees:diff': { args: [path: string, file: string]; result: string }
-  'worktrees:patch': { args: [path: string, mode: PatchMode]; result: WorktreePatch }
+  'worktrees:patch': { args: [path: string, mode: PatchMode, commit?: string]; result: WorktreePatch }
   'worktrees:discard': { args: [path: string, file: string]; result: void }
   'worktrees:add': { args: [repo: string, branch: string]; result: Repo }
   'worktrees:rename': { args: [path: string, name: string]; result: Repo }
