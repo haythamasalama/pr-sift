@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { BadgeCheck, FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -10,6 +10,9 @@ import { portalTargetKey } from '@/lib/portal'
 import { prKey } from '@/lib/types'
 import { useAuth } from './useAuth'
 import { useProjects } from './useProjects'
+import { useInbox } from './useInbox'
+import { bridge } from './bridge'
+import type { AutoApproveStatus } from '#shared/ipc'
 import { openProject, project, review, view, type View } from './navigation'
 import SignIn from './views/SignIn.vue'
 import InboxView from './views/Inbox.vue'
@@ -21,6 +24,7 @@ import SettingsView from './views/Settings.vue'
 import Account from './views/Account.vue'
 import AddProjectDialog from './components/AddProjectDialog.vue'
 import ProjectIcon from './components/ProjectIcon.vue'
+import SectionLabel from './components/SectionLabel.vue'
 
 const { dark } = useAppearance()
 const { status } = useAuth()
@@ -28,6 +32,28 @@ const { projects } = useProjects()
 const portal = useTemplateRef<HTMLElement>('portal')
 provide(portalTargetKey, portal)
 const adding = shallowRef(false)
+const { inbox, load: loadInbox } = useInbox()
+const waitingCount = computed(() => inbox.value?.review.length ?? 0)
+const autoApprove = shallowRef<AutoApproveStatus | null>(null)
+const autoMode = computed(() => {
+  const c = autoApprove.value?.config
+  if (!c?.enabled || !c.rules.some((r) => r.enabled)) return null
+  return c.dryRun ? { text: 'Dry run', cls: 'text-attention' } : { text: 'Live', cls: 'text-success-fg' }
+})
+let offAuto: (() => void) | undefined
+watch(
+  () => status.value?.signedIn,
+  async (signedIn) => {
+    if (!signedIn) return
+    void loadInbox()
+    try {
+      autoApprove.value = await bridge.invoke('autoapprove:status')
+    } catch {
+      autoApprove.value = null
+    }
+  },
+  { immediate: true },
+)
 
 const TOOLS: { id: View; label: string; icon: typeof FolderGit2 }[] = [
   { id: 'worktrees', label: 'All worktrees', icon: FolderGit2 },
@@ -35,8 +61,8 @@ const TOOLS: { id: View; label: string; icon: typeof FolderGit2 }[] = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
-const item = 'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left hover:bg-accent'
-const active = (on: boolean) => (on ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground')
+const item = 'flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left transition-colors'
+const active = (on: boolean) => (on ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground')
 
 // Escape closes the review, unless a dialog or menu inside it is open and takes the key.
 function onKey(e: KeyboardEvent) {
@@ -44,8 +70,14 @@ function onKey(e: KeyboardEvent) {
   if (document.querySelector('[role="dialog"], [role="menu"]')) return
   review.value = null
 }
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onMounted(() => {
+  document.addEventListener('keydown', onKey)
+  offAuto = bridge.on('autoapprove:changed', (next) => (autoApprove.value = next))
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  offAuto?.()
+})
 
 function onAdded(paths: string[]) {
   if (paths.length === 1) openProject(paths[0]!, 'pulls')
@@ -58,25 +90,31 @@ function onAdded(paths: string[]) {
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
       <SignIn v-else-if="!status.signedIn" />
       <div v-else class="flex h-full">
-        <nav class="flex w-[228px] shrink-0 flex-col gap-1 border-r border-border bg-secondary/60 p-3" aria-label="Sections">
-          <div class="flex items-center gap-2 px-2 pt-1 pb-4">
-            <span class="flex size-6 items-center justify-center rounded-[22%] bg-foreground text-background">
+        <nav class="flex w-[232px] shrink-0 flex-col gap-0.5 border-r border-border bg-sidebar px-3 py-4" aria-label="Sections">
+          <div class="flex items-center gap-2.5 px-2.5 pt-1 pb-[18px]">
+            <span class="flex size-[22px] items-center justify-center rounded-md bg-foreground text-background">
               <BrandMark class="size-3.5" />
             </span>
-            <span class="font-semibold">PR Sift</span>
+            <span class="text-sm font-semibold">PR Sift</span>
           </div>
           <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'">
             <Inbox class="size-4" /> Needs you
+            <span
+              v-if="waitingCount"
+              class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emphasis/16 px-1.5 text-[11px] font-semibold text-emphasis tabular-nums"
+              >{{ waitingCount }}</span
+            >
           </button>
           <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
             <BadgeCheck class="size-4" /> Auto-approve
+            <span v-if="autoMode" class="ml-auto text-[11px]" :class="autoMode.cls">{{ autoMode.text }}</span>
           </button>
 
-          <div class="mt-4 flex items-center justify-between px-2 pb-1">
-            <span class="text-xs font-medium text-muted-foreground">Projects</span>
+          <div class="flex items-center justify-between px-2.5 pt-5 pb-2">
+            <SectionLabel>Projects</SectionLabel>
             <button
               type="button"
-              class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              class="rounded p-0.5 text-faint hover:bg-accent hover:text-foreground"
               title="Add projects"
               aria-label="Add projects"
               @click="adding = true"
@@ -93,7 +131,7 @@ function onAdded(paths: string[]) {
               :title="p.path"
               @click="openProject(p.path)"
             >
-              <ProjectIcon :project="p" />
+              <ProjectIcon :project="p" :size="18" />
               <span class="truncate">{{ p.name }}</span>
             </button>
             <button v-if="projects && !projects.length" type="button" :class="[item, 'text-muted-foreground']" @click="adding = true">

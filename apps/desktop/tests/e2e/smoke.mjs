@@ -44,6 +44,67 @@ await electronApp.evaluate(() => {
       return json({ login: 'octo-test', name: 'Octo Test', avatar_url: null }, { 'x-oauth-scopes': 'repo, read:org' })
     if (url.pathname === '/graphql') {
       const query = JSON.parse(init.body).query
+      if (query.includes('viewer { login }'))
+        return json({
+          data: {
+            viewer: { login: 'octo-test' },
+            search: {
+              nodes: [
+                {
+                  ...pull,
+                  headRefOid: 'abc123',
+                  changedFiles: 1,
+                  files: { nodes: [{ path: 'docs/cart.md' }] },
+                  latestReviews: { nodes: [] },
+                  commits: {
+                    nodes: [{ commit: { pushedDate: null, committedDate: pull.updatedAt, statusCheckRollup: { state: 'SUCCESS' } } }],
+                  },
+                },
+                {
+                  ...pull,
+                  number: 8,
+                  title: 'Speed up checkout',
+                  url: 'https://github.com/acme/shop/pull/8',
+                  headRefOid: 'def456',
+                  changedFiles: 3,
+                  files: { nodes: [{ path: 'src/checkout.js' }, { path: 'src/cart.js' }, { path: 'README.md' }] },
+                  latestReviews: { nodes: [] },
+                  commits: {
+                    nodes: [{ commit: { pushedDate: null, committedDate: pull.updatedAt, statusCheckRollup: { state: 'FAILURE' } } }],
+                  },
+                },
+              ],
+            },
+          },
+        })
+      if (query.includes('mentionableUsers'))
+        return json({
+          data: {
+            repository: {
+              defaultBranchRef: { name: 'main' },
+              labels: {
+                nodes: [
+                  { name: 'docs', color: '0075ca' },
+                  { name: 'feature', color: '0e8a16' },
+                  { name: 'bug', color: 'd73a4a' },
+                ],
+              },
+              mentionableUsers: {
+                nodes: [
+                  { login: 'teammate', avatarUrl: null },
+                  { login: 'octo-test', avatarUrl: null },
+                ],
+              },
+              object: {
+                entries: [
+                  { name: 'src', type: 'tree' },
+                  { name: 'docs', type: 'tree' },
+                  { name: 'README.md', type: 'blob' },
+                ],
+              },
+            },
+          },
+        })
       if (query.includes('review:')) return json({ data: { review: { nodes: [pull] }, mine: { nodes: [] }, assigned: { nodes: [] } } })
       return json({ data: { repository: { defaultBranchRef: { name: 'main' }, pullRequests: { nodes: [pull] }, issues: { nodes: [] } } } })
     }
@@ -73,9 +134,16 @@ await electronApp.evaluate(() => {
   }
 })
 const page = await electronApp.firstWindow()
+await page.emulateMedia({ colorScheme: process.env.SMOKE_THEME === 'light' ? 'light' : 'dark' })
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 page.on('pageerror', (e) => errors.push(String(e)))
 await page.setViewportSize({ width: 1180, height: 780 })
+process.on('uncaughtException', async (e) => {
+  await page.screenshot({ path: join(shots, 'failure.png') }).catch(() => undefined)
+  console.error(String(e), '\nConsole errors:\n' + errors.join('\n'))
+  await electronApp.close().catch(() => undefined)
+  process.exit(1)
+})
 
 await page.getByText('Sign in to GitHub').waitFor()
 await electronApp.evaluate(async ({ BrowserWindow }) => {
@@ -106,14 +174,17 @@ await page
   .getByRole('button', { name: /^Add 1 project/ })
   .click()
 await page.getByRole('heading', { name: 'shop' }).waitFor()
-await page.getByText('Waiting for your review').waitFor()
+await page
+  .getByText(/Waiting for you/)
+  .first()
+  .waitFor()
 await page.screenshot({ path: join(shots, '5-project-pulls.png') })
 
-await page.getByRole('button', { name: 'Worktrees', exact: true }).click()
+await page.getByRole('button', { name: /^Worktrees( \d+)?$/ }).click()
 await page.getByText('feature/cart').first().waitFor()
 await page.waitForTimeout(800)
 await page.screenshot({ path: join(shots, '6-project-worktrees.png') })
-await page.locator('li', { hasText: 'shop-cart' }).first().click()
+await page.locator('article', { hasText: 'shop-cart' }).first().click()
 await page.getByText('Changes not committed').waitFor()
 await page.getByRole('button', { name: /notes\.txt/ }).click()
 await page.getByText('remember the milk').waitFor()
@@ -125,12 +196,12 @@ await page.getByText('shop-cart-v2').first().waitFor()
 await page.screenshot({ path: join(shots, '8-renamed.png') })
 await page.keyboard.press('Escape')
 
-await page.getByRole('button', { name: 'Branches', exact: true }).click()
+await page.getByRole('button', { name: /^Branches( \d+)?$/ }).click()
 await page.getByText('old-merged').waitFor()
 await page.screenshot({ path: join(shots, '9-branches.png') })
 
-await page.getByRole('button', { name: 'Worktrees', exact: true }).click()
-const row = page.locator('li', { hasText: 'shop-cart-v2' }).first()
+await page.getByRole('button', { name: /^Worktrees( \d+)?$/ }).click()
+const row = page.locator('article', { hasText: 'shop-cart-v2' }).first()
 await row.getByRole('button', { name: 'Move to Trash' }).click()
 await page.getByRole('dialog').getByRole('button', { name: 'Move to Trash' }).click()
 await page.getByText('Moved feature/cart to the Trash').waitFor()
@@ -139,6 +210,18 @@ await page.getByRole('button', { name: 'Hidden files', exact: true }).click()
 await page.getByText('Build output').first().waitFor({ timeout: 20_000 })
 await page.waitForTimeout(800)
 await page.screenshot({ path: join(shots, '10-hidden-files.png') })
+
+await page.getByRole('button', { name: 'Auto-approve' }).click()
+await page.getByRole('heading', { name: 'Auto-approve' }).waitFor()
+await page.getByRole('button', { name: 'Docs only', exact: true }).click()
+await page.getByText('This rule right now').waitFor()
+await page.waitForTimeout(800)
+await page.screenshot({ path: join(shots, '12-auto-approve.png') })
+await page.getByRole('button', { name: 'Repositories' }).click()
+await page.getByLabel('Search repositories').waitFor()
+await page.waitForTimeout(400)
+await page.screenshot({ path: join(shots, '13-auto-approve-repos.png') })
+await page.keyboard.press('Escape')
 
 await page.getByRole('button', { name: 'All worktrees' }).click()
 await page.getByRole('heading', { name: 'All worktrees' }).waitFor()

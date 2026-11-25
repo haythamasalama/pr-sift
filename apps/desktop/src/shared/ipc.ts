@@ -236,7 +236,7 @@ export interface RuleCheck {
 }
 
 export interface Evaluation {
-  pull: Pick<PullFacts, 'owner' | 'repo' | 'number' | 'title' | 'url' | 'author' | 'headSha'>
+  pull: Pick<PullFacts, 'owner' | 'repo' | 'number' | 'title' | 'url' | 'author' | 'headSha'> & Partial<Pick<PullFacts, 'changedFiles'>>
   // The first enabled rule that matched, if any.
   matched?: string
   checks: RuleCheck[]
@@ -321,7 +321,8 @@ export interface Channels {
   }
   'autoapprove:status': { args: []; result: AutoApproveStatus }
   'autoapprove:save': { args: [config: AutoApproveConfig]; result: AutoApproveStatus }
-  'autoapprove:preview': { args: []; result: Evaluation[] }
+  // With a config, checks that one (an unsaved draft) instead of the saved rules. `refresh` asks GitHub again.
+  'autoapprove:preview': { args: [config?: AutoApproveConfig, refresh?: boolean]; result: Evaluation[] }
   'autoapprove:run': { args: []; result: AutoApproveStatus }
   'autoapprove:clear-log': { args: []; result: AutoApproveStatus }
   'shell:reveal': { args: [path: string]; result: void }

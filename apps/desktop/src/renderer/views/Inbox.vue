@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, shallowRef } from 'vue'
+import { computed, onMounted } from 'vue'
 import { CircleAlert, RefreshCw } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { loadInbox, type Inbox } from '~/github'
-import { errorText } from '~/format'
-import { openReview } from '~/navigation'
+import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
+import { useInbox } from '~/useInbox'
 import PageHeader from '~/components/PageHeader.vue'
-import PullRow from '~/components/PullRow.vue'
+import PullTable from '~/components/PullTable.vue'
 
 const { status } = useAuth()
-const inbox = shallowRef<Inbox | null>(null)
-const loading = shallowRef(false)
-const error = shallowRef('')
+const { inbox, loading, error, loadedAt, load } = useInbox()
 
 const me = computed(() => status.value?.account?.login)
 const summary = computed(() => {
@@ -29,67 +26,43 @@ const mineNeedsYou = computed(
 )
 const mineOther = computed(() => inbox.value?.mine.filter((p) => !mineNeedsYou.value.includes(p)) ?? [])
 
-async function load() {
-  if (loading.value) return
-  loading.value = true
-  error.value = ''
-  try {
-    inbox.value = await loadInbox()
-  } catch (e) {
-    error.value = errorText(e)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
+onMounted(() => {
+  // The sidebar already asked when the app opened; only ask again when that answer is getting old.
+  if (!loadedAt.value || Date.now() - loadedAt.value > 60_000) void load()
+})
 </script>
 
 <template>
   <PageHeader title="Needs you" :description="summary">
-    <Button variant="outline" :disabled="loading" @click="load">
+    <span v-if="loadedAt" class="text-xs text-faint">Updated {{ formatAgo(loadedAt) }}</span>
+    <Button variant="outline" size="sm" :disabled="loading" @click="load">
       <Spinner v-if="loading" />
       <RefreshCw v-else />
       Refresh
     </Button>
   </PageHeader>
 
-  <div class="flex flex-col gap-6 p-6">
+  <div class="flex flex-col gap-5 px-8 py-5">
     <Alert v-if="error" variant="destructive"
       ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
     >
     <div v-if="!inbox && loading" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
 
     <template v-if="inbox">
-      <section class="flex flex-col gap-2">
-        <h2 class="font-semibold">
-          Waiting for your review <span class="font-normal text-muted-foreground">{{ inbox.review.length }}</span>
-        </h2>
-        <p v-if="!inbox.review.length" class="text-muted-foreground">You’re all caught up.</p>
-        <ul v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-          <PullRow v-for="p in inbox.review" :key="p.url" :pull="p" show-repo :me="me" @open="openReview(p)" />
-        </ul>
-      </section>
-
-      <section v-if="mineNeedsYou.length" class="flex flex-col gap-2">
-        <h2 class="font-semibold">
-          Your pull requests that need you <span class="font-normal text-muted-foreground">{{ mineNeedsYou.length }}</span>
-        </h2>
-        <p class="text-xs text-muted-foreground">Changes were requested, checks failed, or there are conflicts.</p>
-        <ul class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-          <PullRow v-for="p in mineNeedsYou" :key="p.url" :pull="p" show-repo @open="openReview(p)" />
-        </ul>
-      </section>
-
-      <section class="flex flex-col gap-2">
-        <h2 class="font-semibold">
-          Your open pull requests <span class="font-normal text-muted-foreground">{{ mineOther.length }}</span>
-        </h2>
-        <p v-if="!mineOther.length" class="text-muted-foreground">None.</p>
-        <ul v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-          <PullRow v-for="p in mineOther" :key="p.url" :pull="p" show-repo @open="openReview(p)" />
-        </ul>
-      </section>
+      <p v-if="!inbox.review.length && !inbox.mine.length" class="text-muted-foreground">You’re all caught up.</p>
+      <PullTable v-if="inbox.review.length" :groups="[{ title: 'Waiting for your review', pulls: inbox.review }]" show-repo :me="me" />
+      <div v-if="inbox.mine.length" class="flex flex-col gap-2">
+        <PullTable
+          :groups="[
+            { title: 'Yours, needs you', pulls: mineNeedsYou },
+            { title: 'Your open pull requests', pulls: mineOther },
+          ]"
+          show-repo
+        />
+        <p v-if="mineNeedsYou.length" class="px-1 text-xs text-faint">
+          “Needs you” means changes were asked for, checks failed, or there are conflicts.
+        </p>
+      </div>
     </template>
   </div>
 </template>

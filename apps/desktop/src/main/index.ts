@@ -192,7 +192,7 @@ function registerHandlers() {
 
   h('autoapprove:status', () => autoApprove.status())
   h('autoapprove:save', (_e, config) => autoApprove.save(config))
-  h('autoapprove:preview', () => autoApprove.preview())
+  h('autoapprove:preview', (_e, config, refresh) => autoApprove.preview(config, refresh === true))
   h('autoapprove:run', () => autoApprove.run())
   h('autoapprove:clear-log', () => autoApprove.clearLog())
 

@@ -87,6 +87,8 @@ export class AutoApproveService {
   private lastError?: string
   // Commits already logged as "would approve", so a dry run doesn't repeat itself every round.
   private seen = new Set<string>()
+  // The last answer from GitHub, so editing a rule can re-check it without asking again on every key.
+  private cache?: { at: number; me: string; pulls: PullFacts[] }
 
   constructor(private readonly deps: AutoApproveDeps) {}
 
@@ -161,13 +163,19 @@ export class AutoApproveService {
     }
     if (!res.ok || !body?.data) throw new Error(body?.message ?? body?.errors?.[0]?.message ?? `GitHub answered ${res.status}.`)
     const me = body.data.viewer.login
-    return { me, pulls: body.data.search.nodes.filter((n): n is RawPull => !!n?.repository).map((n) => toFacts(n, me)) }
+    const result = { me, pulls: body.data.search.nodes.filter((n): n is RawPull => !!n?.repository).map((n) => toFacts(n, me)) }
+    this.cache = { at: this.now(), ...result }
+    return result
   }
 
+  private static readonly CACHE_MS = 90_000
+
   // What every rule says about every pull request waiting for you. Approves nothing.
-  async preview(): Promise<Evaluation[]> {
-    const config = await this.config()
-    const { me, pulls } = await this.fetch()
+  // A draft config is checked as given (after cleaning), against GitHub's answer from the last minute and a half.
+  async preview(draft?: unknown, refresh = false): Promise<Evaluation[]> {
+    const config = draft === undefined || draft === null ? await this.config() : cleanConfig(draft)
+    const fresh = this.cache && !refresh && this.now() - this.cache.at < AutoApproveService.CACHE_MS
+    const { me, pulls } = fresh ? this.cache! : await this.fetch()
     return pulls.map((p) => evaluate(config, p, me, this.now()))
   }
 

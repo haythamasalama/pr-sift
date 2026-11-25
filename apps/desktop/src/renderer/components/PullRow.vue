@@ -1,92 +1,87 @@
 <script setup lang="ts">
-import { CircleCheck, CircleDot, CircleX, GitPullRequest, GitPullRequestDraft, MessageSquare } from '@lucide/vue'
+import { MessageSquare } from '@lucide/vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import type { PullItem } from '~/github'
 import { formatAgo } from '~/format'
 import LabelChip from './LabelChip.vue'
-import BranchName from './BranchName.vue'
 import Hint from './Hint.vue'
+import StatusPill, { type Tone } from './StatusPill.vue'
 
 defineProps<{ pull: PullItem; showRepo?: boolean; me?: string }>()
 const emit = defineEmits<{ open: [] }>()
 
-const DECISION: Record<string, { text: string; cls: string; hint: string }> = {
-  APPROVED: { text: 'Approved', cls: 'border-success/50 text-success', hint: 'A reviewer approved it.' },
-  CHANGES_REQUESTED: {
-    text: 'Changes requested',
-    cls: 'border-destructive/50 text-destructive',
-    hint: 'A reviewer asked for changes before it can merge.',
-  },
+const DECISION: Record<string, { text: string; tone: Tone; hint: string }> = {
+  APPROVED: { text: 'Approved', tone: 'success', hint: 'A reviewer approved it.' },
+  CHANGES_REQUESTED: { text: 'Changes asked', tone: 'danger', hint: 'A reviewer asked for changes before it can merge.' },
   REVIEW_REQUIRED: {
     text: 'Needs review',
-    cls: 'border-attention/50 text-attention',
+    tone: 'attention',
     hint: 'No approving review yet. The repository needs one before it can merge.',
   },
+}
+const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
+  SUCCESS: { text: 'Passed', tone: 'success', hint: 'CI: all checks passed' },
+  FAILURE: { text: 'Failed', tone: 'danger', hint: 'CI: some checks failed' },
+  ERROR: { text: 'Failed', tone: 'danger', hint: 'CI: some checks could not run' },
+  PENDING: { text: 'Running', tone: 'attention', hint: 'CI: checks are still running' },
+  EXPECTED: { text: 'Waiting', tone: 'attention', hint: 'CI: checks have not started yet' },
 }
 </script>
 
 <template>
-  <li>
-    <button type="button" class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-accent/60" @click="emit('open')">
-      <Hint :text="pull.draft ? 'Draft: the author has not marked it ready for review' : 'Open pull request'" side="right">
-        <span class="mt-0.5 shrink-0">
-          <GitPullRequestDraft v-if="pull.draft" class="size-4 text-muted-foreground" />
-          <GitPullRequest v-else class="size-4 text-success" />
-        </span>
-      </Hint>
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span v-if="showRepo" class="text-muted-foreground">{{ pull.owner }}/{{ pull.repo }}</span>
-          <span class="font-medium">{{ pull.title }}</span>
-          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" />
+  <li class="border-t border-border first:border-t-0">
+    <button
+      type="button"
+      class="flex w-full items-center gap-3.5 px-5 py-3 text-left transition-colors hover:bg-secondary"
+      @click="emit('open')"
+    >
+      <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <div class="flex min-w-0 items-center gap-2">
+          <span v-if="showRepo" class="shrink-0 text-muted-foreground">{{ pull.repo }}</span>
+          <span class="truncate text-[13.5px] font-medium" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
+          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="shrink-0" />
+          <Hint
+            v-if="pull.mergeable === 'CONFLICTING'"
+            text="It conflicts with the base branch. The author has to fix that before it can merge."
+          >
+            <StatusPill tone="danger" :dot="false" class="h-5 text-[11.5px]">Conflicts</StatusPill>
+          </Hint>
         </div>
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <span>#{{ pull.number }}</span>
-          <span class="flex items-center gap-1">
+        <div class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <span class="shrink-0 tabular-nums">#{{ pull.number }}</span>
+          <span class="flex shrink-0 items-center gap-1.5">
             <Avatar class="size-4"
               ><AvatarImage v-if="pull.author?.avatarUrl" :src="pull.author.avatarUrl" alt="" /><AvatarFallback>{{
                 pull.author?.login.slice(0, 1)
               }}</AvatarFallback></Avatar
-            >
-            {{ pull.author?.login ?? 'ghost' }}
+            >{{ pull.author?.login ?? 'ghost' }}
           </span>
-          <span class="flex min-w-0 items-center gap-1"
-            ><BranchName :name="pull.branch" size="xs" /><span aria-label="into">→</span><BranchName :name="pull.base" size="xs"
-          /></span>
-          <span>{{ formatAgo(pull.updatedAt) }}</span>
-          <span class="tabular-nums"
-            ><span class="text-success">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
+          <span class="truncate font-mono text-faint" :title="`${pull.branch} into ${pull.base}`">{{ pull.branch }}</span>
+          <span class="shrink-0">{{ formatAgo(pull.updatedAt) }}</span>
+          <span class="shrink-0 tabular-nums"
+            ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
-          <span v-if="me && pull.reviewers.includes(me)" class="font-medium text-attention">Waiting for you</span>
+          <Hint v-if="pull.comments" :text="`${pull.comments} ${pull.comments === 1 ? 'comment' : 'comments'}`">
+            <span class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
+          </Hint>
         </div>
       </div>
-      <div class="flex shrink-0 items-center gap-2 pt-0.5">
+      <span class="w-[120px] shrink-0">
         <Hint v-if="pull.draft" text="Draft: the author has not marked it ready for review yet.">
-          <Badge variant="outline">Draft</Badge>
+          <StatusPill>Draft</StatusPill>
+        </Hint>
+        <Hint v-else-if="me && pull.reviewers.includes(me)" text="You were asked to review it.">
+          <StatusPill tone="info">Your review</StatusPill>
         </Hint>
         <Hint v-else-if="pull.decision && DECISION[pull.decision]" :text="DECISION[pull.decision]!.hint">
-          <Badge variant="outline" :class="DECISION[pull.decision]!.cls">{{ DECISION[pull.decision]!.text }}</Badge>
+          <StatusPill :tone="DECISION[pull.decision]!.tone">{{ DECISION[pull.decision]!.text }}</StatusPill>
         </Hint>
-        <Hint
-          v-if="pull.mergeable === 'CONFLICTING'"
-          text="It conflicts with the base branch. The author has to fix that before it can merge."
-        >
-          <Badge variant="outline" class="border-destructive/50 text-destructive">Conflicts</Badge>
+      </span>
+      <span class="w-[70px] shrink-0">
+        <Hint v-if="pull.checks && CI[pull.checks]" :text="CI[pull.checks]!.hint">
+          <StatusPill :tone="CI[pull.checks]!.tone" bare>{{ CI[pull.checks]!.text }}</StatusPill>
         </Hint>
-        <Hint v-if="pull.comments" :text="`${pull.comments} ${pull.comments === 1 ? 'comment' : 'comments'}`">
-          <span class="flex items-center gap-1 text-xs text-muted-foreground"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
-        </Hint>
-        <Hint v-if="pull.checks === 'SUCCESS'" text="CI: all checks passed">
-          <span class="flex items-center gap-1 text-xs text-success"><CircleCheck class="size-4" /> CI</span>
-        </Hint>
-        <Hint v-else-if="pull.checks === 'FAILURE' || pull.checks === 'ERROR'" text="CI: some checks failed">
-          <span class="flex items-center gap-1 text-xs text-destructive"><CircleX class="size-4" /> CI</span>
-        </Hint>
-        <Hint v-else-if="pull.checks" text="CI: checks are still running">
-          <span class="flex items-center gap-1 text-xs text-attention"><CircleDot class="size-4" /> CI</span>
-        </Hint>
-      </div>
+      </span>
     </button>
   </li>
 </template>

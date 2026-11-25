@@ -121,6 +121,7 @@ export function evaluate(config: AutoApproveConfig, pull: PullFacts, me: string,
     url: pull.url,
     author: pull.author,
     headSha: pull.headSha,
+    changedFiles: pull.changedFiles,
   }
   // These hold whatever the rules say.
   if (pull.draft) return { pull: ref, checks: [], blocked: 'It is a draft' }

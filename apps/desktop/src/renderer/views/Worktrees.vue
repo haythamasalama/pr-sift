@@ -1,8 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
-import { CircleAlert, FolderGit2, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Search, Trash2, Undo2 } from '@lucide/vue'
+import {
+  CircleAlert,
+  Code,
+  ExternalLink,
+  FolderGit2,
+  FolderOpen,
+  LayoutGrid,
+  List,
+  Lock,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  SquareTerminal,
+  Trash2,
+  Undo2,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
@@ -18,11 +32,33 @@ import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import WorktreeSheet from '~/components/WorktreeSheet.vue'
 import Hint from '~/components/Hint.vue'
-import GithubMark from '@/components/GithubMark.vue'
+import StatusPill from '~/components/StatusPill.vue'
+import SectionLabel from '~/components/SectionLabel.vue'
 import type { PullItem } from '~/github'
 
 // With `projectPath`, shows that one project; without it, every repository in the project folders.
 const { projectPath: only, pulls = [] } = defineProps<{ projectPath?: string; pulls?: PullItem[] }>()
+const emit = defineEmits<{ count: [n: number] }>()
+
+// Cards or a compact list, remembered between visits.
+const LAYOUT_KEY = 'prSift.worktreeLayout'
+const readLayout = (): 'cards' | 'list' => {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === 'list' ? 'list' : 'cards'
+  } catch {
+    return 'cards'
+  }
+}
+const layout = shallowRef<'cards' | 'list'>(readLayout())
+watch(layout, (v) => {
+  try {
+    localStorage.setItem(LAYOUT_KEY, v)
+  } catch {
+    // Not remembered; the default comes back next time.
+  }
+})
+const selecting = shallowRef(false)
+const note = shallowRef('')
 
 const { settings, ready } = useProjectFolders()
 const repos = shallowRef<Repo[]>([])
@@ -122,6 +158,27 @@ const summary = computed(() => {
   return `${count} ${count === 1 ? 'worktree' : 'worktrees'} in ${withWorktrees.value.length} of ${repos.value.length} repositories${size}`
 })
 
+watch(
+  () => linked.value.length,
+  (n) => scanned.value && emit('count', n),
+)
+const showChecks = computed(() => selecting.value || selected.value.size > 0)
+const linkedOf = (r: Repo) => r.worktrees.filter((w) => !w.main)
+const cleanAndPushed = (w: Worktree) => {
+  const d = details.get(w.path)
+  return !!d && !d.changed && !d.unpushed && d.upstream && !w.prunable
+}
+
+async function openIn(w: Worktree, target: 'editor' | 'terminal') {
+  try {
+    const res = await bridge.invoke('worktrees:open', w.path, target)
+    note.value = res.ok ? `Opened ${label(w)} in ${res.app}` : (res.error ?? 'Could not open it.')
+  } catch (e) {
+    note.value = errorText(e)
+  }
+  setTimeout(() => (note.value = ''), 3500)
+}
+
 const short = (path: string) => shortPath(path, appInfo.home)
 const folderName = (w: Worktree) => w.path.split(/[\\/]/).pop() ?? w.path
 const label = (w: Worktree) => w.branch ?? folderName(w)
@@ -165,6 +222,7 @@ async function scan() {
     details.clear()
     selected.value = new Set()
     scanned.value = true
+    emit('count', linked.value.length)
     const undos = await bridge.invoke('worktrees:undo-list')
     undoList.value = only ? undos.filter((u) => u.repo === only) : undos
     void loadDetails(repos.value.flatMap((r) => (r.worktrees.length > 1 || only ? r.worktrees.filter((w) => !w.main) : [])))
@@ -236,13 +294,7 @@ watch(
 </script>
 
 <template>
-  <PageHeader v-if="!only" title="All worktrees" :description="summary">
-    <Button v-if="settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
-      <Spinner v-if="scanning" />
-      <RefreshCw v-else />
-      Rescan
-    </Button>
-  </PageHeader>
+  <PageHeader v-if="!only" title="All worktrees" :description="summary" />
 
   <NoticeBar v-if="notice">
     <template #icon><Trash2 /></template>
@@ -255,177 +307,295 @@ watch(
 
   <NoFolders v-if="!only && settings && !settings.roots.length" @added="scan" />
 
-  <div v-else class="flex flex-col gap-6" :class="only ? '' : 'p-6'">
-    <div v-if="only" class="flex items-center gap-3">
-      <p class="flex-1 text-muted-foreground">{{ summary }}</p>
-      <Button size="sm" variant="outline" :disabled="scanning" @click="scan">
+  <div v-else class="flex flex-col gap-3.5" :class="only ? '' : 'px-8 py-5'">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <InputGroup class="w-[260px]">
+        <InputGroupAddon><Search /></InputGroupAddon>
+        <InputGroupInput v-model="query" placeholder="Filter worktrees" aria-label="Filter worktrees" />
+      </InputGroup>
+      <span v-if="scanned" class="text-xs text-muted-foreground"
+        >{{ linked.length }} {{ linked.length === 1 ? 'worktree' : 'worktrees'
+        }}<template v-if="totalSize"> · {{ formatBytes(totalSize) }} on disk</template></span
+      >
+      <Transition
+        enter-from-class="opacity-0"
+        leave-to-class="opacity-0"
+        enter-active-class="transition-opacity"
+        leave-active-class="transition-opacity duration-500"
+      >
+        <span v-if="note" class="text-xs text-muted-foreground">{{ note }}</span>
+      </Transition>
+      <span class="flex-1" />
+      <div role="radiogroup" aria-label="View" class="flex h-8 items-center rounded-[7px] border border-border bg-secondary p-0.5">
+        <Hint text="Cards">
+          <button
+            type="button"
+            role="radio"
+            :aria-checked="layout === 'cards'"
+            aria-label="Cards"
+            class="flex h-[26px] w-7 items-center justify-center rounded-[5px]"
+            :class="layout === 'cards' ? 'bg-input text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="layout = 'cards'"
+          >
+            <LayoutGrid class="size-3.5" />
+          </button>
+        </Hint>
+        <Hint text="List">
+          <button
+            type="button"
+            role="radio"
+            :aria-checked="layout === 'list'"
+            aria-label="List"
+            class="flex h-[26px] w-7 items-center justify-center rounded-[5px]"
+            :class="layout === 'list' ? 'bg-input text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="layout = 'list'"
+          >
+            <List class="size-3.5" />
+          </button>
+        </Hint>
+      </div>
+      <Button
+        v-if="linked.length"
+        variant="outline"
+        :class="{ 'border-emphasis/50 text-emphasis': selecting }"
+        @click="selecting = !selecting"
+      >
+        {{ selecting ? 'Done' : 'Select' }}
+      </Button>
+      <Button v-if="only || settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
         <Spinner v-if="scanning" />
         <RefreshCw v-else />
         Rescan
       </Button>
     </div>
+
     <Alert v-if="error" variant="destructive">
       <CircleAlert />
       <AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription>
     </Alert>
-
-    <div
-      v-if="scanned && allWithWorktrees.length"
-      class="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/60 px-4 py-1.5"
-    >
-      <Checkbox
-        :model-value="allState"
-        :disabled="!selectable.length"
-        aria-label="Select every worktree shown"
-        title="Select every worktree shown"
-        @update:model-value="(v) => toggleAll(v === true)"
-      />
-      <InputGroup class="h-7 w-56 bg-background">
-        <InputGroupAddon><Search /></InputGroupAddon>
-        <InputGroupInput v-model="query" placeholder="Filter worktrees" aria-label="Filter worktrees" />
-      </InputGroup>
-      <span class="flex-1 text-xs text-muted-foreground">
-        <template v-if="selected.size">{{ selected.size }} selected</template>
-        <template v-else>Select worktrees to move several to the Trash at once.</template>
-      </span>
-      <Button v-if="selected.size" size="xs" variant="ghost" @click="selected = new Set()">Clear</Button>
-      <Button v-if="selected.size" size="xs" variant="destructive" @click="bulkAsking = true"
-        ><Trash2 /> Move {{ selected.size }} to Trash</Button
-      >
-    </div>
 
     <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking for repositories…</div>
 
     <p v-if="scanned && !withWorktrees.length && !only" class="text-muted-foreground">
       None of your {{ repos.length }} repositories has extra worktrees.
     </p>
+    <p v-if="scanned && only && !linked.length && !query" class="text-muted-foreground">No worktrees besides the main folder.</p>
 
-    <section v-for="repo in withWorktrees" :key="repo.path" class="overflow-hidden rounded-lg border border-border">
-      <header class="flex items-center gap-2 border-b border-border bg-secondary/50 px-4 py-2.5">
-        <FolderGit2 class="size-4 shrink-0 text-muted-foreground" />
-        <span class="font-semibold">{{ repo.name }}</span>
-        <span class="truncate text-xs text-muted-foreground">{{ short(repo.path) }}</span>
-        <span class="shrink-0 text-xs text-muted-foreground"
-          >· {{ repo.worktrees.filter((w) => !w.main).length }}
-          {{ repo.worktrees.filter((w) => !w.main).length === 1 ? 'worktree' : 'worktrees' }}</span
-        >
-        <Button
-          v-if="repo.worktrees.some((w) => w.prunable)"
-          class="ml-auto"
-          size="xs"
-          variant="outline"
-          title="Runs git worktree prune for this repository"
-          @click="prune(repo)"
-        >
-          <RotateCcw /> Clean up missing
-        </Button>
-      </header>
-      <p v-if="repo.error" class="px-4 py-3 text-destructive">{{ repo.error }}</p>
-      <ul class="divide-y divide-border">
-        <li
-          v-for="w in repo.worktrees"
-          :key="w.path"
-          class="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors"
-          :class="[w.main ? 'text-muted-foreground' : '', selected.has(w.path) ? 'bg-accent/60' : 'hover:bg-accent/30']"
-          title="Show details"
-          @click="sheet = { repo, worktree: w }"
-        >
-          <Checkbox
-            v-if="!w.main"
-            :model-value="selected.has(w.path)"
-            :disabled="!canTrash(w)"
-            :aria-label="`Select ${label(w)}`"
-            @click.stop
-            @update:model-value="(v) => toggle(w.path, v === true)"
-          />
-          <span v-else class="w-4 shrink-0" />
-          <GitBranch class="size-4 shrink-0 text-muted-foreground" />
-          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="truncate font-mono text-[13px] font-medium" :class="{ 'font-normal': w.main }">{{ label(w) }}</span>
-              <Badge v-if="!w.branch && !w.bare" variant="outline" title="No branch is checked out here, only a commit"
-                >No branch · {{ w.head.slice(0, 7) }}</Badge
-              >
-              <Badge v-if="w.main" variant="outline">Main folder</Badge>
-              <Hint v-if="pullFor(w)" :text="pullFor(w)!.title"
-                ><Badge variant="outline" class="border-emphasis/40 text-emphasis">PR #{{ pullFor(w)!.number }}</Badge></Hint
-              >
-              <Badge v-if="w.prunable" variant="destructive">Folder missing</Badge>
-              <Badge v-if="w.locked" variant="outline"><Lock /> Locked</Badge>
-              <template v-if="!w.main && details.get(w.path)">
-                <Hint v-if="details.get(w.path)!.changed" text="Files edited here and not committed. Trashing the worktree loses them.">
-                  <Badge variant="outline" class="border-attention/50 text-attention">{{ details.get(w.path)!.changed }} uncommitted</Badge>
-                </Hint>
-                <Hint v-if="details.get(w.path)!.unpushed" text="Commits here that are not on GitHub yet.">
-                  <Badge variant="outline" class="border-attention/50 text-attention tabular-nums"
-                    >↑{{ details.get(w.path)!.unpushed }}</Badge
-                  >
-                </Hint>
-                <Hint v-if="!details.get(w.path)!.upstream && w.branch && !w.prunable" text="This branch was never pushed to GitHub.">
-                  <Badge variant="outline">Local only</Badge>
-                </Hint>
-              </template>
-            </div>
-            <span class="truncate text-xs text-muted-foreground">{{ short(w.path) }}</span>
-          </div>
-          <Button
-            v-if="githubUrl(repo, w)"
-            size="icon-sm"
-            variant="ghost"
-            as-child
-            :title="pullFor(w) ? 'Open the pull request on GitHub' : w.branch ? 'Open the branch on GitHub' : 'Open the commit on GitHub'"
-            class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-            @click.stop
+    <section v-for="repo in withWorktrees" :key="repo.path" class="flex flex-col gap-2.5">
+      <header v-if="!only || repo.worktrees.some((w) => w.prunable)" class="flex items-center gap-2 pt-1">
+        <template v-if="!only">
+          <FolderGit2 class="size-4 shrink-0 text-faint" />
+          <span class="font-semibold">{{ repo.name }}</span>
+          <span class="truncate text-xs text-faint">{{ short(repo.path) }}</span>
+          <span class="shrink-0 text-xs text-faint"
+            >· {{ linkedOf(repo).length }} {{ linkedOf(repo).length === 1 ? 'worktree' : 'worktrees' }}</span
           >
-            <a :href="githubUrl(repo, w)" target="_blank" rel="noreferrer" aria-label="Open on GitHub"><GithubMark class="size-4" /></a>
-          </Button>
-          <template v-if="!w.main">
-            <div class="flex w-32 shrink-0 flex-col items-end gap-0.5 text-xs text-muted-foreground">
-              <span v-if="details.get(w.path)?.size !== undefined" class="text-foreground tabular-nums">{{
-                formatBytes(details.get(w.path)!.size)
-              }}</span>
-              <Spinner v-else-if="!w.prunable" class="size-3" />
-              <span title="Last time a file changed here">{{ formatAgo(details.get(w.path)?.lastUsed) }}</span>
-            </div>
-            <div class="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="w.prunable"
-                aria-label="Show in folder"
-                title="Show in folder"
-                @click.stop="reveal(w.path)"
+        </template>
+        <Hint v-if="repo.worktrees.some((w) => w.prunable)" text="Runs git worktree prune, so git forgets folders that are gone">
+          <Button class="ml-auto" size="xs" variant="outline" @click="prune(repo)"><RotateCcw /> Clean up missing</Button>
+        </Hint>
+      </header>
+      <p v-if="repo.error" class="text-destructive">{{ repo.error }}</p>
+
+      <!-- Cards -->
+      <div v-if="layout === 'cards'" class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,540px),1fr))] gap-3">
+        <article
+          v-for="w in linkedOf(repo)"
+          :key="w.path"
+          class="flex cursor-pointer flex-col gap-3 rounded-[10px] border bg-card px-[18px] py-4 transition-colors"
+          :class="[selected.has(w.path) ? 'border-emphasis/60' : 'border-border hover:border-input', w.prunable ? 'opacity-75' : '']"
+          @click="showChecks && canTrash(w) ? toggle(w.path, !selected.has(w.path)) : (sheet = { repo, worktree: w })"
+        >
+          <div class="flex min-w-0 items-center gap-2">
+            <Checkbox
+              v-if="showChecks"
+              :model-value="selected.has(w.path)"
+              :disabled="!canTrash(w)"
+              :aria-label="`Select ${label(w)}`"
+              @click.stop
+              @update:model-value="(v) => toggle(w.path, v === true)"
+            />
+            <span class="min-w-0 flex-1 truncate font-mono text-[13.5px] font-medium" :title="label(w)">{{ label(w) }}</span>
+            <Hint v-if="pullFor(w)" :text="pullFor(w)!.title">
+              <a :href="pullFor(w)!.url" target="_blank" rel="noreferrer" class="shrink-0 text-xs text-emphasis hover:underline" @click.stop
+                >PR #{{ pullFor(w)!.number }}</a
               >
-                <FolderOpen />
-              </Button>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                :disabled="w.prunable || w.locked"
-                aria-label="Move to Trash"
-                title="Move to Trash"
-                @click.stop="target = { repo, worktree: w }"
+            </Hint>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <StatusPill v-if="w.prunable" tone="danger">Folder missing</StatusPill>
+            <StatusPill v-if="!w.branch && !w.bare">No branch · {{ w.head.slice(0, 7) }}</StatusPill>
+            <Hint v-if="w.locked" :text="w.lockReason || 'git won’t remove a locked worktree'">
+              <StatusPill><Lock class="size-3" /> Locked</StatusPill>
+            </Hint>
+            <template v-if="details.get(w.path)">
+              <Hint v-if="details.get(w.path)!.changed" text="Files edited here and not committed. Trashing the worktree loses them.">
+                <StatusPill tone="attention">{{ details.get(w.path)!.changed }} uncommitted</StatusPill>
+              </Hint>
+              <Hint v-if="details.get(w.path)!.unpushed" text="Commits here that are not on GitHub yet.">
+                <StatusPill class="tabular-nums">↑{{ details.get(w.path)!.unpushed }} not pushed</StatusPill>
+              </Hint>
+              <Hint v-if="!details.get(w.path)!.upstream && w.branch && !w.prunable" text="This branch was never pushed to GitHub.">
+                <StatusPill>Local only</StatusPill>
+              </Hint>
+              <Hint v-if="cleanAndPushed(w)" text="Nothing uncommitted and every commit is on GitHub, so it is safe to trash.">
+                <StatusPill tone="success">Clean, all pushed</StatusPill>
+              </Hint>
+            </template>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-muted-foreground">
+            <span class="min-w-0 flex-1 truncate font-mono text-faint" :title="w.path">{{ short(w.path) }}</span>
+            <span v-if="details.get(w.path)?.size !== undefined" class="tabular-nums">{{ formatBytes(details.get(w.path)!.size) }}</span>
+            <Spinner v-else-if="!w.prunable" class="size-3" />
+            <span v-else>—</span>
+            <Hint v-if="details.get(w.path)?.lastUsed" text="Last time a file changed here">
+              <span>Used {{ formatAgo(details.get(w.path)!.lastUsed) }}</span>
+            </Hint>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5 border-t border-border pt-3" @click.stop>
+            <template v-if="!w.prunable">
+              <Button size="sm" variant="outline" @click="openIn(w, 'editor')"><Code /> Open in editor</Button>
+              <Button size="sm" variant="outline" @click="openIn(w, 'terminal')"><SquareTerminal /> Terminal</Button>
+              <Button size="sm" variant="outline" @click="reveal(w.path)"><FolderOpen /> Show folder</Button>
+              <span class="flex-1" />
+              <Hint
+                v-if="githubUrl(repo, w)"
+                :text="
+                  pullFor(w) ? 'Open the pull request on GitHub' : w.branch ? 'Open the branch on GitHub' : 'Open the commit on GitHub'
+                "
               >
-                <Trash2 />
-              </Button>
+                <Button size="icon-sm" variant="ghost" as-child class="text-faint">
+                  <a :href="githubUrl(repo, w)" target="_blank" rel="noreferrer" aria-label="Open on GitHub"><ExternalLink /></a>
+                </Button>
+              </Hint>
+              <Button size="sm" variant="outline" class="text-destructive" :disabled="w.locked" @click="target = { repo, worktree: w }"
+                ><Trash2 /> Move to Trash</Button
+              >
+            </template>
+            <template v-else>
+              <span class="flex-1 text-xs text-muted-foreground">git still lists it, but the folder is gone.</span>
+              <Button size="sm" variant="outline" @click="prune(repo)">Clean up</Button>
+            </template>
+          </div>
+        </article>
+      </div>
+
+      <!-- List -->
+      <div v-else class="overflow-hidden rounded-[10px] border border-border bg-card">
+        <div class="flex items-center gap-3.5 px-5 py-2.5">
+          <Checkbox
+            v-if="showChecks"
+            :model-value="allState"
+            :disabled="!selectable.length"
+            aria-label="Select every worktree shown"
+            @update:model-value="(v) => toggleAll(v === true)"
+          />
+          <SectionLabel class="flex-1">Worktree</SectionLabel>
+          <SectionLabel class="w-20 text-right">Size</SectionLabel>
+          <SectionLabel class="w-24">Used</SectionLabel>
+          <span class="w-24" />
+        </div>
+        <ul>
+          <li
+            v-for="w in linkedOf(repo)"
+            :key="w.path"
+            class="group flex cursor-pointer items-center gap-3.5 border-t border-border px-5 py-[11px] transition-colors"
+            :class="selected.has(w.path) ? 'bg-secondary' : 'hover:bg-secondary'"
+            @click="showChecks && canTrash(w) ? toggle(w.path, !selected.has(w.path)) : (sheet = { repo, worktree: w })"
+          >
+            <Checkbox
+              v-if="showChecks"
+              :model-value="selected.has(w.path)"
+              :disabled="!canTrash(w)"
+              :aria-label="`Select ${label(w)}`"
+              @click.stop
+              @update:model-value="(v) => toggle(w.path, v === true)"
+            />
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="truncate font-mono text-[13px] font-medium">{{ label(w) }}</span>
+                <a
+                  v-if="pullFor(w)"
+                  :href="pullFor(w)!.url"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="shrink-0 text-xs text-emphasis hover:underline"
+                  @click.stop
+                  >PR #{{ pullFor(w)!.number }}</a
+                >
+                <StatusPill v-if="w.prunable" tone="danger" class="h-5">Folder missing</StatusPill>
+                <StatusPill v-if="details.get(w.path)?.changed" tone="attention" class="h-5"
+                  >{{ details.get(w.path)!.changed }} uncommitted</StatusPill
+                >
+                <StatusPill v-if="details.get(w.path)?.unpushed" class="h-5 tabular-nums">↑{{ details.get(w.path)!.unpushed }}</StatusPill>
+              </div>
+              <span class="truncate font-mono text-xs text-faint">{{ short(w.path) }}</span>
             </div>
-          </template>
-        </li>
-      </ul>
+            <span class="w-20 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{
+              details.get(w.path)?.size !== undefined ? formatBytes(details.get(w.path)!.size) : '—'
+            }}</span>
+            <span class="w-24 shrink-0 text-xs text-muted-foreground">{{ formatAgo(details.get(w.path)?.lastUsed) }}</span>
+            <span
+              class="flex w-24 shrink-0 justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+              @click.stop
+            >
+              <Hint text="Open in editor"
+                ><Button
+                  size="icon-sm"
+                  variant="ghost"
+                  class="text-faint"
+                  aria-label="Open in editor"
+                  :disabled="w.prunable"
+                  @click="openIn(w, 'editor')"
+                  ><Code /></Button
+              ></Hint>
+              <Hint text="Show folder"
+                ><Button
+                  size="icon-sm"
+                  variant="ghost"
+                  class="text-faint"
+                  aria-label="Show folder"
+                  :disabled="w.prunable"
+                  @click="reveal(w.path)"
+                  ><FolderOpen /></Button
+              ></Hint>
+              <Hint text="Move to Trash"
+                ><Button
+                  size="icon-sm"
+                  variant="ghost"
+                  class="text-faint"
+                  aria-label="Move to Trash"
+                  :disabled="w.prunable || w.locked"
+                  @click="target = { repo, worktree: w }"
+                  ><Trash2 /></Button
+              ></Hint>
+            </span>
+          </li>
+        </ul>
+      </div>
     </section>
 
-    <p v-if="!only && plainRepos.length && withWorktrees.length" class="text-xs text-muted-foreground">
+    <p v-if="!only && plainRepos.length && withWorktrees.length" class="text-xs text-faint">
       {{ plainRepos.length }} more {{ plainRepos.length === 1 ? 'repository has' : 'repositories have' }} no extra worktrees.
     </p>
 
-    <section v-if="undoList.length" class="flex flex-col gap-2">
-      <h2 class="font-semibold">Recently moved to the Trash</h2>
-      <p class="text-xs text-muted-foreground">To bring one back, put its folder back from the Trash, then press Undo.</p>
-      <ul class="divide-y divide-border rounded-lg border border-border">
-        <li v-for="entry in undoList" :key="entry.id" class="flex items-center gap-3 px-4 py-2">
+    <div
+      v-if="selected.size"
+      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-[10px] border border-input bg-popover px-4 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+    >
+      <span class="font-medium tabular-nums">{{ selected.size }} selected</span>
+      <Button size="sm" variant="ghost" @click="selected = new Set()">Clear</Button>
+      <Button size="sm" variant="destructive" @click="bulkAsking = true"><Trash2 /> Move {{ selected.size }} to Trash</Button>
+    </div>
+
+    <section v-if="undoList.length" class="flex flex-col gap-2 pt-2">
+      <SectionLabel>Recently moved to the Trash</SectionLabel>
+      <p class="text-xs text-faint">To bring one back, put its folder back from the Trash, then press Undo.</p>
+      <ul class="overflow-hidden rounded-[10px] border border-border bg-card">
+        <li v-for="entry in undoList" :key="entry.id" class="flex items-center gap-3 border-t border-border px-5 py-2.5 first:border-t-0">
           <div class="flex min-w-0 flex-1 flex-col">
-            <span class="truncate">{{ entry.branch ?? short(entry.path) }}</span>
-            <span class="truncate text-xs text-muted-foreground">{{ short(entry.path) }} · {{ formatAgo(entry.removedAt) }}</span>
+            <span class="truncate font-mono text-[13px]">{{ entry.branch ?? short(entry.path) }}</span>
+            <span class="truncate text-xs text-faint">{{ short(entry.path) }} · {{ formatAgo(entry.removedAt) }}</span>
           </div>
           <Button size="xs" variant="outline" @click="undo(entry)"><Undo2 /> Undo</Button>
         </li>

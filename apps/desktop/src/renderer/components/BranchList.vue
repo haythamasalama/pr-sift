@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from 'vue'
-import { CircleAlert, GitBranch, RefreshCw, Search, Trash2 } from '@lucide/vue'
+import { CircleAlert, ExternalLink, RefreshCw, Search, Trash2 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import Hint from './Hint.vue'
-import GithubMark from '@/components/GithubMark.vue'
 import type { Branch } from '#shared/ipc'
 import type { PullItem } from '~/github'
 import { bridge } from '~/bridge'
@@ -17,8 +14,12 @@ import { appInfo } from '~/appInfo'
 import { errorText, formatAgo, shortPath } from '~/format'
 import { openReview } from '~/navigation'
 import ConfirmDialog from './ConfirmDialog.vue'
+import Segmented from './Segmented.vue'
+import SectionLabel from './SectionLabel.vue'
+import StatusPill, { type Tone } from './StatusPill.vue'
 
 const { repo, github, pulls = [] } = defineProps<{ repo: string; github?: { owner: string; repo: string }; pulls?: PullItem[] }>()
+const emit = defineEmits<{ count: [n: number] }>()
 
 type Filter = 'all' | 'cleanup' | 'merged' | 'gone' | 'local' | 'stale'
 
@@ -67,6 +68,26 @@ const allState = computed(() => {
   return n === 0 ? false : n === selectable.value.length ? true : 'indeterminate'
 })
 
+const FILTERS = computed(() => [
+  { value: 'all' as const, label: 'All', count: counts.value.all },
+  { value: 'cleanup' as const, label: 'Safe to delete', count: counts.value.cleanup },
+  { value: 'merged' as const, label: 'Merged', count: counts.value.merged },
+  { value: 'gone' as const, label: 'Gone on GitHub', count: counts.value.gone },
+  { value: 'local' as const, label: 'Local only', count: counts.value.local },
+  { value: 'stale' as const, label: 'Old', count: counts.value.stale },
+])
+
+// The one status a row leads with, most important first, with what it means on hover.
+function statusOf(b: Branch): { text: string; tone: Tone; hint: string } | null {
+  if (b.current) return { text: 'Checked out', tone: 'info', hint: 'This is the branch your project folder is on right now.' }
+  if (b.worktree) return { text: 'In a worktree', tone: 'info', hint: `Checked out in ${shortPath(b.worktree, appInfo.home)}` }
+  if (b.merged)
+    return { text: 'Merged', tone: 'success', hint: 'Its commits are already in the main branch, so deleting it loses nothing.' }
+  if (b.gone) return { text: 'Gone on GitHub', tone: 'attention', hint: 'The branch was deleted on GitHub. This copy is only here now.' }
+  if (local(b)) return { text: 'Local only', tone: 'neutral', hint: 'Only on this computer. It was never pushed to GitHub.' }
+  return null
+}
+
 const branchUrl = (name: string) =>
   github ? `https://github.com/${github.owner}/${github.repo}/tree/${name.split('/').map(encodeURIComponent).join('/')}` : undefined
 // Only branches that exist on GitHub get a link; a local-only branch would open a 404.
@@ -94,6 +115,7 @@ async function load() {
   error.value = ''
   try {
     branches.value = await bridge.invoke('branches:list', repo)
+    emit('count', branches.value.length)
     const names = new Set(branches.value.map((b) => b.name))
     selected.value = new Set([...selected.value].filter((n) => names.has(n)))
   } catch (e) {
@@ -132,137 +154,124 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <InputGroup class="w-64">
+  <div class="flex flex-col gap-3.5">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <InputGroup class="w-[220px]">
         <InputGroupAddon><Search /></InputGroupAddon>
         <InputGroupInput v-model="query" placeholder="Filter branches" aria-label="Filter branches" />
       </InputGroup>
-      <ToggleGroup v-model="filter" type="single" variant="outline" size="sm" aria-label="Show">
-        <ToggleGroupItem value="all">All {{ counts.all }}</ToggleGroupItem>
-        <ToggleGroupItem value="cleanup" title="Merged, deleted on GitHub, or untouched for 60 days"
-          >Can go {{ counts.cleanup }}</ToggleGroupItem
-        >
-        <ToggleGroupItem value="merged">Merged {{ counts.merged }}</ToggleGroupItem>
-        <ToggleGroupItem value="gone">Deleted on GitHub {{ counts.gone }}</ToggleGroupItem>
-        <ToggleGroupItem value="local">Local only {{ counts.local }}</ToggleGroupItem>
-        <ToggleGroupItem value="stale">Old {{ counts.stale }}</ToggleGroupItem>
-      </ToggleGroup>
-      <Button size="sm" variant="ghost" class="ml-auto" title="Read the branches again" @click="load"><RefreshCw /> Refresh</Button>
+      <Segmented v-model="filter" :options="FILTERS" label="Show" />
+      <span class="flex-1" />
+      <Hint v-if="counts.cleanup" text="Merged, or deleted on GitHub, and not checked out anywhere">
+        <Button variant="outline" @click="selectCleanup">Select safe to delete</Button>
+      </Hint>
+      <Hint text="Read the branches again">
+        <Button size="icon-sm" variant="ghost" aria-label="Refresh" @click="load"><RefreshCw /></Button>
+      </Hint>
     </div>
 
-    <div v-if="branches?.length" class="flex min-h-8 items-center gap-3 rounded-lg border border-border bg-secondary/60 px-4 py-1.5">
-      <Checkbox
-        :model-value="allState"
-        :disabled="!selectable.length"
-        aria-label="Select every branch shown"
-        title="Select every branch shown"
-        @update:model-value="(v) => toggleAll(v === true)"
-      />
-      <span class="flex-1 text-xs text-muted-foreground">
-        <template v-if="selected.size">{{ selected.size }} selected</template>
-        <template v-else>Select branches to delete several at once.</template>
-      </span>
-      <Button v-if="counts.cleanup && !selected.size" size="xs" variant="outline" @click="selectCleanup">Select merged and deleted</Button>
-      <Button v-if="selected.size" size="xs" variant="ghost" @click="selected = new Set()">Clear</Button>
-      <Button v-if="selected.size" size="xs" variant="destructive" @click="asking = true"><Trash2 /> Delete {{ selected.size }}</Button>
-    </div>
-
-    <p v-if="notice" class="text-xs text-success">{{ notice }}</p>
+    <p v-if="notice" class="text-xs text-success-fg">{{ notice }}</p>
     <Alert v-if="error" variant="destructive"
       ><CircleAlert /><AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription></Alert
     >
     <div v-if="!branches" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Reading branches…</div>
     <p v-else-if="!shown.length" class="text-muted-foreground">No branches match.</p>
-    <ul v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-      <li
-        v-for="b in shown"
-        :key="b.name"
-        class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors"
-        :class="selected.has(b.name) ? 'bg-accent/60' : 'hover:bg-accent/30'"
-        @click="!locked(b) && toggle(b.name, !selected.has(b.name))"
-      >
+    <div v-else class="overflow-hidden rounded-[10px] border border-border bg-card">
+      <div class="flex items-center gap-3.5 px-5 py-2.5">
         <Checkbox
-          :model-value="selected.has(b.name)"
-          :disabled="locked(b)"
-          :aria-label="`Select ${b.name}`"
-          :title="locked(b) ? 'Checked out, so it can’t be deleted' : undefined"
-          @click.stop
-          @update:model-value="(v) => toggle(b.name, v === true)"
+          :model-value="allState"
+          :disabled="!selectable.length"
+          aria-label="Select every branch shown"
+          @update:model-value="(v) => toggleAll(v === true)"
         />
-        <GitBranch class="size-4 shrink-0 text-muted-foreground" />
-        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <a
-              v-if="linkFor(b)"
-              :href="linkFor(b)"
-              target="_blank"
-              rel="noreferrer"
-              class="truncate font-mono text-[13px] font-medium hover:text-emphasis hover:underline"
-              title="Open the branch on GitHub"
-              @click.stop
-              >{{ b.name }}</a
-            >
-            <span v-else class="truncate font-mono text-[13px] font-medium">{{ b.name }}</span>
-            <Hint v-if="b.current" text="This is the branch your project folder is on right now."
-              ><Badge variant="outline">Checked out</Badge></Hint
-            >
-            <Badge v-if="b.worktree && !b.current" variant="outline" :title="b.worktree">In a worktree</Badge>
-            <Hint v-if="b.merged" text="Its commits are already in the main branch, so deleting it loses nothing."
-              ><Badge variant="outline" class="border-success/50 text-success">Merged</Badge></Hint
-            >
-            <Badge v-if="b.gone" variant="outline" class="border-attention/50 text-attention" title="The branch was deleted on GitHub"
-              >Deleted on GitHub</Badge
-            >
-            <Hint v-if="local(b)" text="Only on this computer. It was never pushed to GitHub."
-              ><Badge variant="outline">Local only</Badge></Hint
-            >
-            <Hint v-if="b.ahead" :text="`${b.ahead} commits here that are not on GitHub yet`"
-              ><Badge variant="outline" class="tabular-nums">↑{{ b.ahead }}</Badge></Hint
-            >
-            <Hint v-if="b.behind" :text="`${b.behind} commits on GitHub that you have not pulled`"
-              ><Badge variant="outline" class="tabular-nums">↓{{ b.behind }}</Badge></Hint
-            >
-            <button
-              v-if="byBranch.get(b.name)"
-              type="button"
-              class="rounded-full border border-emphasis/40 px-2 text-xs text-emphasis hover:bg-emphasis/10"
-              @click.stop="
-                openReview({ owner: byBranch.get(b.name)!.owner, repo: byBranch.get(b.name)!.repo, number: byBranch.get(b.name)!.number })
-              "
-            >
-              PR #{{ byBranch.get(b.name)!.number }}
-            </button>
+        <SectionLabel class="flex-1">Branch</SectionLabel>
+        <SectionLabel class="w-[150px]">Status</SectionLabel>
+        <SectionLabel class="w-[90px]">Last commit</SectionLabel>
+        <span class="w-16" />
+      </div>
+      <ul>
+        <li
+          v-for="b in shown"
+          :key="b.name"
+          class="group flex cursor-pointer items-center gap-3.5 border-t border-border px-5 py-[11px] transition-colors"
+          :class="selected.has(b.name) ? 'bg-secondary' : 'hover:bg-secondary'"
+          @click="!locked(b) && toggle(b.name, !selected.has(b.name))"
+        >
+          <Checkbox
+            :model-value="selected.has(b.name)"
+            :disabled="locked(b)"
+            :aria-label="`Select ${b.name}`"
+            :title="locked(b) ? 'Checked out, so it can’t be deleted' : undefined"
+            @click.stop
+            @update:model-value="(v) => toggle(b.name, v === true)"
+          />
+          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="truncate font-mono text-[13px] font-medium" :title="b.name">{{ b.name }}</span>
+              <button
+                v-if="byBranch.get(b.name)"
+                type="button"
+                class="shrink-0 text-xs text-emphasis hover:underline"
+                @click.stop="
+                  openReview({ owner: byBranch.get(b.name)!.owner, repo: byBranch.get(b.name)!.repo, number: byBranch.get(b.name)!.number })
+                "
+              >
+                PR #{{ byBranch.get(b.name)!.number }}
+              </button>
+            </div>
+            <span class="truncate text-xs text-faint" :title="b.subject">{{ b.subject }}</span>
           </div>
-          <span class="truncate text-xs text-muted-foreground"
-            >{{ b.subject }} · {{ formatAgo(b.lastCommit)
-            }}<template v-if="b.worktree && !b.current"> · {{ shortPath(b.worktree, appInfo.home) }}</template></span
+          <span class="flex w-[150px] shrink-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <Hint v-if="statusOf(b)" :text="statusOf(b)!.hint">
+              <StatusPill :tone="statusOf(b)!.tone" :dot="statusOf(b)!.tone === 'attention' || statusOf(b)!.tone === 'success'">{{
+                statusOf(b)!.text
+              }}</StatusPill>
+            </Hint>
+            <Hint v-if="b.ahead" :text="`${b.ahead} ${b.ahead === 1 ? 'commit' : 'commits'} here that are not on GitHub yet`">
+              <span class="tabular-nums">↑{{ b.ahead }}<template v-if="!statusOf(b)"> not pushed</template></span>
+            </Hint>
+            <Hint v-if="b.behind" :text="`${b.behind} ${b.behind === 1 ? 'commit' : 'commits'} on GitHub that you have not pulled`">
+              <span class="tabular-nums">↓{{ b.behind }}</span>
+            </Hint>
+          </span>
+          <span class="w-[90px] shrink-0 text-xs text-muted-foreground">{{ formatAgo(b.lastCommit) }}</span>
+          <span
+            class="flex w-16 shrink-0 justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
           >
-        </div>
-        <Button
-          v-if="linkFor(b)"
-          size="icon-sm"
-          variant="ghost"
-          as-child
-          title="Open the branch on GitHub"
-          class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-          @click.stop
-        >
-          <a :href="linkFor(b)" target="_blank" rel="noreferrer" aria-label="Open the branch on GitHub"><GithubMark class="size-4" /></a>
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          :disabled="locked(b)"
-          :title="locked(b) ? 'Checked out, so it can’t be deleted' : 'Delete branch'"
-          aria-label="Delete branch"
-          class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-          @click.stop="askDelete([b.name])"
-        >
-          <Trash2 />
-        </Button>
-      </li>
-    </ul>
+            <Hint v-if="linkFor(b)" text="Open on GitHub">
+              <Button size="icon-sm" variant="ghost" as-child class="text-faint" @click.stop>
+                <a :href="linkFor(b)" target="_blank" rel="noreferrer" aria-label="Open on GitHub"><ExternalLink /></a>
+              </Button>
+            </Hint>
+            <Hint :text="locked(b) ? 'Checked out, so it can’t be deleted' : 'Delete branch'">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                class="text-faint"
+                :disabled="locked(b)"
+                aria-label="Delete branch"
+                @click.stop="askDelete([b.name])"
+              >
+                <Trash2 />
+              </Button>
+            </Hint>
+          </span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Floats over the list while branches are picked, so the action stays in reach. -->
+    <div
+      v-if="selected.size"
+      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-[10px] border border-input bg-popover px-4 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+    >
+      <span class="font-medium tabular-nums">{{ selected.size }} selected</span>
+      <label v-if="github && onRemote.length" class="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+        <Checkbox v-model="alsoRemote" /> Also delete on GitHub
+      </label>
+      <Button size="sm" variant="ghost" @click="selected = new Set()">Clear</Button>
+      <Button size="sm" variant="destructive" @click="asking = true"><Trash2 /> Delete {{ selected.size }}</Button>
+    </div>
   </div>
 
   <ConfirmDialog
