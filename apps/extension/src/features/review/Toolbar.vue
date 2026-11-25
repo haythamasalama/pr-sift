@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleHelp, Columns2, Monitor, Moon, NotebookPen, PanelLeft, Pencil, RotateCw, Rows2, Settings, Sun, X } from '@lucide/vue'
+import { CircleHelp, Monitor, Moon, NotebookPen, PanelLeft, Pencil, RotateCw, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { DiffMode, Preset, ThemeMode } from '../../lib/types'
+import type { Preset, ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -30,10 +29,7 @@ defineProps<{
   inView: number
   noteCount: number
   compact: boolean
-  splitDisabled: boolean
 }>()
-
-const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const { theme, setTheme } = useAppearance()
 const { ready: updateReady, restart } = useUpdates()
@@ -102,24 +98,6 @@ const openSettings = useSettingsOpener()
         ><Pencil
       /></Button>
     </div>
-
-    <ToggleGroup
-      v-if="!splitDisabled"
-      type="single"
-      variant="outline"
-      size="sm"
-      class="order-3 shrink-0 xl:order-none"
-      :model-value="diffMode"
-      aria-label="Diff display"
-      @update:model-value="(v) => v && (diffMode = v as DiffMode)"
-    >
-      <ToggleGroupItem value="unified" title="Unified diff for all files" aria-label="Unified"
-        ><Rows2 /><span class="hidden xl:inline">Unified</span></ToggleGroupItem
-      >
-      <ToggleGroupItem value="split" title="Split diff for all files" aria-label="Split"
-        ><Columns2 /><span class="hidden xl:inline">Split</span></ToggleGroupItem
-      >
-    </ToggleGroup>
 
     <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
-import { CircleAlert, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Search, Trash2, Undo2 } from '@lucide/vue'
+import { CircleAlert, FolderGit2, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Search, Trash2, Undo2 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import WorktreeSheet from '~/components/WorktreeSheet.vue'
+import Hint from '~/components/Hint.vue'
 import GithubMark from '@/components/GithubMark.vue'
 import type { PullItem } from '~/github'
 
@@ -300,9 +301,14 @@ watch(
     </p>
 
     <section v-for="repo in withWorktrees" :key="repo.path" class="overflow-hidden rounded-lg border border-border">
-      <header class="flex items-center gap-2 border-b border-border bg-secondary px-4 py-2.5">
+      <header class="flex items-center gap-2 border-b border-border bg-secondary/50 px-4 py-2.5">
+        <FolderGit2 class="size-4 shrink-0 text-muted-foreground" />
         <span class="font-semibold">{{ repo.name }}</span>
         <span class="truncate text-xs text-muted-foreground">{{ short(repo.path) }}</span>
+        <span class="shrink-0 text-xs text-muted-foreground"
+          >· {{ repo.worktrees.filter((w) => !w.main).length }}
+          {{ repo.worktrees.filter((w) => !w.main).length === 1 ? 'worktree' : 'worktrees' }}</span
+        >
         <Button
           v-if="repo.worktrees.some((w) => w.prunable)"
           class="ml-auto"
@@ -319,8 +325,8 @@ watch(
         <li
           v-for="w in repo.worktrees"
           :key="w.path"
-          class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-accent/50"
-          :class="{ 'text-muted-foreground': w.main }"
+          class="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors"
+          :class="[w.main ? 'text-muted-foreground' : '', selected.has(w.path) ? 'bg-accent/60' : 'hover:bg-accent/30']"
           title="Show details"
           @click="sheet = { repo, worktree: w }"
         >
@@ -336,22 +342,28 @@ watch(
           <GitBranch class="size-4 shrink-0 text-muted-foreground" />
           <div class="flex min-w-0 flex-1 flex-col gap-0.5">
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="truncate font-medium" :class="{ 'font-normal': w.main }">{{ label(w) }}</span>
+              <span class="truncate font-mono text-[13px] font-medium" :class="{ 'font-normal': w.main }">{{ label(w) }}</span>
               <Badge v-if="!w.branch && !w.bare" variant="outline" title="No branch is checked out here, only a commit"
                 >No branch · {{ w.head.slice(0, 7) }}</Badge
               >
               <Badge v-if="w.main" variant="outline">Main folder</Badge>
-              <Badge v-if="pullFor(w)" variant="outline" class="border-emphasis/40 text-emphasis">PR #{{ pullFor(w)!.number }}</Badge>
+              <Hint v-if="pullFor(w)" :text="pullFor(w)!.title"
+                ><Badge variant="outline" class="border-emphasis/40 text-emphasis">PR #{{ pullFor(w)!.number }}</Badge></Hint
+              >
               <Badge v-if="w.prunable" variant="destructive">Folder missing</Badge>
               <Badge v-if="w.locked" variant="outline"><Lock /> Locked</Badge>
               <template v-if="!w.main && details.get(w.path)">
-                <Badge v-if="details.get(w.path)!.changed" variant="outline" class="border-attention/50 text-attention">
-                  {{ details.get(w.path)!.changed }} changed
-                </Badge>
-                <Badge v-if="details.get(w.path)!.unpushed" variant="outline" class="border-attention/50 text-attention">
-                  {{ details.get(w.path)!.unpushed }} unpushed
-                </Badge>
-                <Badge v-if="!details.get(w.path)!.upstream && w.branch && !w.prunable" variant="outline">No upstream</Badge>
+                <Hint v-if="details.get(w.path)!.changed" text="Files edited here and not committed. Trashing the worktree loses them.">
+                  <Badge variant="outline" class="border-attention/50 text-attention">{{ details.get(w.path)!.changed }} uncommitted</Badge>
+                </Hint>
+                <Hint v-if="details.get(w.path)!.unpushed" text="Commits here that are not on GitHub yet.">
+                  <Badge variant="outline" class="border-attention/50 text-attention tabular-nums"
+                    >↑{{ details.get(w.path)!.unpushed }}</Badge
+                  >
+                </Hint>
+                <Hint v-if="!details.get(w.path)!.upstream && w.branch && !w.prunable" text="This branch was never pushed to GitHub.">
+                  <Badge variant="outline">Local only</Badge>
+                </Hint>
               </template>
             </div>
             <span class="truncate text-xs text-muted-foreground">{{ short(w.path) }}</span>
@@ -362,38 +374,41 @@ watch(
             variant="ghost"
             as-child
             :title="pullFor(w) ? 'Open the pull request on GitHub' : w.branch ? 'Open the branch on GitHub' : 'Open the commit on GitHub'"
+            class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
             @click.stop
           >
             <a :href="githubUrl(repo, w)" target="_blank" rel="noreferrer" aria-label="Open on GitHub"><GithubMark class="size-4" /></a>
           </Button>
           <template v-if="!w.main">
-            <div class="flex w-36 shrink-0 flex-col items-end gap-0.5 text-xs">
-              <span v-if="details.get(w.path)?.size !== undefined" class="font-medium tabular-nums">{{
+            <div class="flex w-32 shrink-0 flex-col items-end gap-0.5 text-xs text-muted-foreground">
+              <span v-if="details.get(w.path)?.size !== undefined" class="text-foreground tabular-nums">{{
                 formatBytes(details.get(w.path)!.size)
               }}</span>
               <Spinner v-else-if="!w.prunable" class="size-3" />
-              <span class="text-muted-foreground">{{ formatAgo(details.get(w.path)?.lastUsed) }}</span>
+              <span title="Last time a file changed here">{{ formatAgo(details.get(w.path)?.lastUsed) }}</span>
             </div>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              :disabled="w.prunable"
-              aria-label="Show in folder"
-              title="Show in folder"
-              @click.stop="reveal(w.path)"
-            >
-              <FolderOpen />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              :disabled="w.prunable || w.locked"
-              aria-label="Move to Trash"
-              title="Move to Trash"
-              @click.stop="target = { repo, worktree: w }"
-            >
-              <Trash2 />
-            </Button>
+            <div class="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="w.prunable"
+                aria-label="Show in folder"
+                title="Show in folder"
+                @click.stop="reveal(w.path)"
+              >
+                <FolderOpen />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                :disabled="w.prunable || w.locked"
+                aria-label="Move to Trash"
+                title="Move to Trash"
+                @click.stop="target = { repo, worktree: w }"
+              >
+                <Trash2 />
+              </Button>
+            </div>
           </template>
         </li>
       </ul>

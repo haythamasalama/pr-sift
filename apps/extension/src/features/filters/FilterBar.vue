@@ -9,10 +9,11 @@ import {
   MessageSquareText,
   ChevronsDownUp,
   ChevronsUpDown,
+  Columns2,
+  Rows2,
   Bookmark,
   Plus,
   RotateCcw,
-  Settings2,
   Undo2,
   X,
 } from '@lucide/vue'
@@ -33,13 +34,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { FOLDER_CHIP, NOTES_CHIP } from '@pr-sift/core'
-import type { ExtChip, PrFile } from '../../lib/types'
+import type { DiffMode, ExtChip, PrFile } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
-import { useSettingsOpener } from '../settings/useSettingsOpener'
 
 const { chips, viewPatterns = [] } = defineProps<{
   chips: ExtChip[]
+  splitDisabled?: boolean
   listedCount: number
   viewedInView: PrFile[]
   hiddenCount: number
@@ -48,6 +50,7 @@ const { chips, viewPatterns = [] } = defineProps<{
 }>()
 const reviewMode = defineModel<boolean>('reviewMode', { required: true })
 const showHidden = defineModel<boolean>('showHidden', { required: true })
+const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
 const emit = defineEmits<{
   toggleExtension: [ext: string, hide: boolean]
@@ -63,7 +66,13 @@ const emit = defineEmits<{
   saveView: [name: string]
 }>()
 
-const openSettings = useSettingsOpener()
+// One button for both: it shows what the next click does.
+const expanded = shallowRef(true)
+function toggleCards() {
+  expanded.value = !expanded.value
+  if (expanded.value) emit('expandCards')
+  else emit('collapseCards')
+}
 const saveOpen = shallowRef(false)
 const viewName = shallowRef('')
 
@@ -234,29 +243,36 @@ const chipClass = (chip: ExtChip) => [
     </div>
 
     <div class="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2 text-xs">
-      <div class="flex items-center">
-        <Button variant="ghost" size="icon-xs" title="Expand all files" aria-label="Expand all files" @click="emit('expandCards')"
-          ><ChevronsUpDown
-        /></Button>
-        <Button variant="ghost" size="icon-xs" title="Collapse all files" aria-label="Collapse all files" @click="emit('collapseCards')"
-          ><ChevronsDownUp
-        /></Button>
+      <div class="flex items-center gap-1">
+        <ToggleGroup
+          v-if="!splitDisabled"
+          type="single"
+          variant="outline"
+          size="sm"
+          class="h-7"
+          :model-value="diffMode"
+          aria-label="Diff display"
+          @update:model-value="(v) => v && (diffMode = v as DiffMode)"
+        >
+          <ToggleGroupItem value="unified" class="h-7 px-2" title="Unified diff" aria-label="Unified"><Rows2 /></ToggleGroupItem>
+          <ToggleGroupItem value="split" class="h-7 px-2" title="Split diff" aria-label="Split"><Columns2 /></ToggleGroupItem>
+        </ToggleGroup>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="size-7"
+          :title="expanded ? 'Collapse all files' : 'Expand all files'"
+          :aria-label="expanded ? 'Collapse all files' : 'Expand all files'"
+          @click="toggleCards"
+        >
+          <ChevronsDownUp v-if="expanded" /><ChevronsUpDown v-else />
+        </Button>
       </div>
       <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-1.5" title="Show files hidden by your rules (lock files, minified files…)">
           <Checkbox id="show-hidden" :model-value="showHidden" @update:model-value="(v) => (showHidden = v === true)" />
           <Label for="show-hidden" class="text-xs font-normal whitespace-nowrap text-muted-foreground">Hidden ({{ hiddenCount }})</Label>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            class="size-5 text-muted-foreground"
-            title="Choose which files are always hidden"
-            aria-label="Edit hidden files"
-            @click="openSettings('hidden')"
-          >
-            <Settings2 />
-          </Button>
         </div>
         <div class="flex items-center gap-1.5" title="Files disappear from the list and the tree as soon as you mark them viewed">
           <Switch id="hide-viewed" v-model="reviewMode" />
@@ -265,23 +281,20 @@ const chipClass = (chip: ExtChip) => [
       </div>
       <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
       <div class="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="xs"
-          class="h-7 px-2 text-xs"
-          :title="`Mark the ${listedCount} files in this view as viewed`"
-          :disabled="!listedCount"
-          @click="emit('markListed')"
-        >
-          <CheckCheck /> Mark all
-        </Button>
         <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
           <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: restore one, restore all, or clear">
+            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: mark all, restore one, restore all, or clear">
               <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span><ChevronDown />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" class="w-80">
+            <DropdownMenuGroup>
+              <DropdownMenuItem :disabled="!listedCount" @select="emit('markListed')">
+                <CheckCheck /> Mark all in view as viewed
+                <DropdownMenuShortcut class="tracking-normal">{{ listedCount }}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuLabel>Restore a file</DropdownMenuLabel>
               <div v-if="viewedInView.length" class="max-h-64 overflow-y-auto">

@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Hint from './Hint.vue'
 import GithubMark from '@/components/GithubMark.vue'
 import type { Branch } from '#shared/ipc'
 import type { PullItem } from '~/github'
@@ -177,8 +178,8 @@ onMounted(load)
       <li
         v-for="b in shown"
         :key="b.name"
-        class="flex items-center gap-3 px-4 py-2"
-        :class="selected.has(b.name) ? 'bg-accent/50' : ''"
+        class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors"
+        :class="selected.has(b.name) ? 'bg-accent/60' : 'hover:bg-accent/30'"
         @click="!locked(b) && toggle(b.name, !selected.has(b.name))"
       >
         <Checkbox
@@ -197,21 +198,31 @@ onMounted(load)
               :href="linkFor(b)"
               target="_blank"
               rel="noreferrer"
-              class="truncate font-medium hover:underline"
+              class="truncate font-mono text-[13px] font-medium hover:text-emphasis hover:underline"
               title="Open the branch on GitHub"
               @click.stop
               >{{ b.name }}</a
             >
-            <span v-else class="truncate font-medium">{{ b.name }}</span>
-            <Badge v-if="b.current" variant="outline">Checked out</Badge>
+            <span v-else class="truncate font-mono text-[13px] font-medium">{{ b.name }}</span>
+            <Hint v-if="b.current" text="This is the branch your project folder is on right now."
+              ><Badge variant="outline">Checked out</Badge></Hint
+            >
             <Badge v-if="b.worktree && !b.current" variant="outline" :title="b.worktree">In a worktree</Badge>
-            <Badge v-if="b.merged" variant="outline" class="border-success/50 text-success">Merged</Badge>
+            <Hint v-if="b.merged" text="Its commits are already in the main branch, so deleting it loses nothing."
+              ><Badge variant="outline" class="border-success/50 text-success">Merged</Badge></Hint
+            >
             <Badge v-if="b.gone" variant="outline" class="border-attention/50 text-attention" title="The branch was deleted on GitHub"
               >Deleted on GitHub</Badge
             >
-            <Badge v-if="local(b)" variant="outline">Local only</Badge>
-            <Badge v-if="b.ahead" variant="outline">{{ b.ahead }} ahead</Badge>
-            <Badge v-if="b.behind" variant="outline">{{ b.behind }} behind</Badge>
+            <Hint v-if="local(b)" text="Only on this computer. It was never pushed to GitHub."
+              ><Badge variant="outline">Local only</Badge></Hint
+            >
+            <Hint v-if="b.ahead" :text="`${b.ahead} commits here that are not on GitHub yet`"
+              ><Badge variant="outline" class="tabular-nums">↑{{ b.ahead }}</Badge></Hint
+            >
+            <Hint v-if="b.behind" :text="`${b.behind} commits on GitHub that you have not pulled`"
+              ><Badge variant="outline" class="tabular-nums">↓{{ b.behind }}</Badge></Hint
+            >
             <button
               v-if="byBranch.get(b.name)"
               type="button"
@@ -228,7 +239,15 @@ onMounted(load)
             }}<template v-if="b.worktree && !b.current"> · {{ shortPath(b.worktree, appInfo.home) }}</template></span
           >
         </div>
-        <Button v-if="linkFor(b)" size="icon-sm" variant="ghost" as-child title="Open the branch on GitHub" @click.stop>
+        <Button
+          v-if="linkFor(b)"
+          size="icon-sm"
+          variant="ghost"
+          as-child
+          title="Open the branch on GitHub"
+          class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          @click.stop
+        >
           <a :href="linkFor(b)" target="_blank" rel="noreferrer" aria-label="Open the branch on GitHub"><GithubMark class="size-4" /></a>
         </Button>
         <Button
@@ -237,6 +256,7 @@ onMounted(load)
           :disabled="locked(b)"
           :title="locked(b) ? 'Checked out, so it can’t be deleted' : 'Delete branch'"
           aria-label="Delete branch"
+          class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           @click.stop="askDelete([b.name])"
         >
           <Trash2 />

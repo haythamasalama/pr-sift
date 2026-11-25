@@ -317,7 +317,6 @@ watch(
 <template>
   <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
     <Toolbar
-      v-model:diff-mode="diffMode"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :presets="settings.presets"
       :active-preset="filter.activePreset.value?.name ?? ''"
@@ -327,7 +326,6 @@ watch(
       :in-view="filter.inScope.value.length"
       :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
-      :split-disabled="narrow"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
       @select-preset="filter.togglePreset"
       @hide-preset="filter.hidePreset"
@@ -335,7 +333,7 @@ watch(
       @close="emit('close')"
     >
       <template #meta>
-        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :info="info" :conversation="conversation" />
+        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :pr="pr" :info="info" :conversation="conversation" />
       </template>
       <template #actions>
         <ReviewActions
@@ -366,6 +364,8 @@ watch(
     <FilterBar
       v-if="status === 'ready'"
       v-model:show-hidden="filter.showHidden.value"
+      v-model:diff-mode="diffMode"
+      :split-disabled="narrow"
       :review-mode="filter.reviewMode.value"
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"

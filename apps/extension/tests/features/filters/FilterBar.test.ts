@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { shallowRef } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import FilterBar from '../../../src/features/filters/FilterBar.vue'
-import { settingsOpenerKey } from '../../../src/features/settings/useSettingsOpener'
 import { portalTargetKey } from '../../../src/lib/portal'
 import type { ExtChip } from '../../../src/lib/types'
 import { file } from '@pr-sift/core/testing'
@@ -24,6 +23,7 @@ const mountBar = () =>
       filtersActive: false,
       reviewMode: true,
       showHidden: false,
+      diffMode: 'unified' as const,
     },
   })
 
@@ -69,6 +69,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
       },
     })
     await active
@@ -88,6 +89,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
       },
     })
     const labels = wrapper.findAll('button').map((b) => b.text())
@@ -120,29 +122,12 @@ describe('FilterBar', () => {
     expect(button(mountBar(), 'Viewed').text()).toContain('2')
   })
 
-  it('disables mark all when there is nothing to act on', () => {
-    const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 0, viewedInView: [], hiddenCount: 0, filtersActive: false, reviewMode: true, showHidden: false },
-    })
-    expect(button(wrapper, 'Mark all').attributes('disabled')).toBeDefined()
-  })
-
-  it('emits expand and collapse commands for the file cards', async () => {
+  it('toggles between collapsing and expanding the file cards with one button', async () => {
     const wrapper = mountBar()
-    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
     await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
+    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
     expect(wrapper.emitted('expandCards')).toHaveLength(1)
     expect(wrapper.emitted('collapseCards')).toHaveLength(1)
-  })
-
-  it('opens the hidden files settings from the Hidden switch', async () => {
-    const openSettings = vi.fn()
-    const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 4, viewedInView: [], hiddenCount: 1, filtersActive: false, reviewMode: true, showHidden: false },
-      global: { provide: { [settingsOpenerKey as symbol]: openSettings } },
-    })
-    await wrapper.get('button[aria-label="Edit hidden files"]').trigger('click')
-    expect(openSettings).toHaveBeenCalledWith('hidden')
   })
 
   it('saves the current types and folders as a named filter', async () => {
@@ -157,6 +142,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
         viewPatterns: ['src/**/*.ts'],
       },
       global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },

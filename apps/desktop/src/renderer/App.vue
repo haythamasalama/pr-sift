@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef } from 'vue'
 import { BadgeCheck, FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
 import { Spinner } from '@/components/ui/spinner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import BrandMark from '@/components/BrandMark.vue'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
 import { useAppearance } from '@/features/appearance/useAppearance'
@@ -52,73 +53,77 @@ function onAdded(paths: string[]) {
 </script>
 
 <template>
-  <div class="ps-root h-full bg-background text-foreground" :class="{ dark }">
-    <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
-    <SignIn v-else-if="!status.signedIn" />
-    <div v-else class="flex h-full">
-      <nav class="flex w-[228px] shrink-0 flex-col gap-1 border-r border-border bg-secondary/60 p-3" aria-label="Sections">
-        <div class="flex items-center gap-2 px-2 pt-1 pb-4">
-          <span class="flex size-6 items-center justify-center rounded-[22%] bg-foreground text-background">
-            <BrandMark class="size-3.5" />
-          </span>
-          <span class="font-semibold">PR Sift</span>
-        </div>
-        <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'"><Inbox class="size-4" /> Needs you</button>
-        <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
-          <BadgeCheck class="size-4" /> Auto-approve
-        </button>
+  <TooltipProvider :delay-duration="250">
+    <div class="ps-root h-full bg-background text-foreground" :class="{ dark }">
+      <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
+      <SignIn v-else-if="!status.signedIn" />
+      <div v-else class="flex h-full">
+        <nav class="flex w-[228px] shrink-0 flex-col gap-1 border-r border-border bg-secondary/60 p-3" aria-label="Sections">
+          <div class="flex items-center gap-2 px-2 pt-1 pb-4">
+            <span class="flex size-6 items-center justify-center rounded-[22%] bg-foreground text-background">
+              <BrandMark class="size-3.5" />
+            </span>
+            <span class="font-semibold">PR Sift</span>
+          </div>
+          <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'">
+            <Inbox class="size-4" /> Needs you
+          </button>
+          <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
+            <BadgeCheck class="size-4" /> Auto-approve
+          </button>
 
-        <div class="mt-4 flex items-center justify-between px-2 pb-1">
-          <span class="text-xs font-medium text-muted-foreground">Projects</span>
-          <button
-            type="button"
-            class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-            title="Add projects"
-            aria-label="Add projects"
-            @click="adding = true"
-          >
-            <Plus class="size-4" />
-          </button>
-        </div>
-        <div class="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
-          <button
-            v-for="p in projects ?? []"
-            :key="p.path"
-            type="button"
-            :class="[item, active(view === 'project' && project === p.path)]"
-            :title="p.path"
-            @click="openProject(p.path)"
-          >
-            <ProjectIcon :project="p" />
-            <span class="truncate">{{ p.name }}</span>
-          </button>
-          <button v-if="projects && !projects.length" type="button" :class="[item, 'text-muted-foreground']" @click="adding = true">
-            <Plus class="size-4" /> Add your first project
-          </button>
-        </div>
+          <div class="mt-4 flex items-center justify-between px-2 pb-1">
+            <span class="text-xs font-medium text-muted-foreground">Projects</span>
+            <button
+              type="button"
+              class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              title="Add projects"
+              aria-label="Add projects"
+              @click="adding = true"
+            >
+              <Plus class="size-4" />
+            </button>
+          </div>
+          <div class="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
+            <button
+              v-for="p in projects ?? []"
+              :key="p.path"
+              type="button"
+              :class="[item, active(view === 'project' && project === p.path)]"
+              :title="p.path"
+              @click="openProject(p.path)"
+            >
+              <ProjectIcon :project="p" />
+              <span class="truncate">{{ p.name }}</span>
+            </button>
+            <button v-if="projects && !projects.length" type="button" :class="[item, 'text-muted-foreground']" @click="adding = true">
+              <Plus class="size-4" /> Add your first project
+            </button>
+          </div>
 
-        <div class="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
-          <button v-for="t in TOOLS" :key="t.id" type="button" :class="[item, active(view === t.id)]" @click="view = t.id">
-            <component :is="t.icon" class="size-4" /> {{ t.label }}
-          </button>
-          <button type="button" :class="[item, 'h-10', active(view === 'account')]" @click="view = 'account'">
-            <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 rounded-full" />
-            <span class="truncate">{{ status.account?.login }}</span>
-          </button>
-        </div>
-      </nav>
-      <main class="min-w-0 flex-1 overflow-y-auto">
-        <InboxView v-if="view === 'inbox'" />
-        <ProjectView v-else-if="view === 'project'" />
-        <AutoApprove v-else-if="view === 'autoapprove'" />
-        <Worktrees v-else-if="view === 'worktrees'" />
-        <Cleanup v-else-if="view === 'cleanup'" />
-        <SettingsView v-else-if="view === 'settings'" />
-        <Account v-else />
-      </main>
+          <div class="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
+            <button v-for="t in TOOLS" :key="t.id" type="button" :class="[item, active(view === t.id)]" @click="view = t.id">
+              <component :is="t.icon" class="size-4" /> {{ t.label }}
+            </button>
+            <button type="button" :class="[item, 'h-10', active(view === 'account')]" @click="view = 'account'">
+              <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 rounded-full" />
+              <span class="truncate">{{ status.account?.login }}</span>
+            </button>
+          </div>
+        </nav>
+        <main class="min-w-0 flex-1 overflow-y-auto">
+          <InboxView v-if="view === 'inbox'" />
+          <ProjectView v-else-if="view === 'project'" />
+          <AutoApprove v-else-if="view === 'autoapprove'" />
+          <Worktrees v-else-if="view === 'worktrees'" />
+          <Cleanup v-else-if="view === 'cleanup'" />
+          <SettingsView v-else-if="view === 'settings'" />
+          <Account v-else />
+        </main>
+      </div>
+      <ReviewPanel v-if="review && status?.signedIn" :key="prKey(review)" :pr="review" @close="review = null" />
+      <AddProjectDialog v-model:open="adding" @added="onAdded" />
+      <div ref="portal" />
     </div>
-    <ReviewPanel v-if="review && status?.signedIn" :key="prKey(review)" :pr="review" @close="review = null" />
-    <AddProjectDialog v-model:open="adding" @added="onAdded" />
-    <div ref="portal" />
-  </div>
+  </TooltipProvider>
 </template>

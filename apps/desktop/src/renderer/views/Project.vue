@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, shallowRef, watch } from 'vue'
-import { CircleAlert, Code, FolderOpen, GitBranch, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
+import { CircleAlert, Code, FolderOpen, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
@@ -17,6 +17,8 @@ import { useProjects } from '~/useProjects'
 import PullRow from '~/components/PullRow.vue'
 import BranchList from '~/components/BranchList.vue'
 import ProjectIcon from '~/components/ProjectIcon.vue'
+import BranchName from '~/components/BranchName.vue'
+import Hint from '~/components/Hint.vue'
 import ProjectSummary from '~/components/ProjectSummary.vue'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Worktrees from './Worktrees.vue'
@@ -30,6 +32,7 @@ const loading = shallowRef(false)
 const error = shallowRef('')
 const note = shallowRef('')
 const removing = shallowRef(false)
+let noteTimer: ReturnType<typeof setTimeout> | undefined
 
 const me = computed(() => status.value?.account?.login)
 const pullQuery = shallowRef('')
@@ -81,7 +84,9 @@ async function openIn(target: 'editor' | 'terminal') {
     // The project's main folder becomes known to the main process once its worktrees are listed.
     await bridge.invoke('worktrees:list', p.path)
     const res = await bridge.invoke('worktrees:open', p.path, target)
-    note.value = res.ok ? `Opened in ${res.app}.` : (res.error ?? 'Could not open it.')
+    note.value = res.ok ? `Opened in ${res.app}` : (res.error ?? 'Could not open it.')
+    clearTimeout(noteTimer)
+    noteTimer = setTimeout(() => (note.value = ''), 3500)
   } catch (e) {
     note.value = errorText(e)
   }
@@ -99,48 +104,61 @@ async function confirmRemove() {
 <template>
   <div v-if="!current" class="p-6 text-muted-foreground">This project is no longer in your list.</div>
   <template v-else>
-    <header class="sticky top-0 z-10 flex flex-col gap-3 border-b border-border bg-background/95 px-6 pt-4 backdrop-blur">
-      <div class="flex flex-wrap items-start gap-3">
-        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h1 class="flex items-center gap-2 text-base font-semibold">
-            <ProjectIcon :project="current" :size="22" />
-            {{ current.name }}
-            <span v-if="current.branch" class="flex items-center gap-1 text-xs font-normal text-muted-foreground"
-              ><GitBranch class="size-3.5" />{{ current.branch }}</span
-            >
-          </h1>
-          <p class="truncate text-xs text-muted-foreground">
-            {{ shortPath(current.path, appInfo.home) }}
-            <template v-if="current.github"> · {{ current.github.owner }}/{{ current.github.repo }}</template>
-          </p>
+    <header class="sticky top-0 z-10 flex flex-col gap-3 border-b border-border bg-background/95 px-6 pt-5 backdrop-blur">
+      <div class="flex items-start gap-3.5">
+        <div class="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary/70">
+          <ProjectIcon :project="current" :size="28" />
         </div>
-        <div class="flex flex-wrap items-center gap-1.5">
+        <div class="flex min-w-0 flex-1 flex-col gap-1.5">
+          <h1 class="truncate text-lg leading-tight font-semibold">{{ current.name }}</h1>
+          <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <BranchName
+              v-if="current.branch"
+              :name="current.branch"
+              size="xs"
+              :href="
+                current.github
+                  ? `https://github.com/${current.github.owner}/${current.github.repo}/tree/${encodeURIComponent(current.branch)}`
+                  : undefined
+              "
+            />
+            <Hint v-if="current.github" text="Open the repository on GitHub">
+              <a
+                :href="`https://github.com/${current.github.owner}/${current.github.repo}`"
+                target="_blank"
+                rel="noreferrer"
+                class="flex items-center gap-1 hover:text-foreground"
+                ><GithubMark class="size-3.5" />{{ current.github.owner }}/{{ current.github.repo }}</a
+              >
+            </Hint>
+            <Hint text="Show the folder">
+              <button
+                type="button"
+                class="flex min-w-0 items-center gap-1 hover:text-foreground"
+                @click="bridge.invoke('shell:reveal', current.path)"
+              >
+                <FolderOpen class="size-3.5 shrink-0" /><span class="truncate">{{ shortPath(current.path, appInfo.home) }}</span>
+              </button>
+            </Hint>
+          </div>
+        </div>
+        <div class="flex shrink-0 items-center gap-1.5">
+          <Transition
+            enter-from-class="opacity-0"
+            leave-to-class="opacity-0"
+            enter-active-class="transition-opacity"
+            leave-active-class="transition-opacity duration-500"
+          >
+            <span v-if="note" class="mr-1 text-xs text-muted-foreground">{{ note }}</span>
+          </Transition>
           <Button size="sm" variant="outline" @click="openIn('editor')"><Code /> Editor</Button>
           <Button size="sm" variant="outline" @click="openIn('terminal')"><SquareTerminal /> Terminal</Button>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            title="Show in folder"
-            aria-label="Show in folder"
-            @click="bridge.invoke('shell:reveal', current.path)"
-            ><FolderOpen
-          /></Button>
-          <Button v-if="current.github" size="icon-sm" variant="ghost" as-child title="Open on GitHub">
-            <a
-              :href="`https://github.com/${current.github.owner}/${current.github.repo}`"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open on GitHub"
-              ><GithubMark class="size-4"
-            /></a>
-          </Button>
-          <Button size="icon-sm" variant="ghost" title="Remove from PR Sift" aria-label="Remove from PR Sift" @click="removing = true"
-            ><X
-          /></Button>
+          <Hint text="Remove from PR Sift. The folder stays on disk.">
+            <Button size="icon-sm" variant="ghost" aria-label="Remove from PR Sift" @click="removing = true"><X /></Button>
+          </Hint>
         </div>
       </div>
       <ProjectSummary :key="current.path" :project="current" :info="activity?.info" />
-      <p v-if="note" class="-mt-1 text-xs text-muted-foreground">{{ note }}</p>
       <nav class="-mb-px flex gap-4 overflow-x-auto" aria-label="Project">
         <button
           v-for="t in TABS"
