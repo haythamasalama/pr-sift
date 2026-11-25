@@ -22,6 +22,8 @@ import TagInput from '~/components/TagInput.vue'
 const { projects } = useProjects()
 const status = shallowRef<AutoApproveStatus | null>(null)
 const draft = reactive<AutoApproveConfig>({ enabled: false, dryRun: true, intervalMinutes: 10, rules: [] })
+// Vue's reactive proxies can't be structured-cloned (IPC and structuredClone both fail on them).
+const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T
 const saved = shallowRef('')
 const open = reactive(new Set<string>())
 const error = shallowRef('')
@@ -57,20 +59,20 @@ const description = computed(() => {
 function load(next: AutoApproveStatus) {
   status.value = next
   if (!dirty.value || !saved.value) {
-    Object.assign(draft, structuredClone(next.config))
+    Object.assign(draft, clone(next.config))
     saved.value = JSON.stringify(draft)
   }
 }
 
 const id = () => `rule-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 function addRule(template?: Partial<AutoApproveRule>) {
-  const rule = { ...newRule(id()), ...structuredClone(template ?? {}) }
+  const rule = { ...newRule(id()), ...clone(template ?? {}) }
   draft.rules.push(rule)
   open.add(rule.id)
   showTemplates.value = false
 }
 function duplicate(rule: AutoApproveRule) {
-  const copy = { ...structuredClone(rule), id: id(), name: `${rule.name} (copy)` }
+  const copy = { ...clone(rule), id: id(), name: `${rule.name} (copy)` }
   draft.rules.splice(draft.rules.indexOf(rule) + 1, 0, copy)
   open.add(copy.id)
 }
@@ -84,7 +86,7 @@ function revert() {
 async function save() {
   error.value = ''
   try {
-    const next = await bridge.invoke('autoapprove:save', structuredClone(draft))
+    const next = await bridge.invoke('autoapprove:save', clone(draft))
     saved.value = ''
     load(next)
     savedNote.value = 'Saved.'
