@@ -81,9 +81,8 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
           <span class="shrink-0 tabular-nums"
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
-          <Hint v-if="pull.comments" :text="`${pull.comments} ${pull.comments === 1 ? 'comment' : 'comments'}`">
-            <span class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
-          </Hint>
+
+          <span v-if="pull.comments" class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
         </div>
       </div>
       <span class="flex w-[120px] shrink-0 @max-xl:w-auto" :class="mine ? 'justify-end' : ''">

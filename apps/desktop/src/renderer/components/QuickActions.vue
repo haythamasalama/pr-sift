@@ -77,18 +77,18 @@ async function confirm() {
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
     <template v-else>
-      <Hint v-if="canApprove" :text="approveError || (approved ? 'You approved it' : 'Approve it on GitHub, without a comment')">
-        <Button
-          :variant="approved || approveError ? 'outline' : 'success'"
-          size="sm"
-          :class="approved ? 'text-success-fg' : approveError ? 'text-destructive' : ''"
-          :disabled="approving || approved"
-          :aria-label="approved ? 'Approved' : 'Approve'"
-          @click="approve"
-        >
-          <Spinner v-if="approving" /><Check v-else />{{ approved ? 'Approved' : 'Approve' }}
-        </Button>
-      </Hint>
+      <Button
+        v-if="canApprove"
+        :variant="approved || approveError ? 'outline' : 'success'"
+        size="sm"
+        :class="approved ? 'text-success-fg' : approveError ? 'text-destructive' : ''"
+        :disabled="approving || approved"
+        :aria-label="approved ? 'Approved' : 'Approve'"
+        @click="approve"
+      >
+        <Spinner v-if="approving" /><Check v-else />{{ approved ? 'Approved' : 'Approve' }}
+      </Button>
+
       <Popover v-if="canMerge" v-model:open="open">
         <Hint :text="`${label} · ${mergeNote}`">
           <PopoverTrigger as-child>

@@ -3,7 +3,6 @@ import { nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from
 import { FolderOpen, FolderPlus, X } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import Hint from '~/components/Hint.vue'
 import SettingsForm from '@/features/settings/SettingsForm.vue'
 import SettingsRow from '@/features/settings/SettingsRow.vue'
 import { bridge } from '~/bridge'
@@ -91,28 +90,26 @@ onBeforeUnmount(() => scroller()?.removeEventListener('scroll', track))
               <ul v-if="settings?.roots.length" class="flex flex-col gap-1 pb-2">
                 <li v-for="r in settings.roots" :key="r" class="flex items-center gap-2 rounded-md bg-muted py-1 pr-1 pl-3 text-xs">
                   <span class="min-w-0 flex-1 truncate">{{ short(r) }}</span>
-                  <Hint text="Show the folder">
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      class="text-muted-foreground"
-                      aria-label="Show the folder"
-                      @click="bridge.invoke('shell:reveal', r)"
-                    >
-                      <FolderOpen />
-                    </Button>
-                  </Hint>
-                  <Hint text="Stop looking here">
-                    <Button
-                      size="icon-xs"
-                      variant="ghost"
-                      class="text-muted-foreground"
-                      :aria-label="`Stop looking in ${short(r)}`"
-                      @click="remove(r)"
-                    >
-                      <X />
-                    </Button>
-                  </Hint>
+
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    class="text-muted-foreground"
+                    aria-label="Show the folder"
+                    @click="bridge.invoke('shell:reveal', r)"
+                  >
+                    <FolderOpen />
+                  </Button>
+
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    class="text-muted-foreground"
+                    :aria-label="`Stop looking in ${short(r)}`"
+                    @click="remove(r)"
+                  >
+                    <X />
+                  </Button>
                 </li>
               </ul>
               <div class="border-t border-accent">

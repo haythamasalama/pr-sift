@@ -187,11 +187,10 @@ async function copyBranch() {
 <template>
   <div class="flex h-full min-h-0 flex-col">
     <header class="flex items-center gap-3 border-b border-border px-6 py-4">
-      <Hint text="Back">
-        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
-          ><ArrowLeft class="size-4"
-        /></Button>
-      </Hint>
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
+        ><ArrowLeft class="size-4"
+      /></Button>
+
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex min-w-0 items-center gap-2.5">
           <h1 class="truncate font-mono text-[15px] leading-[22px] font-semibold">
@@ -238,23 +237,22 @@ async function copyBranch() {
             ><SquareTerminal
           /></Button>
         </Hint>
-        <Hint text="Show the folder">
-          <Button
-            size="icon"
-            variant="ghost"
-            class="text-muted-foreground"
-            aria-label="Show the folder"
-            @click="bridge.invoke('shell:reveal', path)"
-            ><FolderOpen
-          /></Button>
-        </Hint>
+
+        <Button
+          size="icon"
+          variant="ghost"
+          class="text-muted-foreground"
+          aria-label="Show the folder"
+          @click="bridge.invoke('shell:reveal', path)"
+          ><FolderOpen
+        /></Button>
+
         <span class="mx-1 h-5 w-px bg-border" aria-hidden="true" />
         <DropdownMenu>
-          <Hint text="More">
-            <DropdownMenuTrigger as-child>
-              <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
-            </DropdownMenuTrigger>
-          </Hint>
+          <DropdownMenuTrigger as-child>
+            <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
+          </DropdownMenuTrigger>
+
           <DropdownMenuContent align="end" class="w-56">
             <DropdownMenuItem v-if="github && branch" as-child
               ><a

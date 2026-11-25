@@ -351,11 +351,11 @@ watch(
       >
         <span v-if="note" class="text-xs text-muted-foreground">{{ note }}</span>
       </Transition>
-      <Hint text="Look at the folders again">
-        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rescan" :disabled="scanning" @click="scan"
-          ><Spinner v-if="scanning" /><RefreshCw v-else
-        /></Button>
-      </Hint>
+
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rescan" :disabled="scanning" @click="scan"
+        ><Spinner v-if="scanning" /><RefreshCw v-else
+      /></Button>
+
       <Button v-if="only" size="sm" variant="outline" @click="dialog = { repo: only, worktree: null }"><Plus /> New worktree</Button>
     </div>
 
@@ -497,17 +497,18 @@ watch(
                     ><SquareTerminal
                   /></Button>
                 </Hint>
-                <Hint v-if="!w.main" :text="w.locked ? 'Locked in git, so it can’t be moved' : 'Move to Trash'">
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    class="text-muted-foreground"
-                    :aria-label="`Move ${label(w)} to the Trash`"
-                    :disabled="w.locked"
-                    @click="target = { repo, worktree: w }"
-                    ><Trash2
-                  /></Button>
-                </Hint>
+
+                <Button
+                  v-if="!w.main"
+                  size="icon-sm"
+                  variant="ghost"
+                  class="text-muted-foreground"
+                  :aria-label="`Move ${label(w)} to the Trash`"
+                  :disabled="w.locked"
+                  @click="target = { repo, worktree: w }"
+                  ><Trash2
+                /></Button>
+
                 <span v-else class="w-7 shrink-0" />
               </template>
               <Button v-else size="sm" variant="outline" @click="prune(repo)">Clean up</Button>
@@ -559,11 +560,10 @@ watch(
       <Button size="sm" variant="destructive" @click="bulkAsking = true"
         ><Trash2 /> Move {{ selected.size === 1 ? 'it' : selected.size }} to Trash</Button
       >
-      <Hint text="Clear the selection">
-        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected = new Set()"
-          ><X
-        /></Button>
-      </Hint>
+
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected = new Set()"
+        ><X
+      /></Button>
     </div>
 
     <section v-if="undoList.length" class="flex flex-col gap-2 pt-2">

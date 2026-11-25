@@ -363,11 +363,10 @@ onBeforeUnmount(() => {
   <template v-if="rule">
     <div class="flex min-h-full flex-col">
       <header class="flex h-16 shrink-0 items-center gap-2 border-b border-border pr-8 pl-6">
-        <Hint text="Back to the rules">
-          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back to the rules" @click="back"
-            ><ArrowLeft
-          /></Button>
-        </Hint>
+        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back to the rules" @click="back"
+          ><ArrowLeft
+        /></Button>
+
         <input
           v-if="renaming || !rule.name"
           v-model="rule.name"
@@ -380,11 +379,11 @@ onBeforeUnmount(() => {
         />
         <template v-else>
           <h1 class="truncate text-base leading-[22px] font-semibold">{{ rule.name }}</h1>
-          <Hint text="Rename">
-            <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rename rule" @click="renaming = true"
-              ><Pencil
-            /></Button>
-          </Hint>
+
+          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rename rule" @click="renaming = true"
+            ><Pencil
+          /></Button>
+
           <span class="flex-1" />
         </template>
         <Label class="gap-2 text-xs font-normal text-muted-foreground"
@@ -577,17 +576,16 @@ onBeforeUnmount(() => {
             <div class="flex items-center gap-2">
               <SectionLabel>Would approve now</SectionLabel>
               <span class="flex-1" />
-              <Hint text="Ask GitHub again">
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  class="text-muted-foreground"
-                  aria-label="Refresh"
-                  :disabled="previewing"
-                  @click="runPreview(true)"
-                  ><Spinner v-if="previewing" /><RefreshCw v-else
-                /></Button>
-              </Hint>
+
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                class="text-muted-foreground"
+                aria-label="Refresh"
+                :disabled="previewing"
+                @click="runPreview(true)"
+                ><Spinner v-if="previewing" /><RefreshCw v-else
+              /></Button>
             </div>
             <p v-if="previewError" class="text-xs text-destructive">{{ previewError }}</p>
             <div v-else-if="!evaluations" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
@@ -751,11 +749,10 @@ onBeforeUnmount(() => {
             >None right now</Badge
           >
           <Spinner v-else class="text-muted-foreground" />
-          <Hint text="Edit">
-            <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`Edit ${r.name}`" @click="autoRule = r.id"
-              ><Pencil
-            /></Button>
-          </Hint>
+
+          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`Edit ${r.name}`" @click="autoRule = r.id"
+            ><Pencil
+          /></Button>
         </li>
       </ul>
       <p class="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">

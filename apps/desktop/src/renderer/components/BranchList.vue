@@ -222,11 +222,10 @@ onMounted(() => {
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Hint text="Read the branches again">
-          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load"
-            ><Spinner v-if="loading" /><RefreshCw v-else
-          /></Button>
-        </Hint>
+
+        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load"
+          ><Spinner v-if="loading" /><RefreshCw v-else
+        /></Button>
       </span>
     </div>
 
@@ -313,11 +312,10 @@ onMounted(() => {
             }}</span>
           </Hint>
           <span class="flex w-16 shrink-0 justify-end gap-0.5">
-            <Hint v-if="linkFor(b)" text="Open on GitHub">
-              <Button size="icon-sm" variant="ghost" as-child class="text-muted-foreground" @click.stop>
-                <a :href="linkFor(b)" target="_blank" rel="noreferrer" :aria-label="`Open ${b.name} on GitHub`"><ExternalLink /></a>
-              </Button>
-            </Hint>
+            <Button v-if="linkFor(b)" size="icon-sm" variant="ghost" as-child class="text-muted-foreground" @click.stop>
+              <a :href="linkFor(b)" target="_blank" rel="noreferrer" :aria-label="`Open ${b.name} on GitHub`"><ExternalLink /></a>
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger as-child>
                 <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`More for ${b.name}`" @click.stop
@@ -351,11 +349,10 @@ onMounted(() => {
       <Button size="sm" variant="destructive" @click="asking = true"
         ><Trash2 /> Delete {{ selected.size === 1 ? 'branch' : `${selected.size} branches` }}</Button
       >
-      <Hint text="Clear the selection">
-        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected = new Set()"
-          ><X
-        /></Button>
-      </Hint>
+
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected = new Set()"
+        ><X
+      /></Button>
     </div>
   </div>
 

@@ -206,11 +206,10 @@ async function confirmRemove() {
   <template v-else>
     <header class="sticky top-0 z-10 flex flex-col border-b border-border bg-background">
       <div class="flex items-center gap-3 px-6 pt-4">
-        <Hint text="Back">
-          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
-            ><ArrowLeft class="size-4"
-          /></Button>
-        </Hint>
+        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
+          ><ArrowLeft class="size-4"
+        /></Button>
+
         <ProjectIcon :project="current" :size="32" />
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <div class="flex min-w-0 items-baseline gap-2.5">
@@ -218,23 +217,21 @@ async function confirmRemove() {
             <span v-if="description" class="truncate text-xs text-muted-foreground" :title="description">{{ description }}</span>
           </div>
           <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
-            <Hint v-if="current.github" text="Open the repository on GitHub">
-              <a :href="repoUrl" target="_blank" rel="noreferrer" class="shrink-0 hover:text-foreground"
-                >{{ current.github.owner }}/{{ current.github.repo }}</a
-              >
-            </Hint>
+            <a v-if="current.github" :href="repoUrl" target="_blank" rel="noreferrer" class="shrink-0 hover:text-foreground"
+              >{{ current.github.owner }}/{{ current.github.repo }}</a
+            >
+
             <template v-if="current.branch">
               <span v-if="current.github" aria-hidden="true">·</span>
-              <Hint :text="current.github ? 'Open this branch on GitHub' : 'The branch checked out in this folder'">
-                <component
-                  :is="current.github ? 'a' : 'span'"
-                  :href="current.github ? `${repoUrl}/tree/${encodeURIComponent(current.branch)}` : undefined"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="max-w-[280px] shrink-0 truncate rounded-md bg-emphasis/15 px-1 font-mono text-[11px] text-emphasis"
-                  >{{ current.branch }}</component
-                >
-              </Hint>
+
+              <component
+                :is="current.github ? 'a' : 'span'"
+                :href="current.github ? `${repoUrl}/tree/${encodeURIComponent(current.branch)}` : undefined"
+                target="_blank"
+                rel="noreferrer"
+                class="max-w-[280px] shrink-0 truncate rounded-md bg-emphasis/15 px-1 font-mono text-[11px] text-emphasis"
+                >{{ current.branch }}</component
+              >
             </template>
             <span aria-hidden="true">·</span>
             <PathText :path="current.path" />
@@ -259,23 +256,22 @@ async function confirmRemove() {
               ><SquareTerminal
             /></Button>
           </Hint>
-          <Hint text="Show the folder">
-            <Button
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              aria-label="Show the folder"
-              @click="bridge.invoke('shell:reveal', current.path)"
-              ><FolderOpen
-            /></Button>
-          </Hint>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            aria-label="Show the folder"
+            @click="bridge.invoke('shell:reveal', current.path)"
+            ><FolderOpen
+          /></Button>
+
           <span class="mx-1 h-5 w-px bg-border" aria-hidden="true" />
           <DropdownMenu>
-            <Hint text="More">
-              <DropdownMenuTrigger as-child>
-                <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
-              </DropdownMenuTrigger>
-            </Hint>
+            <DropdownMenuTrigger as-child>
+              <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
+            </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end" class="w-56">
               <DropdownMenuItem v-if="current.github" as-child
                 ><a :href="repoUrl" target="_blank" rel="noreferrer"><ExternalLink /> Open on GitHub</a></DropdownMenuItem
@@ -326,18 +322,17 @@ async function confirmRemove() {
           <Segmented v-model="pullFilter" :options="FILTERS" label="Show" />
           <span class="ml-auto flex shrink-0 items-center gap-2">
             <span v-if="loadedAt" class="text-xs text-muted-foreground">Updated {{ formatAgo(loadedAt) }}</span>
-            <Hint text="Ask GitHub again">
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                class="text-muted-foreground"
-                aria-label="Refresh"
-                :disabled="loading"
-                @click="load(true)"
-              >
-                <Spinner v-if="loading" /><RefreshCw v-else />
-              </Button>
-            </Hint>
+
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              class="text-muted-foreground"
+              aria-label="Refresh"
+              :disabled="loading"
+              @click="load(true)"
+            >
+              <Spinner v-if="loading" /><RefreshCw v-else />
+            </Button>
           </span>
         </div>
         <p v-if="!activity.pulls.length" class="text-muted-foreground">No open pull requests.</p>

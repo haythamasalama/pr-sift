@@ -215,11 +215,9 @@ onMounted(scan)
 
 <template>
   <PageHeader title="Cleanup" description="Worktrees and branches you can safely remove, across all projects.">
-    <Hint text="Look again">
-      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Look again" :disabled="scanning" @click="scan"
-        ><Spinner v-if="scanning" /><RefreshCw v-else
-      /></Button>
-    </Hint>
+    <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Look again" :disabled="scanning" @click="scan"
+      ><Spinner v-if="scanning" /><RefreshCw v-else
+    /></Button>
   </PageHeader>
 
   <NoticeBar v-if="notice">
@@ -331,11 +329,10 @@ onMounted(scan)
       <Button size="sm" variant="destructive" @click="confirming = true"
         ><Trash2 /> Delete {{ selected.size === 1 ? 'it' : `${selected.size} items` }}</Button
       >
-      <Hint text="Clear the selection">
-        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected.clear()"
-          ><X
-        /></Button>
-      </Hint>
+
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected.clear()"
+        ><X
+      /></Button>
     </div>
   </div>
 

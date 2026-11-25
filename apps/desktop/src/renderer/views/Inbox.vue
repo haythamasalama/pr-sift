@@ -8,7 +8,6 @@ import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
 import { useInbox } from '~/useInbox'
 import CountBadge from '~/components/CountBadge.vue'
-import Hint from '~/components/Hint.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import PullTable from '~/components/PullTable.vue'
 import SectionLabel from '~/components/SectionLabel.vue'
@@ -44,11 +43,10 @@ onMounted(() => {
 <template>
   <PageHeader title="Needs you" :description="summary">
     <span v-if="loadedAt" class="text-xs text-muted-foreground">Updated {{ formatAgo(loadedAt) }}</span>
-    <Hint text="Ask GitHub again">
-      <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load">
-        <Spinner v-if="loading" /><RefreshCw v-else />
-      </Button>
-    </Hint>
+
+    <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load">
+      <Spinner v-if="loading" /><RefreshCw v-else />
+    </Button>
   </PageHeader>
 
   <div class="flex flex-col gap-7 px-8 py-6">
