@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { MessageSquare } from '@lucide/vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { PullItem } from '~/github'
@@ -7,7 +8,7 @@ import LabelChip from './LabelChip.vue'
 import Hint from './Hint.vue'
 import StatusPill, { type Tone } from './StatusPill.vue'
 
-defineProps<{ pull: PullItem; showRepo?: boolean; me?: string }>()
+const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string }>()
 const emit = defineEmits<{ open: [] }>()
 
 const DECISION: Record<string, { text: string; tone: Tone; hint: string }> = {
@@ -26,6 +27,15 @@ const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
   PENDING: { text: 'Running', tone: 'attention', hint: 'CI: checks are still running' },
   EXPECTED: { text: 'Waiting', tone: 'attention', hint: 'CI: checks have not started yet' },
 }
+
+// The same review and CI state as the columns, for the narrow layout.
+const review = computed<{ text: string; tone: Tone } | undefined>(() => {
+  const p = props.pull
+  if (p.draft) return { text: 'Draft', tone: 'neutral' }
+  if (props.me && p.reviewers.includes(props.me)) return { text: 'Your review', tone: 'info' }
+  return p.decision ? DECISION[p.decision] : undefined
+})
+const ci = computed(() => (props.pull.checks ? CI[props.pull.checks] : undefined))
 </script>
 
 <template>
@@ -39,7 +49,7 @@ const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
         <div class="flex min-w-0 items-center gap-2">
           <span v-if="showRepo" class="shrink-0 text-muted-foreground">{{ pull.repo }}</span>
           <span class="truncate text-[13.5px] font-medium" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
-          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="shrink-0" />
+          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="hidden shrink-0 @lg:inline-flex" />
           <Hint
             v-if="pull.mergeable === 'CONFLICTING'"
             text="It conflicts with the base branch. The author has to fix that before it can merge."
@@ -65,8 +75,13 @@ const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
             <span class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
           </Hint>
         </div>
+        <!-- Narrow: the review and CI state sit under the title instead of in their own columns. -->
+        <div v-if="review || ci" class="flex items-center gap-2 @2xl:hidden">
+          <StatusPill v-if="review" :tone="review.tone">{{ review.text }}</StatusPill>
+          <StatusPill v-if="ci" :tone="ci.tone" bare>{{ ci.text }}</StatusPill>
+        </div>
       </div>
-      <span class="w-[120px] shrink-0">
+      <span class="hidden w-[120px] shrink-0 @2xl:block">
         <Hint v-if="pull.draft" text="Draft: the author has not marked it ready for review yet.">
           <StatusPill>Draft</StatusPill>
         </Hint>
@@ -77,7 +92,7 @@ const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
           <StatusPill :tone="DECISION[pull.decision]!.tone">{{ DECISION[pull.decision]!.text }}</StatusPill>
         </Hint>
       </span>
-      <span class="w-[70px] shrink-0">
+      <span class="hidden w-[70px] shrink-0 @2xl:block">
         <Hint v-if="pull.checks && CI[pull.checks]" :text="CI[pull.checks]!.hint">
           <StatusPill :tone="CI[pull.checks]!.tone" bare>{{ CI[pull.checks]!.text }}</StatusPill>
         </Hint>

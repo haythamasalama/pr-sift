@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
 import { ChevronDown, Search, X } from '@lucide/vue'
+import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // Picks repositories from a menu: your projects, the repositories asking for your review, and "every repo of an owner".
@@ -32,12 +34,12 @@ function addTyped() {
     <PopoverTrigger as-child>
       <button
         type="button"
-        class="flex min-h-[34px] w-full items-center gap-1.5 rounded-[7px] border border-border bg-secondary px-2 py-1 text-left data-[state=open]:border-ring/60"
+        class="flex min-h-8 w-full items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1 text-left text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=open]:border-ring dark:bg-input/30"
         aria-label="Repositories"
       >
         <span class="flex min-w-0 flex-1 flex-wrap gap-1.5">
-          <span v-if="!model.length" class="px-1 text-[13px] text-faint">Any repository</span>
-          <span v-for="r in model" :key="r" class="flex h-6 items-center gap-1.5 rounded-md bg-accent px-2 text-[12.5px]">
+          <span v-if="!model.length" class="text-muted-foreground">Any repository</span>
+          <Badge v-for="r in model" :key="r" variant="secondary" class="h-6 rounded-md text-[12.5px] font-normal">
             <img :src="avatar(r)" alt="" class="size-4 rounded-[3px]" />{{ r }}
             <span
               role="button"
@@ -48,22 +50,21 @@ function addTyped() {
               @keydown.enter.stop.prevent="flip(r, false)"
               ><X class="size-3"
             /></span>
-          </span>
+          </Badge>
         </span>
         <ChevronDown class="size-4 shrink-0 text-faint" />
       </button>
     </PopoverTrigger>
     <PopoverContent align="start" class="w-(--reka-popover-trigger-width) gap-1 p-1.5">
-      <label class="mb-1 flex h-[30px] items-center gap-2 rounded-md bg-background px-2 text-faint">
-        <Search class="size-3.5" />
-        <input
+      <InputGroup class="mb-1">
+        <InputGroupAddon><Search /></InputGroupAddon>
+        <InputGroupInput
           v-model="query"
-          class="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-faint"
           placeholder="Search, or type owner/repo"
           aria-label="Search repositories"
           @keydown.enter.prevent="addTyped"
         />
-      </label>
+      </InputGroup>
       <div class="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
         <button
           v-if="canAdd"

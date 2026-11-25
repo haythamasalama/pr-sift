@@ -16,37 +16,13 @@ body {
 
 @media (prefers-color-scheme: dark) {
   body {
-    background: #0b0d10;
+    background: #0d1117;
   }
 }
 
-/* The desktop app's own calmer dark palette, layered over the extension's GitHub-like one. */
+/* Colours come from the extension's tokens (the PR Sift brand). Only the extra "faint" text tone is added here. */
 .ps-root.dark {
-  --background: #0b0d10;
-  --foreground: #e6e8ec;
-  --card: #0f1215;
-  --card-foreground: #e6e8ec;
-  --popover: #171a20;
-  --popover-foreground: #e6e8ec;
-  --tooltip: #262b33;
-  --tooltip-foreground: #eef0f3;
-  --secondary: #14171c;
-  --secondary-foreground: #e6e8ec;
-  --muted: #14171c;
-  --sidebar: #0f1215;
-  --muted-foreground: #8b919c;
-  --faint: #6c7380;
-  --accent: #1b1f26;
-  --accent-foreground: #eef0f3;
-  --destructive: #f0716a;
-  --border: #1d2128;
-  --input: #262b33;
-  --ring: #8fb4ff;
-  --emphasis: #8fb4ff;
-  --emphasis-foreground: #0b0d10;
-  --success-fg: #3fb950;
-  --attention: #e3b341;
-  --del-fg: #f0716a;
+  --faint: #848d97;
 }
 
 .ps-root {

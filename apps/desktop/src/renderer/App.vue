@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { BadgeCheck, FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
+import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import BrandMark from '@/components/BrandMark.vue'
@@ -99,11 +100,7 @@ function onAdded(paths: string[]) {
           </div>
           <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'">
             <Inbox class="size-4" /> Needs you
-            <span
-              v-if="waitingCount"
-              class="ml-auto inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emphasis/16 px-1.5 text-[11px] font-semibold text-emphasis tabular-nums"
-              >{{ waitingCount }}</span
-            >
+            <Badge v-if="waitingCount" class="ml-auto h-4 min-w-4 px-1.5 text-[11px] tabular-nums">{{ waitingCount }}</Badge>
           </button>
           <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
             <BadgeCheck class="size-4" /> Auto-approve

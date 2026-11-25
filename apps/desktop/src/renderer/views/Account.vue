@@ -4,6 +4,7 @@ import { CircleAlert, LogOut } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { bridge } from '~/bridge'
+import { clearCache } from '~/cache'
 import { useAuth } from '~/useAuth'
 import PageHeader from '~/components/PageHeader.vue'
 
@@ -12,6 +13,7 @@ const busy = shallowRef(false)
 
 async function signOut() {
   busy.value = true
+  clearCache()
   set(await bridge.invoke('auth:sign-out'))
   busy.value = false
 }

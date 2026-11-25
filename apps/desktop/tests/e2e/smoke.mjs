@@ -77,6 +77,8 @@ await electronApp.evaluate(() => {
             },
           },
         })
+      if (query.includes('type: USER'))
+        return json({ data: { search: { nodes: [{ login: 'omarbenz', name: 'Omar Benz', avatarUrl: null }] } } })
       if (query.includes('mentionableUsers'))
         return json({
           data: {
@@ -91,8 +93,8 @@ await electronApp.evaluate(() => {
               },
               mentionableUsers: {
                 nodes: [
-                  { login: 'teammate', avatarUrl: null },
-                  { login: 'octo-test', avatarUrl: null },
+                  { login: 'teammate', name: 'Omar Haddad', avatarUrl: null },
+                  { login: 'octo-test', name: 'Octo Test', avatarUrl: null },
                 ],
               },
               object: {
@@ -180,7 +182,7 @@ await page
   .waitFor()
 await page.screenshot({ path: join(shots, '5-project-pulls.png') })
 
-await page.getByRole('button', { name: /^Worktrees( \d+)?$/ }).click()
+await page.getByRole('tab', { name: /^Worktrees( \d+)?$/ }).click()
 await page.getByText('feature/cart').first().waitFor()
 await page.waitForTimeout(800)
 await page.screenshot({ path: join(shots, '6-project-worktrees.png') })
@@ -196,24 +198,37 @@ await page.getByText('shop-cart-v2').first().waitFor()
 await page.screenshot({ path: join(shots, '8-renamed.png') })
 await page.keyboard.press('Escape')
 
-await page.getByRole('button', { name: /^Branches( \d+)?$/ }).click()
+await page.getByRole('tab', { name: /^Branches( \d+)?$/ }).click()
 await page.getByText('old-merged').waitFor()
 await page.screenshot({ path: join(shots, '9-branches.png') })
+// The narrowest the window goes: the project pages must still fit.
+await page.setViewportSize({ width: 760, height: 700 })
+await page.waitForTimeout(300)
+await page.screenshot({ path: join(shots, '9b-branches-narrow.png') })
+await page.getByRole('tab', { name: /^Pull requests( \d+)?$/ }).click()
+await page.waitForTimeout(300)
+await page.screenshot({ path: join(shots, '5b-pulls-narrow.png') })
+await page.getByRole('tab', { name: /^Worktrees( \d+)?$/ }).click()
+await page.waitForTimeout(500)
+await page.screenshot({ path: join(shots, '6b-worktrees-narrow.png') })
+await page.setViewportSize({ width: 1180, height: 780 })
 
-await page.getByRole('button', { name: /^Worktrees( \d+)?$/ }).click()
+await page.getByRole('tab', { name: /^Worktrees( \d+)?$/ }).click()
 const row = page.locator('article', { hasText: 'shop-cart-v2' }).first()
 await row.getByRole('button', { name: 'Move to Trash' }).click()
 await page.getByRole('dialog').getByRole('button', { name: 'Move to Trash' }).click()
 await page.getByText('Moved feature/cart to the Trash').waitFor()
 
-await page.getByRole('button', { name: 'Hidden files', exact: true }).click()
+await page.getByRole('tab', { name: 'Hidden files', exact: true }).click()
 await page.getByText('Build output').first().waitFor({ timeout: 20_000 })
 await page.waitForTimeout(800)
 await page.screenshot({ path: join(shots, '10-hidden-files.png') })
 
 await page.getByRole('button', { name: 'Auto-approve' }).click()
 await page.getByRole('heading', { name: 'Auto-approve' }).waitFor()
-await page.getByRole('button', { name: 'Docs only', exact: true }).click()
+await page.waitForTimeout(400)
+await page.screenshot({ path: join(shots, '12a-auto-approve-empty.png') })
+await page.getByRole('button', { name: /^Docs only/ }).click()
 await page.getByText('This rule right now').waitFor()
 await page.waitForTimeout(800)
 await page.screenshot({ path: join(shots, '12-auto-approve.png') })
@@ -222,6 +237,14 @@ await page.getByLabel('Search repositories').waitFor()
 await page.waitForTimeout(400)
 await page.screenshot({ path: join(shots, '13-auto-approve-repos.png') })
 await page.keyboard.press('Escape')
+await page.getByRole('combobox', { name: 'Only from' }).fill('o')
+await page.waitForTimeout(500)
+await page.screenshot({ path: join(shots, '14-people-typeahead.png') })
+await page.getByRole('combobox', { name: 'Only from' }).fill('')
+await page.setViewportSize({ width: 760, height: 700 })
+await page.waitForTimeout(300)
+await page.screenshot({ path: join(shots, '12b-auto-approve-narrow.png') })
+await page.setViewportSize({ width: 1180, height: 780 })
 
 await page.getByRole('button', { name: 'All worktrees' }).click()
 await page.getByRole('heading', { name: 'All worktrees' }).waitFor()

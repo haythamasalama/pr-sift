@@ -5,8 +5,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import GithubMark from '@/components/GithubMark.vue'
 import { bridge } from '~/bridge'
+import { isFresh, readCache, writeCache } from '~/cache'
 import { appInfo } from '~/appInfo'
 import { errorText, formatAgo, shortPath } from '~/format'
 import type { ProjectOverview } from '#shared/ipc'
@@ -82,15 +84,25 @@ const repoUrl = computed(() =>
   current.value?.github ? `https://github.com/${current.value.github.owner}/${current.value.github.repo}` : '',
 )
 
-async function load() {
+// Shows the last copy at once; asks GitHub again when it is older than a minute, or when asked to.
+async function load(force = false) {
   const p = current.value
-  activity.value = null
   error.value = ''
-  if (!p?.github) return
+  if (!p?.github) {
+    activity.value = null
+    return
+  }
+  const key = `repo:${p.github.owner}/${p.github.repo}`.toLowerCase()
+  const saved = readCache<RepoActivity>(key)
+  activity.value = saved?.value ?? null
+  loadedAt.value = saved?.at ?? null
+  if (!force && isFresh(saved, 60_000)) return
   loading.value = true
   try {
-    activity.value = await loadRepo(p.github.owner, p.github.repo)
-    loadedAt.value = Date.now()
+    const entry = writeCache(key, await loadRepo(p.github.owner, p.github.repo))
+    if (current.value?.path !== p.path) return
+    activity.value = entry.value
+    loadedAt.value = entry.at
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -100,20 +112,28 @@ async function load() {
 
 async function loadOverview() {
   const p = current.value
-  overview.value = null
   if (!p) return
+  const key = `overview:${p.path}`
+  const saved = readCache<ProjectOverview>(key)
+  overview.value = saved?.value ?? null
+  if (isFresh(saved, 5 * 60_000)) return
   try {
-    overview.value = await bridge.invoke('projects:overview', p.path)
+    const next = writeCache(key, await bridge.invoke('projects:overview', p.path)).value
+    if (current.value?.path === p.path) overview.value = next
   } catch {
-    overview.value = { stack: [] }
+    overview.value ??= { stack: [] }
   }
 }
 
 watch(
   () => current.value?.path,
   () => {
-    counts.branches = undefined
-    counts.worktrees = undefined
+    // Counts from the last look, until the tabs look again.
+    const path = current.value?.path ?? ''
+    counts.branches = readCache<unknown[]>(`branches:${path}`)?.value.length
+    counts.worktrees = readCache<{ worktrees: { main?: boolean }[] }[]>(`worktrees:${path}`)?.value.flatMap((r) =>
+      r.worktrees.filter((w) => !w.main),
+    ).length
     void load()
     void loadOverview()
   },
@@ -163,9 +183,9 @@ async function confirmRemove() {
   <div v-if="!current" class="p-6 text-muted-foreground">This project is no longer in your list.</div>
   <template v-else>
     <header class="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/95 px-8 pt-6 backdrop-blur">
-      <div class="flex items-center gap-3.5">
+      <div class="flex flex-wrap items-center gap-x-3.5 gap-y-3">
         <ProjectIcon :project="current" :size="40" />
-        <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <div class="flex min-w-[240px] flex-1 flex-col gap-[3px]">
           <div class="flex min-w-0 items-baseline gap-2.5">
             <h1 class="shrink-0 text-xl font-semibold tracking-[-0.01em]">{{ current.name }}</h1>
             <span v-if="description" class="truncate text-[13px] text-muted-foreground" :title="description">{{ description }}</span>
@@ -196,14 +216,9 @@ async function confirmRemove() {
               </button>
             </Hint>
             <Hint text="Copy the path">
-              <button
-                type="button"
-                class="-ml-1.5 flex size-[22px] shrink-0 items-center justify-center rounded-[5px] text-faint hover:bg-accent hover:text-foreground"
-                aria-label="Copy the path"
-                @click="copyPath"
-              >
-                <Copy class="size-3.5" />
-              </button>
+              <Button size="icon-xs" variant="ghost" class="-ml-1 text-muted-foreground" aria-label="Copy the path" @click="copyPath"
+                ><Copy
+              /></Button>
             </Hint>
           </div>
         </div>
@@ -216,36 +231,33 @@ async function confirmRemove() {
           >
             <span v-if="note" class="mr-1 text-xs text-muted-foreground">{{ note }}</span>
           </Transition>
-          <Button variant="outline" @click="openIn('editor')"><Code /> Open in editor</Button>
-          <Button variant="outline" @click="openIn('terminal')"><SquareTerminal /> Terminal</Button>
+          <Hint text="Open in your editor">
+            <Button variant="outline" aria-label="Open in editor" @click="openIn('editor')"
+              ><Code /><span class="max-lg:hidden">Open in editor</span></Button
+            >
+          </Hint>
+          <Hint text="Open a terminal here">
+            <Button variant="outline" aria-label="Terminal" @click="openIn('terminal')"
+              ><SquareTerminal /><span class="max-lg:hidden">Terminal</span></Button
+            >
+          </Hint>
           <Hint text="Remove from PR Sift. The folder stays on disk.">
             <Button size="icon" variant="ghost" class="text-faint" aria-label="Remove from PR Sift" @click="removing = true"><X /></Button>
           </Hint>
         </div>
       </div>
       <ProjectSummary class="pl-[54px]" :overview="overview" :info="activity?.info" />
-      <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Project">
-        <button
-          v-for="t in TABS"
-          :key="t.id"
-          type="button"
-          class="flex items-center gap-1.5 border-b-2 pt-2 pb-[11px] whitespace-nowrap transition-colors"
-          :class="
-            projectTab === t.id
-              ? 'border-emphasis font-medium text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          "
-          @click="projectTab = t.id"
-        >
-          {{ t.label }}
-          <span
-            v-if="t.count !== undefined"
-            class="font-normal tabular-nums"
-            :class="projectTab === t.id ? 'text-muted-foreground' : 'text-faint'"
-            >{{ t.count }}</span
-          >
-        </button>
-      </nav>
+      <Tabs
+        :model-value="projectTab"
+        class="-mb-px overflow-x-auto [scrollbar-width:none]"
+        @update:model-value="(v) => (projectTab = v as ProjectTab)"
+      >
+        <TabsList variant="line" aria-label="Project" class="h-10 gap-4 p-0">
+          <TabsTrigger v-for="t in TABS" :key="t.id" :value="t.id" class="flex-none px-0.5">
+            {{ t.label }}<span v-if="t.count !== undefined" class="font-normal text-muted-foreground tabular-nums">{{ t.count }}</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
     </header>
 
     <div class="flex flex-col gap-3.5 px-8 py-5">
@@ -270,7 +282,7 @@ async function confirmRemove() {
           <span class="flex-1" />
           <span v-if="loadedAt" class="text-xs text-faint">Updated {{ formatAgo(loadedAt) }}</span>
           <Hint text="Ask GitHub again">
-            <Button size="icon-sm" variant="ghost" aria-label="Refresh" :disabled="loading" @click="load">
+            <Button size="icon-sm" variant="ghost" aria-label="Refresh" :disabled="loading" @click="load(true)">
               <Spinner v-if="loading" /><RefreshCw v-else />
             </Button>
           </Hint>

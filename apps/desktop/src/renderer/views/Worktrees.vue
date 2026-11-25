@@ -21,9 +21,11 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import NoticeBar from '@/components/NoticeBar.vue'
 import type { Repo, UndoEntry, Worktree, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
+import { isFresh, readCache, writeCache } from '~/cache'
 import { appInfo } from '~/appInfo'
 import { errorText, formatAgo, formatBytes, shortPath } from '~/format'
 import { useProjectFolders } from '~/useProjectFolders'
@@ -61,10 +63,17 @@ const selecting = shallowRef(false)
 const note = shallowRef('')
 
 const { settings, ready } = useProjectFolders()
-const repos = shallowRef<Repo[]>([])
-const details = reactive(new Map<string, WorktreeDetails>())
+// What the last scan found, shown at once while the folders are looked at again.
+const cacheKey = `worktrees:${only ?? 'all'}`
+const saved = readCache<Repo[]>(cacheKey)
+const savedDetails = readCache<[string, WorktreeDetails][]>(`${cacheKey}:details`)
+const repos = shallowRef<Repo[]>(saved?.value ?? [])
+const details = reactive(new Map<string, WorktreeDetails>(savedDetails?.value ?? []))
 const scanning = shallowRef(false)
-const scanned = shallowRef(false)
+const scanned = shallowRef(!!saved)
+const saveDetails = () => writeCache(`${cacheKey}:details`, [...details.entries()])
+// Renames, removals and undos change the list here; keep the saved copy in step.
+watch(repos, (next) => writeCache(cacheKey, next))
 const error = shallowRef('')
 const notice = shallowRef<{ text: string; undo?: UndoEntry } | null>(null)
 const undoList = shallowRef<UndoEntry[]>([])
@@ -211,6 +220,7 @@ async function loadDetails(list: Worktree[]) {
       }
     }),
   )
+  saveDetails()
 }
 
 async function scan() {
@@ -219,7 +229,8 @@ async function scan() {
   error.value = ''
   try {
     repos.value = only ? [await bridge.invoke('worktrees:list', only)] : await bridge.invoke('worktrees:scan')
-    details.clear()
+    const present = new Set(repos.value.flatMap((r) => r.worktrees.map((w) => w.path)))
+    for (const path of [...details.keys()]) if (!present.has(path)) details.delete(path)
     selected.value = new Set()
     scanned.value = true
     emit('count', linked.value.length)
@@ -283,6 +294,9 @@ async function prune(repo: Repo) {
 const reveal = (path: string) => bridge.invoke('shell:reveal', path)
 
 onMounted(async () => {
+  if (saved) emit('count', linked.value.length)
+  // A scan from the last half minute is still good; anything older is refreshed behind what is shown.
+  if (isFresh(saved, 30_000)) return
   if (only) return scan()
   await ready
   if (settings.value?.roots.length) await scan()
@@ -326,34 +340,21 @@ watch(
         <span v-if="note" class="text-xs text-muted-foreground">{{ note }}</span>
       </Transition>
       <span class="flex-1" />
-      <div role="radiogroup" aria-label="View" class="flex h-8 items-center rounded-[7px] border border-border bg-secondary p-0.5">
-        <Hint text="Cards">
-          <button
-            type="button"
-            role="radio"
-            :aria-checked="layout === 'cards'"
-            aria-label="Cards"
-            class="flex h-[26px] w-7 items-center justify-center rounded-[5px]"
-            :class="layout === 'cards' ? 'bg-input text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="layout = 'cards'"
-          >
-            <LayoutGrid class="size-3.5" />
-          </button>
-        </Hint>
-        <Hint text="List">
-          <button
-            type="button"
-            role="radio"
-            :aria-checked="layout === 'list'"
-            aria-label="List"
-            class="flex h-[26px] w-7 items-center justify-center rounded-[5px]"
-            :class="layout === 'list' ? 'bg-input text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="layout = 'list'"
-          >
-            <List class="size-3.5" />
-          </button>
-        </Hint>
-      </div>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        :model-value="layout"
+        aria-label="View"
+        @update:model-value="(v) => v && (layout = v as 'cards' | 'list')"
+      >
+        <Hint text="Cards"
+          ><ToggleGroupItem value="cards" aria-label="Cards"><LayoutGrid /></ToggleGroupItem
+        ></Hint>
+        <Hint text="List"
+          ><ToggleGroupItem value="list" aria-label="List"><List /></ToggleGroupItem
+        ></Hint>
+      </ToggleGroup>
       <Button
         v-if="linked.length"
         variant="outline"
@@ -402,7 +403,7 @@ watch(
         <article
           v-for="w in linkedOf(repo)"
           :key="w.path"
-          class="flex cursor-pointer flex-col gap-3 rounded-[10px] border bg-card px-[18px] py-4 transition-colors"
+          class="flex cursor-pointer flex-col gap-3 rounded-lg border bg-card px-[18px] py-4 transition-colors"
           :class="[selected.has(w.path) ? 'border-emphasis/60' : 'border-border hover:border-input', w.prunable ? 'opacity-75' : '']"
           @click="showChecks && canTrash(w) ? toggle(w.path, !selected.has(w.path)) : (sheet = { repo, worktree: w })"
         >
@@ -481,7 +482,7 @@ watch(
       </div>
 
       <!-- List -->
-      <div v-else class="overflow-hidden rounded-[10px] border border-border bg-card">
+      <div v-else class="overflow-hidden rounded-lg border border-border bg-card">
         <div class="flex items-center gap-3.5 px-5 py-2.5">
           <Checkbox
             v-if="showChecks"
@@ -581,7 +582,7 @@ watch(
 
     <div
       v-if="selected.size"
-      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-[10px] border border-input bg-popover px-4 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-lg border border-border bg-popover px-4 py-2.5 shadow-lg"
     >
       <span class="font-medium tabular-nums">{{ selected.size }} selected</span>
       <Button size="sm" variant="ghost" @click="selected = new Set()">Clear</Button>
@@ -591,7 +592,7 @@ watch(
     <section v-if="undoList.length" class="flex flex-col gap-2 pt-2">
       <SectionLabel>Recently moved to the Trash</SectionLabel>
       <p class="text-xs text-faint">To bring one back, put its folder back from the Trash, then press Undo.</p>
-      <ul class="overflow-hidden rounded-[10px] border border-border bg-card">
+      <ul class="overflow-hidden rounded-lg border border-border bg-card">
         <li v-for="entry in undoList" :key="entry.id" class="flex items-center gap-3 border-t border-border px-5 py-2.5 first:border-t-0">
           <div class="flex min-w-0 flex-1 flex-col">
             <span class="truncate font-mono text-[13px]">{{ entry.branch ?? short(entry.path) }}</span>

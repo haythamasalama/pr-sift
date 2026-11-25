@@ -10,6 +10,7 @@ import Hint from './Hint.vue'
 import type { Branch } from '#shared/ipc'
 import type { PullItem } from '~/github'
 import { bridge } from '~/bridge'
+import { readCache, writeCache } from '~/cache'
 import { appInfo } from '~/appInfo'
 import { errorText, formatAgo, shortPath } from '~/format'
 import { openReview } from '~/navigation'
@@ -23,7 +24,8 @@ const emit = defineEmits<{ count: [n: number] }>()
 
 type Filter = 'all' | 'cleanup' | 'merged' | 'gone' | 'local' | 'stale'
 
-const branches = shallowRef<Branch[] | null>(null)
+// The last list is shown at once and refreshed behind it.
+const branches = shallowRef<Branch[] | null>(readCache<Branch[]>(`branches:${repo}`)?.value ?? null)
 const error = shallowRef('')
 const notice = shallowRef('')
 const filter = shallowRef<Filter>('all')
@@ -114,13 +116,13 @@ function selectCleanup() {
 async function load() {
   error.value = ''
   try {
-    branches.value = await bridge.invoke('branches:list', repo)
+    branches.value = writeCache(`branches:${repo}`, await bridge.invoke('branches:list', repo)).value
     emit('count', branches.value.length)
     const names = new Set(branches.value.map((b) => b.name))
     selected.value = new Set([...selected.value].filter((n) => names.has(n)))
   } catch (e) {
     error.value = errorText(e)
-    branches.value = []
+    branches.value ??= []
   }
 }
 
@@ -150,7 +152,10 @@ async function confirmDelete() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  if (branches.value) emit('count', branches.value.length)
+  void load()
+})
 </script>
 
 <template>
@@ -176,7 +181,7 @@ onMounted(load)
     >
     <div v-if="!branches" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Reading branches…</div>
     <p v-else-if="!shown.length" class="text-muted-foreground">No branches match.</p>
-    <div v-else class="overflow-hidden rounded-[10px] border border-border bg-card">
+    <div v-else class="@container overflow-hidden rounded-lg border border-border bg-card">
       <div class="flex items-center gap-3.5 px-5 py-2.5">
         <Checkbox
           :model-value="allState"
@@ -185,8 +190,8 @@ onMounted(load)
           @update:model-value="(v) => toggleAll(v === true)"
         />
         <SectionLabel class="flex-1">Branch</SectionLabel>
-        <SectionLabel class="w-[150px]">Status</SectionLabel>
-        <SectionLabel class="w-[90px]">Last commit</SectionLabel>
+        <SectionLabel class="w-[120px] @2xl:w-[150px]">Status</SectionLabel>
+        <SectionLabel class="hidden w-[90px] @2xl:block">Last commit</SectionLabel>
         <span class="w-16" />
       </div>
       <ul>
@@ -219,9 +224,11 @@ onMounted(load)
                 PR #{{ byBranch.get(b.name)!.number }}
               </button>
             </div>
-            <span class="truncate text-xs text-faint" :title="b.subject">{{ b.subject }}</span>
+            <span class="truncate text-xs text-faint" :title="b.subject"
+              >{{ b.subject }}<span class="@2xl:hidden"> · {{ formatAgo(b.lastCommit) }}</span></span
+            >
           </div>
-          <span class="flex w-[150px] shrink-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          <span class="flex w-[120px] shrink-0 flex-wrap @2xl:w-[150px] items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <Hint v-if="statusOf(b)" :text="statusOf(b)!.hint">
               <StatusPill :tone="statusOf(b)!.tone" :dot="statusOf(b)!.tone === 'attention' || statusOf(b)!.tone === 'success'">{{
                 statusOf(b)!.text
@@ -234,7 +241,7 @@ onMounted(load)
               <span class="tabular-nums">↓{{ b.behind }}</span>
             </Hint>
           </span>
-          <span class="w-[90px] shrink-0 text-xs text-muted-foreground">{{ formatAgo(b.lastCommit) }}</span>
+          <span class="hidden w-[90px] shrink-0 text-xs text-muted-foreground @2xl:block">{{ formatAgo(b.lastCommit) }}</span>
           <span
             class="flex w-16 shrink-0 justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
           >
@@ -263,7 +270,7 @@ onMounted(load)
     <!-- Floats over the list while branches are picked, so the action stays in reach. -->
     <div
       v-if="selected.size"
-      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-[10px] border border-input bg-popover px-4 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+      class="sticky bottom-5 z-10 mx-auto flex items-center gap-4 rounded-lg border border-border bg-popover px-4 py-2.5 shadow-lg"
     >
       <span class="font-medium tabular-nums">{{ selected.size }} selected</span>
       <label v-if="github && onRemote.length" class="flex items-center gap-2 text-[12.5px] text-muted-foreground">
