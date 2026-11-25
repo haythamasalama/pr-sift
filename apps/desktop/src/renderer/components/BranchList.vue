@@ -29,7 +29,18 @@ import Segmented from './Segmented.vue'
 import SectionLabel from './SectionLabel.vue'
 import StatusPill from './StatusPill.vue'
 
-const { repo, github, pulls = [] } = defineProps<{ repo: string; github?: { owner: string; repo: string }; pulls?: PullItem[] }>()
+const {
+  repo,
+  github,
+  pulls = [],
+  canPush = false,
+} = defineProps<{
+  repo: string
+  github?: { owner: string; repo: string }
+  pulls?: PullItem[]
+  // You may delete branches on GitHub, so the dialog offers it.
+  canPush?: boolean
+}>()
 const emit = defineEmits<{ count: [n: number] }>()
 
 type Filter = 'all' | 'mine' | 'merged' | 'stale' | 'local'
@@ -104,7 +115,8 @@ const summary = computed(() => {
         : n === 1
           ? 'Not merged yet.'
           : 'None merged yet.'
-  const where = github && onRemote.value.length ? 'Deletes the local branch, and on GitHub if you choose.' : 'Deletes the local branch.'
+  const where =
+    github && canPush && onRemote.value.length ? 'Deletes the local branch, and on GitHub if you choose.' : 'Deletes the local branch.'
   return `${state} ${where}`
 })
 
@@ -167,7 +179,7 @@ async function confirmDelete() {
   try {
     const res = await bridge.invoke('branches:delete-many', repo, [...selected.value], {
       force: true,
-      remote: alsoRemote.value && !!github,
+      remote: alsoRemote.value && !!github && canPush,
     })
     const parts = [`Deleted ${res.deleted.length} ${res.deleted.length === 1 ? 'branch' : 'branches'}`]
     if (res.remoteDeleted.length) parts.push(`${res.remoteDeleted.length} on GitHub too`)
@@ -363,7 +375,7 @@ onMounted(() => {
     <ul v-if="unmerged.length" class="max-h-32 overflow-auto text-xs text-attention">
       <li v-for="b in unmerged" :key="b.name">{{ b.name }}: not merged</li>
     </ul>
-    <label v-if="github && onRemote.length" class="flex items-start gap-2 text-sm">
+    <label v-if="github && canPush && onRemote.length" class="flex items-start gap-2 text-sm">
       <Checkbox v-model="alsoRemote" class="mt-0.5" />
       <span
         >Also delete {{ onRemote.length === 1 ? 'its copy' : `the ${onRemote.length} copies` }} on GitHub.

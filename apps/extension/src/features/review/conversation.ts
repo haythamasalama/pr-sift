@@ -38,7 +38,17 @@ export interface Conversation {
   viewer?: string
   reviews: ReviewSummary
   readiness: MergeReadiness
+  // You can push to the repository, so a merge is yours to make.
+  canMerge: boolean
 }
+
+interface ApiRepo {
+  archived?: boolean
+  permissions?: { admin?: boolean; maintain?: boolean; push?: boolean }
+}
+
+// GitHub works out mergeability in the background and says "unknown" until it has; one more ask usually has the answer.
+const SETTLE_MS = 1500
 
 interface ApiUser {
   login: string
@@ -93,7 +103,7 @@ const VERDICTS: Record<string, ReviewVerdict> = { APPROVED: 'approved', CHANGES_
 
 export async function fetchConversation(pr: PrRef): Promise<Conversation> {
   const base = `/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`
-  const [pull, viewer, reviews, issueComments] = await Promise.all([
+  const [pull, viewer, reviews, issueComments, repo] = await Promise.all([
     gh<{ comments: number; review_comments: number; mergeable_state?: string }>(base),
     gh<ApiUser>('/user')
       .then((u) => u.login)
@@ -102,7 +112,15 @@ export async function fetchConversation(pr: PrRef): Promise<Conversation> {
     gh<ApiIssueComment[]>(`/repos/${pr.owner}/${pr.repo}/issues/${pr.number}/comments?per_page=100`, undefined, undefined, HTML).catch(
       (): ApiIssueComment[] => [],
     ),
+    gh<ApiRepo>(`/repos/${pr.owner}/${pr.repo}`).catch((): ApiRepo => ({})),
   ])
+  let mergeableState = pull.mergeable_state
+  if (mergeableState === 'unknown') {
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS))
+    mergeableState = await gh<{ mergeable_state?: string }>(base)
+      .then((p) => p.mergeable_state)
+      .catch(() => mergeableState)
+  }
   const pages = Math.min(MAX_PAGES, Math.ceil(pull.review_comments / 100))
   const lists = await Promise.all(
     Array.from({ length: pages }, (_, i) =>
@@ -149,6 +167,7 @@ export async function fetchConversation(pr: PrRef): Promise<Conversation> {
       reviews.map((r) => ({ login: r.user?.login ?? '', state: r.state })),
       viewer,
     ),
-    readiness: mergeReadiness(pull.mergeable_state),
+    readiness: mergeReadiness(mergeableState),
+    canMerge: !repo.archived && Boolean(repo.permissions?.push || repo.permissions?.maintain || repo.permissions?.admin),
   }
 }

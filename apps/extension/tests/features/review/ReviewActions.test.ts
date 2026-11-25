@@ -21,6 +21,7 @@ const conversation = (overrides: Partial<Conversation> = {}): Conversation => ({
   viewer: 'lee',
   reviews: { approvals: 0, changesRequested: 0, mine: null },
   readiness: 'ready',
+  canMerge: true,
   ...overrides,
 })
 
@@ -54,9 +55,20 @@ describe('ReviewActions', () => {
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 
-  it('says why a merge may not go through', () => {
-    const wrapper = mountActions({ conversation: conversation({ readiness: 'conflicts' }) })
-    expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · This branch has conflicts')
+  it('says when only optional checks hold the merge back', () => {
+    const wrapper = mountActions({ conversation: conversation({ readiness: 'checks' }) })
+    expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · Some checks are failing or still running')
+  })
+
+  it.each(['blocked', 'behind', 'conflicts', 'draft', 'unknown'] as const)('hides Merge while GitHub would refuse it (%s)', (readiness) => {
+    const wrapper = mountActions({ conversation: conversation({ readiness }) })
+    expect(wrapper.find('button[aria-label^="Squash and merge"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Approve')
+  })
+
+  it('hides Merge when you cannot push to the repository', () => {
+    const wrapper = mountActions({ conversation: conversation({ canMerge: false }) })
+    expect(wrapper.find('button[aria-label^="Squash and merge"]').exists()).toBe(false)
   })
 
   it('shows nothing once the pull request is merged', () => {

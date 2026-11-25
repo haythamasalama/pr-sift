@@ -28,9 +28,12 @@ const merged = shallowRef('')
 
 const isAuthor = computed(() => !!me.value && pull.author?.login.toLowerCase() === me.value)
 const canApprove = computed(() => !pull.draft && !isAuthor.value && !merged.value)
-// Green when GitHub would merge it now, amber while checks run or fail.
-const ready = computed(() => pull.checks === 'SUCCESS' && pull.mergeable === 'MERGEABLE')
-const canMerge = computed(() => !pull.draft && pull.canMerge && pull.mergeable !== 'CONFLICTING' && !merged.value)
+// Merge is offered only when GitHub would take it now. Green when nothing is off, amber when only optional checks failed or you bypass the rules.
+const ready = computed(() => pull.mergeState === 'CLEAN' || pull.mergeState === 'HAS_HOOKS')
+const canMerge = computed(() => pull.mergeableNow && !merged.value)
+const mergeNote = computed(() =>
+  ready.value ? 'ready to merge' : pull.mergeState === 'BLOCKED' ? 'you can bypass the branch rules' : 'some optional checks did not pass',
+)
 
 async function approve() {
   if (approving.value || approved.value) return
@@ -87,9 +90,7 @@ async function confirm() {
         </Button>
       </Hint>
       <Popover v-if="canMerge" v-model:open="open">
-        <Hint
-          :text="`${label} · ${ready ? 'ready to merge' : pull.checks === 'PENDING' ? 'checks still running' : 'checks did not pass yet'}`"
-        >
+        <Hint :text="`${label} · ${mergeNote}`">
           <PopoverTrigger as-child>
             <Button variant="outline" size="sm" class="relative @max-3xl:w-7 @max-3xl:px-0" :aria-label="label"
               ><span

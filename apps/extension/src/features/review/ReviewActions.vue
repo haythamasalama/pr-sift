@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, shallowRef } from 'vue'
 import { ChevronDown, GitMerge } from '@lucide/vue'
-import type { MergeMethod, MergeReadiness, ReviewEvent, ReviewVerdict } from '@pr-sift/core'
+import type { MergeMethod, ReviewEvent, ReviewVerdict } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -32,16 +32,6 @@ const METHODS: { value: MergeMethod; action: string; hint: string }[] = [
   { value: 'rebase', action: 'Rebase and merge', hint: 'Every commit, without a merge commit' },
 ]
 
-const READINESS: Record<MergeReadiness, { tone: string; text: string } | null> = {
-  ready: null,
-  unknown: null,
-  checks: { tone: 'bg-attention', text: 'Some checks are failing or still running' },
-  blocked: { tone: 'bg-attention', text: 'Waiting for required reviews or checks' },
-  behind: { tone: 'bg-attention', text: 'This branch is behind the base branch' },
-  draft: { tone: 'bg-muted-foreground', text: 'This pull request is a draft' },
-  conflicts: { tone: 'bg-destructive', text: 'This branch has conflicts' },
-}
-
 const sheetOpen = shallowRef(false)
 const verdict = shallowRef<ReviewVerdict | null | undefined>(undefined)
 
@@ -51,7 +41,11 @@ const mine = computed(() => (verdict.value === undefined ? (conversation?.review
 const showReview = computed(() => !isAuthor.value)
 const mergeIsPrimary = computed(() => !showReview.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
-const readiness = computed(() => READINESS[conversation?.readiness ?? 'unknown'])
+const readiness = computed(() =>
+  conversation?.readiness === 'checks' ? { tone: 'bg-attention', text: 'Some checks are failing or still running' } : null,
+)
+// Merge shows only when GitHub would take it now: you can push, and nothing such as a missing approval holds it back.
+const canMerge = computed(() => !!conversation?.canMerge && (conversation.readiness === 'ready' || conversation.readiness === 'checks'))
 const mergeTitle = computed(() => [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
 
 function onReviewed(event: ReviewEvent) {
@@ -64,7 +58,7 @@ function onReviewed(event: ReviewEvent) {
 <template>
   <template v-if="open">
     <ReviewPopover v-if="showReview" :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" @reviewed="onReviewed" />
-    <div class="flex shrink-0">
+    <div v-if="canMerge" class="flex shrink-0">
       <Button
         :variant="mergeIsPrimary ? 'success' : 'outline'"
         size="sm"

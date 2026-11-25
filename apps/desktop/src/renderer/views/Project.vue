@@ -360,6 +360,7 @@ async function confirmRemove() {
         :repo="current.path"
         :github="current.github"
         :pulls="activity?.pulls"
+        :can-push="activity?.info.canPush === true"
         @count="(n: number) => (counts.branches = n)"
       />
       <Worktrees

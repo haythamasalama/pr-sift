@@ -49,15 +49,25 @@ export interface PullItem {
   deletions: number
   reviewers: string[]
   mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
+  // GitHub's answer to "can it be merged right now", rules and reviews included.
+  mergeState?: MergeState
   headSha: string
   // Your latest review on it, such as APPROVED.
   myReview?: string
   // You can push to the repository, so GitHub may let you merge.
   canMerge: boolean
+  // GitHub would take your merge now: the branch rules are met, or you may bypass them.
+  mergeableNow: boolean
 }
+
+export type MergeState = 'CLEAN' | 'HAS_HOOKS' | 'UNSTABLE' | 'BLOCKED' | 'BEHIND' | 'DIRTY' | 'DRAFT' | 'UNKNOWN'
+
+// Unstable means only checks that are not required are failing, which GitHub still merges.
+const MERGES_NOW: MergeState[] = ['CLEAN', 'HAS_HOOKS', 'UNSTABLE']
 
 const PR_FIELDS = `
   number title url isDraft updatedAt reviewDecision headRefName headRefOid baseRefName additions deletions mergeable
+  mergeStateStatus viewerCanMergeAsAdmin
   viewerLatestReview { state }
   repository { name viewerPermission owner { login } }
   author { login avatarUrl }
@@ -79,6 +89,8 @@ interface RawPull {
   additions: number
   deletions: number
   mergeable?: PullItem['mergeable']
+  mergeStateStatus?: MergeState
+  viewerCanMergeAsAdmin?: boolean
   headRefOid: string
   viewerLatestReview: { state: string } | null
   repository: { name: string; viewerPermission?: string | null; owner: { login: string } }
@@ -110,8 +122,15 @@ const toPull = (p: RawPull): PullItem => ({
   mergeable: p.mergeable,
   headSha: p.headRefOid,
   myReview: p.viewerLatestReview?.state,
-  canMerge: ['ADMIN', 'MAINTAIN', 'WRITE'].includes(p.repository.viewerPermission ?? ''),
+  mergeState: p.mergeStateStatus,
+  canMerge: canPush(p.repository.viewerPermission),
+  mergeableNow:
+    !p.isDraft &&
+    canPush(p.repository.viewerPermission) &&
+    (MERGES_NOW.includes(p.mergeStateStatus ?? 'UNKNOWN') || (p.mergeStateStatus === 'BLOCKED' && p.viewerCanMergeAsAdmin === true)),
 })
+
+const canPush = (permission?: string | null) => ['ADMIN', 'MAINTAIN', 'WRITE'].includes(permission ?? '')
 
 // Search results can hold nulls for items the token can't see; those are dropped.
 const pulls = (nodes: (RawPull | null)[]) => nodes.filter((n): n is RawPull => !!n?.repository).map(toPull)
@@ -143,6 +162,8 @@ export interface RepoInfo {
   private: boolean
   pushedAt?: number
   ownerAvatar?: string
+  // You may push to it, so you can delete its branches on GitHub.
+  canPush: boolean
 }
 
 export interface RepoActivity {
@@ -165,6 +186,8 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
       licenseInfo?: { spdxId: string | null; name: string } | null
       repositoryTopics?: { nodes: { topic: { name: string } }[] }
       owner?: { avatarUrl: string }
+      viewerPermission?: string | null
+      isArchived?: boolean
       pullRequests: { nodes: RawPull[] }
     } | null
   }>(
@@ -176,6 +199,7 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
         licenseInfo { spdxId name }
         repositoryTopics(first: 8) { nodes { topic { name } } }
         owner { avatarUrl }
+        viewerPermission isArchived
         pullRequests(states: OPEN, first: 60, orderBy: { field: UPDATED_AT, direction: DESC }) { nodes { ${PR_FIELDS} } }
       }
     }`,
@@ -201,6 +225,7 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
       private: r.isPrivate ?? false,
       pushedAt: r.pushedAt ? Date.parse(r.pushedAt) : undefined,
       ownerAvatar: r.owner?.avatarUrl,
+      canPush: !r.isArchived && canPush(r.viewerPermission),
     },
   }
 }
