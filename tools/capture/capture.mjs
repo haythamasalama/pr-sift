@@ -354,7 +354,7 @@ const row = (page, file, newLine) =>
 const folderViewed = (page, name) =>
   page
     .locator('div.group')
-    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name}$`) }) })
+    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name.replace('.', '\\.')}(/.*)?$`) }) })
     .first()
     .locator('[title="Mark the whole folder as viewed"]')
 
@@ -739,7 +739,10 @@ async function scaleHost(page) {
 }
 
 // Hardware compositing keeps the sheet's backdrop blur from dropping frames.
-const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'] })
+const browser = await chromium.launch({
+  executablePath: process.env.PR_SIFT_CHROMIUM,
+  args: ['--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'],
+})
 
 async function launcherShot() {
   if (only.length && !only.includes('launcher')) return
@@ -823,7 +826,7 @@ await shot(browser, 'merge', async (page) => {
 
 await shot(browser, 'approve', async (page) => {
   await openReview(page)
-  await page.getByTitle('Approve, request changes or comment').click()
+  await page.getByRole('button', { name: 'Approve with a comment, request changes or comment' }).click()
   await page.getByRole('textbox', { name: 'Comment' }).fill('Looks good. The usage lines read well.')
 })
 
@@ -861,7 +864,7 @@ await shot(
 
 await shot(browser, 'tree-viewed', async (page) => {
   await openReview(page)
-  await page.locator('#hide-viewed').click()
+  await page.getByRole('button', { name: 'Hide viewed' }).click()
   for (const folder of ['.github', 'config', 'database', 'docs']) await folderViewed(page, folder).click()
 })
 
@@ -884,7 +887,7 @@ const chip = (page, name) => page.getByRole('button', { name: new RegExp(`^${nam
 const folderRow = (page, name) =>
   page
     .locator('div.group')
-    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name}$`) }) })
+    .filter({ has: page.locator('span.truncate', { hasText: new RegExp(`^${name.replace('.', '\\.')}(/.*)?$`) }) })
     .first()
 const filterBar = (page) => chip(page, '.php').locator('xpath=ancestor::div[2]')
 
@@ -916,8 +919,8 @@ await clip(
     await camera(page, doc.getByText('Viewed'), 2)
     await glide(page, doc.getByLabel('Viewed'))
     await pause(page, 700)
-    await camera(page, page.getByLabel('Hide viewed'), 2)
-    await glide(page, page.getByLabel('Hide viewed'))
+    await camera(page, page.getByRole('button', { name: 'Hide viewed' }), 2)
+    await glide(page, page.getByRole('button', { name: 'Hide viewed' }))
     await pause(page, 1100)
     await camera(page, null)
     await camera(page, page.getByRole('tab', { name: /Smart filters/ }), 1.8)
@@ -1011,7 +1014,7 @@ await clip(browser, 'review', async (page) => {
   await pause(page, 1000)
   await glide(page, folderViewed(page, 'database'))
   await pause(page, 900)
-  await camera(page, page.getByText(/left$/).first(), 2.2)
+  await camera(page, page.locator('[title*="files viewed"]').first(), 2.2)
   await pause(page, 1300)
 })
 
@@ -1216,10 +1219,7 @@ async function recordStory(theme) {
   await pause(page, 150)
   await pause(page, 700)
   await glide(page, page.getByRole('button', { name: 'Expand all folders' }))
-  const left = await page
-    .getByText(/^\d+ left$/)
-    .first()
-    .boundingBox()
+  const left = await page.locator('[title*="files viewed"]').first().boundingBox()
   await page.mouse.move(left.x + left.width + 24, left.y + left.height / 2, { steps: 20 })
   await pause(page, 2600)
   const to = now()
