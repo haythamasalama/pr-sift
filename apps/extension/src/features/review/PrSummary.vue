@@ -40,7 +40,7 @@ async function copyBranch(branch: string) {
 const state = computed(() => (info?.state ? STATES[info.state] : null))
 const verb = computed(() => (info?.state === 'merged' ? 'merged' : 'wants to merge'))
 const commits = computed(() => (info?.commits === undefined ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `))
-const comments = computed(() => (conversation ? conversation.conversation + conversation.code : 0))
+const comments = computed(() => (conversation?.conversation ?? 0) + (conversation?.code ?? 0))
 const commentsTitle = computed(() =>
   conversation
     ? `${comments.value} comments: ${conversation.conversation} in the conversation, ${conversation.code} on the code. Show them here.`
