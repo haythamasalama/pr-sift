@@ -406,211 +406,224 @@ onBeforeUnmount(() => {
         ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
       >
 
-      <div class="@container flex w-full max-w-[760px] flex-1 flex-col gap-7 px-8 pt-6 pb-24">
-        <p class="rounded-lg bg-muted px-3.5 py-3 text-[13px] leading-5">
-          Approves
-          <template v-for="(p, i) in sentence(rule)" :key="i"
-            ><b v-if="p.bold" class="font-semibold">{{ p.text }}</b
-            ><template v-else>{{ i === 0 ? p.text.toLowerCase() : p.text }}</template></template
-          >
-        </p>
-
-        <section class="flex flex-col gap-3">
-          <SectionLabel>Which pull requests</SectionLabel>
-          <div class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
-            <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
-              ><FolderGit2 class="size-3.5 text-muted-foreground" />Repositories</span
-            >
-            <RepoPicker v-model="rule.repos" :options="repoOptions" />
-            <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
-              ><GitBranch class="size-3.5 text-muted-foreground" />Into branches</span
-            >
-            <TagInput v-model="rule.baseBranches" label="Into branches" placeholder="Any branch" mono :suggestions="branchSuggestions" />
-            <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
-              ><Tag class="size-3.5 text-muted-foreground" />Has a label</span
-            >
-            <TagInput
-              v-model="rule.labels"
-              label="Has a label"
-              placeholder="Add a label"
-              :suggestions="labelSuggestions"
-              :suggest-label="labelSuggestions.length ? hintSource : undefined"
-            />
-            <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
-              ><Users class="size-3.5 text-muted-foreground" />Only from</span
-            >
-            <TagInput
-              v-model="rule.authors"
-              label="Only from"
-              placeholder="Add a person"
-              :suggestions="peopleSuggestions"
-              :search="findPeople"
-              :suggest-label="hintSource"
-            />
-          </div>
-        </section>
-
-        <section class="flex flex-col gap-3">
-          <SectionLabel>Files</SectionLabel>
-          <div class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
-            <Hint text="Every changed file has to match one of these. ** means any folders.">
-              <span class="flex h-8 w-fit items-center gap-1.5 text-[13px] font-medium"
-                ><FileCheck class="size-3.5 text-muted-foreground" />Only changes</span
+      <div class="@container/page flex-1">
+        <div class="grid items-start @5xl/page:grid-cols-[minmax(0,760px)_minmax(340px,1fr)]">
+          <div class="@container flex min-w-0 flex-col gap-7 px-8 pt-6 pb-7 @5xl/page:pb-24">
+            <p class="rounded-lg bg-muted px-3.5 py-3 text-[13px] leading-5">
+              Approves
+              <template v-for="(p, i) in sentence(rule)" :key="i"
+                ><b v-if="p.bold" class="font-semibold">{{ p.text }}</b
+                ><template v-else>{{ i === 0 ? p.text.toLowerCase() : p.text }}</template></template
               >
-            </Hint>
-            <TagInput
-              v-model="rule.paths"
-              label="Only changes"
-              placeholder="Add a folder or pattern"
-              mono
-              :suggestions="pathSuggestions"
-              :suggest-label="hintSource"
-            />
-            <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
-              ><FileX class="size-3.5 text-muted-foreground" />Never changes</span
-            >
-            <TagInput
-              v-model="rule.blockedPaths"
-              label="Never changes"
-              placeholder="Add a folder or pattern"
-              mono
-              :suggestions="pathSuggestions"
-            />
-          </div>
-        </section>
+            </p>
 
-        <section class="flex flex-col gap-3">
-          <SectionLabel>Also</SectionLabel>
-          <div class="flex flex-wrap gap-x-6 gap-y-2.5 text-[13px]">
-            <Label class="font-normal"><Checkbox v-model="rule.requireChecks" /> Checks must pass</Label>
-            <Label class="font-normal"><Checkbox v-model="rule.requireMergeable" /> Must be mergeable</Label>
-            <Label class="font-normal"><Checkbox v-model="rule.skipChangesRequested" /> Nobody asked for changes</Label>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="-ml-2 w-fit text-muted-foreground"
-            :aria-expanded="moreOpen"
-            @click="moreOpen = !moreOpen"
-          >
-            <ChevronDown class="transition-transform" :class="{ 'rotate-180': moreOpen }" /> More conditions
-          </Button>
-          <div v-if="moreOpen" class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
-            <span class="flex h-8 items-center text-[13px] font-medium">Never from</span>
-            <TagInput
-              v-model="rule.excludeAuthors"
-              label="Never from"
-              placeholder="Nobody. Type a name to search"
-              :suggestions="peopleSuggestions"
-              :search="findPeople"
-              :chips="false"
-            />
-            <span class="flex h-8 items-center text-[13px] font-medium">Not with labels</span>
-            <TagInput
-              v-model="rule.blockedLabels"
-              label="Not with labels"
-              placeholder="None"
-              :suggestions="labelSuggestions"
-              :chips="false"
-            />
-            <span class="flex h-8 items-center text-[13px] font-medium">Title has one of</span>
-            <TagInput
-              v-model="rule.titleWords"
-              label="Title has one of"
-              placeholder="Any title"
-              :suggestions="[{ value: 'chore(deps)' }, { value: 'docs:' }, { value: 'docs(' }]"
-              :chips="false"
-            />
-            <span class="flex h-8 items-center text-[13px] font-medium">Size</span>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
-              <Label class="gap-1.5 font-normal"
-                >At most
-                <Input
-                  inputmode="numeric"
-                  class="h-7 w-14 text-center"
-                  placeholder="any"
-                  :model-value="rule.maxFiles ?? ''"
-                  @update:model-value="(v) => (rule!.maxFiles = numberOrNull(v))"
+            <section class="flex flex-col gap-3">
+              <SectionLabel>Which pull requests</SectionLabel>
+              <div class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
+                <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
+                  ><FolderGit2 class="size-3.5 text-muted-foreground" />Repositories</span
+                >
+                <RepoPicker v-model="rule.repos" :options="repoOptions" />
+                <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
+                  ><GitBranch class="size-3.5 text-muted-foreground" />Into branches</span
+                >
+                <TagInput
+                  v-model="rule.baseBranches"
+                  label="Into branches"
+                  placeholder="Any branch"
+                  mono
+                  :suggestions="branchSuggestions"
                 />
-                files</Label
-              >
-              <Label class="gap-1.5 font-normal"
-                >and
-                <Input
-                  inputmode="numeric"
-                  class="h-7 w-16 text-center"
-                  placeholder="any"
-                  :model-value="rule.maxLines ?? ''"
-                  @update:model-value="(v) => (rule!.maxLines = numberOrNull(v))"
+                <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
+                  ><Tag class="size-3.5 text-muted-foreground" />Has a label</span
+                >
+                <TagInput
+                  v-model="rule.labels"
+                  label="Has a label"
+                  placeholder="Add a label"
+                  :suggestions="labelSuggestions"
+                  :suggest-label="labelSuggestions.length ? hintSource : undefined"
                 />
-                changed lines</Label
-              >
-            </div>
-            <span class="flex h-8 items-center text-[13px] font-medium">Wait</span>
-            <Label class="gap-1.5 text-[13px] font-normal"
-              ><Input
-                inputmode="numeric"
-                class="h-7 w-14 text-center"
-                :model-value="rule.minAgeMinutes"
-                @update:model-value="(v) => (rule!.minAgeMinutes = numberOrNull(v) ?? 0)"
-              />
-              minutes after the last push, so the author can still fix things</Label
-            >
-            <Label for="rule-comment" class="flex h-8 items-center text-[13px] font-medium">Review comment</Label>
-            <Textarea id="rule-comment" v-model="rule.comment" rows="2" placeholder="Left empty, the approval has no comment." />
-          </div>
-        </section>
+                <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
+                  ><Users class="size-3.5 text-muted-foreground" />Only from</span
+                >
+                <TagInput
+                  v-model="rule.authors"
+                  label="Only from"
+                  placeholder="Add a person"
+                  :suggestions="peopleSuggestions"
+                  :search="findPeople"
+                  :suggest-label="hintSource"
+                />
+              </div>
+            </section>
 
-        <section class="flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <SectionLabel>Would approve now</SectionLabel>
-            <span class="flex-1" />
-            <Hint text="Ask GitHub again">
+            <section class="flex flex-col gap-3">
+              <SectionLabel>Files</SectionLabel>
+              <div class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
+                <Hint text="Every changed file has to match one of these. ** means any folders.">
+                  <span class="flex h-8 w-fit items-center gap-1.5 text-[13px] font-medium"
+                    ><FileCheck class="size-3.5 text-muted-foreground" />Only changes</span
+                  >
+                </Hint>
+                <TagInput
+                  v-model="rule.paths"
+                  label="Only changes"
+                  placeholder="Add a folder or pattern"
+                  mono
+                  :suggestions="pathSuggestions"
+                  :suggest-label="hintSource"
+                />
+                <span class="flex h-8 items-center gap-1.5 text-[13px] font-medium"
+                  ><FileX class="size-3.5 text-muted-foreground" />Never changes</span
+                >
+                <TagInput
+                  v-model="rule.blockedPaths"
+                  label="Never changes"
+                  placeholder="Add a folder or pattern"
+                  mono
+                  :suggestions="pathSuggestions"
+                />
+              </div>
+            </section>
+
+            <section class="flex flex-col gap-3">
+              <SectionLabel>Also</SectionLabel>
+              <div class="flex flex-wrap gap-x-6 gap-y-2.5 text-[13px]">
+                <Label class="font-normal"><Checkbox v-model="rule.requireChecks" /> Checks must pass</Label>
+                <Label class="font-normal"><Checkbox v-model="rule.requireMergeable" /> Must be mergeable</Label>
+                <Label class="font-normal"><Checkbox v-model="rule.skipChangesRequested" /> Nobody asked for changes</Label>
+              </div>
               <Button
-                size="icon-sm"
                 variant="ghost"
-                class="text-muted-foreground"
-                aria-label="Refresh"
-                :disabled="previewing"
-                @click="runPreview(true)"
-                ><Spinner v-if="previewing" /><RefreshCw v-else
-              /></Button>
-            </Hint>
-          </div>
-          <p v-if="previewError" class="text-xs text-destructive">{{ previewError }}</p>
-          <div v-else-if="!evaluations" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
-          <p v-else-if="!forRule.yes.length && !forRule.no.length" class="text-muted-foreground">
-            No open pull requests {{ rule.repos.length ? 'in these repositories' : 'waiting for your review' }} right now.
-          </p>
-          <ul v-else class="overflow-hidden rounded-lg border border-border">
-            <li v-for="e in forRule.yes" :key="e.pull.url" class="border-t border-accent first:border-t-0">
-              <button type="button" class="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/60" @click="openPull(e)">
-                <img
-                  :src="`https://avatars.githubusercontent.com/${encodeURIComponent(e.pull.author.replace('[bot]', ''))}?s=40`"
-                  alt=""
-                  class="size-5 shrink-0 rounded-full bg-accent"
+                size="sm"
+                class="-ml-2 w-fit text-muted-foreground"
+                :aria-expanded="moreOpen"
+                @click="moreOpen = !moreOpen"
+              >
+                <ChevronDown class="transition-transform" :class="{ 'rotate-180': moreOpen }" /> More conditions
+              </Button>
+              <div v-if="moreOpen" class="grid items-start gap-x-4 gap-y-3 @xl:grid-cols-[160px_minmax(0,1fr)]">
+                <span class="flex h-8 items-center text-[13px] font-medium">Never from</span>
+                <TagInput
+                  v-model="rule.excludeAuthors"
+                  label="Never from"
+                  placeholder="Nobody. Type a name to search"
+                  :suggestions="peopleSuggestions"
+                  :search="findPeople"
+                  :chips="false"
                 />
-                <span class="flex min-w-0 flex-1 flex-col">
-                  <span class="truncate text-[13px] font-medium">{{ e.pull.title }}</span>
-                  <span class="truncate text-xs text-muted-foreground">#{{ e.pull.number }} · {{ e.pull.author }}</span>
-                </span>
-                <span class="inline-flex shrink-0 items-center gap-1 text-xs text-success-fg"><Check class="size-3.5" />Matches</span>
-              </button>
-            </li>
-            <li v-for="{ e, why } in forRule.no" :key="e.pull.url" class="border-t border-accent first:border-t-0">
-              <button type="button" class="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/60" @click="openPull(e)">
-                <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-[10px]">{{
-                  initial(e.pull.author)
-                }}</span>
-                <span class="flex min-w-0 flex-1 flex-col">
-                  <span class="truncate text-[13px] text-muted-foreground">{{ e.pull.title }}</span>
-                  <span class="truncate text-xs text-muted-foreground">#{{ e.pull.number }} · {{ e.pull.author }}</span>
-                </span>
-                <span class="max-w-[45%] shrink-0 truncate text-xs text-muted-foreground" :title="why">{{ why }}</span>
-              </button>
-            </li>
-          </ul>
-        </section>
+                <span class="flex h-8 items-center text-[13px] font-medium">Not with labels</span>
+                <TagInput
+                  v-model="rule.blockedLabels"
+                  label="Not with labels"
+                  placeholder="None"
+                  :suggestions="labelSuggestions"
+                  :chips="false"
+                />
+                <span class="flex h-8 items-center text-[13px] font-medium">Title has one of</span>
+                <TagInput
+                  v-model="rule.titleWords"
+                  label="Title has one of"
+                  placeholder="Any title"
+                  :suggestions="[{ value: 'chore(deps)' }, { value: 'docs:' }, { value: 'docs(' }]"
+                  :chips="false"
+                />
+                <span class="flex h-8 items-center text-[13px] font-medium">Size</span>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+                  <Label class="gap-1.5 font-normal"
+                    >At most
+                    <Input
+                      inputmode="numeric"
+                      class="h-7 w-14 text-center"
+                      placeholder="any"
+                      :model-value="rule.maxFiles ?? ''"
+                      @update:model-value="(v) => (rule!.maxFiles = numberOrNull(v))"
+                    />
+                    files</Label
+                  >
+                  <Label class="gap-1.5 font-normal"
+                    >and
+                    <Input
+                      inputmode="numeric"
+                      class="h-7 w-16 text-center"
+                      placeholder="any"
+                      :model-value="rule.maxLines ?? ''"
+                      @update:model-value="(v) => (rule!.maxLines = numberOrNull(v))"
+                    />
+                    changed lines</Label
+                  >
+                </div>
+                <span class="flex h-8 items-center text-[13px] font-medium">Wait</span>
+                <Label class="gap-1.5 text-[13px] font-normal"
+                  ><Input
+                    inputmode="numeric"
+                    class="h-7 w-14 text-center"
+                    :model-value="rule.minAgeMinutes"
+                    @update:model-value="(v) => (rule!.minAgeMinutes = numberOrNull(v) ?? 0)"
+                  />
+                  minutes after the last push, so the author can still fix things</Label
+                >
+                <Label for="rule-comment" class="flex h-8 items-center text-[13px] font-medium">Review comment</Label>
+                <Textarea id="rule-comment" v-model="rule.comment" rows="2" placeholder="Left empty, the approval has no comment." />
+              </div>
+            </section>
+          </div>
+
+          <aside
+            aria-label="Would approve now"
+            class="flex min-w-0 flex-col gap-3 px-8 pb-24 @5xl/page:sticky @5xl/page:top-0 @5xl/page:h-[calc(100vh-4rem)] @5xl/page:overflow-y-auto @5xl/page:border-l @5xl/page:border-accent @5xl/page:pt-6"
+          >
+            <div class="flex items-center gap-2">
+              <SectionLabel>Would approve now</SectionLabel>
+              <span class="flex-1" />
+              <Hint text="Ask GitHub again">
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  class="text-muted-foreground"
+                  aria-label="Refresh"
+                  :disabled="previewing"
+                  @click="runPreview(true)"
+                  ><Spinner v-if="previewing" /><RefreshCw v-else
+                /></Button>
+              </Hint>
+            </div>
+            <p v-if="previewError" class="text-xs text-destructive">{{ previewError }}</p>
+            <div v-else-if="!evaluations" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
+            <p v-else-if="!forRule.yes.length && !forRule.no.length" class="text-muted-foreground">
+              No open pull requests {{ rule.repos.length ? 'in these repositories' : 'waiting for your review' }} right now.
+            </p>
+            <ul v-else class="overflow-hidden rounded-lg border border-border">
+              <li v-for="e in forRule.yes" :key="e.pull.url" class="border-t border-accent first:border-t-0">
+                <button type="button" class="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/60" @click="openPull(e)">
+                  <img
+                    :src="`https://avatars.githubusercontent.com/${encodeURIComponent(e.pull.author.replace('[bot]', ''))}?s=40`"
+                    alt=""
+                    class="size-5 shrink-0 rounded-full bg-accent"
+                  />
+                  <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="truncate text-[13px] font-medium">{{ e.pull.title }}</span>
+                    <span class="truncate text-xs text-muted-foreground">#{{ e.pull.number }} · {{ e.pull.author }}</span>
+                  </span>
+                  <span class="inline-flex shrink-0 items-center gap-1 text-xs text-success-fg"><Check class="size-3.5" />Matches</span>
+                </button>
+              </li>
+              <li v-for="{ e, why } in forRule.no" :key="e.pull.url" class="border-t border-accent first:border-t-0">
+                <button type="button" class="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-muted/60" @click="openPull(e)">
+                  <span class="mt-px flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-[10px]">{{
+                    initial(e.pull.author)
+                  }}</span>
+                  <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="truncate text-[13px] text-muted-foreground">{{ e.pull.title }}</span>
+                    <span class="truncate text-xs text-muted-foreground">#{{ e.pull.number }} · {{ e.pull.author }}</span>
+                    <span class="mt-1 line-clamp-2 text-xs text-faint" :title="why">{{ why }}</span>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </aside>
+        </div>
       </div>
 
       <div
