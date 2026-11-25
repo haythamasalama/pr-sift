@@ -191,4 +191,31 @@ describe('FilterBar', () => {
   it('offers Save view only when types or folders are chosen', () => {
     expect(mountBar().text()).not.toContain('Save view')
   })
+
+  it('folds types after the first six behind "+N more" and keeps a chosen one visible', async () => {
+    const many: ExtChip[] = ['.a', '.b', '.c', '.d', '.e', '.f', '.g', '.h'].map((ext, i) => ({
+      ext,
+      label: ext,
+      count: 10 - i,
+      custom: false,
+      ...(ext === '.h' ? { state: 'include' as const } : {}),
+    }))
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips: many,
+        listedCount: 8,
+        viewedInView: [],
+        hiddenCount: 0,
+        filtersActive: false,
+        reviewMode: false,
+        showHidden: false,
+        diffMode: 'unified' as const,
+      },
+    })
+    expect(wrapper.text()).not.toContain('.g')
+    expect(wrapper.text()).toContain('.h')
+    await button(wrapper, '+1 more').trigger('click')
+    expect(wrapper.text()).toContain('.g')
+    expect(wrapper.text()).toContain('Show less')
+  })
 })

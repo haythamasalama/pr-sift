@@ -103,13 +103,13 @@ async function submit() {
       </Button>
     </PopoverTrigger>
     <span v-if="blocked" class="flex shrink-0 cursor-not-allowed" :title="blocked" tabindex="0" :aria-label="`Approve: ${blocked}`">
-      <Button variant="success" class="rounded-r-none px-3 text-[13px]" disabled>
+      <Button variant="success" class="rounded-r-none border-r-0 px-3 text-[13px]" disabled>
         <Check /><span class="hidden sm:inline">Approve</span>
       </Button>
       <Button
         variant="success"
         size="icon"
-        class="w-7 rounded-l-none border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
+        class="w-7 rounded-l-none border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
         disabled
         aria-hidden="true"
         tabindex="-1"
@@ -120,7 +120,7 @@ async function submit() {
     <div v-else-if="!mine" class="flex shrink-0">
       <Button
         variant="success"
-        class="rounded-r-none px-3 text-[13px]"
+        class="rounded-r-none border-r-0 px-3 text-[13px]"
         :disabled="busy"
         :title="canAct ? 'Approve this pull request' : 'Approve, request changes or comment'"
         @click="approveNow"
@@ -131,7 +131,7 @@ async function submit() {
         <Button
           variant="success"
           size="icon"
-          class="w-7 rounded-l-none border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
+          class="w-7 rounded-l-none border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
           aria-label="Approve with a comment, request changes or comment"
           title="Approve with a comment, request changes or comment"
         >

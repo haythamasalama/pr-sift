@@ -96,6 +96,14 @@ function saveView() {
 const extensionChips = computed(() => chips.filter((c) => !c.ext.includes(':')))
 const statusChips = computed(() => chips.filter((c) => c.ext.includes(':')))
 
+// Show the most common types first and fold the rest behind "+N more", but never fold one that is in use.
+const TYPE_LIMIT = 6
+const allTypes = shallowRef(false)
+const shownTypes = computed(() =>
+  allTypes.value ? extensionChips.value : extensionChips.value.filter((c, i) => i < TYPE_LIMIT || c.state || c.custom),
+)
+const foldedTypes = computed(() => extensionChips.value.length - shownTypes.value.length)
+
 const adding = shallowRef(false)
 const draft = shallowRef('')
 const input = useTemplateRef<{ $el: HTMLInputElement }>('input')
@@ -148,7 +156,7 @@ const chipClass = (chip: ExtChip) => [
   <div class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-sidebar px-3 py-[9px] sm:px-4">
     <div class="flex min-w-0 flex-1 basis-[22rem] flex-wrap items-center gap-1.5">
       <span class="mr-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Types</span>
-      <span v-for="c in extensionChips" :key="c.ext" class="inline-flex items-center">
+      <span v-for="c in shownTypes" :key="c.ext" class="inline-flex items-center">
         <Button
           size="xs"
           :variant="chipVariant(c)"
@@ -170,6 +178,17 @@ const chipClass = (chip: ExtChip) => [
           <X />
         </Button>
       </span>
+
+      <Button
+        v-if="foldedTypes > 0 || allTypes"
+        variant="ghost"
+        size="xs"
+        class="h-[22px] rounded-sm px-1.5 text-xs font-normal text-muted-foreground"
+        :aria-expanded="allTypes"
+        @click="allTypes = !allTypes"
+      >
+        {{ allTypes ? 'Show less' : `+${foldedTypes} more` }}
+      </Button>
 
       <Input
         v-if="adding"

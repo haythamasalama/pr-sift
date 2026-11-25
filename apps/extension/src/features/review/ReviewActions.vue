@@ -91,6 +91,7 @@ function onReviewed(event: ReviewEvent) {
         :variant="mergeIsPrimary ? 'success' : 'outline'"
         :disabled="!!mergeBlocked"
         class="relative rounded-r-none px-3 text-[13px]"
+        :class="mergeIsPrimary ? 'border-r-0' : ''"
         :title="mergeTitle"
         :aria-label="mergeBlocked ? `${current.action}, not possible yet: ${mergeBlocked}` : mergeTitle"
         @click="sheetOpen = true"
@@ -106,7 +107,11 @@ function onReviewed(event: ReviewEvent) {
             :disabled="!!mergeBlocked"
             size="icon"
             class="w-7 rounded-l-none [&_svg:not([class*=size-])]:size-3.5"
-            :class="mergeIsPrimary ? 'border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))]' : 'border-l-0'"
+            :class="
+              mergeIsPrimary
+                ? 'border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))]'
+                : 'border-l-0'
+            "
             aria-label="Choose how to merge"
           >
             <ChevronDown />

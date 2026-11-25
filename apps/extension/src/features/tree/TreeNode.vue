@@ -71,7 +71,7 @@ function jump() {
         <Folder :size="14" class="shrink-0 text-muted-foreground" />
         <span class="truncate font-medium" :class="viewedState === 'all' ? 'text-muted-foreground' : ''">{{ node.name }}</span>
       </button>
-      <span class="hidden shrink-0 items-center group-focus-within:flex group-hover:flex">
+      <span class="flex shrink-0 items-center">
         <button
           type="button"
           class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
