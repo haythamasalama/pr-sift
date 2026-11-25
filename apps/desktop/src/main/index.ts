@@ -15,8 +15,10 @@ import { run } from './exec'
 import { TokenVault } from './token'
 import { WorktreeService } from './worktrees/service'
 import { ProjectService } from './projects/service'
-import { deleteBranch, listBranches } from './projects/branches'
+import { deleteBranch, deleteBranches, listBranches } from './projects/branches'
+import { AutoApproveService } from './autoapprove/service'
 import { openIn } from './launch'
+import { overview } from './projects/overview'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const platform = process.platform
@@ -46,6 +48,11 @@ async function pickFolder(title: string) {
   return picked.canceled ? null : (picked.filePaths[0] ?? null)
 }
 const projects = new ProjectService({ store: internal, roots: () => readSettings(internal), pickFolder: () => pickFolder('Add a project') })
+const autoApprove = new AutoApproveService({
+  store: internal,
+  request: async (req) => apiRequest(await vault.token(), req),
+  onChange: (status) => send('autoapprove:changed', status),
+})
 const leftovers = new Map<string, Leftover>()
 const sizes = limiter(4)
 
@@ -145,6 +152,7 @@ function registerHandlers() {
   h('projects:browse', () => projects.browse())
   h('projects:add', async (_e, paths) => projectsChanged(await projects.add(Array.isArray(paths) ? paths.map(String) : [])))
   h('projects:remove', async (_e, path) => projectsChanged(await projects.remove(String(path))))
+  h('projects:overview', async (_e, path) => overview(await projects.require(String(path))))
   h('worktrees:list', async (_e, repo) => worktrees.listRepo(await projects.require(String(repo))))
   h('worktrees:changes', (_e, path) => worktrees.changes(String(path)))
   h('worktrees:diff', (_e, path, file) => worktrees.diff(String(path), String(file)))
@@ -157,6 +165,36 @@ function registerHandlers() {
   })
   h('branches:list', async (_e, repo) => listBranches(await projects.require(String(repo))))
   h('branches:delete', async (_e, repo, name, force) => deleteBranch(await projects.require(String(repo)), String(name), force === true))
+
+  h('branches:delete-many', async (_e, repo, names, options) => {
+    const path = await projects.require(String(repo))
+    const opts = { force: options?.force === true, remote: options?.remote === true }
+    const gh = async (req: Parameters<typeof apiRequest>[1]) => apiRequest(await vault.token(), req)
+    return deleteBranches(path, Array.isArray(names) ? names.map(String) : [], opts, {
+      async hasOpenPull(owner, name, branch) {
+        const res = await gh({
+          type: 'gh',
+          path: `/repos/${owner}/${name}/pulls?state=open&head=${encodeURIComponent(`${owner}:${branch}`)}`,
+        })
+        if (!res.ok) throw new Error('Could not ask GitHub about open pull requests.')
+        return Array.isArray(res.data) && res.data.length > 0
+      },
+      async remove(owner, name, branch) {
+        const ref = branch.split('/').map(encodeURIComponent).join('/')
+        const res = await gh({ type: 'gh', path: `/repos/${owner}/${name}/git/refs/heads/${ref}`, method: 'DELETE' })
+        return {
+          ok: res.ok,
+          error: res.ok ? undefined : ((res.data as { message?: string } | null)?.message ?? `GitHub answered ${res.status}.`),
+        }
+      },
+    })
+  })
+
+  h('autoapprove:status', () => autoApprove.status())
+  h('autoapprove:save', (_e, config) => autoApprove.save(config))
+  h('autoapprove:preview', () => autoApprove.preview())
+  h('autoapprove:run', () => autoApprove.run())
+  h('autoapprove:clear-log', () => autoApprove.clearLog())
 
   h('worktrees:scan', () => worktrees.scan())
   h('worktrees:details', (_e, path) => worktrees.details(String(path)))
@@ -266,6 +304,7 @@ app.whenReady().then(() => {
   registerHandlers()
   createWindow()
   void vault.refresh().then((status) => send('auth:changed', status))
+  void autoApprove.start()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

@@ -1,5 +1,6 @@
-import type { Branch } from '#shared/ipc'
+import type { Branch, BulkDeleteResult } from '#shared/ipc'
 import { git } from '../exec'
+import { parseGithubRemote } from './remote'
 
 const SEP = '\u001f'
 const FORMAT = [
@@ -76,4 +77,56 @@ export async function deleteBranch(repo: string, name: string, force: boolean) {
   if (/not fully merged/.test(err))
     return { ok: false, error: 'This branch has commits that are not merged. Delete it anyway to lose them.' }
   return { ok: false, error: err || 'git branch failed' }
+}
+
+export interface RemoteBranches {
+  // Whether an open pull request uses this branch; deleting its head branch would close it.
+  hasOpenPull(owner: string, repo: string, branch: string): Promise<boolean>
+  remove(owner: string, repo: string, branch: string): Promise<{ ok: boolean; error?: string }>
+}
+
+// Deletes several local branches and, when asked, their copies on GitHub. A branch that is checked out, or whose
+// GitHub copy has an open pull request, is left alone.
+export async function deleteBranches(
+  repo: string,
+  names: string[],
+  options: { force: boolean; remote: boolean },
+  remote?: RemoteBranches,
+): Promise<BulkDeleteResult> {
+  const result: BulkDeleteResult = { deleted: [], remoteDeleted: [], failed: [] }
+  const all = new Map((await listBranches(repo)).map((b) => [b.name, b]))
+  const origin = await git(repo, ['remote', 'get-url', 'origin'])
+  const github = origin.code === 0 ? parseGithubRemote(origin.stdout) : undefined
+  const base = (await defaultBranch(repo))?.replace(/^origin\//, '')
+  for (const name of [...new Set(names)]) {
+    const b = all.get(name)
+    if (!b) {
+      result.failed.push({ name, error: 'No such branch.' })
+      continue
+    }
+    if (b.current || b.worktree) {
+      result.failed.push({ name, error: 'It is checked out, so it was kept.' })
+      continue
+    }
+    const res = await deleteBranch(repo, name, options.force || b.merged)
+    if (!res.ok) {
+      result.failed.push({ name, error: res.error ?? 'git branch failed' })
+      continue
+    }
+    result.deleted.push(name)
+    const remoteName = b.upstream?.startsWith('origin/') && !b.gone ? b.upstream.slice('origin/'.length) : undefined
+    if (!options.remote || !remote || !github || !remoteName || remoteName === base) continue
+    try {
+      if (await remote.hasOpenPull(github.owner, github.repo, remoteName)) {
+        result.failed.push({ name, error: 'Deleted here, but kept on GitHub because a pull request is still open on it.' })
+        continue
+      }
+      const r = await remote.remove(github.owner, github.repo, remoteName)
+      if (r.ok) result.remoteDeleted.push(name)
+      else result.failed.push({ name, error: `Deleted here, but not on GitHub: ${r.error ?? 'GitHub refused.'}` })
+    } catch (e) {
+      result.failed.push({ name, error: `Deleted here, but not on GitHub: ${e instanceof Error ? e.message : String(e)}` })
+    }
+  }
+  return result
 }

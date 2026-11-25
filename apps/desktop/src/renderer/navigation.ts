@@ -1,10 +1,10 @@
 import { shallowRef } from 'vue'
 import type { PrRef } from '@/lib/types'
 
-export type View = 'inbox' | 'project' | 'worktrees' | 'cleanup' | 'settings' | 'account'
-export type ProjectTab = 'pulls' | 'issues' | 'branches' | 'worktrees' | 'files'
+export type View = 'inbox' | 'project' | 'autoapprove' | 'worktrees' | 'cleanup' | 'settings' | 'account'
+export type ProjectTab = 'pulls' | 'branches' | 'worktrees' | 'files'
 
-export const VIEWS: View[] = ['inbox', 'project', 'worktrees', 'cleanup', 'settings', 'account']
+export const VIEWS: View[] = ['inbox', 'project', 'autoapprove', 'worktrees', 'cleanup', 'settings', 'account']
 
 export const view = shallowRef<View>('inbox')
 // The project shown when the view is `project`, by folder path.

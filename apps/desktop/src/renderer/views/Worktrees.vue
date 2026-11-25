@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
-import { CircleAlert, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Trash2, Undo2 } from '@lucide/vue'
+import { CircleAlert, FolderOpen, GitBranch, Lock, RefreshCw, RotateCcw, Search, Trash2, Undo2 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
 import NoticeBar from '@/components/NoticeBar.vue'
 import type { Repo, UndoEntry, Worktree, WorktreeDetails } from '#shared/ipc'
@@ -31,10 +33,82 @@ const notice = shallowRef<{ text: string; undo?: UndoEntry } | null>(null)
 const undoList = shallowRef<UndoEntry[]>([])
 const target = shallowRef<{ repo: Repo; worktree: Worktree } | null>(null)
 const removing = shallowRef(false)
+const query = shallowRef('')
+const selected = shallowRef(new Set<string>())
+const bulkAsking = shallowRef(false)
 
-const withWorktrees = computed(() => (only ? repos.value : repos.value.filter((r) => r.worktrees.length > 1 || r.error)))
+const allWithWorktrees = computed(() => (only ? repos.value : repos.value.filter((r) => r.worktrees.length > 1 || r.error)))
+const matches = (r: Repo, w: Worktree) => {
+  const q = query.value.trim().toLowerCase()
+  return !q || [w.branch ?? '', w.path, r.name].some((x) => x.toLowerCase().includes(q))
+}
+// While filtering, a repository shows only the worktrees that match, and disappears when none do.
+const withWorktrees = computed(() =>
+  query.value.trim()
+    ? allWithWorktrees.value.map((r) => ({ ...r, worktrees: r.worktrees.filter((w) => matches(r, w)) })).filter((r) => r.worktrees.length)
+    : allWithWorktrees.value,
+)
+const canTrash = (w: Worktree) => !w.main && !w.prunable && !w.locked
+const selectable = computed(() => withWorktrees.value.flatMap((r) => r.worktrees.filter(canTrash)))
+const picked = computed(() => allWithWorktrees.value.flatMap((r) => r.worktrees.filter((w) => selected.value.has(w.path))))
+const allState = computed(() => {
+  const n = selectable.value.filter((w) => selected.value.has(w.path)).length
+  return n === 0 ? false : n === selectable.value.length ? true : 'indeterminate'
+})
+function toggle(path: string, on: boolean) {
+  const next = new Set(selected.value)
+  if (on) next.add(path)
+  else next.delete(path)
+  selected.value = next
+}
+function toggleAll(on: boolean) {
+  const next = new Set(selected.value)
+  for (const w of selectable.value) {
+    if (on) next.add(w.path)
+    else next.delete(w.path)
+  }
+  selected.value = next
+}
+const bulkWarnings = computed(() => {
+  let changed = 0
+  let unpushed = 0
+  for (const w of picked.value) {
+    const d = details.get(w.path)
+    if (d?.changed) changed++
+    if (d?.unpushed || (d && !d.upstream && w.branch)) unpushed++
+  }
+  const list: string[] = []
+  if (changed) list.push(`${changed} of them ${changed === 1 ? 'has' : 'have'} changes that are not committed.`)
+  if (unpushed) list.push(`${unpushed} of them ${unpushed === 1 ? 'has' : 'have'} commits that may not be pushed.`)
+  return list
+})
+async function confirmBulk() {
+  removing.value = true
+  const done: string[] = []
+  const failed: string[] = []
+  for (const w of picked.value) {
+    try {
+      await bridge.invoke('worktrees:remove', w.path)
+      done.push(w.path)
+      details.delete(w.path)
+    } catch (e) {
+      failed.push(`${label(w)}: ${errorText(e)}`)
+    }
+  }
+  const gone = new Set(done)
+  repos.value = repos.value.map((r) => ({ ...r, worktrees: r.worktrees.filter((w) => !gone.has(w.path)) }))
+  undoList.value = await bridge.invoke('worktrees:undo-list')
+  if (only) undoList.value = undoList.value.filter((u) => u.repo === only)
+  notice.value = {
+    text: `Moved ${done.length} ${done.length === 1 ? 'worktree' : 'worktrees'} to the Trash. The branches are kept; undo any of them below.`,
+  }
+  error.value = failed.join('\n')
+  selected.value = new Set()
+  removing.value = false
+  bulkAsking.value = false
+}
 const plainRepos = computed(() => repos.value.filter((r) => r.worktrees.length <= 1 && !r.error))
-const linked = computed(() => withWorktrees.value.flatMap((r) => r.worktrees.filter((w) => !w.main)))
+const linked = computed(() => allWithWorktrees.value.flatMap((r) => r.worktrees.filter((w) => !w.main)))
 const totalSize = computed(() => linked.value.reduce((sum, w) => sum + (details.get(w.path)?.size ?? 0), 0))
 const summary = computed(() => {
   if (!scanned.value) return 'Every git worktree in your project folders.'
@@ -88,6 +162,7 @@ async function scan() {
   try {
     repos.value = only ? [await bridge.invoke('worktrees:list', only)] : await bridge.invoke('worktrees:scan')
     details.clear()
+    selected.value = new Set()
     scanned.value = true
     const undos = await bridge.invoke('worktrees:undo-list')
     undoList.value = only ? undos.filter((u) => u.repo === only) : undos
@@ -190,8 +265,33 @@ watch(
     </div>
     <Alert v-if="error" variant="destructive">
       <CircleAlert />
-      <AlertDescription>{{ error }}</AlertDescription>
+      <AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription>
     </Alert>
+
+    <div
+      v-if="scanned && allWithWorktrees.length"
+      class="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-secondary/60 px-4 py-1.5"
+    >
+      <Checkbox
+        :model-value="allState"
+        :disabled="!selectable.length"
+        aria-label="Select every worktree shown"
+        title="Select every worktree shown"
+        @update:model-value="(v) => toggleAll(v === true)"
+      />
+      <InputGroup class="h-7 w-56 bg-background">
+        <InputGroupAddon><Search /></InputGroupAddon>
+        <InputGroupInput v-model="query" placeholder="Filter worktrees" aria-label="Filter worktrees" />
+      </InputGroup>
+      <span class="flex-1 text-xs text-muted-foreground">
+        <template v-if="selected.size">{{ selected.size }} selected</template>
+        <template v-else>Select worktrees to move several to the Trash at once.</template>
+      </span>
+      <Button v-if="selected.size" size="xs" variant="ghost" @click="selected = new Set()">Clear</Button>
+      <Button v-if="selected.size" size="xs" variant="destructive" @click="bulkAsking = true"
+        ><Trash2 /> Move {{ selected.size }} to Trash</Button
+      >
+    </div>
 
     <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking for repositories…</div>
 
@@ -224,6 +324,15 @@ watch(
           title="Show details"
           @click="sheet = { repo, worktree: w }"
         >
+          <Checkbox
+            v-if="!w.main"
+            :model-value="selected.has(w.path)"
+            :disabled="!canTrash(w)"
+            :aria-label="`Select ${label(w)}`"
+            @click.stop
+            @update:model-value="(v) => toggle(w.path, v === true)"
+          />
+          <span v-else class="w-4 shrink-0" />
           <GitBranch class="size-4 shrink-0 text-muted-foreground" />
           <div class="flex min-w-0 flex-1 flex-col gap-0.5">
             <div class="flex flex-wrap items-center gap-1.5">
@@ -317,6 +426,26 @@ watch(
     @updated="onUpdated"
     @remove="sheet && ((target = sheet), (sheet = null))"
   />
+
+  <ConfirmDialog
+    :open="bulkAsking"
+    :title="`Move ${selected.size} worktrees to the Trash?`"
+    description="The folders go to the Trash and git forgets the worktrees. The branches stay, and you can undo each one from this page."
+    :confirm="`Move ${selected.size} to Trash`"
+    :busy="removing"
+    @update:open="(v) => (bulkAsking = v)"
+    @confirm="confirmBulk"
+  >
+    <ul class="max-h-40 overflow-auto text-xs text-muted-foreground">
+      <li v-for="w in picked" :key="w.path" class="truncate">{{ label(w) }} · {{ short(w.path) }}</li>
+    </ul>
+    <Alert v-if="bulkWarnings.length" class="border-attention/50">
+      <CircleAlert class="text-attention" />
+      <AlertDescription>
+        <p v-for="w in bulkWarnings" :key="w">{{ w }}</p>
+      </AlertDescription>
+    </Alert>
+  </ConfirmDialog>
 
   <ConfirmDialog
     :open="target !== null"

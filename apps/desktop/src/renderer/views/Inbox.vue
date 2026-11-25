@@ -10,7 +10,6 @@ import { openReview } from '~/navigation'
 import { useAuth } from '~/useAuth'
 import PageHeader from '~/components/PageHeader.vue'
 import PullRow from '~/components/PullRow.vue'
-import IssueRow from '~/components/IssueRow.vue'
 
 const { status } = useAuth()
 const inbox = shallowRef<Inbox | null>(null)
@@ -89,15 +88,6 @@ onMounted(load)
         <p v-if="!mineOther.length" class="text-muted-foreground">None.</p>
         <ul v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border">
           <PullRow v-for="p in mineOther" :key="p.url" :pull="p" show-repo @open="openReview(p)" />
-        </ul>
-      </section>
-
-      <section v-if="inbox.assigned.length" class="flex flex-col gap-2">
-        <h2 class="font-semibold">
-          Issues assigned to you <span class="font-normal text-muted-foreground">{{ inbox.assigned.length }}</span>
-        </h2>
-        <ul class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-          <IssueRow v-for="i in inbox.assigned" :key="i.url" :issue="i" show-repo />
         </ul>
       </section>
     </template>

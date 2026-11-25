@@ -5,6 +5,7 @@ import { git } from '../exec'
 import type { Store } from '../store'
 import { findRepos } from '../worktrees/discover'
 import { pickGithubRemote } from './remote'
+import { findIcon } from './overview'
 
 const KEY = 'projects'
 
@@ -23,6 +24,8 @@ async function isRepo(path: string) {
 }
 
 export class ProjectService {
+  // Finding an icon walks the folder, so each project's answer is kept for a while.
+  private icons = new Map<string, { at: number; icon?: string }>()
   // Paths the window may add: ones found in the project folders or under a folder the person picked.
   private offered = new Set<string>()
 
@@ -45,13 +48,26 @@ export class ProjectService {
   async describe(path: string): Promise<Project> {
     const name = basename(path)
     if (!(await isRepo(path))) return { path, name, missing: true }
-    const [remotes, head] = await Promise.all([git(path, ['remote', '-v']), git(path, ['symbolic-ref', '--quiet', '--short', 'HEAD'])])
+    const [remotes, head, icon] = await Promise.all([
+      git(path, ['remote', '-v']),
+      git(path, ['symbolic-ref', '--quiet', '--short', 'HEAD']),
+      this.icon(path),
+    ])
     return {
       path,
       name,
+      icon,
       github: remotes.code === 0 ? pickGithubRemote(remotes.stdout) : undefined,
       branch: head.code === 0 ? head.stdout.trim() || undefined : undefined,
     }
+  }
+
+  private async icon(path: string) {
+    const cached = this.icons.get(path)
+    if (cached && Date.now() - cached.at < 10 * 60_000) return cached.icon
+    const icon = await findIcon(path).catch(() => undefined)
+    this.icons.set(path, { at: Date.now(), icon })
+    return icon
   }
 
   async list(): Promise<Project[]> {

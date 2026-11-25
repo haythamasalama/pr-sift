@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, shallowRef, watch } from 'vue'
-import { CircleAlert, Code, FolderOpen, GitBranch, RefreshCw, SquareTerminal, X } from '@lucide/vue'
+import { CircleAlert, Code, FolderOpen, GitBranch, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import GithubMark from '@/components/GithubMark.vue'
 import { bridge } from '~/bridge'
 import { appInfo } from '~/appInfo'
@@ -13,8 +15,9 @@ import { openReview, project, projectTab, view, type ProjectTab } from '~/naviga
 import { useAuth } from '~/useAuth'
 import { useProjects } from '~/useProjects'
 import PullRow from '~/components/PullRow.vue'
-import IssueRow from '~/components/IssueRow.vue'
 import BranchList from '~/components/BranchList.vue'
+import ProjectIcon from '~/components/ProjectIcon.vue'
+import ProjectSummary from '~/components/ProjectSummary.vue'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Worktrees from './Worktrees.vue'
 import Cleanup from './Cleanup.vue'
@@ -29,12 +32,25 @@ const note = shallowRef('')
 const removing = shallowRef(false)
 
 const me = computed(() => status.value?.account?.login)
-const waiting = computed(() => activity.value?.pulls.filter((p) => me.value && p.reviewers.includes(me.value)) ?? [])
-const others = computed(() => activity.value?.pulls.filter((p) => !waiting.value.includes(p)) ?? [])
+const pullQuery = shallowRef('')
+const pullFilter = shallowRef<'all' | 'mine' | 'drafts' | 'ready'>('all')
+const visiblePulls = computed(() => {
+  const q = pullQuery.value.trim().toLowerCase()
+  return (activity.value?.pulls ?? []).filter((p) => {
+    if (pullFilter.value === 'mine' && p.author?.login !== me.value) return false
+    if (pullFilter.value === 'drafts' && !p.draft) return false
+    if (pullFilter.value === 'ready' && (p.draft || p.decision === 'APPROVED')) return false
+    if (!q) return true
+    return [p.title, p.branch, p.author?.login ?? '', `#${p.number}`, ...p.labels.map((l) => l.name)].some((x) =>
+      x.toLowerCase().includes(q),
+    )
+  })
+})
+const waiting = computed(() => visiblePulls.value.filter((p) => me.value && p.reviewers.includes(me.value)))
+const others = computed(() => visiblePulls.value.filter((p) => !waiting.value.includes(p)))
 
 const TABS = computed<{ id: ProjectTab; label: string; count?: number }[]>(() => [
   { id: 'pulls', label: 'Pull requests', count: activity.value?.pulls.length },
-  { id: 'issues', label: 'Issues', count: activity.value?.issues.length },
   { id: 'branches', label: 'Branches' },
   { id: 'worktrees', label: 'Worktrees' },
   { id: 'files', label: 'Hidden files' },
@@ -87,6 +103,7 @@ async function confirmRemove() {
       <div class="flex flex-wrap items-start gap-3">
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1 class="flex items-center gap-2 text-base font-semibold">
+            <ProjectIcon :project="current" :size="22" />
             {{ current.name }}
             <span v-if="current.branch" class="flex items-center gap-1 text-xs font-normal text-muted-foreground"
               ><GitBranch class="size-3.5" />{{ current.branch }}</span
@@ -122,6 +139,7 @@ async function confirmRemove() {
           /></Button>
         </div>
       </div>
+      <ProjectSummary :key="current.path" :project="current" :info="activity?.info" />
       <p v-if="note" class="-mt-1 text-xs text-muted-foreground">{{ note }}</p>
       <nav class="-mb-px flex gap-4 overflow-x-auto" aria-label="Project">
         <button
@@ -139,10 +157,10 @@ async function confirmRemove() {
     </header>
 
     <div class="flex flex-col gap-4 p-6">
-      <template v-if="projectTab === 'pulls' || projectTab === 'issues'">
+      <template v-if="projectTab === 'pulls'">
         <Alert v-if="!current.github" class="border-attention/50">
           <CircleAlert class="text-attention" />
-          <AlertDescription>This repository has no GitHub remote, so there are no pull requests or issues to show.</AlertDescription>
+          <AlertDescription>This repository has no GitHub remote, so there are no pull requests to show.</AlertDescription>
         </Alert>
         <Alert v-if="error" variant="destructive"
           ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
@@ -151,9 +169,18 @@ async function confirmRemove() {
       </template>
 
       <template v-if="projectTab === 'pulls' && activity">
-        <div class="flex items-center">
-          <p class="flex-1 text-muted-foreground">Open pull requests, latest activity first. Click one to review it here.</p>
-          <Button size="sm" variant="outline" :disabled="loading" @click="load"><RefreshCw /> Refresh</Button>
+        <div class="flex flex-wrap items-center gap-2">
+          <InputGroup class="w-64">
+            <InputGroupAddon><Search /></InputGroupAddon>
+            <InputGroupInput v-model="pullQuery" placeholder="Filter by title, branch, author, label" aria-label="Filter pull requests" />
+          </InputGroup>
+          <ToggleGroup v-model="pullFilter" type="single" variant="outline" size="sm" aria-label="Show">
+            <ToggleGroupItem value="all">All</ToggleGroupItem>
+            <ToggleGroupItem value="ready">Needs review</ToggleGroupItem>
+            <ToggleGroupItem value="mine">Mine</ToggleGroupItem>
+            <ToggleGroupItem value="drafts">Drafts</ToggleGroupItem>
+          </ToggleGroup>
+          <Button size="sm" variant="outline" class="ml-auto" :disabled="loading" @click="load"><RefreshCw /> Refresh</Button>
         </div>
         <section v-if="waiting.length" class="flex flex-col gap-2">
           <h2 class="font-semibold">Waiting for your review</h2>
@@ -162,6 +189,7 @@ async function confirmRemove() {
           </ul>
         </section>
         <p v-if="!activity.pulls.length" class="text-muted-foreground">No open pull requests.</p>
+        <p v-else-if="!visiblePulls.length" class="text-muted-foreground">No pull requests match.</p>
         <section v-else-if="others.length" class="flex flex-col gap-2">
           <h2 v-if="waiting.length" class="font-semibold">Everything else</h2>
           <ul class="divide-y divide-border overflow-hidden rounded-lg border border-border">
@@ -170,14 +198,13 @@ async function confirmRemove() {
         </section>
       </template>
 
-      <template v-else-if="projectTab === 'issues' && activity">
-        <p v-if="!activity.issues.length" class="text-muted-foreground">No open issues.</p>
-        <ul v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border">
-          <IssueRow v-for="i in activity.issues" :key="i.url" :issue="i" />
-        </ul>
-      </template>
-
-      <BranchList v-else-if="projectTab === 'branches'" :key="current.path" :repo="current.path" :pulls="activity?.pulls" />
+      <BranchList
+        v-else-if="projectTab === 'branches'"
+        :key="current.path"
+        :repo="current.path"
+        :github="current.github"
+        :pulls="activity?.pulls"
+      />
       <Worktrees v-else-if="projectTab === 'worktrees'" :key="current.path" :project-path="current.path" :pulls="activity?.pulls" />
       <Cleanup v-else-if="projectTab === 'files'" :key="current.path" :root="current.path" />
     </div>

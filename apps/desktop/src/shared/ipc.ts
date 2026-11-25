@@ -98,6 +98,20 @@ export interface Project {
   github?: { owner: string; repo: string }
   branch?: string
   missing?: boolean
+  // The project's own favicon or logo, as a data URL.
+  icon?: string
+}
+
+export interface ProjectOverview {
+  stack: string[]
+  description?: string
+  packageManager?: string
+  // The first paragraph of the README.
+  readme?: string
+  commits?: number
+  firstCommit?: number
+  lastCommit?: { at: number; subject: string; author: string }
+  contributors?: number
 }
 
 export interface Branch {
@@ -113,6 +127,13 @@ export interface Branch {
   merged: boolean
   lastCommit: number
   subject: string
+}
+
+export interface BulkDeleteResult {
+  deleted: string[]
+  // Branches whose copy on GitHub was deleted too.
+  remoteDeleted: string[]
+  failed: { name: string; error: string }[]
 }
 
 export interface ChangedFile {
@@ -139,6 +160,108 @@ export interface OpenResult {
   ok: boolean
   app?: string
   error?: string
+}
+
+// Auto-approve: rules that approve pull requests waiting for your review when every condition holds.
+export interface AutoApproveRule {
+  id: string
+  name: string
+  enabled: boolean
+  // `owner/repo` or `owner/*`. Empty means every repository.
+  repos: string[]
+  // Logins; bots are written like `dependabot[bot]`. Empty means anyone.
+  authors: string[]
+  excludeAuthors: string[]
+  // Every changed file must match one of these globs. Empty means any file.
+  paths: string[]
+  // No changed file may match any of these globs.
+  blockedPaths: string[]
+  // At least one of these labels. Empty means no label is needed.
+  labels: string[]
+  blockedLabels: string[]
+  // Case-insensitive words; the title must contain one. Empty means any title.
+  titleWords: string[]
+  // Base branches the pull request may target. Empty means any.
+  baseBranches: string[]
+  maxFiles: number | null
+  // Additions plus deletions.
+  maxLines: number | null
+  requireChecks: boolean
+  requireMergeable: boolean
+  // Skip while someone else has asked for changes.
+  skipChangesRequested: boolean
+  // Wait this long after the last push, so the author can still fix things first.
+  minAgeMinutes: number
+  comment: string
+}
+
+export interface AutoApproveConfig {
+  enabled: boolean
+  // While true, nothing is approved: the log says what would have been.
+  dryRun: boolean
+  intervalMinutes: number
+  rules: AutoApproveRule[]
+}
+
+export interface PullFacts {
+  owner: string
+  repo: string
+  number: number
+  title: string
+  url: string
+  author: string
+  draft: boolean
+  base: string
+  headSha: string
+  // When the last commit was pushed, or the pull request updated if unknown.
+  pushedAt: number
+  labels: string[]
+  files: string[]
+  // Total changed files; can be more than `files` when GitHub caps the list.
+  changedFiles: number
+  additions: number
+  deletions: number
+  checks?: 'SUCCESS' | 'FAILURE' | 'ERROR' | 'PENDING' | 'EXPECTED'
+  mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
+  changesRequested: boolean
+  // The commit you last approved, if any.
+  myApprovedSha?: string
+}
+
+export interface RuleCheck {
+  rule: string
+  ruleId: string
+  // Every condition that failed; empty when the rule matches.
+  failed: string[]
+}
+
+export interface Evaluation {
+  pull: Pick<PullFacts, 'owner' | 'repo' | 'number' | 'title' | 'url' | 'author' | 'headSha'>
+  // The first enabled rule that matched, if any.
+  matched?: string
+  checks: RuleCheck[]
+  // Why no rule was looked at, such as a draft.
+  blocked?: string
+}
+
+export type AutoApproveAction = 'approved' | 'would-approve' | 'failed'
+
+export interface AutoApproveLogEntry {
+  id: string
+  at: number
+  action: AutoApproveAction
+  rule: string
+  pull: Evaluation['pull']
+  error?: string
+}
+
+export interface AutoApproveStatus {
+  config: AutoApproveConfig
+  lastRun?: number
+  nextRun?: number
+  running: boolean
+  lastError?: string
+  log: AutoApproveLogEntry[]
 }
 
 export interface ApiRequest {
@@ -180,6 +303,7 @@ export interface Channels {
   'projects:browse': { args: []; result: string[] | null }
   'projects:add': { args: [paths: string[]]; result: Project[] }
   'projects:remove': { args: [path: string]; result: Project[] }
+  'projects:overview': { args: [path: string]; result: ProjectOverview }
   'worktrees:list': { args: [repo: string]; result: Repo }
   'worktrees:changes': { args: [path: string]; result: WorktreeChanges }
   'worktrees:diff': { args: [path: string, file: string]; result: string }
@@ -191,6 +315,15 @@ export interface Channels {
   'leftovers:scan': { args: [root?: string]; result: Leftover[] }
   'leftovers:size': { args: [path: string]; result: number }
   'leftovers:trash': { args: [paths: string[]]; result: TrashResult }
+  'branches:delete-many': {
+    args: [repo: string, names: string[], options: { force: boolean; remote: boolean }]
+    result: BulkDeleteResult
+  }
+  'autoapprove:status': { args: []; result: AutoApproveStatus }
+  'autoapprove:save': { args: [config: AutoApproveConfig]; result: AutoApproveStatus }
+  'autoapprove:preview': { args: []; result: Evaluation[] }
+  'autoapprove:run': { args: []; result: AutoApproveStatus }
+  'autoapprove:clear-log': { args: []; result: AutoApproveStatus }
   'shell:reveal': { args: [path: string]; result: void }
   'shell:open-external': { args: [url: string]; result: void }
 }
@@ -222,6 +355,7 @@ export const CHANNELS = [
   'projects:browse',
   'projects:add',
   'projects:remove',
+  'projects:overview',
   'worktrees:list',
   'worktrees:changes',
   'worktrees:diff',
@@ -233,6 +367,12 @@ export const CHANNELS = [
   'leftovers:scan',
   'leftovers:size',
   'leftovers:trash',
+  'branches:delete-many',
+  'autoapprove:status',
+  'autoapprove:save',
+  'autoapprove:preview',
+  'autoapprove:run',
+  'autoapprove:clear-log',
   'shell:reveal',
   'shell:open-external',
 ] as const satisfies readonly Channel[]
@@ -247,11 +387,18 @@ export interface Events {
   'auth:changed': AuthStatus
   navigate: { view: string; section?: string }
   'projects:changed': Project[]
+  'autoapprove:changed': AutoApproveStatus
 }
 
 export type EventName = keyof Events
 
-export const EVENTS = ['store:changed', 'auth:changed', 'navigate', 'projects:changed'] as const satisfies readonly EventName[]
+export const EVENTS = [
+  'store:changed',
+  'auth:changed',
+  'navigate',
+  'projects:changed',
+  'autoapprove:changed',
+] as const satisfies readonly EventName[]
 
 export interface Bridge {
   invoke<C extends Channel>(channel: C, ...args: Channels[C]['args']): Promise<Channels[C]['result']>

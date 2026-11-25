@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef } from 'vue'
-import { FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
+import { BadgeCheck, FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
 import { Spinner } from '@/components/ui/spinner'
 import BrandMark from '@/components/BrandMark.vue'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
@@ -13,11 +13,13 @@ import { openProject, project, review, view, type View } from './navigation'
 import SignIn from './views/SignIn.vue'
 import InboxView from './views/Inbox.vue'
 import ProjectView from './views/Project.vue'
+import AutoApprove from './views/AutoApprove.vue'
 import Worktrees from './views/Worktrees.vue'
 import Cleanup from './views/Cleanup.vue'
 import SettingsView from './views/Settings.vue'
 import Account from './views/Account.vue'
 import AddProjectDialog from './components/AddProjectDialog.vue'
+import ProjectIcon from './components/ProjectIcon.vue'
 
 const { dark } = useAppearance()
 const { status } = useAuth()
@@ -62,6 +64,9 @@ function onAdded(paths: string[]) {
           <span class="font-semibold">PR Sift</span>
         </div>
         <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'"><Inbox class="size-4" /> Needs you</button>
+        <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
+          <BadgeCheck class="size-4" /> Auto-approve
+        </button>
 
         <div class="mt-4 flex items-center justify-between px-2 pb-1">
           <span class="text-xs font-medium text-muted-foreground">Projects</span>
@@ -84,9 +89,7 @@ function onAdded(paths: string[]) {
             :title="p.path"
             @click="openProject(p.path)"
           >
-            <span class="flex size-4 shrink-0 items-center justify-center rounded bg-foreground/10 text-[10px] font-semibold uppercase">{{
-              p.name.slice(0, 1)
-            }}</span>
+            <ProjectIcon :project="p" />
             <span class="truncate">{{ p.name }}</span>
           </button>
           <button v-if="projects && !projects.length" type="button" :class="[item, 'text-muted-foreground']" @click="adding = true">
@@ -107,6 +110,7 @@ function onAdded(paths: string[]) {
       <main class="min-w-0 flex-1 overflow-y-auto">
         <InboxView v-if="view === 'inbox'" />
         <ProjectView v-else-if="view === 'project'" />
+        <AutoApprove v-else-if="view === 'autoapprove'" />
         <Worktrees v-else-if="view === 'worktrees'" />
         <Cleanup v-else-if="view === 'cleanup'" />
         <SettingsView v-else-if="view === 'settings'" />
