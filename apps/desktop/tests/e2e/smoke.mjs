@@ -214,6 +214,7 @@ await page.screenshot({ path: join(shots, '7b-worktree-branch.png') })
 // The branch's commits, and one commit on its own.
 await page.getByRole('button', { name: 'Commits' }).click()
 await page.getByText('Let people add items to the cart').waitFor()
+await page.waitForTimeout(500)
 await page.screenshot({ path: join(shots, '7c-worktree-commits.png') })
 await page.getByText('Add the cart', { exact: true }).click()
 await page.getByRole('button', { name: 'Newer commit' }).waitFor()
