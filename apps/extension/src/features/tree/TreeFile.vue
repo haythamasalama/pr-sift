@@ -13,7 +13,7 @@ const emit = defineEmits<{ select: []; toggle: [value: boolean] }>()
     <span class="w-4 shrink-0" />
     <Checkbox
       title="Mark as viewed"
-      class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 after:inset-0"
+      class="after:inset-0"
       :model-value="viewed"
       @update:model-value="(value) => emit('toggle', value === true)"
     />
