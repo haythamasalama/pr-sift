@@ -53,23 +53,23 @@ describe('FileTree', () => {
   it('opens a folder and asks to jump to it when its name is clicked', async () => {
     const wrapper = mountTree()
     await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
-    const folder = wrapper.findAll('button').find((b) => b.text().startsWith('src'))!
+    const folder = wrapper.findAll('button').find((b) => b.text().startsWith('src/Domain'))!
     await folder.trigger('click')
-    expect(wrapper.emitted('jumpFolder')).toEqual([['src']])
-    expect(wrapper.text()).toContain('Domain')
+    expect(wrapper.emitted('jumpFolder')).toEqual([['src/Domain']])
+    expect(wrapper.text()).toContain('Order')
   })
 
   it('opens a folder from its chevron without marking it viewed', async () => {
     const wrapper = mountTree()
     await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
-    const row = wrapper.findAll('button').find((b) => b.text().startsWith('src'))!.element.parentElement!
+    const row = wrapper.findAll('button').find((b) => b.text().startsWith('src/Domain'))!.element.parentElement!
     const checkbox = row.querySelector('[role=checkbox]')!
-    expect(wrapper.text()).not.toContain('Domain')
+    expect(wrapper.text()).not.toContain('Order')
 
     row.querySelector<HTMLElement>('[aria-label="Expand"]')!.click()
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Domain')
+    expect(wrapper.text()).toContain('Order')
     expect(wrapper.emitted('toggleViewed')).toBeUndefined()
     expect(checkbox.getAttribute('aria-checked')).toBe('false')
   })
@@ -116,6 +116,14 @@ describe('FileTree', () => {
   it('hides a folder from its hide button too', async () => {
     const wrapper = mountTree()
     await wrapper.find('[aria-label="Hide folder"]').trigger('click')
-    expect(wrapper.emitted('hideFolder')).toEqual([['src']])
+    expect(wrapper.emitted('hideFolder')).toEqual([['src/Domain']])
+  })
+
+  it('joins a folder that holds only one folder into one row, as GitHub does', () => {
+    const rows = mountTree()
+      .findAll('button')
+      .map((b) => b.text())
+    expect(rows.some((t) => t.startsWith('src/Domain'))).toBe(true)
+    expect(rows.some((t) => t === 'src' || t.startsWith('src3'))).toBe(false)
   })
 })

@@ -4,7 +4,7 @@ import { ChevronsDownUp, ChevronsUpDown, Layers } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { treeExpandKey, treeLayoutKey, type ExpandCommand } from './expandContext'
-import { collectFiles } from '@pr-sift/core'
+import { collectFiles, compactTree } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
 import TreeNodeView from './TreeNode.vue'
@@ -54,11 +54,9 @@ function showAll() {
   emit('jumpFolder', '')
 }
 
-const rootState = computed(() => {
-  const all = collectFiles(tree)
-  const done = all.filter(isViewed).length
-  return done === 0 ? 'none' : done === all.length ? 'all' : 'some'
-})
+const compact = computed(() => compactTree(tree))
+const viewedCount = computed(() => collectFiles(tree).filter(isViewed).length)
+const rootState = computed(() => (viewedCount.value === 0 ? 'none' : viewedCount.value === tree.count ? 'all' : 'some'))
 </script>
 
 <template>
@@ -75,7 +73,9 @@ const rootState = computed(() => {
       />
       <button type="button" class="flex flex-1 items-center gap-1.5 text-left font-medium" @click="showAll">
         <Layers :size="14" /> All folders
-        <span class="ml-auto text-[11px] text-muted-foreground">{{ tree.count }}</span>
+        <span class="ml-auto text-[11px] text-muted-foreground tabular-nums" :title="`${viewedCount} of ${tree.count} files viewed`"
+          >{{ viewedCount }} / {{ tree.count }}</span
+        >
       </button>
       <Button variant="ghost" size="icon-xs" title="Expand all folders" aria-label="Expand all folders" @click="setAll(true)"
         ><ChevronsUpDown
@@ -86,7 +86,7 @@ const rootState = computed(() => {
     </div>
 
     <TreeNodeView
-      v-for="d in tree.dirs"
+      v-for="d in compact.dirs"
       :key="d.path"
       :node="d"
       :depth="0"
@@ -99,7 +99,7 @@ const rootState = computed(() => {
       @hide-folder="emit('hideFolder', $event)"
     />
     <TreeFile
-      v-for="f in tree.files"
+      v-for="f in compact.files"
       :key="f.filename"
       :file="f"
       :viewed="isViewed(f)"

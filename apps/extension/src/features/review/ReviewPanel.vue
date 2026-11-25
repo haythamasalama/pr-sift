@@ -84,7 +84,6 @@ const sidebarSize = useResizable(DEFAULTS.sidebarWidth, 220, 760, (width) => sav
 
 const cardsExpand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(cardsExpandKey, cardsExpand)
-const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpand.value.n + 1 })
 
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
@@ -318,17 +317,12 @@ watch(
   <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
     <Toolbar
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
-      :presets="settings.presets"
-      :active-preset="filter.activePreset.value?.name ?? ''"
-      :hidden-presets="filter.hiddenPresets.value"
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
       :in-view="filter.inScope.value.length"
       :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
-      @select-preset="filter.togglePreset"
-      @hide-preset="filter.hidePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
@@ -370,6 +364,9 @@ watch(
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
+      :presets="settings.presets"
+      :active-preset="filter.activePreset.value?.name ?? ''"
+      :hidden-presets="filter.hiddenPresets.value"
       :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
@@ -382,9 +379,9 @@ watch(
       @unmark-viewed="setMany(filter.viewedInView.value, false)"
       @unmark-file="(file) => setViewed(file, false)"
       @clear-all="clearAll"
-      @expand-cards="setAllCards(true)"
-      @collapse-cards="setAllCards(false)"
       @save-view="saveView"
+      @select-preset="filter.togglePreset"
+      @hide-preset="filter.hidePreset"
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">

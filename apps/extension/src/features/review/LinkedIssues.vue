@@ -23,11 +23,13 @@ onMounted(async () => {
     <PopoverTrigger as-child>
       <button
         type="button"
-        class="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
+        class="inline-flex h-4 shrink-0 items-center gap-1 rounded-sm border px-1.5 text-foreground hover:bg-accent"
         :title="`${issues.length} linked ${issues.length === 1 ? 'issue' : 'issues'}`"
         :aria-label="`${issues.length} linked ${issues.length === 1 ? 'issue' : 'issues'}`"
       >
-        <CircleDot class="size-3" />{{ issues.length }}
+        <CircleDot class="size-3 text-success-fg" />
+        <template v-if="issues.length === 1"><span class="hidden xl:inline">Closes</span>#{{ issues[0]!.number }}</template>
+        <template v-else>{{ issues.length }} issues</template>
       </button>
     </PopoverTrigger>
     <PopoverContent align="start" class="w-96 gap-1 p-2">

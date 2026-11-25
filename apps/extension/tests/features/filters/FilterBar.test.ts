@@ -122,12 +122,40 @@ describe('FilterBar', () => {
     expect(button(mountBar(), 'Viewed').text()).toContain('2')
   })
 
-  it('toggles between collapsing and expanding the file cards with one button', async () => {
-    const wrapper = mountBar()
-    await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
-    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
-    expect(wrapper.emitted('expandCards')).toHaveLength(1)
-    expect(wrapper.emitted('collapseCards')).toHaveLength(1)
+  it('lists saved filters after the types and hides one on right-click', async () => {
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [],
+        hiddenCount: 0,
+        filtersActive: false,
+        reviewMode: false,
+        showHidden: false,
+        diffMode: 'unified' as const,
+        presets: [{ name: 'Tests', include: ['tests/**'] }],
+        hiddenPresets: ['Tests'],
+      },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(document.createElement('div')) } },
+    })
+    const texts = wrapper.findAll('button').map((b) => b.text())
+    expect(texts.findIndex((t) => t.startsWith('.php'))).toBeLessThan(texts.indexOf('Tests'))
+    const button = wrapper.findAll('button').find((b) => b.text() === 'Tests')!
+    expect(button.classes()).toContain('line-through')
+    await button.trigger('contextmenu')
+    expect(wrapper.emitted('hidePreset')).toEqual([['Tests']])
+    await button.trigger('click')
+    expect(wrapper.emitted('selectPreset')).toEqual([['Tests']])
+  })
+
+  it('shows the hidden count only when files are hidden', async () => {
+    const none = mountBar()
+    await none.setProps({ hiddenCount: 0 })
+    expect(none.text()).not.toContain('hidden')
+    await none.setProps({ hiddenCount: 2 })
+    const button = none.findAll('button').find((b) => b.text().includes('2 hidden'))!
+    await button.trigger('click')
+    expect(none.emitted('update:showHidden')).toEqual([[true]])
   })
 
   it('saves the current types and folders as a named filter', async () => {
