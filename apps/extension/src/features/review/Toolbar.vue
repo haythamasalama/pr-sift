@@ -3,6 +3,7 @@ import { CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ defineProps<{
   inView: number
   noteCount: number
   compact: boolean
+  loading?: boolean
 }>()
 
 const { theme, setTheme } = useAppearance()
@@ -50,13 +52,16 @@ const openSettings = useSettingsOpener()
       <PanelLeft />
     </Button>
     <div class="order-1 flex min-w-0 flex-1 flex-col xl:order-none xl:flex-initial">
-      <h1 class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
+      <div v-if="loading" class="flex h-5 items-center"><Skeleton class="h-3 w-[min(30rem,60vw)]" /></div>
+      <h1 v-else class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
     <Button variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"><X /></Button>
     <div class="order-2 basis-full xl:hidden" />
 
+    <Skeleton v-if="loading" class="order-3 h-4 w-11 xl:order-none" />
     <div
+      v-else
       class="order-3 flex shrink-0 items-center gap-1.5 text-xs font-semibold tabular-nums xl:order-none"
       :title="`${done} of ${total} files viewed · ${total - done} left · ${inView} in the current view`"
     >

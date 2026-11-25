@@ -6,7 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
+import ReviewSkeleton from './ReviewSkeleton.vue'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFileFilter } from '../filters/useFileFilter'
 import { diffModeKey } from '../diff/diffMode'
@@ -322,12 +323,16 @@ watch(
       :in-view="filter.inScope.value.length"
       :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
+      :loading="status === 'loading'"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
       <template #meta>
         <PrSummary v-if="status === 'ready'" v-model:panel="panel" :pr="pr" :info="info" :conversation="conversation" />
+        <div v-else-if="status === 'loading'" class="flex h-4 items-center gap-2">
+          <Skeleton class="h-2.5 w-14" /><Skeleton class="h-2.5 w-56" /><Skeleton class="h-2.5 w-16" />
+        </div>
       </template>
       <template #actions>
         <ReviewActions
@@ -341,6 +346,10 @@ watch(
           @reviewed="onReviewed"
           @merged="onMerged"
         />
+        <div v-else-if="status === 'loading'" class="flex items-center gap-2">
+          <Skeleton class="h-7 w-24" />
+          <Skeleton class="h-7 w-20" />
+        </div>
       </template>
     </Toolbar>
 
@@ -400,9 +409,7 @@ watch(
     <UpdateNotice />
     <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />
 
-    <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-      <Spinner /> Loading pull request…
-    </div>
+    <ReviewSkeleton v-if="status === 'loading'" :compact="compact" :sidebar-width="sidebarSize.width.value" />
 
     <Alert v-else-if="status === 'error'" variant="destructive" class="mx-auto mt-16 max-w-xl">
       <AlertCircle />
