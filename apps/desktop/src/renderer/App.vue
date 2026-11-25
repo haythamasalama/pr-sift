@@ -91,7 +91,7 @@ function onAdded(paths: string[]) {
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
       <SignIn v-else-if="!status.signedIn" />
       <div v-else class="flex h-full">
-        <nav class="flex w-[232px] shrink-0 flex-col gap-0.5 border-r border-border bg-sidebar px-3 py-4" aria-label="Sections">
+        <nav class="flex w-[232px] shrink-0 flex-col gap-0.5 border-r border-border bg-background px-3 py-4" aria-label="Sections">
           <div class="flex items-center gap-2.5 px-2.5 pt-1 pb-[18px]">
             <span class="flex size-[22px] items-center justify-center rounded-md bg-foreground text-background">
               <BrandMark class="size-3.5" />
@@ -140,6 +140,7 @@ function onAdded(paths: string[]) {
             <button v-for="t in TOOLS" :key="t.id" type="button" :class="[item, active(view === t.id)]" @click="view = t.id">
               <component :is="t.icon" class="size-4" /> {{ t.label }}
             </button>
+            <div role="separator" class="mx-2.5 my-1.5 h-px bg-border" />
             <button type="button" :class="[item, 'h-10', active(view === 'account')]" @click="view = 'account'">
               <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 rounded-full" />
               <span class="truncate">{{ status.account?.login }}</span>

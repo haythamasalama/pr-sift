@@ -54,7 +54,19 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
 
 const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandIcon }
 
-const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
+const {
+  section,
+  files,
+  layout = 'tabs',
+  surface = 'extension',
+} = defineProps<{
+  section?: SettingsSectionId
+  files?: PrFile[]
+  layout?: 'tabs' | 'page'
+  // The desktop app signs in on its own Account page and has no github.com tab to open, so it leaves those parts out.
+  surface?: 'extension' | 'desktop'
+}>()
+const inBrowser = surface === 'extension'
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
@@ -164,7 +176,8 @@ defineExpose({ scrollToSection })
       </Button>
     </nav>
 
-    <AboutSection v-show="shows('about')" :framed="layout === 'page'" />
+    <slot name="before" />
+    <AboutSection v-if="inBrowser" v-show="shows('about')" :framed="layout === 'page'" />
 
     <SettingsSection
       v-show="shows('github')"
@@ -174,7 +187,7 @@ defineExpose({ scrollToSection })
       description="Comment, review and merge without leaving the review."
     >
       <template #icon><GithubMark class="size-6" /></template>
-      <SettingsGroup id="token" title="Connection">
+      <SettingsGroup v-if="inBrowser" id="token" title="Connection">
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
       <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
@@ -229,6 +242,7 @@ defineExpose({ scrollToSection })
       area="files"
     >
       <SettingsRow
+        v-if="inBrowser"
         label="Open PR Sift automatically"
         description="Pull requests open straight in PR Sift. Close it to see GitHub's page."
         control-id="settings-auto-open"
@@ -338,6 +352,7 @@ defineExpose({ scrollToSection })
       </SettingsGroup>
     </SettingsSection>
 
+    <slot name="after" />
     <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : '-mt-6 border-t'">
       <SettingsRow label="Reset settings">
         <template #description>

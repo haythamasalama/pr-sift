@@ -7,9 +7,10 @@ import { formatAgo } from '~/format'
 import LabelChip from './LabelChip.vue'
 import Hint from './Hint.vue'
 import StatusPill, { type Tone } from './StatusPill.vue'
+import QuickActions from './QuickActions.vue'
 
 const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string }>()
-const emit = defineEmits<{ open: [] }>()
+const emit = defineEmits<{ open: []; changed: [] }>()
 
 const DECISION: Record<string, { text: string; tone: Tone; hint: string }> = {
   APPROVED: { text: 'Approved', tone: 'success', hint: 'A reviewer approved it.' },
@@ -39,12 +40,8 @@ const ci = computed(() => (props.pull.checks ? CI[props.pull.checks] : undefined
 </script>
 
 <template>
-  <li class="border-t border-border first:border-t-0">
-    <button
-      type="button"
-      class="flex w-full items-center gap-3.5 px-5 py-3 text-left transition-colors hover:bg-secondary"
-      @click="emit('open')"
-    >
+  <li class="flex items-center border-t border-border transition-colors first:border-t-0 hover:bg-secondary">
+    <button type="button" class="flex min-w-0 flex-1 items-center gap-3.5 py-3 pr-3.5 pl-5 text-left" @click="emit('open')">
       <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
         <div class="flex min-w-0 items-center gap-2">
           <span v-if="showRepo" class="shrink-0 text-muted-foreground">{{ pull.repo }}</span>
@@ -98,5 +95,6 @@ const ci = computed(() => (props.pull.checks ? CI[props.pull.checks] : undefined
         </Hint>
       </span>
     </button>
+    <QuickActions :key="`${pull.url}@${pull.headSha}`" :pull="pull" class="w-[220px] justify-end pr-5 @max-xl:w-auto" @changed="emit('changed')" />
   </li>
 </template>

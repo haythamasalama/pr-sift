@@ -50,7 +50,7 @@ onMounted(() => {
 
     <template v-if="inbox">
       <p v-if="!inbox.review.length && !inbox.mine.length" class="text-muted-foreground">You’re all caught up.</p>
-      <PullTable v-if="inbox.review.length" :groups="[{ title: 'Waiting for your review', pulls: inbox.review }]" show-repo :me="me" />
+      <PullTable v-if="inbox.review.length" :groups="[{ title: 'Waiting for your review', pulls: inbox.review }]" show-repo :me="me" @changed="load" />
       <div v-if="inbox.mine.length" class="flex flex-col gap-2">
         <PullTable
           :groups="[
@@ -58,6 +58,7 @@ onMounted(() => {
             { title: 'Your open pull requests', pulls: mineOther },
           ]"
           show-repo
+          @changed="load"
         />
         <p v-if="mineNeedsYou.length" class="px-1 text-xs text-faint">
           “Needs you” means changes were asked for, checks failed, or there are conflicts.

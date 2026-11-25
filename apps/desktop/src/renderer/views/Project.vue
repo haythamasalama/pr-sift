@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, shallowRef, watch } from 'vue'
-import { CircleAlert, Code, Copy, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
+import { ArrowLeft, CircleAlert, Code, Copy, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
@@ -13,7 +13,7 @@ import { appInfo } from '~/appInfo'
 import { errorText, formatAgo, shortPath } from '~/format'
 import type { ProjectOverview } from '#shared/ipc'
 import { loadRepo, type RepoActivity } from '~/github'
-import { project, projectTab, view, type ProjectTab } from '~/navigation'
+import { canGoBack, goBack, project, projectTab, view, type ProjectTab } from '~/navigation'
 import { useAuth } from '~/useAuth'
 import { useProjects } from '~/useProjects'
 import PullTable from '~/components/PullTable.vue'
@@ -184,6 +184,11 @@ async function confirmRemove() {
   <template v-else>
     <header class="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/95 px-8 pt-6 backdrop-blur">
       <div class="flex flex-wrap items-center gap-x-3.5 gap-y-3">
+        <Hint text="Back">
+          <Button size="icon-sm" variant="ghost" class="-ml-2 text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
+            ><ArrowLeft
+          /></Button>
+        </Hint>
         <ProjectIcon :project="current" :size="40" />
         <div class="flex min-w-[240px] flex-1 flex-col gap-[3px]">
           <div class="flex min-w-0 items-baseline gap-2.5">
@@ -232,17 +237,17 @@ async function confirmRemove() {
             <span v-if="note" class="mr-1 text-xs text-muted-foreground">{{ note }}</span>
           </Transition>
           <Hint text="Open in your editor">
-            <Button variant="outline" aria-label="Open in editor" @click="openIn('editor')"
+            <Button size="sm" variant="outline" aria-label="Open in editor" @click="openIn('editor')"
               ><Code /><span class="max-lg:hidden">Open in editor</span></Button
             >
           </Hint>
           <Hint text="Open a terminal here">
-            <Button variant="outline" aria-label="Terminal" @click="openIn('terminal')"
+            <Button size="sm" variant="outline" aria-label="Terminal" @click="openIn('terminal')"
               ><SquareTerminal /><span class="max-lg:hidden">Terminal</span></Button
             >
           </Hint>
           <Hint text="Remove from PR Sift. The folder stays on disk.">
-            <Button size="icon" variant="ghost" class="text-faint" aria-label="Remove from PR Sift" @click="removing = true"><X /></Button>
+            <Button size="icon-sm" variant="ghost" class="text-faint" aria-label="Remove from PR Sift" @click="removing = true"><X /></Button>
           </Hint>
         </div>
       </div>
@@ -253,8 +258,18 @@ async function confirmRemove() {
         @update:model-value="(v) => (projectTab = v as ProjectTab)"
       >
         <TabsList variant="line" aria-label="Project" class="h-10 gap-4 p-0">
-          <TabsTrigger v-for="t in TABS" :key="t.id" :value="t.id" class="flex-none px-0.5">
-            {{ t.label }}<span v-if="t.count !== undefined" class="font-normal text-muted-foreground tabular-nums">{{ t.count }}</span>
+          <TabsTrigger
+            v-for="t in TABS"
+            :key="t.id"
+            :value="t.id"
+            class="group/tab flex-none px-0.5 after:bg-emphasis data-active:font-semibold group-data-horizontal/tabs:after:bottom-0"
+          >
+            {{ t.label
+            }}<span
+              v-if="t.count !== undefined"
+              class="rounded-full bg-muted px-1.5 text-xs font-normal text-muted-foreground tabular-nums group-data-active/tab:bg-emphasis/15 group-data-active/tab:text-emphasis"
+              >{{ t.count }}</span
+            >
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -296,6 +311,7 @@ async function confirmRemove() {
             { title: waiting.length ? 'Other open' : 'Open', pulls: others },
           ]"
           :me="me"
+          @changed="load(true)"
         />
       </template>
 

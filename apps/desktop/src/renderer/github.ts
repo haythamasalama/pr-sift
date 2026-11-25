@@ -49,11 +49,17 @@ export interface PullItem {
   deletions: number
   reviewers: string[]
   mergeable?: 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
+  headSha: string
+  // Your latest review on it, such as APPROVED.
+  myReview?: string
+  // You can push to the repository, so GitHub may let you merge.
+  canMerge: boolean
 }
 
 const PR_FIELDS = `
-  number title url isDraft updatedAt reviewDecision headRefName baseRefName additions deletions mergeable
-  repository { name owner { login } }
+  number title url isDraft updatedAt reviewDecision headRefName headRefOid baseRefName additions deletions mergeable
+  viewerLatestReview { state }
+  repository { name viewerPermission owner { login } }
   author { login avatarUrl }
   labels(first: 6) { nodes { name color } }
   comments { totalCount }
@@ -73,7 +79,9 @@ interface RawPull {
   additions: number
   deletions: number
   mergeable?: PullItem['mergeable']
-  repository: { name: string; owner: { login: string } }
+  headRefOid: string
+  viewerLatestReview: { state: string } | null
+  repository: { name: string; viewerPermission?: string | null; owner: { login: string } }
   author: Person | null
   labels: { nodes: Label[] }
   comments: { totalCount: number }
@@ -100,6 +108,9 @@ const toPull = (p: RawPull): PullItem => ({
   deletions: p.deletions,
   reviewers: p.reviewRequests.nodes.map((n) => n.requestedReviewer?.login ?? n.requestedReviewer?.name ?? '').filter(Boolean),
   mergeable: p.mergeable,
+  headSha: p.headRefOid,
+  myReview: p.viewerLatestReview?.state,
+  canMerge: ['ADMIN', 'MAINTAIN', 'WRITE'].includes(p.repository.viewerPermission ?? ''),
 })
 
 // Search results can hold nulls for items the token can't see; those are dropped.

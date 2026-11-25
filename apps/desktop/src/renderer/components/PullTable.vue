@@ -6,6 +6,7 @@ import SectionLabel from './SectionLabel.vue'
 
 // Groups of pull requests in one calm card; the first group's header carries the column names.
 defineProps<{ groups: { title: string; pulls: PullItem[] }[]; showRepo?: boolean; me?: string }>()
+const emit = defineEmits<{ changed: [] }>()
 </script>
 
 <template>
@@ -15,11 +16,12 @@ defineProps<{ groups: { title: string; pulls: PullItem[] }[]; showRepo?: boolean
         <SectionLabel class="flex-1">{{ g.title }} · {{ g.pulls.length }}</SectionLabel>
         <template v-if="!i"
           ><SectionLabel class="hidden w-[120px] @2xl:block">Review</SectionLabel
-          ><SectionLabel class="hidden w-[70px] @2xl:block">CI</SectionLabel></template
+          ><SectionLabel class="hidden w-[70px] @2xl:block">CI</SectionLabel
+          ><span class="hidden w-[200px] shrink-0 @2xl:block" aria-hidden="true" /></template
         >
       </div>
       <ul class="border-t border-border">
-        <PullRow v-for="p in g.pulls" :key="p.url" :pull="p" :show-repo="showRepo" :me="me" @open="openReview(p)" />
+        <PullRow v-for="p in g.pulls" :key="p.url" :pull="p" :show-repo="showRepo" :me="me" @open="openReview(p)" @changed="emit('changed')" />
       </ul>
     </template>
   </div>
