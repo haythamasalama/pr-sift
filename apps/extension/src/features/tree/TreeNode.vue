@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, provide, shallowRef, watch } from 'vue'
-import { Check, CheckCheck, ChevronRight, ChevronsDownUp, ChevronsUpDown, EyeOff, Folder } from '@lucide/vue'
+import { Check, ChevronRight, ChevronsDownUp, ChevronsUpDown, EyeOff, Folder, Circle } from '@lucide/vue'
 import { treeExpandKey, treeLayoutKey, useExpandCommand, type ExpandCommand } from './expandContext'
 import { collectFiles } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
@@ -72,17 +72,8 @@ function jump() {
         <span class="truncate font-medium" :class="viewedState === 'all' ? 'text-muted-foreground' : ''">{{ node.name }}</span>
       </button>
       <span
-        class="absolute inset-y-0 right-1 flex items-center rounded-sm bg-accent pl-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+        class="absolute inset-y-0 right-6 flex items-center rounded-sm bg-accent pl-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
       >
-        <button
-          type="button"
-          class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
-          :title="viewedState === 'all' ? 'Mark the whole folder as not viewed' : 'Mark the whole folder as viewed'"
-          :aria-label="viewedState === 'all' ? 'Mark the whole folder as not viewed' : 'Mark the whole folder as viewed'"
-          @click="emit('toggleViewed', node.path, viewedState !== 'all')"
-        >
-          <CheckCheck :size="13" />
-        </button>
         <button
           type="button"
           class="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
@@ -111,19 +102,18 @@ function jump() {
           <EyeOff :size="13" />
         </button>
       </span>
-      <Check
-        v-if="viewedState === 'all'"
-        :size="13"
-        :stroke-width="2.5"
-        class="shrink-0 text-success-fg transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
-        aria-label="All viewed"
-      />
-      <span
-        v-else
-        class="shrink-0 text-[11px] text-muted-foreground tabular-nums transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
-        :title="viewedState === 'some' ? `${viewedCount} of ${node.count} viewed` : `${node.count} files`"
-        >{{ viewedState === 'some' ? `${viewedCount}/${node.count}` : node.count }}</span
+      <button
+        type="button"
+        class="flex size-4 shrink-0 items-center justify-center rounded-sm"
+        :class="viewedState === 'all' ? 'text-success-fg' : 'text-muted-foreground hover:text-foreground'"
+        :title="viewedState === 'all' ? 'Mark the whole folder as not viewed' : 'Mark the whole folder as viewed'"
+        :aria-label="viewedState === 'all' ? 'Mark the whole folder as not viewed' : 'Mark the whole folder as viewed'"
+        :aria-pressed="viewedState === 'all'"
+        @click="emit('toggleViewed', node.path, viewedState !== 'all')"
       >
+        <Check v-if="viewedState === 'all'" :size="13" :stroke-width="2.5" aria-label="All viewed" />
+        <Circle v-else :size="12" />
+      </button>
     </div>
 
     <div

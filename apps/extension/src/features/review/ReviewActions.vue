@@ -106,7 +106,7 @@ function onReviewed(event: ReviewEvent) {
             :disabled="!!mergeBlocked"
             size="icon"
             class="w-7 rounded-l-none [&_svg:not([class*=size-])]:size-3.5"
-            :class="mergeIsPrimary ? 'border-l border-l-success-foreground/25' : 'border-l-0'"
+            :class="mergeIsPrimary ? 'border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))]' : 'border-l-0'"
             aria-label="Choose how to merge"
           >
             <ChevronDown />

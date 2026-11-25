@@ -27,11 +27,7 @@ function select() {
     <button
       type="button"
       class="flex size-4 shrink-0 items-center justify-center rounded-sm"
-      :class="
-        viewed
-          ? 'text-success-fg'
-          : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100'
-      "
+      :class="viewed ? 'text-success-fg' : 'text-muted-foreground hover:text-foreground'"
       :title="viewed ? 'Viewed. Click to mark as not viewed' : 'Mark as viewed'"
       :aria-label="viewed ? 'Viewed' : 'Mark as viewed'"
       :aria-pressed="viewed"

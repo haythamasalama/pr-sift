@@ -464,9 +464,17 @@ watch(
                 <X />
               </Button>
             </div>
-            <TabsList class="h-7 w-full gap-0.5 rounded-md p-0.5">
-              <TabsTrigger value="tree" class="h-6 rounded-sm text-xs [&_svg]:size-[13px]"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart" class="h-6 rounded-sm text-xs [&_svg]:size-[13px]"><Sparkles /> Smart filters</TabsTrigger>
+            <TabsList class="h-7 w-full gap-0.5 rounded-md bg-muted p-0.5">
+              <TabsTrigger
+                value="tree"
+                class="h-6 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
+                ><FolderTree /> Tree</TabsTrigger
+              >
+              <TabsTrigger
+                value="smart"
+                class="h-6 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
+                ><Sparkles /> Smart filters</TabsTrigger
+              >
             </TabsList>
           </div>
           <TabsContent value="tree" class="min-h-0 flex-1">

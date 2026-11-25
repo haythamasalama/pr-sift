@@ -109,7 +109,7 @@ async function submit() {
       <Button
         variant="success"
         size="icon"
-        class="w-7 rounded-l-none border-l border-l-success-foreground/25 [&_svg:not([class*=size-])]:size-3.5"
+        class="w-7 rounded-l-none border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
         disabled
         aria-hidden="true"
         tabindex="-1"
@@ -131,7 +131,7 @@ async function submit() {
         <Button
           variant="success"
           size="icon"
-          class="w-7 rounded-l-none border-l border-l-success-foreground/25 [&_svg:not([class*=size-])]:size-3.5"
+          class="w-7 rounded-l-none border-l border-l-[color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
           aria-label="Approve with a comment, request changes or comment"
           title="Approve with a comment, request changes or comment"
         >
