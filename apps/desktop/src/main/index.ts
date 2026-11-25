@@ -156,6 +156,9 @@ function registerHandlers() {
   h('worktrees:list', async (_e, repo) => worktrees.listRepo(await projects.require(String(repo))))
   h('worktrees:changes', (_e, path) => worktrees.changes(String(path)))
   h('worktrees:diff', (_e, path, file) => worktrees.diff(String(path), String(file)))
+  h('worktrees:patch', (_e, path, mode) => worktrees.patch(String(path), mode === 'branch' ? 'branch' : 'uncommitted'))
+  h('worktrees:discard', (_e, path, file) => worktrees.discard(String(path), String(file)))
+  h('worktrees:add', async (_e, repo, branch) => worktrees.add(await projects.require(String(repo)), String(branch)))
   h('worktrees:rename', (_e, path, name) => worktrees.rename(String(path), String(name)))
   h('worktrees:rename-branch', (_e, path, name) => worktrees.renameBranch(String(path), String(name)))
   h('worktrees:open', (_e, path, target) => {

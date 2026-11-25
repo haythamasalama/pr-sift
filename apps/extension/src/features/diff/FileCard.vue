@@ -12,6 +12,7 @@ import {
   ListPlus,
   MessageSquare,
   Rows2,
+  Undo2,
 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -181,7 +182,24 @@ defineExpose({ reveal, flash, el })
           <DropdownMenuItem :disabled="!addedLines" @select="copy(addedLines)"><ListPlus /> Copy added lines</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="ghost" size="icon-xs" as-child title="Open this file in the pull request on GitHub" aria-label="Open on GitHub">
+      <Button
+        v-if="fileContext?.discard"
+        variant="ghost"
+        size="icon-xs"
+        title="Throw away the changes in this file"
+        aria-label="Discard changes"
+        @click="fileContext.discard(file.filename)"
+      >
+        <Undo2 />
+      </Button>
+      <Button
+        v-if="githubUrl"
+        variant="ghost"
+        size="icon-xs"
+        as-child
+        title="Open this file in the pull request on GitHub"
+        aria-label="Open on GitHub"
+      >
         <a :href="githubUrl" target="_blank" rel="noreferrer"><ExternalLink /></a>
       </Button>
     </div>

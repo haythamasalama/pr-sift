@@ -6,13 +6,16 @@ import type { PullItem } from '~/github'
 import { formatAgo } from '~/format'
 import LabelChip from './LabelChip.vue'
 import Hint from './Hint.vue'
+import ProjectIcon from './ProjectIcon.vue'
 import StatusPill, { type Tone } from './StatusPill.vue'
 import QuickActions from './QuickActions.vue'
 
-const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string }>()
+// `mine` rows are your own pull requests: the pill says what they need from you instead of the review state.
+const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string; mine?: boolean }>()
 const emit = defineEmits<{ open: []; changed: [] }>()
 
-const DECISION: Record<string, { text: string; tone: Tone; hint: string }> = {
+type State = { text: string; tone: Tone; hint: string }
+const DECISION: Record<string, State> = {
   APPROVED: { text: 'Approved', tone: 'success', hint: 'A reviewer approved it.' },
   CHANGES_REQUESTED: { text: 'Changes asked', tone: 'danger', hint: 'A reviewer asked for changes before it can merge.' },
   REVIEW_REQUIRED: {
@@ -21,7 +24,7 @@ const DECISION: Record<string, { text: string; tone: Tone; hint: string }> = {
     hint: 'No approving review yet. The repository needs one before it can merge.',
   },
 }
-const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
+const CI: Record<string, State> = {
   SUCCESS: { text: 'Passed', tone: 'success', hint: 'CI: all checks passed' },
   FAILURE: { text: 'Failed', tone: 'danger', hint: 'CI: some checks failed' },
   ERROR: { text: 'Failed', tone: 'danger', hint: 'CI: some checks could not run' },
@@ -29,41 +32,51 @@ const CI: Record<string, { text: string; tone: Tone; hint: string }> = {
   EXPECTED: { text: 'Waiting', tone: 'attention', hint: 'CI: checks have not started yet' },
 }
 
-// The same review and CI state as the columns, for the narrow layout.
-const review = computed<{ text: string; tone: Tone } | undefined>(() => {
+const review = computed<State | undefined>(() => {
   const p = props.pull
-  if (p.draft) return { text: 'Draft', tone: 'neutral' }
-  if (props.me && p.reviewers.includes(props.me)) return { text: 'Your review', tone: 'info' }
+  if (p.draft) return { text: 'Draft', tone: 'neutral', hint: 'Draft: the author has not marked it ready for review yet.' }
+  if (props.mine) {
+    if (p.decision === 'CHANGES_REQUESTED') return { text: 'Changes asked', tone: 'attention', hint: DECISION.CHANGES_REQUESTED!.hint }
+    if (p.checks === 'FAILURE' || p.checks === 'ERROR') return { text: 'Checks failed', tone: 'attention', hint: 'Some checks failed.' }
+    if (p.mergeable === 'CONFLICTING') return { text: 'Conflicts', tone: 'attention', hint: 'It conflicts with the base branch.' }
+    if (p.decision === 'APPROVED') return DECISION.APPROVED
+    return { text: 'Waiting for review', tone: 'neutral', hint: 'Nobody has reviewed it yet.' }
+  }
+  if (props.me && p.reviewers.includes(props.me)) return { text: 'Your review', tone: 'info', hint: 'You were asked to review it.' }
   return p.decision ? DECISION[p.decision] : undefined
 })
 const ci = computed(() => (props.pull.checks ? CI[props.pull.checks] : undefined))
+const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: props.pull.owner, repo: props.pull.repo } }))
 </script>
 
 <template>
-  <li class="flex items-center border-t border-border transition-colors first:border-t-0 hover:bg-secondary">
-    <button type="button" class="flex min-w-0 flex-1 items-center gap-3.5 py-3 pr-3.5 pl-5 text-left" @click="emit('open')">
-      <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
+  <li class="flex items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0 hover:bg-muted/60">
+    <button type="button" class="flex min-w-0 flex-1 items-center gap-4 py-3 text-left" @click="emit('open')">
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex min-w-0 items-center gap-2">
-          <span v-if="showRepo" class="shrink-0 text-muted-foreground">{{ pull.repo }}</span>
-          <span class="truncate text-[13.5px] font-medium" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
-          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="hidden shrink-0 @lg:inline-flex" />
-          <Hint
-            v-if="pull.mergeable === 'CONFLICTING'"
-            text="It conflicts with the base branch. The author has to fix that before it can merge."
+          <template v-if="showRepo"
+            ><ProjectIcon :project="repoProject" :size="16" /><span class="shrink-0 text-muted-foreground">{{ pull.repo }}</span></template
           >
-            <StatusPill tone="danger" :dot="false" class="h-5 text-[11.5px]">Conflicts</StatusPill>
+          <span class="truncate text-sm font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
+          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-3xl:hidden" />
+          <Hint
+            v-if="pull.mergeable === 'CONFLICTING' && !mine"
+            text="It conflicts with the base branch. The author has to fix that first."
+          >
+            <StatusPill tone="danger">Conflicts</StatusPill>
           </Hint>
         </div>
-        <div class="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+        <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
           <span class="shrink-0 tabular-nums">#{{ pull.number }}</span>
-          <span class="flex shrink-0 items-center gap-1.5">
+          <span v-if="!mine" class="flex shrink-0 items-center gap-1.5">
             <Avatar class="size-4"
-              ><AvatarImage v-if="pull.author?.avatarUrl" :src="pull.author.avatarUrl" alt="" /><AvatarFallback>{{
-                pull.author?.login.slice(0, 1)
-              }}</AvatarFallback></Avatar
+              ><AvatarImage v-if="pull.author?.avatarUrl" :src="pull.author.avatarUrl" alt="" /><AvatarFallback
+                class="text-[9px] uppercase"
+                >{{ pull.author?.login.slice(0, 1) }}</AvatarFallback
+              ></Avatar
             >{{ pull.author?.login ?? 'ghost' }}
           </span>
-          <span class="truncate font-mono text-faint" :title="`${pull.branch} into ${pull.base}`">{{ pull.branch }}</span>
+          <span class="truncate font-mono text-[11px] @max-3xl:hidden" :title="`${pull.branch} into ${pull.base}`">{{ pull.branch }}</span>
           <span class="shrink-0">{{ formatAgo(pull.updatedAt) }}</span>
           <span class="shrink-0 tabular-nums"
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
@@ -72,29 +85,25 @@ const ci = computed(() => (props.pull.checks ? CI[props.pull.checks] : undefined
             <span class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
           </Hint>
         </div>
-        <!-- Narrow: the review and CI state sit under the title instead of in their own columns. -->
-        <div v-if="review || ci" class="flex items-center gap-2 @2xl:hidden">
-          <StatusPill v-if="review" :tone="review.tone">{{ review.text }}</StatusPill>
-          <StatusPill v-if="ci" :tone="ci.tone" bare>{{ ci.text }}</StatusPill>
-        </div>
       </div>
-      <span class="hidden w-[120px] shrink-0 @2xl:block">
-        <Hint v-if="pull.draft" text="Draft: the author has not marked it ready for review yet.">
-          <StatusPill>Draft</StatusPill>
-        </Hint>
-        <Hint v-else-if="me && pull.reviewers.includes(me)" text="You were asked to review it.">
-          <StatusPill tone="info">Your review</StatusPill>
-        </Hint>
-        <Hint v-else-if="pull.decision && DECISION[pull.decision]" :text="DECISION[pull.decision]!.hint">
-          <StatusPill :tone="DECISION[pull.decision]!.tone">{{ DECISION[pull.decision]!.text }}</StatusPill>
+      <span class="flex w-[120px] shrink-0 @max-xl:w-auto" :class="mine ? 'justify-end' : ''">
+        <Hint v-if="review" :text="review.hint">
+          <StatusPill :tone="review.tone">{{ review.text }}</StatusPill>
         </Hint>
       </span>
-      <span class="hidden w-[70px] shrink-0 @2xl:block">
-        <Hint v-if="pull.checks && CI[pull.checks]" :text="CI[pull.checks]!.hint">
-          <StatusPill :tone="CI[pull.checks]!.tone" bare>{{ CI[pull.checks]!.text }}</StatusPill>
+      <span class="w-20 shrink-0 @max-3xl:w-4">
+        <Hint v-if="ci" :text="ci.hint">
+          <StatusPill :tone="ci.tone" bare
+            ><span class="@max-3xl:hidden">{{ ci.text }}</span></StatusPill
+          >
         </Hint>
       </span>
     </button>
-    <QuickActions :key="`${pull.url}@${pull.headSha}`" :pull="pull" class="w-[220px] justify-end pr-5 @max-xl:w-auto" @changed="emit('changed')" />
+    <QuickActions
+      :key="`${pull.url}@${pull.headSha}`"
+      :pull="pull"
+      class="w-[236px] justify-end @max-3xl:w-auto"
+      @changed="emit('changed')"
+    />
   </li>
 </template>

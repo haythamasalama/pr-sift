@@ -153,7 +153,12 @@ describe('AutoApproveService', () => {
   })
 
   it('also searches every open pull request in the repositories the rules name', () => {
-    const config = cleanConfig({ rules: [{ ...newRule('a'), repos: ['acme/shop', 'globex/*'] }, { ...newRule('b'), enabled: false, repos: ['x/y'] }] })
+    const config = cleanConfig({
+      rules: [
+        { ...newRule('a'), repos: ['acme/shop', 'globex/*'] },
+        { ...newRule('b'), enabled: false, repos: ['x/y'] },
+      ],
+    })
     const q = searchQuery(config)
     expect(q).toContain('review-requested:@me')
     expect(q).toContain('inRepos: search(')

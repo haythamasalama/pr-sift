@@ -46,6 +46,17 @@ describe('branches', () => {
     expect(list[1]).toMatchObject({ name: 'feat/x', current: false, gone: true, merged: true, worktree: undefined, subject: 'Add x' })
   })
 
+  it('reads who made the last commit and whether it was you', () => {
+    const S = '\u001f'
+    const out = [
+      ['feat/a', ' ', '', '', '1700000000', 'A', '', 'Haytham', '<me@example.com>'].join(S),
+      ['feat/b', ' ', '', '', '1700000000', 'B', '', 'Sam', '<sam@example.com>'].join(S),
+    ].join('\n')
+    const list = parseBranches(out, new Set(), 'me@example.com')
+    expect(list[0]).toMatchObject({ author: 'Haytham', mine: true })
+    expect(list[1]).toMatchObject({ author: 'Sam', mine: false })
+  })
+
   it('validates branch names', () => {
     for (const ok of ['main', 'fix/login', 'feat/a-b_c.1']) expect(validBranchName(ok)).toBe(true)
     for (const bad of ['-x', 'a..b', 'a b', 'a~1', 'a:b', 'x.lock', 'end/', 'end.', '']) expect(validBranchName(bad)).toBe(false)

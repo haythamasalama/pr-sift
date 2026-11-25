@@ -64,6 +64,8 @@ export interface WorktreeDetails {
   unpushed?: number
   upstream: boolean
   lastUsed?: number
+  // Its branch is already in the default branch.
+  merged?: boolean
 }
 
 export interface UndoEntry {
@@ -127,6 +129,9 @@ export interface Branch {
   merged: boolean
   lastCommit: number
   subject: string
+  // Who made the last commit, and whether that was you (by your git email).
+  author?: string
+  mine?: boolean
 }
 
 export interface BulkDeleteResult {
@@ -147,6 +152,32 @@ export interface Commit {
   subject: string
   author: string
   date: number
+}
+
+// One changed file in a worktree, shaped like GitHub's pull request files so the review's diff cards can show it.
+export interface PatchFile {
+  filename: string
+  previous?: string
+  status: 'added' | 'modified' | 'removed' | 'renamed'
+  additions: number
+  deletions: number
+  patch?: string
+  hash: string
+}
+
+export type PatchMode = 'uncommitted' | 'branch'
+
+export interface WorktreePatch {
+  repo: string
+  worktree: Worktree
+  github?: { owner: string; repo: string }
+  // The branch the worktree's branch started from, which `branch` mode compares with.
+  base?: string
+  mode: PatchMode
+  files: PatchFile[]
+  // How many files each mode shows, for the counts beside the toggle.
+  counts: Record<PatchMode, number>
+  truncated: boolean
 }
 
 export interface WorktreeChanges {
@@ -307,6 +338,9 @@ export interface Channels {
   'worktrees:list': { args: [repo: string]; result: Repo }
   'worktrees:changes': { args: [path: string]; result: WorktreeChanges }
   'worktrees:diff': { args: [path: string, file: string]; result: string }
+  'worktrees:patch': { args: [path: string, mode: PatchMode]; result: WorktreePatch }
+  'worktrees:discard': { args: [path: string, file: string]; result: void }
+  'worktrees:add': { args: [repo: string, branch: string]; result: Repo }
   'worktrees:rename': { args: [path: string, name: string]; result: Repo }
   'worktrees:rename-branch': { args: [path: string, name: string]; result: Repo }
   'worktrees:open': { args: [path: string, target: OpenTarget]; result: OpenResult }
@@ -360,6 +394,9 @@ export const CHANNELS = [
   'worktrees:list',
   'worktrees:changes',
   'worktrees:diff',
+  'worktrees:patch',
+  'worktrees:discard',
+  'worktrees:add',
   'worktrees:rename',
   'worktrees:rename-branch',
   'worktrees:open',

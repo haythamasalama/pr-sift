@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { BadgeCheck, FolderGit2, Inbox, Plus, Settings, Trash2 } from '@lucide/vue'
-import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import BrandMark from '@/components/BrandMark.vue'
@@ -14,10 +13,11 @@ import { useProjects } from './useProjects'
 import { useInbox } from './useInbox'
 import { bridge } from './bridge'
 import type { AutoApproveStatus } from '#shared/ipc'
-import { openProject, project, review, view, type View } from './navigation'
+import { openProject, project, review, view, worktree, type View } from './navigation'
 import SignIn from './views/SignIn.vue'
 import InboxView from './views/Inbox.vue'
 import ProjectView from './views/Project.vue'
+import WorktreeChanges from './views/WorktreeChanges.vue'
 import AutoApprove from './views/AutoApprove.vue'
 import Worktrees from './views/Worktrees.vue'
 import Cleanup from './views/Cleanup.vue'
@@ -26,6 +26,7 @@ import Account from './views/Account.vue'
 import AddProjectDialog from './components/AddProjectDialog.vue'
 import ProjectIcon from './components/ProjectIcon.vue'
 import SectionLabel from './components/SectionLabel.vue'
+import CountBadge from './components/CountBadge.vue'
 
 const { dark } = useAppearance()
 const { status } = useAuth()
@@ -39,7 +40,7 @@ const autoApprove = shallowRef<AutoApproveStatus | null>(null)
 const autoMode = computed(() => {
   const c = autoApprove.value?.config
   if (!c?.enabled || !c.rules.some((r) => r.enabled)) return null
-  return c.dryRun ? { text: 'Dry run', cls: 'text-attention' } : { text: 'Live', cls: 'text-success-fg' }
+  return c.dryRun ? { text: 'Dry run', cls: 'text-attention' } : { text: 'On', cls: 'text-success-fg' }
 })
 let offAuto: (() => void) | undefined
 watch(
@@ -63,7 +64,8 @@ const TOOLS: { id: View; label: string; icon: typeof FolderGit2 }[] = [
 ]
 
 const item = 'flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left transition-colors'
-const active = (on: boolean) => (on ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground')
+const active = (on: boolean) =>
+  on ? 'bg-accent font-semibold text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
 
 // Escape closes the review, unless a dialog or menu inside it is open and takes the key.
 function onKey(e: KeyboardEvent) {
@@ -100,7 +102,7 @@ function onAdded(paths: string[]) {
           </div>
           <button type="button" :class="[item, active(view === 'inbox')]" @click="view = 'inbox'">
             <Inbox class="size-4" /> Needs you
-            <Badge v-if="waitingCount" class="ml-auto h-4 min-w-4 px-1.5 text-[11px] tabular-nums">{{ waitingCount }}</Badge>
+            <CountBadge v-if="waitingCount" class="ml-auto">{{ waitingCount }}</CountBadge>
           </button>
           <button type="button" :class="[item, active(view === 'autoapprove')]" @click="view = 'autoapprove'">
             <BadgeCheck class="size-4" /> Auto-approve
@@ -111,12 +113,12 @@ function onAdded(paths: string[]) {
             <SectionLabel>Projects</SectionLabel>
             <button
               type="button"
-              class="rounded p-0.5 text-faint hover:bg-accent hover:text-foreground"
+              class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               title="Add projects"
               aria-label="Add projects"
               @click="adding = true"
             >
-              <Plus class="size-4" />
+              <Plus class="size-3.5" />
             </button>
           </div>
           <div class="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
@@ -124,7 +126,7 @@ function onAdded(paths: string[]) {
               v-for="p in projects ?? []"
               :key="p.path"
               type="button"
-              :class="[item, active(view === 'project' && project === p.path)]"
+              :class="[item, 'text-foreground', active((view === 'project' || view === 'worktree') && project === p.path)]"
               :title="p.path"
               @click="openProject(p.path)"
             >
@@ -141,15 +143,24 @@ function onAdded(paths: string[]) {
               <component :is="t.icon" class="size-4" /> {{ t.label }}
             </button>
             <div role="separator" class="mx-2.5 my-1.5 h-px bg-border" />
-            <button type="button" :class="[item, 'h-10', active(view === 'account')]" @click="view = 'account'">
-              <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 rounded-full" />
-              <span class="truncate">{{ status.account?.login }}</span>
+            <button type="button" :class="[item, 'h-10 text-foreground', active(view === 'account')]" @click="view = 'account'">
+              <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 shrink-0 rounded-full" />
+              <span v-else class="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] uppercase">{{
+                status.account?.login.slice(0, 1)
+              }}</span>
+              <span class="flex min-w-0 flex-col leading-4 font-normal">
+                <span class="truncate">{{ status.account?.login }}</span>
+                <span class="truncate text-[11px] text-muted-foreground">{{
+                  status.source === 'gh' ? 'Signed in with GitHub CLI' : 'Signed in with a token'
+                }}</span>
+              </span>
             </button>
           </div>
         </nav>
-        <main class="min-w-0 flex-1 overflow-y-auto">
+        <main class="@container min-w-0 flex-1 overflow-y-auto">
           <InboxView v-if="view === 'inbox'" />
           <ProjectView v-else-if="view === 'project'" />
+          <WorktreeChanges v-else-if="view === 'worktree' && worktree" :key="worktree" :path="worktree" />
           <AutoApprove v-else-if="view === 'autoapprove'" />
           <Worktrees v-else-if="view === 'worktrees'" />
           <Cleanup v-else-if="view === 'cleanup'" />

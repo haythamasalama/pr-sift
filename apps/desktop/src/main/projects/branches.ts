@@ -11,6 +11,8 @@ const FORMAT = [
   '%(committerdate:unix)',
   '%(contents:subject)',
   '%(worktreepath)',
+  '%(authorname)',
+  '%(authoremail)',
 ].join(SEP)
 
 export function parseTrack(track: string) {
@@ -20,12 +22,12 @@ export function parseTrack(track: string) {
   return { gone, ahead, behind }
 }
 
-export function parseBranches(output: string, merged: Set<string>): Branch[] {
+export function parseBranches(output: string, merged: Set<string>, email = ''): Branch[] {
   return output
     .split('\n')
     .filter(Boolean)
     .map((line) => {
-      const [name = '', head, upstream, track = '', date, subject = '', worktree] = line.split(SEP)
+      const [name = '', head, upstream, track = '', date, subject = '', worktree, author, authorEmail = ''] = line.split(SEP)
       return {
         name,
         current: head === '*',
@@ -35,6 +37,8 @@ export function parseBranches(output: string, merged: Set<string>): Branch[] {
         merged: merged.has(name),
         lastCommit: Number(date) * 1000 || 0,
         subject,
+        author: author || undefined,
+        mine: !!email && authorEmail.replace(/[<>]/g, '').toLowerCase() === email,
       }
     })
 }
@@ -58,9 +62,12 @@ export async function listBranches(repo: string): Promise<Branch[]> {
     // The base itself is "merged" into itself; that isn't useful to show.
     merged.delete(base.replace(/^origin\//, ''))
   }
-  const res = await git(repo, ['for-each-ref', `--format=${FORMAT}`, '--sort=-committerdate', 'refs/heads'])
+  const [res, email] = await Promise.all([
+    git(repo, ['for-each-ref', `--format=${FORMAT}`, '--sort=-committerdate', 'refs/heads']),
+    git(repo, ['config', 'user.email']),
+  ])
   if (res.code !== 0) throw new Error(res.stderr.trim() || 'git for-each-ref failed')
-  return parseBranches(res.stdout, merged)
+  return parseBranches(res.stdout, merged, email.stdout.trim().toLowerCase())
 }
 
 const BRANCH_NAME = /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)[^\s~^:?*[\\]+(?<![./])$/

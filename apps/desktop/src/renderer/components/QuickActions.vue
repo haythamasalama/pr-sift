@@ -28,6 +28,8 @@ const merged = shallowRef('')
 
 const isAuthor = computed(() => !!me.value && pull.author?.login.toLowerCase() === me.value)
 const canApprove = computed(() => !pull.draft && !isAuthor.value && !merged.value)
+// Green when GitHub would merge it now, amber while checks run or fail.
+const ready = computed(() => pull.checks === 'SUCCESS' && pull.mergeable === 'MERGEABLE')
 const canMerge = computed(() => !pull.draft && pull.canMerge && pull.mergeable !== 'CONFLICTING' && !merged.value)
 
 async function approve() {
@@ -67,18 +69,15 @@ async function confirm() {
 </script>
 
 <template>
-  <div class="flex shrink-0 items-center gap-1.5" @click.stop>
+  <div class="flex shrink-0 items-center gap-2" @click.stop>
     <Hint v-if="merged" :text="`Merged as ${merged}`">
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
     <template v-else>
-      <Hint
-        v-if="canApprove"
-        :text="approveError || (approved ? 'You approved it' : 'Approve it on GitHub, without a comment')"
-      >
+      <Hint v-if="canApprove" :text="approveError || (approved ? 'You approved it' : 'Approve it on GitHub, without a comment')">
         <Button
-          variant="outline"
-          size="xs"
+          :variant="approved || approveError ? 'outline' : 'success'"
+          size="sm"
           :class="approved ? 'text-success-fg' : approveError ? 'text-destructive' : ''"
           :disabled="approving || approved"
           :aria-label="approved ? 'Approved' : 'Approve'"
@@ -88,9 +87,18 @@ async function confirm() {
         </Button>
       </Hint>
       <Popover v-if="canMerge" v-model:open="open">
-        <PopoverTrigger as-child>
-          <Button variant="outline" size="xs" :aria-label="label"><GitMerge />{{ label }}</Button>
-        </PopoverTrigger>
+        <Hint
+          :text="`${label} · ${ready ? 'ready to merge' : pull.checks === 'PENDING' ? 'checks still running' : 'checks did not pass yet'}`"
+        >
+          <PopoverTrigger as-child>
+            <Button variant="outline" size="sm" class="relative @max-3xl:w-7 @max-3xl:px-0" :aria-label="label"
+              ><span
+                class="absolute -top-[3px] -left-[3px] size-2 rounded-full"
+                :class="ready ? 'bg-success-fg' : 'bg-attention'"
+              /><GitMerge /><span class="@max-3xl:hidden">{{ label }}</span></Button
+            >
+          </PopoverTrigger>
+        </Hint>
         <PopoverContent align="end" class="w-96 gap-3 p-3">
           <div class="flex flex-col gap-0.5">
             <p class="font-medium">{{ action }}</p>
@@ -110,7 +118,11 @@ async function confirm() {
             <div v-if="plan.leftOut.length" class="flex flex-col gap-1">
               <p class="text-xs font-medium">Left out</p>
               <ul class="flex flex-col gap-0.5">
-                <li v-for="person in plan.leftOut" :key="person.email" class="font-mono text-xs break-all text-muted-foreground line-through">
+                <li
+                  v-for="person in plan.leftOut"
+                  :key="person.email"
+                  class="font-mono text-xs break-all text-muted-foreground line-through"
+                >
                   {{ formatPerson(person) }}
                 </li>
               </ul>
@@ -122,7 +134,9 @@ async function confirm() {
           </Alert>
           <Alert v-else-if="!loading && plan && !mergeable">
             <CircleAlert />
-            <AlertDescription>GitHub can’t merge this pull request right now. It may need reviews, passing checks or an update.</AlertDescription>
+            <AlertDescription
+              >GitHub can’t merge this pull request right now. It may need reviews, passing checks or an update.</AlertDescription
+            >
           </Alert>
           <div class="flex justify-end gap-2">
             <Button variant="outline" size="sm" @click="open = false">Cancel</Button>

@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
@@ -62,13 +63,15 @@ const {
 } = defineProps<{
   section?: SettingsSectionId
   files?: PrFile[]
-  layout?: 'tabs' | 'page'
+  // `flat` is the desktop app's page: sections without frames or pictures, choices as compact toggles.
+  layout?: 'tabs' | 'page' | 'flat'
   // The desktop app signs in on its own Account page and has no github.com tab to open, so it leaves those parts out.
   surface?: 'extension' | 'desktop'
 }>()
 const inBrowser = surface === 'extension'
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
-const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
+const shows = (id: SettingsTab) => layout !== 'tabs' || tab.value === id
+const flat = layout === 'flat'
 
 const { theme, setTheme } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
@@ -155,7 +158,7 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-8'">
+  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : flat ? 'gap-7' : 'gap-8'">
     <nav
       v-if="layout === 'tabs'"
       aria-label="Settings"
@@ -183,15 +186,33 @@ defineExpose({ scrollToSection })
       v-show="shows('github')"
       id="github"
       :framed="layout === 'page'"
-      title="GitHub"
+      :plain="flat"
+      :title="flat ? 'Merging' : 'GitHub'"
       description="Comment, review and merge without leaving the review."
     >
       <template #icon><GithubMark class="size-6" /></template>
       <SettingsGroup v-if="inBrowser" id="token" title="Connection">
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
-      <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
+      <SettingsRow
+        v-if="flat"
+        label="Merge method"
+        description="Used by Merge in lists and in the review. Your last choice becomes the default."
+      >
+        <ToggleGroup
+          type="single"
+          size="sm"
+          :spacing="0.5"
+          :model-value="settings.mergeMethod"
+          aria-label="Merge method"
+          @update:model-value="(v) => v && update('mergeMethod', v as MergeMethod)"
+        >
+          <ToggleGroupItem v-for="m in MERGE_METHODS" :key="m.value" :value="m.value" class="text-xs">{{ m.label }}</ToggleGroupItem>
+        </ToggleGroup>
+      </SettingsRow>
+      <SettingsGroup id="merging" :bare="flat" title="Merging" description="Your last choice in the review becomes the default.">
         <ChoiceCards
+          v-if="!flat"
           :model-value="settings.mergeMethod"
           :options="MERGE_METHODS"
           name="settings-merge"
@@ -237,6 +258,7 @@ defineExpose({ scrollToSection })
       v-show="shows('review')"
       id="review"
       :framed="layout === 'page'"
+      :plain="flat"
       title="Reviewing"
       description="How each review starts."
       area="files"
@@ -262,7 +284,19 @@ defineExpose({ scrollToSection })
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>
-      <div class="flex flex-col gap-2.5 py-3">
+      <SettingsRow v-if="flat" label="Diff view" description="Small windows always use Unified.">
+        <ToggleGroup
+          type="single"
+          size="sm"
+          :spacing="0.5"
+          :model-value="settings.diffView"
+          aria-label="Diff view"
+          @update:model-value="(v) => v && update('diffView', v as DiffMode)"
+        >
+          <ToggleGroupItem v-for="m in DIFF_VIEWS" :key="m.value" :value="m.value" class="text-xs">{{ m.label }}</ToggleGroupItem>
+        </ToggleGroup>
+      </SettingsRow>
+      <div v-else class="flex flex-col gap-2.5 py-3">
         <p class="text-sm font-medium">Diff view</p>
         <ChoiceCards
           :model-value="settings.diffView"
@@ -283,6 +317,7 @@ defineExpose({ scrollToSection })
       v-show="shows('files')"
       id="files"
       :framed="layout === 'page'"
+      :plain="flat"
       title="Files"
       description="What the list leaves out, and your own filters."
       area="sidebar"
@@ -313,11 +348,24 @@ defineExpose({ scrollToSection })
       v-show="shows('appearance')"
       id="appearance"
       :framed="layout === 'page'"
+      :plain="flat"
       title="Appearance"
       description="Applies right away, here and in the review."
       area="all"
     >
-      <div class="py-3">
+      <SettingsRow v-if="flat" label="Theme" description="System follows your computer's light or dark setting.">
+        <ToggleGroup
+          type="single"
+          size="sm"
+          :spacing="0.5"
+          :model-value="theme"
+          aria-label="Theme"
+          @update:model-value="(v) => v && setTheme(v as ThemeMode)"
+        >
+          <ToggleGroupItem v-for="m in THEMES" :key="m.value" :value="m.value" class="text-xs">{{ m.label }}</ToggleGroupItem>
+        </ToggleGroup>
+      </SettingsRow>
+      <div v-else class="py-3">
         <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
           <template #preview="{ value }"><ThemePreview :mode="value" /></template>
         </ChoiceCards>
@@ -353,7 +401,11 @@ defineExpose({ scrollToSection })
     </SettingsSection>
 
     <slot name="after" />
-    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : '-mt-6 border-t'">
+    <div
+      v-show="shows('about')"
+      data-reset
+      :class="layout === 'page' ? 'rounded-lg border px-4' : flat ? 'border-t border-accent' : '-mt-6 border-t'"
+    >
       <SettingsRow label="Reset settings">
         <template #description>
           <span aria-live="polite" class="inline-flex items-center gap-1.5">

@@ -36,3 +36,15 @@ export function errorText(e: unknown): string {
   const text = e instanceof Error ? e.message : String(e)
   return text.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
 }
+
+// A path as it reads inside your project folders: `web/globex/backend` rather than the whole absolute path.
+// Outside every project folder it falls back to the path from the home folder.
+export function projectPath(path: string, roots: string[], home: string): string {
+  const sep = /[\\/]/
+  const root = roots
+    .filter((r) => path === r || (path.startsWith(r) && sep.test(path.charAt(r.replace(/[\\/]+$/, '').length))))
+    .sort((a, b) => b.length - a.length)[0]
+  if (!root) return shortPath(path, home)
+  const rest = path.slice(root.replace(/[\\/]+$/, '').length + 1)
+  return rest || shortPath(path, home)
+}

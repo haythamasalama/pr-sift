@@ -1,93 +1,163 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, shallowRef } from 'vue'
-import { CircleAlert, FolderOpen, RefreshCw, Trash2 } from '@lucide/vue'
+import { CircleAlert, Ellipsis, ExternalLink, FolderOpen, RefreshCw, Trash2, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import NoticeBar from '@/components/NoticeBar.vue'
-import type { Leftover, LeftoverKind } from '#shared/ipc'
+import type { Branch, Project, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
+import { readCache, writeCache } from '~/cache'
 import { appInfo } from '~/appInfo'
-import { errorText, formatAgo, formatBytes, shortPath } from '~/format'
+import { errorText, formatBytes, projectPath, shortPath } from '~/format'
+import { openProject, openWorktree } from '~/navigation'
 import { useProjectFolders } from '~/useProjectFolders'
+import { useProjects } from '~/useProjects'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
-import NoFolders from '~/components/NoFolders.vue'
+import Hint from '~/components/Hint.vue'
 import PageHeader from '~/components/PageHeader.vue'
+import Segmented from '~/components/Segmented.vue'
+import SectionLabel from '~/components/SectionLabel.vue'
 
-const FOLDER_MIN = 50 * 1024 * 1024
+// Worktrees and branches that can go without losing work, across every project.
+type Kind = 'worktree' | 'branch'
+type Why = 'merged' | 'gone' | 'stale'
+interface Item {
+  key: string
+  kind: Kind
+  name: string
+  // The worktree folder, or the repository the branch is in.
+  path: string
+  project: Project
+  why: Why
+  idleDays: number
+  size?: number
+  url?: string
+}
 
-const KINDS: { id: LeftoverKind | 'all'; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'dependencies', label: 'Dependencies' },
-  { id: 'build', label: 'Build output' },
-  { id: 'cache', label: 'Caches' },
-  { id: 'media', label: 'Media' },
-]
-const KIND_LABEL: Record<LeftoverKind, string> = { dependencies: 'Dependencies', build: 'Build output', cache: 'Cache', media: 'Media' }
-
-// With `root`, only that project's folder is searched.
-const { root } = defineProps<{ root?: string }>()
-const { settings, ready } = useProjectFolders()
-const items = shallowRef<Leftover[]>([])
-const sizes = reactive(new Map<string, number>())
+const DAY = 24 * 60 * 60 * 1000
+const STALE_DAYS = 60
+const { projects } = useProjects()
+const { settings } = useProjectFolders()
+const items = shallowRef<Item[]>(readCache<Item[]>('cleanup')?.value ?? [])
 const selected = reactive(new Set<string>())
-const kind = shallowRef<LeftoverKind | 'all'>('all')
+const filter = shallowRef<'all' | Kind>('all')
 const scanning = shallowRef(false)
-const scanned = shallowRef(false)
-const measuring = shallowRef(0)
+const scanned = shallowRef(items.value.length > 0)
 const error = shallowRef('')
 const notice = shallowRef('')
 const confirming = shallowRef(false)
-const trashing = shallowRef(false)
+const deleting = shallowRef(false)
 
-const short = (path: string) => shortPath(path, appInfo.home)
-const sizeOf = (item: Leftover) => item.size ?? sizes.get(item.path)
-
-// Folders under 50 MB are not worth the attention; until a folder is measured it stays hidden too.
-const big = computed(() =>
-  items.value
-    .filter((item) => (sizeOf(item) ?? 0) >= (item.kind === 'media' ? 0 : FOLDER_MIN))
-    .sort((a, b) => (sizeOf(b) ?? 0) - (sizeOf(a) ?? 0)),
-)
-const shown = computed(() => (kind.value === 'all' ? big.value : big.value.filter((i) => i.kind === kind.value)))
-const total = computed(() => big.value.reduce((sum, i) => sum + (sizeOf(i) ?? 0), 0))
-const selectedItems = computed(() => big.value.filter((i) => selected.has(i.path)))
-const selectedSize = computed(() => selectedItems.value.reduce((sum, i) => sum + (sizeOf(i) ?? 0), 0))
-const selectedMedia = computed(() => selectedItems.value.some((i) => i.kind === 'media'))
-const allShownSelected = computed(() => shown.value.length > 0 && shown.value.every((i) => selected.has(i.path)))
-
-const summary = computed(() => {
-  if (!scanned.value) return 'Folders and files you can rebuild, biggest first.'
-  const parts = [`${big.value.length} ${big.value.length === 1 ? 'item' : 'items'} · ${formatBytes(total.value)}`]
-  if (measuring.value) parts.push(`measuring ${measuring.value} more…`)
-  return parts.join(' · ')
+const shown = computed(() => (filter.value === 'all' ? items.value : items.value.filter((i) => i.kind === filter.value)))
+const worktrees = computed(() => items.value.filter((i) => i.kind === 'worktree'))
+const branches = computed(() => items.value.filter((i) => i.kind === 'branch'))
+const freeable = computed(() => worktrees.value.reduce((sum, i) => sum + (i.size ?? 0), 0))
+const picked = computed(() => items.value.filter((i) => selected.has(i.key)))
+const pickedSize = computed(() => picked.value.reduce((sum, i) => sum + (i.size ?? 0), 0))
+const allState = computed(() => {
+  const n = shown.value.filter((i) => selected.has(i.key)).length
+  return n === 0 ? false : n === shown.value.length ? true : 'indeterminate'
 })
+const FILTERS = computed(() => [
+  { value: 'all' as const, label: 'All', count: items.value.length },
+  { value: 'worktree' as const, label: 'Worktrees', count: worktrees.value.length },
+  { value: 'branch' as const, label: 'Branches', count: branches.value.length },
+])
+const STATS = computed(() => [
+  { label: 'Can be freed', value: freeable.value ? formatBytes(freeable.value) : '—' },
+  { label: 'Worktrees to remove', value: String(worktrees.value.length) },
+  { label: 'Branches to remove', value: String(branches.value.length) },
+])
+
+const WHY: Record<Why, { text: (i: Item) => string; tone: string; hint: string }> = {
+  merged: { text: () => 'Merged', tone: 'text-merged', hint: 'Its commits are already in the main branch, so nothing is lost.' },
+  gone: {
+    text: () => 'Gone on GitHub',
+    tone: 'text-destructive',
+    hint: 'The branch was deleted on GitHub, usually after its pull request closed.',
+  },
+  stale: {
+    text: (i) => `Untouched for ${i.idleDays >= 60 ? `${Math.floor(i.idleDays / 30)} months` : `${i.idleDays} days`}`,
+    tone: 'text-muted-foreground',
+    hint: 'Pushed to GitHub and not changed in a long time.',
+  },
+}
+const where = (p: Project) => projectPath(p.path, settings.value?.roots ?? [], appInfo.home)
+const ghUrl = (p: Project, branch: string) =>
+  p.github ? `https://github.com/${p.github.owner}/${p.github.repo}/tree/${branch.split('/').map(encodeURIComponent).join('/')}` : undefined
+
+function branchReason(b: Branch): Why | null {
+  if (b.current || b.worktree) return null
+  if (b.merged) return 'merged'
+  if (b.gone) return 'gone'
+  // An old branch is only offered when GitHub has every commit, so deleting the local copy loses nothing.
+  if (b.upstream && !b.ahead && Date.now() - b.lastCommit > STALE_DAYS * DAY) return 'stale'
+  return null
+}
+
+async function look(p: Project): Promise<Item[]> {
+  const found: Item[] = []
+  const [repo, list] = await Promise.all([bridge.invoke('worktrees:list', p.path), bridge.invoke('branches:list', p.path)])
+  for (const b of list) {
+    const why = branchReason(b)
+    if (why)
+      found.push({
+        key: `branch:${p.path}:${b.name}`,
+        kind: 'branch',
+        name: b.name,
+        path: p.path,
+        project: p,
+        why,
+        idleDays: Math.floor((Date.now() - b.lastCommit) / DAY),
+        url: b.upstream && !b.gone ? ghUrl(p, b.upstream.replace(/^origin\//, '')) : undefined,
+      })
+  }
+  const linked = repo.worktrees.filter((w) => !w.main && !w.prunable && !w.locked)
+  const details = await Promise.all(
+    linked.map((w) => bridge.invoke('worktrees:details', w.path).catch(() => null as WorktreeDetails | null)),
+  )
+  linked.forEach((w, n) => {
+    const d = details[n]
+    // Uncommitted or unpushed work is never offered.
+    if (!d || d.changed || d.unpushed || (!d.upstream && !d.merged)) return
+    const idleDays = d.lastUsed ? Math.floor((Date.now() - d.lastUsed) / DAY) : 0
+    const why: Why | null = d.merged ? 'merged' : idleDays > STALE_DAYS ? 'stale' : null
+    if (!why) return
+    found.push({
+      key: `worktree:${w.path}`,
+      kind: 'worktree',
+      name: w.branch ?? w.path.split(/[\\/]/).pop() ?? w.path,
+      path: w.path,
+      project: p,
+      why,
+      idleDays,
+      size: d.size,
+      url: w.branch ? ghUrl(p, w.branch) : undefined,
+    })
+  })
+  return found
+}
 
 async function scan() {
   if (scanning.value) return
   scanning.value = true
   error.value = ''
-  selected.clear()
-  sizes.clear()
   try {
-    items.value = await bridge.invoke('leftovers:scan', root)
+    const list = (projects.value ?? (await bridge.invoke('projects:list'))).filter((p) => !p.missing)
+    const results = await Promise.all(list.map((p) => look(p).catch(() => [] as Item[])))
+    items.value = writeCache(
+      'cleanup',
+      results
+        .flat()
+        .sort((a, b) => (a.kind === b.kind ? (b.size ?? 0) - (a.size ?? 0) || b.idleDays - a.idleDays : a.kind === 'worktree' ? -1 : 1)),
+    ).value
+    const keys = new Set(items.value.map((i) => i.key))
+    for (const k of [...selected]) if (!keys.has(k)) selected.delete(k)
     scanned.value = true
-    const folders = items.value.filter((i) => i.size === undefined)
-    measuring.value = folders.length
-    await Promise.all(
-      folders.map(async (item) => {
-        try {
-          sizes.set(item.path, await bridge.invoke('leftovers:size', item.path))
-        } catch {
-          sizes.set(item.path, 0)
-        } finally {
-          measuring.value--
-        }
-      }),
-    )
   } catch (e) {
     error.value = errorText(e)
   } finally {
@@ -95,59 +165,61 @@ async function scan() {
   }
 }
 
-function toggleAll(value: boolean) {
-  for (const item of shown.value) {
-    if (value) selected.add(item.path)
-    else selected.delete(item.path)
+function toggle(key: string, on: boolean) {
+  if (on) selected.add(key)
+  else selected.delete(key)
+}
+function toggleAll(on: boolean) {
+  for (const i of shown.value) toggle(i.key, on)
+}
+
+async function confirmDelete() {
+  deleting.value = true
+  const failed: string[] = []
+  let worktreesDone = 0
+  let branchesDone = 0
+  for (const i of picked.value.filter((x) => x.kind === 'worktree')) {
+    try {
+      await bridge.invoke('worktrees:remove', i.path)
+      worktreesDone++
+    } catch (e) {
+      failed.push(`${i.name}: ${errorText(e)}`)
+    }
   }
-}
-
-function toggle(path: string, value: boolean) {
-  if (value) selected.add(path)
-  else selected.delete(path)
-}
-
-async function trash() {
-  trashing.value = true
-  const freed = selectedSize.value
-  try {
-    const result = await bridge.invoke(
-      'leftovers:trash',
-      selectedItems.value.map((i) => i.path),
-    )
-    const gone = new Set(result.trashed)
-    items.value = items.value.filter((i) => !gone.has(i.path))
-    for (const path of gone) selected.delete(path)
-    notice.value = result.failed.length
-      ? `Moved ${result.trashed.length} to the Trash. ${result.failed.length} could not be moved: ${result.failed[0]!.error}`
-      : `Moved ${result.trashed.length} to the Trash. Empty the Trash to free ${formatBytes(freed)}.`
-  } catch (e) {
-    error.value = errorText(e)
-  } finally {
-    trashing.value = false
-    confirming.value = false
+  const byRepo = new Map<string, string[]>()
+  for (const i of picked.value.filter((x) => x.kind === 'branch')) byRepo.set(i.path, [...(byRepo.get(i.path) ?? []), i.name])
+  for (const [repo, names] of byRepo) {
+    try {
+      const res = await bridge.invoke('branches:delete-many', repo, names, { force: true, remote: false })
+      branchesDone += res.deleted.length
+      failed.push(...res.failed.map((f) => `${f.name}: ${f.error}`))
+    } catch (e) {
+      failed.push(errorText(e))
+    }
   }
+  const parts: string[] = []
+  if (worktreesDone) parts.push(`moved ${worktreesDone} ${worktreesDone === 1 ? 'worktree' : 'worktrees'} to the Trash`)
+  if (branchesDone) parts.push(`deleted ${branchesDone} ${branchesDone === 1 ? 'branch' : 'branches'}`)
+  notice.value = parts.length
+    ? `${parts.join(' and ').replace(/^./, (c) => c.toUpperCase())}. Worktrees can be put back from All worktrees.`
+    : ''
+  error.value = failed.join('\n')
+  selected.clear()
+  deleting.value = false
+  confirming.value = false
+  await scan()
 }
 
-const reveal = (path: string) => bridge.invoke('shell:reveal', path)
-
-onMounted(async () => {
-  if (root) return scan()
-  await ready
-  if (settings.value?.roots.length) await scan()
-})
+onMounted(scan)
 </script>
 
 <template>
-  <PageHeader v-if="!root" title="Cleanup" :description="summary">
-    <Button v-if="settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
-      <Spinner v-if="scanning" />
-      <RefreshCw v-else />
-      Rescan
-    </Button>
-    <Button v-if="selectedItems.length" variant="destructive" @click="confirming = true">
-      <Trash2 /> Move {{ selectedItems.length }} to Trash · {{ formatBytes(selectedSize) }}
-    </Button>
+  <PageHeader title="Cleanup" description="Worktrees and branches you can safely remove, across all projects.">
+    <Hint text="Look again">
+      <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Look again" :disabled="scanning" @click="scan"
+        ><Spinner v-if="scanning" /><RefreshCw v-else
+      /></Button>
+    </Hint>
   </PageHeader>
 
   <NoticeBar v-if="notice">
@@ -156,87 +228,130 @@ onMounted(async () => {
     <template #actions><Button size="xs" variant="ghost" @click="notice = ''">Dismiss</Button></template>
   </NoticeBar>
 
-  <NoFolders v-if="!root && settings && !settings.roots.length" @added="scan" />
-
-  <div v-else class="flex flex-col gap-4" :class="root ? '' : 'p-6'">
-    <div v-if="root" class="flex flex-wrap items-center gap-3">
-      <p class="flex-1 text-muted-foreground">{{ summary }}</p>
-      <Button size="sm" variant="outline" :disabled="scanning" @click="scan">
-        <Spinner v-if="scanning" />
-        <RefreshCw v-else />
-        Rescan
-      </Button>
-      <Button v-if="selectedItems.length" size="sm" variant="destructive" @click="confirming = true">
-        <Trash2 /> Move {{ selectedItems.length }} to Trash · {{ formatBytes(selectedSize) }}
-      </Button>
+  <div class="@container flex flex-col gap-4 px-8 py-5">
+    <div class="grid grid-cols-3 gap-3 @max-xl:grid-cols-1">
+      <div v-for="s in STATS" :key="s.label" class="flex flex-col gap-1 rounded-lg bg-muted px-4 py-3.5">
+        <span class="text-xs text-muted-foreground">{{ s.label }}</span>
+        <span class="text-xl font-semibold tabular-nums">{{ scanned ? s.value : '…' }}</span>
+      </div>
     </div>
-    <Alert v-if="error" variant="destructive">
-      <CircleAlert />
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
-
-    <p class="text-xs text-muted-foreground">
-      Only things git does not track are listed, and each can be rebuilt with the command shown. Items go to the Trash, so you can still put
-      them back.
-    </p>
 
     <div class="flex flex-wrap items-center gap-3">
-      <ToggleGroup v-model="kind" type="single" variant="outline" size="sm" aria-label="Show">
-        <ToggleGroupItem v-for="k in KINDS" :key="k.id" :value="k.id">{{ k.label }}</ToggleGroupItem>
-      </ToggleGroup>
+      <Segmented v-model="filter" :options="FILTERS" label="Show" />
+      <span class="flex-1" />
+      <span class="text-xs text-muted-foreground">Only merged or long-idle work is listed. Uncommitted changes are never deleted.</span>
     </div>
 
-    <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking through your folders…</div>
+    <Alert v-if="error" variant="destructive"
+      ><CircleAlert /><AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription></Alert
+    >
 
-    <p v-else-if="scanned && !shown.length && !measuring" class="text-muted-foreground">Nothing over 50 MB to clean up here.</p>
-
-    <div v-if="shown.length" class="overflow-hidden rounded-lg border border-border">
-      <div class="flex items-center gap-3 border-b border-border bg-secondary px-4 py-2 text-xs text-muted-foreground">
-        <Checkbox :model-value="allShownSelected" aria-label="Select all shown" @update:model-value="(v) => toggleAll(v === true)" />
-        <span class="flex-1">Path</span>
-        <span class="w-24 text-right">Size</span>
-        <span class="w-8" />
+    <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking through your projects…</div>
+    <p v-else-if="scanned && !shown.length" class="text-muted-foreground">
+      Nothing to clean up. Every worktree and branch is still in use.
+    </p>
+    <div v-else-if="shown.length" class="overflow-hidden rounded-lg border border-border">
+      <div class="flex h-9 items-center gap-4 border-b border-border px-4">
+        <Checkbox :model-value="allState" aria-label="Select all" @update:model-value="(v) => toggleAll(v === true)" />
+        <SectionLabel class="flex-1">Item</SectionLabel>
+        <SectionLabel class="w-40 @max-3xl:hidden">Project</SectionLabel>
+        <SectionLabel class="w-40 @max-xl:hidden">Why</SectionLabel>
+        <SectionLabel class="w-[90px] text-right">Frees</SectionLabel>
+        <span class="w-7" />
       </div>
-      <ul class="divide-y divide-border">
-        <li v-for="item in shown" :key="item.path" class="flex items-center gap-3 px-4 py-2.5">
+      <ul>
+        <li
+          v-for="i in shown"
+          :key="i.key"
+          class="flex h-12 cursor-pointer items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0"
+          :class="selected.has(i.key) ? 'bg-emphasis/8' : 'hover:bg-muted/60'"
+          @click="toggle(i.key, !selected.has(i.key))"
+        >
           <Checkbox
-            :model-value="selected.has(item.path)"
-            :aria-label="`Select ${short(item.path)}`"
-            @update:model-value="(v) => toggle(item.path, v === true)"
+            :model-value="selected.has(i.key)"
+            :aria-label="`Select ${i.name}`"
+            @click.stop
+            @update:model-value="(v) => toggle(i.key, v === true)"
           />
-          <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <div class="flex items-center gap-1.5">
-              <span class="truncate">{{ short(item.path) }}</span>
-              <Badge variant="outline" :class="{ 'border-attention/50 text-attention': item.kind === 'media' }">{{
-                KIND_LABEL[item.kind]
-              }}</Badge>
-            </div>
-            <span class="truncate text-xs text-muted-foreground">
-              {{ item.label }} · <template v-if="item.kind === 'media'">can’t be rebuilt</template
-              ><template v-else>rebuild with {{ item.rebuild }}</template
-              ><template v-if="item.modified"> · changed {{ formatAgo(item.modified) }}</template>
-            </span>
+          <div class="flex min-w-0 flex-1 items-center gap-2">
+            <Badge variant="secondary" class="w-16 shrink-0 bg-muted text-[11px] font-normal text-muted-foreground">{{
+              i.kind === 'worktree' ? 'Worktree' : 'Branch'
+            }}</Badge>
+            <span class="truncate font-mono text-[12.5px]" :title="i.kind === 'worktree' ? shortPath(i.path, appInfo.home) : i.name">{{
+              i.name
+            }}</span>
           </div>
-          <span class="w-24 text-right font-medium tabular-nums">{{ formatBytes(sizeOf(item)) }}</span>
-          <Button size="icon-sm" variant="ghost" aria-label="Show in folder" title="Show in folder" @click="reveal(item.path)"
-            ><FolderOpen
-          /></Button>
+          <button
+            type="button"
+            class="w-40 shrink-0 truncate text-left text-xs text-muted-foreground hover:text-foreground @max-3xl:hidden"
+            @click.stop="openProject(i.project.path, i.kind === 'worktree' ? 'worktrees' : 'branches')"
+          >
+            {{ where(i.project) }}
+          </button>
+          <Hint :text="WHY[i.why].hint">
+            <span class="w-40 shrink-0 truncate text-xs @max-xl:hidden" :class="WHY[i.why].tone">{{ WHY[i.why].text(i) }}</span>
+          </Hint>
+          <span class="w-[90px] shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{
+            i.size !== undefined ? formatBytes(i.size) : '—'
+          }}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger as-child>
+              <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`More for ${i.name}`" @click.stop
+                ><Ellipsis
+              /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" class="w-52">
+              <DropdownMenuItem v-if="i.kind === 'worktree'" @select="openWorktree(i.path)"
+                ><FolderOpen /> See the changes</DropdownMenuItem
+              >
+              <DropdownMenuItem v-if="i.kind === 'worktree'" @select="bridge.invoke('shell:reveal', i.path)"
+                ><FolderOpen /> Show the folder</DropdownMenuItem
+              >
+              <DropdownMenuItem v-if="i.url" as-child
+                ><a :href="i.url" target="_blank" rel="noreferrer"><ExternalLink /> Open on GitHub</a></DropdownMenuItem
+              >
+              <DropdownMenuItem @select="openProject(i.project.path, i.kind === 'worktree' ? 'worktrees' : 'branches')"
+                >Show in {{ i.project.name }}</DropdownMenuItem
+              >
+            </DropdownMenuContent>
+          </DropdownMenu>
         </li>
       </ul>
+    </div>
+
+    <div
+      v-if="selected.size"
+      role="region"
+      aria-label="Selected items"
+      class="sticky bottom-6 z-10 mx-auto flex h-12 max-w-full items-center gap-3 rounded-lg border border-border bg-popover pr-2 pl-4 shadow-lg"
+    >
+      <span class="font-semibold whitespace-nowrap tabular-nums">{{ selected.size }} selected</span>
+      <span v-if="pickedSize" class="text-xs whitespace-nowrap text-muted-foreground">Frees {{ formatBytes(pickedSize) }}</span>
+      <span class="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+      <Button size="sm" variant="destructive" @click="confirming = true"
+        ><Trash2 /> Delete {{ selected.size === 1 ? 'it' : `${selected.size} items` }}</Button
+      >
+      <Hint text="Clear the selection">
+        <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected.clear()"
+          ><X
+        /></Button>
+      </Hint>
     </div>
   </div>
 
   <ConfirmDialog
-    v-model:open="confirming"
-    :title="`Move ${selectedItems.length} ${selectedItems.length === 1 ? 'item' : 'items'} to the Trash?`"
-    :description="`This frees ${formatBytes(selectedSize)} once you empty the Trash. Rebuild them later with the command shown on each row.`"
-    confirm="Move to Trash"
-    :busy="trashing"
-    @confirm="trash"
+    :open="confirming"
+    :title="selected.size === 1 ? `Delete ${picked[0]?.name}?` : `Delete ${selected.size} items?`"
+    description="Worktree folders go to the Trash, and can be put back from All worktrees. Branches are deleted on this computer only; their copies on GitHub stay."
+    :confirm="selected.size === 1 ? 'Delete' : `Delete ${selected.size} items`"
+    :busy="deleting"
+    @update:open="(v) => (confirming = v)"
+    @confirm="confirmDelete"
   >
-    <Alert v-if="selectedMedia" class="border-attention/50">
-      <CircleAlert class="text-attention" />
-      <AlertDescription>Media files can’t be rebuilt. Make sure you have a copy before you empty the Trash.</AlertDescription>
-    </Alert>
+    <ul class="max-h-40 overflow-auto text-xs text-muted-foreground">
+      <li v-for="i in picked" :key="i.key" class="truncate">
+        {{ i.kind === 'worktree' ? 'Worktree' : 'Branch' }} · {{ i.name }} · {{ i.project.name }}
+      </li>
+    </ul>
   </ConfirmDialog>
 </template>

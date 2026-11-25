@@ -2,26 +2,38 @@
 import type { PullItem } from '~/github'
 import { openReview } from '~/navigation'
 import PullRow from './PullRow.vue'
-import SectionLabel from './SectionLabel.vue'
 
-// Groups of pull requests in one calm card; the first group's header carries the column names.
-defineProps<{ groups: { title: string; pulls: PullItem[] }[]; showRepo?: boolean; me?: string }>()
+// Groups of pull requests in one quiet card. With `columns`, the first group's header names the columns;
+// later groups get a muted band. Without it the card has no header, for pages that title each card themselves.
+defineProps<{ groups: { title: string; pulls: PullItem[] }[]; showRepo?: boolean; me?: string; mine?: boolean; columns?: boolean }>()
 const emit = defineEmits<{ changed: [] }>()
 </script>
 
 <template>
-  <div class="@container overflow-hidden rounded-lg border border-border bg-card">
+  <div class="@container overflow-hidden rounded-lg border border-border">
     <template v-for="(g, i) in groups.filter((x) => x.pulls.length)" :key="g.title">
-      <div class="flex items-center gap-3.5 px-5 py-2.5" :class="i ? 'border-t border-border bg-background/40' : ''">
-        <SectionLabel class="flex-1">{{ g.title }} · {{ g.pulls.length }}</SectionLabel>
+      <div
+        v-if="columns"
+        class="flex items-center gap-4 px-4 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+        :class="i ? 'h-8 border-t border-accent bg-muted' : 'h-9 border-b border-border'"
+      >
+        <span class="flex-1">{{ g.title }} · {{ g.pulls.length }}</span>
         <template v-if="!i"
-          ><SectionLabel class="hidden w-[120px] @2xl:block">Review</SectionLabel
-          ><SectionLabel class="hidden w-[70px] @2xl:block">CI</SectionLabel
-          ><span class="hidden w-[200px] shrink-0 @2xl:block" aria-hidden="true" /></template
-        >
+          ><span class="w-[120px] @max-3xl:hidden">Review</span><span class="w-20 @max-3xl:hidden">CI</span
+          ><span class="w-[236px] @max-3xl:hidden" aria-hidden="true"
+        /></template>
       </div>
-      <ul class="border-t border-border">
-        <PullRow v-for="p in g.pulls" :key="p.url" :pull="p" :show-repo="showRepo" :me="me" @open="openReview(p)" @changed="emit('changed')" />
+      <ul :class="i && !columns ? 'border-t border-accent' : ''">
+        <PullRow
+          v-for="p in g.pulls"
+          :key="p.url"
+          :pull="p"
+          :show-repo="showRepo"
+          :me="me"
+          :mine="mine"
+          @open="openReview(p)"
+          @changed="emit('changed')"
+        />
       </ul>
     </template>
   </div>

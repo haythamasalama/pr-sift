@@ -1,16 +1,36 @@
 <script setup lang="ts">
 import { computed, reactive, shallowRef, watch } from 'vue'
-import { ArrowLeft, CircleAlert, Code, Copy, RefreshCw, Search, SquareTerminal, X } from '@lucide/vue'
+import {
+  ArrowLeft,
+  CircleAlert,
+  Code,
+  Copy,
+  Ellipsis,
+  ExternalLink,
+  EyeOff,
+  FolderGit2,
+  FolderOpen,
+  GitBranch,
+  GitPullRequest,
+  RefreshCw,
+  Search,
+  SquareTerminal,
+  X,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import GithubMark from '@/components/GithubMark.vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { bridge } from '~/bridge'
 import { isFresh, readCache, writeCache } from '~/cache'
-import { appInfo } from '~/appInfo'
-import { errorText, formatAgo, shortPath } from '~/format'
+import { errorText, formatAgo } from '~/format'
 import type { ProjectOverview } from '#shared/ipc'
 import { loadRepo, type RepoActivity } from '~/github'
 import { canGoBack, goBack, project, projectTab, view, type ProjectTab } from '~/navigation'
@@ -23,8 +43,10 @@ import ProjectIcon from '~/components/ProjectIcon.vue'
 import Hint from '~/components/Hint.vue'
 import ProjectSummary from '~/components/ProjectSummary.vue'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
+import CountBadge from '~/components/CountBadge.vue'
+import PathText from '~/components/PathText.vue'
 import Worktrees from './Worktrees.vue'
-import Cleanup from './Cleanup.vue'
+import HiddenFiles from './HiddenFiles.vue'
 
 const { find, remove } = useProjects()
 const { status } = useAuth()
@@ -73,11 +95,11 @@ const FILTERS = computed(() => [
   { value: 'drafts' as const, label: 'Drafts', count: filterCounts.value.drafts },
 ])
 
-const TABS = computed<{ id: ProjectTab; label: string; count?: number }[]>(() => [
-  { id: 'pulls', label: 'Pull requests', count: activity.value?.pulls.length },
-  { id: 'branches', label: 'Branches', count: counts.branches },
-  { id: 'worktrees', label: 'Worktrees', count: counts.worktrees },
-  { id: 'files', label: 'Hidden files' },
+const TABS = computed<{ id: ProjectTab; label: string; icon: typeof GitBranch; count?: number }[]>(() => [
+  { id: 'pulls', label: 'Pull requests', icon: GitPullRequest, count: activity.value?.pulls.length },
+  { id: 'branches', label: 'Branches', icon: GitBranch, count: counts.branches },
+  { id: 'worktrees', label: 'Worktrees', icon: FolderGit2, count: counts.worktrees },
+  { id: 'files', label: 'Hidden files', icon: EyeOff },
 ])
 const description = computed(() => activity.value?.info?.description || overview.value?.description)
 const repoUrl = computed(() =>
@@ -182,52 +204,43 @@ async function confirmRemove() {
 <template>
   <div v-if="!current" class="p-6 text-muted-foreground">This project is no longer in your list.</div>
   <template v-else>
-    <header class="sticky top-0 z-10 flex flex-col gap-4 border-b border-border bg-background/95 px-8 pt-6 backdrop-blur">
-      <div class="flex flex-wrap items-center gap-x-3.5 gap-y-3">
+    <header class="sticky top-0 z-10 flex flex-col border-b border-border bg-background">
+      <div class="flex items-center gap-3 px-6 pt-4">
         <Hint text="Back">
-          <Button size="icon-sm" variant="ghost" class="-ml-2 text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
-            ><ArrowLeft
+          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Back" :disabled="!canGoBack" @click="goBack"
+            ><ArrowLeft class="size-4"
           /></Button>
         </Hint>
-        <ProjectIcon :project="current" :size="40" />
-        <div class="flex min-w-[240px] flex-1 flex-col gap-[3px]">
+        <ProjectIcon :project="current" :size="32" />
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <div class="flex min-w-0 items-baseline gap-2.5">
-            <h1 class="shrink-0 text-xl font-semibold tracking-[-0.01em]">{{ current.name }}</h1>
-            <span v-if="description" class="truncate text-[13px] text-muted-foreground" :title="description">{{ description }}</span>
+            <h1 class="shrink-0 text-base leading-[22px] font-semibold">{{ current.name }}</h1>
+            <span v-if="description" class="truncate text-xs text-muted-foreground" :title="description">{{ description }}</span>
           </div>
-          <div class="flex min-w-0 items-center gap-2.5 text-[12.5px] text-muted-foreground">
+          <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
             <Hint v-if="current.github" text="Open the repository on GitHub">
-              <a :href="repoUrl" target="_blank" rel="noreferrer" class="flex shrink-0 items-center gap-1.5 hover:text-emphasis"
-                ><GithubMark class="size-3.5" />{{ current.github.owner }}/{{ current.github.repo }}</a
+              <a :href="repoUrl" target="_blank" rel="noreferrer" class="shrink-0 hover:text-foreground"
+                >{{ current.github.owner }}/{{ current.github.repo }}</a
               >
             </Hint>
             <template v-if="current.branch">
-              <span aria-hidden="true" class="text-input">·</span>
+              <span v-if="current.github" aria-hidden="true">·</span>
               <Hint :text="current.github ? 'Open this branch on GitHub' : 'The branch checked out in this folder'">
                 <component
                   :is="current.github ? 'a' : 'span'"
                   :href="current.github ? `${repoUrl}/tree/${encodeURIComponent(current.branch)}` : undefined"
                   target="_blank"
                   rel="noreferrer"
-                  class="max-w-[280px] shrink-0 truncate font-mono text-foreground/80 hover:text-emphasis"
+                  class="max-w-[280px] shrink-0 truncate rounded-md bg-emphasis/15 px-1 font-mono text-[11px] text-emphasis"
                   >{{ current.branch }}</component
                 >
               </Hint>
             </template>
-            <span aria-hidden="true" class="text-input">·</span>
-            <Hint text="Show the folder">
-              <button type="button" class="min-w-0 truncate hover:text-emphasis" @click="bridge.invoke('shell:reveal', current.path)">
-                {{ shortPath(current.path, appInfo.home) }}
-              </button>
-            </Hint>
-            <Hint text="Copy the path">
-              <Button size="icon-xs" variant="ghost" class="-ml-1 text-muted-foreground" aria-label="Copy the path" @click="copyPath"
-                ><Copy
-              /></Button>
-            </Hint>
+            <span aria-hidden="true">·</span>
+            <PathText :path="current.path" />
           </div>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
+        <div class="flex shrink-0 items-center gap-1">
           <Transition
             enter-from-class="opacity-0"
             leave-to-class="opacity-0"
@@ -237,45 +250,62 @@ async function confirmRemove() {
             <span v-if="note" class="mr-1 text-xs text-muted-foreground">{{ note }}</span>
           </Transition>
           <Hint text="Open in your editor">
-            <Button size="sm" variant="outline" aria-label="Open in editor" @click="openIn('editor')"
-              ><Code /><span class="max-lg:hidden">Open in editor</span></Button
-            >
+            <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="Open in editor" @click="openIn('editor')"
+              ><Code
+            /></Button>
           </Hint>
           <Hint text="Open a terminal here">
-            <Button size="sm" variant="outline" aria-label="Terminal" @click="openIn('terminal')"
-              ><SquareTerminal /><span class="max-lg:hidden">Terminal</span></Button
-            >
+            <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="Open a terminal here" @click="openIn('terminal')"
+              ><SquareTerminal
+            /></Button>
           </Hint>
-          <Hint text="Remove from PR Sift. The folder stays on disk.">
-            <Button size="icon-sm" variant="ghost" class="text-faint" aria-label="Remove from PR Sift" @click="removing = true"><X /></Button>
+          <Hint text="Show the folder">
+            <Button
+              size="icon"
+              variant="ghost"
+              class="text-muted-foreground"
+              aria-label="Show the folder"
+              @click="bridge.invoke('shell:reveal', current.path)"
+              ><FolderOpen
+            /></Button>
           </Hint>
+          <span class="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+          <DropdownMenu>
+            <Hint text="More">
+              <DropdownMenuTrigger as-child>
+                <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="More"><Ellipsis /></Button>
+              </DropdownMenuTrigger>
+            </Hint>
+            <DropdownMenuContent align="end" class="w-56">
+              <DropdownMenuItem v-if="current.github" as-child
+                ><a :href="repoUrl" target="_blank" rel="noreferrer"><ExternalLink /> Open on GitHub</a></DropdownMenuItem
+              >
+              <DropdownMenuItem @select="copyPath"><Copy /> Copy the full path</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" @select="removing = true"><X /> Remove from PR Sift</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-      <ProjectSummary class="pl-[54px]" :overview="overview" :info="activity?.info" />
-      <Tabs
-        :model-value="projectTab"
-        class="-mb-px overflow-x-auto [scrollbar-width:none]"
-        @update:model-value="(v) => (projectTab = v as ProjectTab)"
-      >
-        <TabsList variant="line" aria-label="Project" class="h-10 gap-4 p-0">
-          <TabsTrigger
-            v-for="t in TABS"
-            :key="t.id"
-            :value="t.id"
-            class="group/tab flex-none px-0.5 after:bg-emphasis data-active:font-semibold group-data-horizontal/tabs:after:bottom-0"
-          >
-            {{ t.label
-            }}<span
-              v-if="t.count !== undefined"
-              class="rounded-full bg-muted px-1.5 text-xs font-normal text-muted-foreground tabular-nums group-data-active/tab:bg-emphasis/15 group-data-active/tab:text-emphasis"
-              >{{ t.count }}</span
-            >
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <ProjectSummary class="pt-2 pr-6 pl-[108px]" :overview="overview" :info="activity?.info" />
+      <nav aria-label="Project" role="tablist" class="mt-3 flex gap-5 overflow-x-auto px-6 [scrollbar-width:none]">
+        <button
+          v-for="t in TABS"
+          :key="t.id"
+          type="button"
+          role="tab"
+          :aria-selected="projectTab === t.id"
+          class="relative flex h-10 shrink-0 items-center gap-1.5 px-0.5 whitespace-nowrap transition-colors"
+          :class="projectTab === t.id ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+          @click="projectTab = t.id"
+        >
+          <component :is="t.icon" class="size-4" />{{ t.label }}<CountBadge v-if="t.count !== undefined">{{ t.count }}</CountBadge>
+          <span class="absolute inset-x-0 -bottom-px h-0.5 rounded-full" :class="projectTab === t.id ? 'bg-emphasis' : ''" />
+        </button>
+      </nav>
     </header>
 
-    <div class="flex flex-col gap-3.5 px-8 py-5">
+    <div class="flex flex-col gap-3 px-6 py-4">
       <template v-if="projectTab === 'pulls'">
         <Alert v-if="!current.github" class="border-attention/50">
           <CircleAlert class="text-attention" />
@@ -288,24 +318,33 @@ async function confirmRemove() {
       </template>
 
       <template v-if="projectTab === 'pulls' && activity">
-        <div class="flex flex-wrap items-center gap-2.5">
-          <InputGroup class="w-[300px]">
+        <div class="flex flex-wrap items-center gap-3">
+          <InputGroup class="w-80 max-w-full">
             <InputGroupAddon><Search /></InputGroupAddon>
             <InputGroupInput v-model="pullQuery" placeholder="Filter by title, branch, author" aria-label="Filter pull requests" />
           </InputGroup>
           <Segmented v-model="pullFilter" :options="FILTERS" label="Show" />
-          <span class="flex-1" />
-          <span v-if="loadedAt" class="text-xs text-faint">Updated {{ formatAgo(loadedAt) }}</span>
-          <Hint text="Ask GitHub again">
-            <Button size="icon-sm" variant="ghost" aria-label="Refresh" :disabled="loading" @click="load(true)">
-              <Spinner v-if="loading" /><RefreshCw v-else />
-            </Button>
-          </Hint>
+          <span class="ml-auto flex shrink-0 items-center gap-2">
+            <span v-if="loadedAt" class="text-xs text-muted-foreground">Updated {{ formatAgo(loadedAt) }}</span>
+            <Hint text="Ask GitHub again">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                class="text-muted-foreground"
+                aria-label="Refresh"
+                :disabled="loading"
+                @click="load(true)"
+              >
+                <Spinner v-if="loading" /><RefreshCw v-else />
+              </Button>
+            </Hint>
+          </span>
         </div>
         <p v-if="!activity.pulls.length" class="text-muted-foreground">No open pull requests.</p>
         <p v-else-if="!visiblePulls.length" class="text-muted-foreground">No pull requests match.</p>
         <PullTable
           v-else
+          columns
           :groups="[
             { title: 'Waiting for you', pulls: waiting },
             { title: waiting.length ? 'Other open' : 'Open', pulls: others },
@@ -330,7 +369,7 @@ async function confirmRemove() {
         :pulls="activity?.pulls"
         @count="(n: number) => (counts.worktrees = n)"
       />
-      <Cleanup v-else-if="projectTab === 'files'" :key="current.path" :root="current.path" />
+      <HiddenFiles v-else-if="projectTab === 'files'" :key="current.path" :root="current.path" />
     </div>
   </template>
 
