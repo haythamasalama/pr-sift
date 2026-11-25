@@ -48,15 +48,25 @@ describe('ReviewActions', () => {
     expect(mergeButton(after).attributes('data-variant')).toBe('success')
   })
 
-  it('hides Approve from the author of the pull request', () => {
+  it('keeps Approve in place for the author, disabled with the reason', () => {
     const wrapper = mountActions({ conversation: conversation({ viewer: 'Sam' }) })
-    expect(wrapper.text()).not.toContain('Approve')
+    const approve = wrapper.findAll('button').find((b) => b.text().includes('Approve'))!
+    expect(approve.attributes('disabled')).toBeDefined()
+    expect(approve.element.parentElement!.getAttribute('title')).toBe("You can't approve your own pull request")
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 
   it('says why a merge may not go through', () => {
-    const wrapper = mountActions({ conversation: conversation({ readiness: 'conflicts' }) })
-    expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · This branch has conflicts')
+    const wrapper = mountActions({ conversation: conversation({ readiness: 'checks' }) })
+    expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · Some checks are failing or still running')
+  })
+
+  it('keeps Merge in place but disabled, with the reason, when GitHub would refuse it', () => {
+    const wrapper = mountActions({ conversation: conversation({ readiness: 'blocked' }) })
+    expect(mergeButton(wrapper).attributes('disabled')).toBeDefined()
+    expect(mergeButton(wrapper).element.parentElement!.getAttribute('title')).toBe(
+      'Can’t merge yet: Needs an approval or required checks first',
+    )
   })
 
   it('shows nothing once the pull request is merged', () => {

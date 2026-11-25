@@ -20,7 +20,7 @@ describe('FileTree', () => {
     const root = wrapper.find('[title="package.json"]')
     expect(root.exists()).toBe(true)
     expect(root.find('svg').exists()).toBe(true)
-    expect(root.element.parentElement!.querySelector('[role=checkbox]')).not.toBeNull()
+    expect(root.element.parentElement!.querySelector('[aria-label="Mark as viewed"]')).not.toBeNull()
   })
 
   it('expands every folder at once and collapses them again', async () => {
@@ -29,6 +29,13 @@ describe('FileTree', () => {
     expect(fileRows(wrapper)).toHaveLength(4)
     await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
     expect(fileRows(wrapper)).toHaveLength(1)
+  })
+
+  it('highlights the file that was opened from the tree', async () => {
+    const wrapper = mountTree()
+    const row = wrapper.find('[title="package.json"]')
+    await row.trigger('click')
+    expect(row.element.parentElement!.className).toContain('bg-accent font-semibold')
   })
 
   it('expands and collapses a single folder with everything inside it', async () => {
@@ -63,7 +70,6 @@ describe('FileTree', () => {
     const wrapper = mountTree()
     await wrapper.find('[aria-label="Collapse all folders"]').trigger('click')
     const row = wrapper.findAll('button').find((b) => b.text().startsWith('src/Domain'))!.element.parentElement!
-    const checkbox = row.querySelector('[role=checkbox]')!
     expect(wrapper.text()).not.toContain('Order')
 
     row.querySelector<HTMLElement>('[aria-label="Expand"]')!.click()
@@ -71,16 +77,13 @@ describe('FileTree', () => {
 
     expect(wrapper.text()).toContain('Order')
     expect(wrapper.emitted('toggleViewed')).toBeUndefined()
-    expect(checkbox.getAttribute('aria-checked')).toBe('false')
   })
 
-  it('keeps every tree checkbox hit area inside its own box', () => {
-    const boxes = mountTree().findAll('[role=checkbox]')
-    expect(boxes.length).toBeGreaterThan(1)
-    for (const box of boxes) {
-      expect(box.classes()).toContain('after:inset-0')
-      expect(box.classes()).not.toContain('after:-inset-x-3')
-    }
+  it('marks a whole folder as viewed from its row, with no checkbox taking up space', async () => {
+    const wrapper = mountTree()
+    expect(wrapper.find('[role=checkbox]').exists()).toBe(false)
+    await wrapper.find('[aria-label="Mark the whole folder as viewed"]').trigger('click')
+    expect(wrapper.emitted('toggleViewed')).toEqual([['src/Domain', true]])
   })
 
   it('does not offer a folder filter button any more', () => {
@@ -95,15 +98,23 @@ describe('FileTree', () => {
 
   it('toggles a single file as viewed from the tree', async () => {
     const wrapper = mountTree()
-    await wrapper.find('[title="package.json"]').element.parentElement!.querySelector<HTMLElement>('[role=checkbox]')!.click()
+    await wrapper.find('[title="package.json"]').element.parentElement!.querySelector<HTMLElement>('[aria-label="Mark as viewed"]')!.click()
     expect(wrapper.emitted('toggleFile')![0]![1]).toBe(true)
+  })
+
+  it('shows a viewed file with a check that unmarks it', async () => {
+    const wrapper = mountTree(['package.json'])
+    const check = wrapper.find('[title="package.json"]').element.parentElement!.querySelector<HTMLElement>('[aria-label="Viewed"]')!
+    check.click()
+    expect(wrapper.emitted('toggleFile')![0]![1]).toBe(false)
   })
 
   it('shows the folder as fully viewed once every file in it is', () => {
     const wrapper = mountTree(['src/Domain/Core/C.php'])
     const core = wrapper.findAll('button').find((b) => b.text().startsWith('Core'))!
     const row = core.element.parentElement!
-    expect(row.querySelector('[role=checkbox]')!.getAttribute('aria-checked')).toBe('true')
+    expect(row.querySelector('[aria-label="All viewed"]')).not.toBeNull()
+    expect(row.querySelector('[aria-label="Mark the whole folder as not viewed"]')).not.toBeNull()
   })
 
   it('asks to hide a folder on right-click', async () => {

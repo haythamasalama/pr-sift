@@ -60,6 +60,11 @@ const reviewMode = defineModel<boolean>('reviewMode', { required: true })
 const showHidden = defineModel<boolean>('showHidden', { required: true })
 const diffMode = defineModel<DiffMode>('diffMode', { required: true })
 
+const DIFF_MODES = [
+  { value: 'unified', label: 'Unified', title: 'Unified diff', icon: Rows2 },
+  { value: 'split', label: 'Split', title: 'Split diff', icon: Columns2 },
+] as const
+
 const emit = defineEmits<{
   toggleExtension: [ext: string, hide: boolean]
   resetFilters: []
@@ -122,7 +127,7 @@ function clearAll(e: Event) {
   emit('clearAll')
 }
 
-const chipVariant = (chip: ExtChip) => (chip.state === 'include' ? 'default' : chip.state === 'exclude' ? 'outline' : 'secondary')
+const chipVariant = (chip: ExtChip) => (chip.state === 'include' ? 'default' : 'outline')
 const chipTitle = (chip: ExtChip) => {
   const kind = chip.ext.startsWith(FOLDER_CHIP) ? 'folder' : 'type'
   return chip.state === 'include'
@@ -133,16 +138,16 @@ const chipTitle = (chip: ExtChip) => {
 }
 const isHideGesture = (e: MouseEvent) => e.shiftKey || e.altKey || e.metaKey || e.ctrlKey
 const chipClass = (chip: ExtChip) => [
-  'h-[22px] gap-1 rounded-md px-2.5 text-[11px] font-medium shadow-none',
+  'h-[22px] gap-1 rounded-sm px-2 text-xs font-normal shadow-none',
   chip.ext.includes(':') ? '' : 'font-mono',
   chip.state === 'exclude' ? 'border-destructive/40 text-destructive line-through' : '',
 ]
 </script>
 
 <template>
-  <div class="flex flex-wrap items-start gap-x-3 gap-y-2 border-b bg-sidebar px-3 py-2 sm:px-4">
-    <div class="flex min-w-0 flex-1 basis-[22rem] flex-wrap items-center gap-1">
-      <span class="mr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Types</span>
+  <div class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-sidebar px-3 py-[9px] sm:px-4">
+    <div class="flex min-w-0 flex-1 basis-[22rem] flex-wrap items-center gap-1.5">
+      <span class="mr-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Types</span>
       <span v-for="c in extensionChips" :key="c.ext" class="inline-flex items-center">
         <Button
           size="xs"
@@ -180,7 +185,7 @@ const chipClass = (chip: ExtChip) => [
         v-else
         variant="ghost"
         size="xs"
-        class="h-[22px] rounded-md border border-dashed px-2.5 text-[11px] text-muted-foreground"
+        class="h-[22px] gap-1 rounded-sm border border-dashed border-border px-2 text-[11px] font-normal text-muted-foreground [&_svg]:size-[11px]"
         title="Add a file type, e.g. .blade.php"
         @click="startAdding"
       >
@@ -189,13 +194,13 @@ const chipClass = (chip: ExtChip) => [
 
       <template v-if="presets.length">
         <Separator orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
-        <span class="mr-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Saved</span>
+        <span class="mr-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Saved</span>
         <div role="group" aria-label="Saved filters" class="inline-flex gap-0.5 rounded-md bg-muted p-0.5">
           <Button
             size="xs"
             variant="ghost"
             :aria-pressed="!activePreset"
-            class="h-[22px] rounded-sm px-2 text-[11px] text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+            class="h-[22px] rounded-sm px-2 text-xs text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-accent"
             title="Show every file"
             @click="activePreset && emit('selectPreset', activePreset)"
           >
@@ -207,7 +212,7 @@ const chipClass = (chip: ExtChip) => [
             size="xs"
             variant="ghost"
             :aria-pressed="p.name === activePreset"
-            class="h-[22px] rounded-sm px-2 text-[11px] text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs"
+            class="h-[22px] rounded-sm px-2 text-xs text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-accent"
             :class="hiddenPresets.includes(p.name) ? 'text-destructive line-through' : ''"
             :title="presetTitle(p.name)"
             @click="emit('selectPreset', p.name)"
@@ -219,7 +224,7 @@ const chipClass = (chip: ExtChip) => [
         <Button
           variant="ghost"
           size="icon-xs"
-          class="size-[22px] text-muted-foreground"
+          class="size-[22px] text-muted-foreground [&_svg]:size-[13px]"
           title="Edit saved filters"
           aria-label="Edit saved filters"
           @click="openSettings('filters')"
@@ -286,29 +291,32 @@ const chipClass = (chip: ExtChip) => [
       </template>
     </div>
 
-    <div class="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-2 text-xs">
-      <div class="flex items-center gap-1">
-        <ToggleGroup
-          v-if="!splitDisabled"
-          type="single"
-          variant="outline"
-          size="sm"
-          class="h-7"
-          :model-value="diffMode"
-          aria-label="Diff display"
-          @update:model-value="(v) => v && (diffMode = v as DiffMode)"
-        >
-          <ToggleGroupItem value="unified" class="h-7 px-2" title="Unified diff" aria-label="Unified"><Rows2 /></ToggleGroupItem>
-          <ToggleGroupItem value="split" class="h-7 px-2" title="Split diff" aria-label="Split"><Columns2 /></ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-      <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
-      <div class="flex items-center gap-1.5">
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-x-2.5 gap-y-2 text-xs">
+      <ToggleGroup
+        v-if="!splitDisabled"
+        type="single"
+        :spacing="0.5"
+        class="gap-0.5 rounded-md bg-muted p-0.5"
+        :model-value="diffMode"
+        aria-label="Diff display"
+        @update:model-value="(v) => v && (diffMode = v as DiffMode)"
+      >
+        <ToggleGroupItem
+          v-for="m in DIFF_MODES"
+          :key="m.value"
+          :value="m.value"
+          class="h-[22px] min-w-0 rounded-sm px-[7px] data-[state=on]:bg-background data-[state=on]:shadow-xs dark:data-[state=on]:bg-accent [&_svg]:size-[13px]"
+          :title="m.title"
+          :aria-label="m.label"
+          ><component :is="m.icon"
+        /></ToggleGroupItem>
+      </ToggleGroup>
+      <div class="flex items-center gap-2.5">
         <Button
           v-if="hiddenCount || showHidden"
           variant="ghost"
           size="xs"
-          class="h-7 px-2 text-xs text-muted-foreground"
+          class="h-6 gap-[5px] rounded-sm px-2 text-xs font-normal text-muted-foreground [&_svg]:size-[13px]"
           :aria-pressed="showHidden"
           :title="
             showHidden
@@ -324,7 +332,7 @@ const chipClass = (chip: ExtChip) => [
           v-model="reviewMode"
           variant="outline"
           size="sm"
-          class="h-7 gap-1.5 px-2 text-xs font-normal"
+          class="h-6 min-w-0 gap-1.5 rounded-sm bg-background px-2 text-xs font-normal data-[state=off]:text-foreground dark:bg-input/30 [&_svg]:size-[13px]"
           title="Files disappear from the list and the tree as soon as you mark them viewed"
         >
           <CheckCheck /> Hide viewed
@@ -334,7 +342,12 @@ const chipClass = (chip: ExtChip) => [
       <div class="flex items-center gap-1">
         <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
           <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="xs" class="h-7 px-2 text-xs" title="Viewed files: mark all, restore one, restore all, or clear">
+            <Button
+              variant="ghost"
+              size="xs"
+              class="h-[26px] gap-[5px] rounded-sm px-2 text-xs font-normal"
+              title="Viewed files: mark all, restore one, restore all, or clear"
+            >
               <Eye /> Viewed <span class="tabular-nums text-muted-foreground">{{ viewedInView.length }}</span><ChevronDown />
             </Button>
           </DropdownMenuTrigger>

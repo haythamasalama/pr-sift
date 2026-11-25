@@ -425,7 +425,7 @@ watch(
       <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
       <aside
         v-show="!compact || sidebarOpen"
-        class="min-h-0 border-r bg-sidebar"
+        class="flex min-h-0 flex-col border-r bg-sidebar"
         :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
       >
         <div
@@ -443,15 +443,15 @@ watch(
             class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
           />
         </div>
-        <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="border-b p-2">
+        <Tabs v-model="sidebar" class="min-h-0 flex-1 gap-0">
+          <div class="flex flex-col gap-2 px-2 pt-2 pb-1.5">
             <div class="relative flex items-center">
-              <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+              <Search class="pointer-events-none absolute left-[9px] size-3.5 text-muted-foreground" />
               <Input
                 v-model="filter.query.value"
-                placeholder="Search files…"
+                placeholder="Search files"
                 aria-label="Search files"
-                class="h-8 pr-7 pl-8 text-xs md:text-xs"
+                class="h-[30px] rounded-md bg-background pr-7 pl-[30px] text-xs md:text-xs dark:bg-background"
               />
               <Button
                 v-if="filter.query.value"
@@ -464,11 +464,9 @@ watch(
                 <X />
               </Button>
             </div>
-          </div>
-          <div class="p-2 pb-1">
-            <TabsList class="w-full">
-              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
+            <TabsList class="h-7 w-full gap-0.5 rounded-md p-0.5">
+              <TabsTrigger value="tree" class="h-6 rounded-sm text-xs [&_svg]:size-[13px]"><FolderTree /> Tree</TabsTrigger>
+              <TabsTrigger value="smart" class="h-6 rounded-sm text-xs [&_svg]:size-[13px]"><Sparkles /> Smart filters</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="tree" class="min-h-0 flex-1">
@@ -506,6 +504,19 @@ watch(
             />
           </TabsContent>
         </Tabs>
+        <div
+          v-if="sidebar === 'tree'"
+          class="flex items-center gap-1.5 border-t px-3.5 py-2 text-[11px] text-muted-foreground tabular-nums"
+          :title="`${filter.progress.value.done} of ${filter.progress.value.total} files viewed`"
+        >
+          <span class="relative h-1 flex-1 overflow-hidden rounded-full bg-border">
+            <span
+              class="absolute inset-y-0 left-0 bg-emphasis transition-[width]"
+              :style="{ width: `${filter.progress.value.total ? (100 * filter.progress.value.done) / filter.progress.value.total : 0}%` }"
+            />
+          </span>
+          {{ filter.progress.value.done }} of {{ filter.progress.value.total }} viewed
+        </div>
       </aside>
       <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
         <Empty v-if="allReviewed" class="mx-auto mt-16 max-w-sm border-0">

@@ -13,8 +13,13 @@ import { explain, loadMergeContext, merge, type MergeContext } from '../review/a
 
 const UNMERGEABLE: MergeReadiness[] = ['conflicts', 'blocked', 'behind', 'draft']
 
+// GitHub re-renders the pull request page often and the button mounts again each time, so the last context per pull
+// request is kept to show the button at once while a fresh one loads.
+const recent = new Map<string, MergeContext>()
+const keyOf = (pr: PrRef) => `${pr.owner}/${pr.repo}#${pr.number}`
+
 export function useQuickMerge(pr: PrRef) {
-  const context = shallowRef<MergeContext | null>(null)
+  const context = shallowRef<MergeContext | null>(recent.get(keyOf(pr)) ?? null)
   const settings = shallowRef<Settings>(DEFAULTS)
   const loading = shallowRef(false)
   const busy = shallowRef(false)
@@ -52,6 +57,7 @@ export function useQuickMerge(pr: PrRef) {
     try {
       settings.value = await getSettings()
       context.value = await loadMergeContext(pr)
+      recent.set(keyOf(pr), context.value)
     } catch (e) {
       error.value = explain(e, 'merge')
     } finally {

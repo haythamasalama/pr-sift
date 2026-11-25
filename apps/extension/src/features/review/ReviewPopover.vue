@@ -13,7 +13,20 @@ import { useSettingsOpener } from '../settings/useSettingsOpener'
 import type { PrRef } from '../../lib/types'
 import { explain, submitReview } from './actions'
 
-const { pr, headSha, canAct, mine } = defineProps<{ pr: PrRef; headSha: string; canAct: boolean; mine: ReviewVerdict | null }>()
+const {
+  pr,
+  headSha,
+  canAct,
+  mine,
+  blocked = '',
+} = defineProps<{
+  pr: PrRef
+  headSha: string
+  canAct: boolean
+  mine: ReviewVerdict | null
+  // Why this person can't review, such as their own pull request. The button stays, disabled, with this as its tooltip.
+  blocked?: string
+}>()
 const emit = defineEmits<{ reviewed: [event: ReviewEvent] }>()
 
 const EVENTS: { value: ReviewEvent; label: string; hint: string; icon: Component; tone: string }[] = [
@@ -71,12 +84,11 @@ async function submit() {
 
 <template>
   <Popover v-model:open="open">
-    <PopoverTrigger v-if="mine" as-child>
+    <PopoverTrigger v-if="mine && !blocked" as-child>
       <Button
         v-if="mine === 'approved'"
         variant="outline"
-        size="sm"
-        class="shrink-0 text-success-fg hover:text-success-fg"
+        class="shrink-0 px-3 text-[13px] text-success-fg hover:text-success-fg"
         title="You approved this pull request. Review it again."
       >
         <CheckCheck /><span class="hidden sm:inline">Approved</span>
@@ -84,18 +96,31 @@ async function submit() {
       <Button
         v-else-if="mine === 'changes_requested'"
         variant="outline"
-        size="sm"
-        class="shrink-0 text-destructive hover:text-destructive"
+        class="shrink-0 px-3 text-[13px] text-destructive hover:text-destructive"
         title="You requested changes. Review it again."
       >
         <FileDiff /><span class="hidden sm:inline">Changes requested</span>
       </Button>
     </PopoverTrigger>
-    <div v-if="!mine" class="flex shrink-0">
+    <span v-if="blocked" class="flex shrink-0 cursor-not-allowed" :title="blocked" tabindex="0" :aria-label="`Approve: ${blocked}`">
+      <Button variant="success" class="rounded-r-none px-3 text-[13px]" disabled>
+        <Check /><span class="hidden sm:inline">Approve</span>
+      </Button>
       <Button
         variant="success"
-        size="sm"
-        class="rounded-r-none"
+        size="icon"
+        class="w-7 rounded-l-none border-l border-l-success-foreground/25 [&_svg:not([class*=size-])]:size-3.5"
+        disabled
+        aria-hidden="true"
+        tabindex="-1"
+      >
+        <ChevronDown />
+      </Button>
+    </span>
+    <div v-else-if="!mine" class="flex shrink-0">
+      <Button
+        variant="success"
+        class="rounded-r-none px-3 text-[13px]"
         :disabled="busy"
         :title="canAct ? 'Approve this pull request' : 'Approve, request changes or comment'"
         @click="approveNow"
@@ -105,8 +130,8 @@ async function submit() {
       <PopoverTrigger as-child>
         <Button
           variant="success"
-          size="icon-sm"
-          class="w-6 rounded-l-none border-l border-l-success-foreground/25"
+          size="icon"
+          class="w-7 rounded-l-none border-l border-l-success-foreground/25 [&_svg:not([class*=size-])]:size-3.5"
           aria-label="Approve with a comment, request changes or comment"
           title="Approve with a comment, request changes or comment"
         >

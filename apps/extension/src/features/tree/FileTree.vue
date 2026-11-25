@@ -2,8 +2,7 @@
 import { computed, provide, shallowRef, watch } from 'vue'
 import { ChevronsDownUp, ChevronsUpDown, Layers } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { treeExpandKey, treeLayoutKey, type ExpandCommand } from './expandContext'
+import { treeExpandKey, treeLayoutKey, treeOpenFileKey, type ExpandCommand } from './expandContext'
 import { collectFiles, compactTree } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
@@ -40,6 +39,7 @@ provide(
   treeLayoutKey,
   computed(() => ({ indent, guides })),
 )
+provide(treeOpenFileKey, shallowRef(''))
 const setAll = (open: boolean) => (expand.value = { open, n: expand.value.n + 1 })
 
 watch(
@@ -56,31 +56,35 @@ function showAll() {
 
 const compact = computed(() => compactTree(tree))
 const viewedCount = computed(() => collectFiles(tree).filter(isViewed).length)
-const rootState = computed(() => (viewedCount.value === 0 ? 'none' : viewedCount.value === tree.count ? 'all' : 'some'))
 </script>
 
 <template>
-  <nav class="h-full overflow-auto p-2 text-[13px]">
-    <div
-      class="group mb-1 flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-border/40"
-      :class="selected === '' ? 'bg-primary/15 text-primary' : ''"
-    >
-      <Checkbox
-        title="Mark everything in the tree as viewed"
-        class="after:inset-0"
-        :model-value="rootState === 'all' ? true : rootState === 'some' ? 'indeterminate' : false"
-        @update:model-value="(value) => emit('toggleViewed', '', value === true)"
-      />
-      <button type="button" class="flex flex-1 items-center gap-1.5 text-left font-medium" @click="showAll">
-        <Layers :size="14" /> All folders
-        <span class="ml-auto text-[11px] text-muted-foreground tabular-nums" :title="`${viewedCount} of ${tree.count} files viewed`"
+  <nav class="h-full overflow-auto px-2 pb-2 text-[13px]">
+    <div class="flex h-7 items-center gap-1.5 rounded-sm px-1.5" :class="selected === '' ? 'bg-accent' : ''">
+      <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 text-left font-semibold" @click="showAll">
+        <Layers :size="14" class="shrink-0 text-muted-foreground" /> All folders
+        <span
+          class="ml-auto text-[11px] font-normal text-muted-foreground tabular-nums"
+          :title="`${viewedCount} of ${tree.count} files viewed`"
           >{{ viewedCount }} / {{ tree.count }}</span
         >
       </button>
-      <Button variant="ghost" size="icon-xs" title="Expand all folders" aria-label="Expand all folders" @click="setAll(true)"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="size-[22px] text-muted-foreground [&_svg]:size-[13px]"
+        title="Expand all folders"
+        aria-label="Expand all folders"
+        @click="setAll(true)"
         ><ChevronsUpDown
       /></Button>
-      <Button variant="ghost" size="icon-xs" title="Collapse all folders" aria-label="Collapse all folders" @click="setAll(false)"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="size-[22px] text-muted-foreground [&_svg]:size-[13px]"
+        title="Collapse all folders"
+        aria-label="Collapse all folders"
+        @click="setAll(false)"
         ><ChevronsDownUp
       /></Button>
     </div>

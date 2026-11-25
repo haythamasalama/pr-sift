@@ -100,7 +100,7 @@ describe('FilterBar', () => {
 
   it('shows the include state with the primary variant', () => {
     expect(button(mountBar(), '.ts').attributes('data-variant')).toBe('default')
-    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('secondary')
+    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('outline')
   })
 
   it('lets custom types be removed', async () => {
