@@ -2,14 +2,12 @@
 import { computed, shallowRef } from 'vue'
 import { Check, Copy } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { appInfo } from '~/appInfo'
-import { projectPath } from '~/format'
-import { useProjectFolders } from '~/useProjectFolders'
+import { usePathText } from '~/useProjectFolders'
 
 // A folder shown from the project folders down, with a button that copies the full path.
 const { path } = defineProps<{ path: string }>()
-const { settings } = useProjectFolders()
-const text = computed(() => projectPath(path, settings.value?.roots ?? [], appInfo.home))
+const pathText = usePathText()
+const text = computed(() => pathText(path))
 const copied = shallowRef(false)
 
 async function copy() {

@@ -19,7 +19,6 @@ beforeEach(() => {
   const data = tempDir('data-')
   service = new WorktreeService({
     store: new Store(join(data, 'desktop.json')),
-    undoDir: join(data, 'undo'),
     trash: async (path) => {
       const to = join(trashDir, String(trashed.size))
       renameSync(path, to)
@@ -77,24 +76,19 @@ describe('WorktreeService', () => {
     await expect(service.remove('/etc')).rejects.toThrow(/not in the last scan/)
   })
 
-  it('trashes a worktree, keeps its branch, and undoes it after the folder is put back', async () => {
+  it('deletes a worktree for good, uncommitted and ignored files included, and keeps its branch', async () => {
     const shop = makeRepo(root, 'shop')
     const cart = join(root, 'shop-cart')
     sh(shop, 'worktree', 'add', '-q', cart, '-b', 'feature/cart')
+    write(join(cart, 'notes.txt'), 'not committed')
+    write(join(cart, 'dist', 'app.js'), 'ignored build output')
     await service.scan()
 
-    const entry = await service.remove(cart)
+    expect(await service.remove(cart)).toEqual({ repo: shop, path: cart, branch: 'feature/cart' })
     expect(existsSync(cart)).toBe(false)
+    expect(trashed.size).toBe(0)
     expect(sh(shop, 'worktree', 'list')).not.toContain('shop-cart')
     expect(sh(shop, 'branch', '--list', 'feature/cart')).toContain('feature/cart')
-    expect(await service.undoList()).toHaveLength(1)
-
-    expect(await service.undo(entry.id)).toMatchObject({ ok: false, error: expect.stringMatching(/Put the folder back/) })
-    renameSync(trashed.get(cart)!, cart)
-    expect(await service.undo(entry.id)).toEqual({ ok: true })
-    expect(sh(shop, 'worktree', 'list', '--porcelain')).toContain(`worktree ${cart}`)
-    expect(sh(cart, 'rev-parse', '--abbrev-ref', 'HEAD').trim()).toBe('feature/cart')
-    expect(await service.undoList()).toEqual([])
   })
 
   it('prunes worktrees whose folder is gone', async () => {

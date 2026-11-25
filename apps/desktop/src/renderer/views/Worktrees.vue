@@ -16,7 +16,6 @@ import {
   Search,
   SquareTerminal,
   Trash2,
-  Undo2,
   X,
 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -32,13 +31,12 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Spinner } from '@/components/ui/spinner'
 import NoticeBar from '@/components/NoticeBar.vue'
-import type { Repo, UndoEntry, Worktree, WorktreeDetails } from '#shared/ipc'
+import type { Repo, Worktree, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
 import { isFresh, readCache, writeCache } from '~/cache'
-import { appInfo } from '~/appInfo'
-import { errorText, formatAgo, formatBytes, shortPath } from '~/format'
+import { errorText, formatAgo, formatBytes } from '~/format'
 import { openWorktree } from '~/navigation'
-import { useProjectFolders } from '~/useProjectFolders'
+import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
@@ -65,11 +63,10 @@ const details = reactive(new Map<string, WorktreeDetails>(savedDetails?.value ??
 const scanning = shallowRef(false)
 const scanned = shallowRef(!!saved)
 const saveDetails = () => writeCache(`${cacheKey}:details`, [...details.entries()])
-// Renames, removals and undos change the list here; keep the saved copy in step.
+// Renames and removals change the list here; keep the saved copy in step.
 watch(repos, (next) => writeCache(cacheKey, next))
 const error = shallowRef('')
-const notice = shallowRef<{ text: string; undo?: UndoEntry } | null>(null)
-const undoList = shallowRef<UndoEntry[]>([])
+const notice = shallowRef<{ text: string } | null>(null)
 const target = shallowRef<{ repo: Repo; worktree: Worktree } | null>(null)
 const removing = shallowRef(false)
 const query = shallowRef('')
@@ -140,7 +137,7 @@ const bulkWarnings = computed(() => {
   if (unpushed) list.push(`${unpushed} of them ${unpushed === 1 ? 'has' : 'have'} commits that may not be pushed.`)
   return list
 })
-// What moving the picked worktrees to the Trash means, in one line.
+// What deleting the picked worktrees means, in one line.
 const bulkSummary = computed(() => {
   const n = picked.value.length
   const changed = picked.value.filter((w) => details.get(w.path)?.changed).length
@@ -165,11 +162,7 @@ async function confirmBulk() {
   }
   const gone = new Set(done)
   repos.value = repos.value.map((r) => ({ ...r, worktrees: r.worktrees.filter((w) => !gone.has(w.path)) }))
-  undoList.value = await bridge.invoke('worktrees:undo-list')
-  if (only) undoList.value = undoList.value.filter((u) => u.repo === only)
-  notice.value = {
-    text: `Moved ${done.length} ${done.length === 1 ? 'worktree' : 'worktrees'} to the Trash. The branches are kept; undo any of them below.`,
-  }
+  notice.value = { text: `Deleted ${done.length} ${done.length === 1 ? 'worktree' : 'worktrees'}. The branches are kept.` }
   error.value = failed.join('\n')
   selected.value = new Set()
   removing.value = false
@@ -200,7 +193,7 @@ async function openIn(w: Worktree, target: 'editor' | 'terminal') {
   setTimeout(() => (note.value = ''), 3500)
 }
 
-const short = (path: string) => shortPath(path, appInfo.home)
+const short = usePathText()
 const folderName = (w: Worktree) => w.path.split(/[\\/]/).pop() ?? w.path
 const label = (w: Worktree) => w.branch ?? folderName(w)
 // Where the GitHub icon goes: the pull request, else the branch, else the commit.
@@ -248,8 +241,6 @@ async function scan() {
     selected.value = new Set()
     scanned.value = true
     emit('count', linked.value.length)
-    const undos = await bridge.invoke('worktrees:undo-list')
-    undoList.value = only ? undos.filter((u) => u.repo === only) : undos
     void loadDetails(repos.value.flatMap((r) => (r.worktrees.length > 1 || only ? r.worktrees.filter((w) => !w.prunable) : [])))
   } catch (e) {
     error.value = errorText(e)
@@ -274,13 +265,12 @@ async function confirmRemove() {
   if (!current) return
   removing.value = true
   try {
-    const undo = await bridge.invoke('worktrees:remove', current.worktree.path)
-    notice.value = { text: `Moved ${label(current.worktree)} to the Trash. The branch is kept.`, undo }
+    await bridge.invoke('worktrees:remove', current.worktree.path)
+    notice.value = { text: `Deleted ${label(current.worktree)}. The branch is kept.` }
     repos.value = repos.value.map((r) =>
       r.path === current.repo.path ? { ...r, worktrees: r.worktrees.filter((w) => w.path !== current.worktree.path) } : r,
     )
     details.delete(current.worktree.path)
-    undoList.value = await bridge.invoke('worktrees:undo-list')
     target.value = null
   } catch (e) {
     error.value = errorText(e)
@@ -288,16 +278,6 @@ async function confirmRemove() {
   } finally {
     removing.value = false
   }
-}
-
-async function undo(entry: UndoEntry) {
-  const result = await bridge.invoke('worktrees:undo', entry.id)
-  if (!result.ok) {
-    notice.value = { text: result.error ?? 'Could not undo.', undo: entry }
-    return
-  }
-  notice.value = { text: `${entry.branch ?? 'The worktree'} is back at ${short(entry.path)}.` }
-  await scan()
 }
 
 async function prune(repo: Repo) {
@@ -328,7 +308,6 @@ watch(
     <template #icon><Trash2 /></template>
     {{ notice.text }}
     <template #actions>
-      <Button v-if="notice.undo" size="xs" variant="outline" @click="undo(notice.undo)"><Undo2 /> Undo</Button>
       <Button size="xs" variant="ghost" @click="notice = null">Dismiss</Button>
     </template>
   </NoticeBar>
@@ -503,7 +482,7 @@ watch(
                   size="icon-sm"
                   variant="ghost"
                   class="text-muted-foreground"
-                  :aria-label="`Move ${label(w)} to the Trash`"
+                  :aria-label="`Delete ${label(w)}`"
                   :disabled="w.locked"
                   @click="target = { repo, worktree: w }"
                   ><Trash2
@@ -528,9 +507,7 @@ watch(
                   >
                   <template v-if="canTrash(w)">
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" @select="target = { repo, worktree: w }"
-                      ><Trash2 /> Move to Trash</DropdownMenuItem
-                    >
+                    <DropdownMenuItem variant="destructive" @select="target = { repo, worktree: w }"><Trash2 /> Delete</DropdownMenuItem>
                   </template>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -541,7 +518,7 @@ watch(
     </section>
 
     <p v-if="only && scanned && withWorktrees.length" class="text-xs text-muted-foreground">
-      The size shows what moving a worktree to the Trash frees, hidden files such as node_modules and .env included.
+      The size shows what deleting a worktree frees, hidden files such as node_modules and .env included.
     </p>
     <p v-if="!only && plainRepos.length && withWorktrees.length" class="text-xs text-muted-foreground">
       {{ plainRepos.length }} more {{ plainRepos.length === 1 ? 'repository has' : 'repositories have' }} no extra worktrees.
@@ -558,36 +535,22 @@ watch(
       <span class="truncate text-xs text-muted-foreground @max-3xl:hidden">{{ bulkSummary }}</span>
       <span class="h-5 w-px shrink-0 bg-border" aria-hidden="true" />
       <Button size="sm" variant="destructive" @click="bulkAsking = true"
-        ><Trash2 /> Move {{ selected.size === 1 ? 'it' : selected.size }} to Trash</Button
+        ><Trash2 /> Delete {{ selected.size === 1 ? 'it' : selected.size }}</Button
       >
 
       <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Clear the selection" @click="selected = new Set()"
         ><X
       /></Button>
     </div>
-
-    <section v-if="undoList.length" class="flex flex-col gap-2 pt-2">
-      <SectionLabel>Recently moved to the Trash</SectionLabel>
-      <p class="text-xs text-muted-foreground">To bring one back, put its folder back from the Trash, then press Undo.</p>
-      <ul class="overflow-hidden rounded-lg border border-border">
-        <li v-for="entry in undoList" :key="entry.id" class="flex items-center gap-3 border-t border-accent px-4 py-2.5 first:border-t-0">
-          <div class="flex min-w-0 flex-1 flex-col">
-            <span class="truncate font-mono text-[13px]">{{ entry.branch ?? short(entry.path) }}</span>
-            <span class="truncate text-xs text-muted-foreground">{{ short(entry.path) }} · {{ formatAgo(entry.removedAt) }}</span>
-          </div>
-          <Button size="sm" variant="outline" @click="undo(entry)"><Undo2 /> Undo</Button>
-        </li>
-      </ul>
-    </section>
   </div>
 
   <WorktreeDialog v-model:open="dialogOpen" :repo="dialog?.repo ?? ''" :worktree="dialog?.worktree ?? null" @done="onDialogDone" />
 
   <ConfirmDialog
     :open="bulkAsking"
-    :title="`Move ${selected.size} worktrees to the Trash?`"
-    description="The folders go to the Trash and git forgets the worktrees. The branches stay, and you can undo each one from this page."
-    :confirm="`Move ${selected.size} to Trash`"
+    :title="`Delete ${selected.size} worktrees for good?`"
+    description="The folders are deleted, uncommitted changes included, and can’t be brought back. The branches stay."
+    :confirm="`Delete ${selected.size} permanently`"
     :busy="removing"
     @update:open="(v) => (bulkAsking = v)"
     @confirm="confirmBulk"
@@ -605,9 +568,9 @@ watch(
 
   <ConfirmDialog
     :open="target !== null"
-    :title="`Move ${target ? label(target.worktree) : ''} to the Trash?`"
-    description="The folder goes to the Trash and git forgets the worktree. The branch stays, and you can undo this from this page."
-    confirm="Move to Trash"
+    :title="`Delete ${target ? label(target.worktree) : ''} for good?`"
+    description="The folder is deleted, uncommitted changes included, and can’t be brought back. The branch stays."
+    confirm="Delete permanently"
     :busy="removing"
     @update:open="(v) => !v && (target = null)"
     @confirm="confirmRemove"

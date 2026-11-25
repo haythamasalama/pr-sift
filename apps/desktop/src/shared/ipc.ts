@@ -35,6 +35,8 @@ export interface AuthResult {
 export interface DesktopSettings {
   roots: string[]
   depth: number
+  // Paths read from the project folder down by default; this shows the whole absolute path instead.
+  fullPaths: boolean
 }
 
 export interface Worktree {
@@ -68,12 +70,10 @@ export interface WorktreeDetails {
   merged?: boolean
 }
 
-export interface UndoEntry {
-  id: string
+export interface RemovedWorktree {
   repo: string
   path: string
   branch?: string
-  removedAt: number
 }
 
 export type LeftoverKind = 'dependencies' | 'build' | 'cache' | 'media'
@@ -325,9 +325,7 @@ export interface Channels {
   'dialog:pick-folder': { args: []; result: string | null }
   'worktrees:scan': { args: []; result: Repo[] }
   'worktrees:details': { args: [path: string]; result: WorktreeDetails }
-  'worktrees:remove': { args: [path: string]; result: UndoEntry }
-  'worktrees:undo-list': { args: []; result: UndoEntry[] }
-  'worktrees:undo': { args: [id: string]; result: { ok: boolean; error?: string } }
+  'worktrees:remove': { args: [path: string]; result: RemovedWorktree }
   'worktrees:prune': { args: [repo: string]; result: Repo }
   'projects:list': { args: []; result: Project[] }
   'projects:candidates': { args: []; result: string[] }
@@ -382,8 +380,6 @@ export const CHANNELS = [
   'worktrees:scan',
   'worktrees:details',
   'worktrees:remove',
-  'worktrees:undo-list',
-  'worktrees:undo',
   'worktrees:prune',
   'projects:list',
   'projects:candidates',

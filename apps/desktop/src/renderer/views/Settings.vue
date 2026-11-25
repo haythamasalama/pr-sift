@@ -7,8 +7,8 @@ import SettingsForm from '@/features/settings/SettingsForm.vue'
 import SettingsRow from '@/features/settings/SettingsRow.vue'
 import { bridge } from '~/bridge'
 import { appInfo } from '~/appInfo'
-import { shortPath } from '~/format'
-import { useProjectFolders } from '~/useProjectFolders'
+
+import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import PageHeader from '~/components/PageHeader.vue'
 
 // One settings page for the whole app: the desktop's own folders first, then everything the extension's review uses.
@@ -21,9 +21,9 @@ const NAV: { id: string; label: string }[] = [
   { id: 'app', label: 'About' },
 ]
 
-const { settings, add, remove, setDepth } = useProjectFolders()
+const { settings, add, remove, setDepth, setFullPaths } = useProjectFolders()
 const DEPTHS = [2, 3, 4, 5, 6]
-const short = (path: string) => shortPath(path, appInfo.home)
+const short = usePathText()
 
 const root = useTemplateRef<HTMLElement>('root')
 const current = shallowRef('projects')
@@ -123,6 +123,24 @@ onBeforeUnmount(() => scroller()?.removeEventListener('scroll', track))
                     @update:model-value="(v) => v && setDepth(Number(v))"
                   >
                     <ToggleGroupItem v-for="d in DEPTHS" :key="d" :value="String(d)" class="w-7 px-0 text-xs">{{ d }}</ToggleGroupItem>
+                  </ToggleGroup>
+                </SettingsRow>
+              </div>
+              <div class="border-t border-accent">
+                <SettingsRow
+                  label="Paths"
+                  description="Short paths start at your project folder. Copying a path always copies the full one."
+                >
+                  <ToggleGroup
+                    :model-value="settings?.fullPaths ? 'full' : 'short'"
+                    type="single"
+                    size="sm"
+                    :spacing="0.5"
+                    aria-label="Paths"
+                    @update:model-value="(v) => v && setFullPaths(v === 'full')"
+                  >
+                    <ToggleGroupItem value="short" class="px-2 text-xs">Short</ToggleGroupItem>
+                    <ToggleGroupItem value="full" class="px-2 text-xs">Full</ToggleGroupItem>
                   </ToggleGroup>
                 </SettingsRow>
               </div>

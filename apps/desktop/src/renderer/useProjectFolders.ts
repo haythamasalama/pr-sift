@@ -1,4 +1,6 @@
 import { shallowRef } from 'vue'
+import { appInfo } from './appInfo'
+import { projectPath } from './format'
 import type { DesktopSettings } from '#shared/ipc'
 import { bridge } from './bridge'
 
@@ -25,5 +27,15 @@ export function useProjectFolders() {
     settings.value = await bridge.invoke('settings:set', { depth })
   }
 
-  return { settings, ready: loading, add, remove, setDepth }
+  async function setFullPaths(fullPaths: boolean) {
+    settings.value = await bridge.invoke('settings:set', { fullPaths })
+  }
+
+  return { settings, ready: loading, add, remove, setDepth, setFullPaths }
+}
+
+// How every path in the app reads: from the project folder down, or the whole path when Settings asks for it.
+export function usePathText() {
+  useProjectFolders()
+  return (path: string) => (settings.value?.fullPaths ? path : projectPath(path, settings.value?.roots ?? [], appInfo.home))
 }

@@ -12,15 +12,17 @@ import type { Branch, Project, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
 import { readCache, writeCache } from '~/cache'
 import { appInfo } from '~/appInfo'
-import { errorText, formatBytes, projectPath, shortPath } from '~/format'
+import { errorText, formatBytes, projectPath } from '~/format'
 import { openProject, openWorktree } from '~/navigation'
-import { useProjectFolders } from '~/useProjectFolders'
+import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import { useProjects } from '~/useProjects'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Hint from '~/components/Hint.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import Segmented from '~/components/Segmented.vue'
 import SectionLabel from '~/components/SectionLabel.vue'
+
+const short = usePathText()
 
 // Worktrees and branches that can go without losing work, across every project.
 type Kind = 'worktree' | 'branch'
@@ -198,11 +200,9 @@ async function confirmDelete() {
     }
   }
   const parts: string[] = []
-  if (worktreesDone) parts.push(`moved ${worktreesDone} ${worktreesDone === 1 ? 'worktree' : 'worktrees'} to the Trash`)
+  if (worktreesDone) parts.push(`deleted ${worktreesDone} ${worktreesDone === 1 ? 'worktree' : 'worktrees'}`)
   if (branchesDone) parts.push(`deleted ${branchesDone} ${branchesDone === 1 ? 'branch' : 'branches'}`)
-  notice.value = parts.length
-    ? `${parts.join(' and ').replace(/^./, (c) => c.toUpperCase())}. Worktrees can be put back from All worktrees.`
-    : ''
+  notice.value = parts.length ? `${parts.join(' and ').replace(/^./, (c) => c.toUpperCase())}.` : ''
   error.value = failed.join('\n')
   selected.clear()
   deleting.value = false
@@ -275,9 +275,7 @@ onMounted(scan)
             <Badge variant="secondary" class="w-16 shrink-0 bg-muted text-[11px] font-normal text-muted-foreground">{{
               i.kind === 'worktree' ? 'Worktree' : 'Branch'
             }}</Badge>
-            <span class="truncate font-mono text-[12.5px]" :title="i.kind === 'worktree' ? shortPath(i.path, appInfo.home) : i.name">{{
-              i.name
-            }}</span>
+            <span class="truncate font-mono text-[12.5px]" :title="i.kind === 'worktree' ? short(i.path) : i.name">{{ i.name }}</span>
           </div>
           <button
             type="button"
@@ -339,7 +337,7 @@ onMounted(scan)
   <ConfirmDialog
     :open="confirming"
     :title="selected.size === 1 ? `Delete ${picked[0]?.name}?` : `Delete ${selected.size} items?`"
-    description="Worktree folders go to the Trash, and can be put back from All worktrees. Branches are deleted on this computer only; their copies on GitHub stay."
+    description="Worktree folders are deleted for good, uncommitted changes included, and can’t be brought back. Branches are deleted on this computer only; their copies on GitHub stay."
     :confirm="selected.size === 1 ? 'Delete' : `Delete ${selected.size} items`"
     :busy="deleting"
     @update:open="(v) => (confirming = v)"

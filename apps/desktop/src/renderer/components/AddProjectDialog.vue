@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePathText } from '~/useProjectFolders'
 import { computed, reactive, shallowRef, watch } from 'vue'
 import { FolderSearch, Search } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
@@ -7,8 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { bridge } from '~/bridge'
-import { appInfo } from '~/appInfo'
-import { errorText, shortPath } from '~/format'
+import { errorText } from '~/format'
+
+const short = usePathText()
 
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ added: [paths: string[]] }>()
@@ -90,7 +92,7 @@ async function add(paths = [...selected]) {
               <Checkbox :model-value="selected.has(p)" @update:model-value="(v) => (v ? selected.add(p) : selected.delete(p))" />
               <span class="flex min-w-0 flex-col">
                 <span class="font-medium">{{ name(p) }}</span>
-                <span class="truncate text-xs text-muted-foreground">{{ shortPath(p, appInfo.home) }}</span>
+                <span class="truncate text-xs text-muted-foreground">{{ short(p) }}</span>
               </span>
             </label>
           </li>

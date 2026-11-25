@@ -10,9 +10,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import NoticeBar from '@/components/NoticeBar.vue'
 import type { Leftover, LeftoverKind } from '#shared/ipc'
 import { bridge } from '~/bridge'
-import { appInfo } from '~/appInfo'
-import { errorText, formatAgo, formatBytes, shortPath } from '~/format'
-import { useProjectFolders } from '~/useProjectFolders'
+import { errorText, formatAgo, formatBytes } from '~/format'
+import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
@@ -43,7 +42,7 @@ const notice = shallowRef('')
 const confirming = shallowRef(false)
 const trashing = shallowRef(false)
 
-const short = (path: string) => shortPath(path, appInfo.home)
+const short = usePathText()
 const sizeOf = (item: Leftover) => item.size ?? sizes.get(item.path)
 
 // Folders under 50 MB are not worth the attention; until a folder is measured it stays hidden too.

@@ -1,12 +1,11 @@
-import { randomUUID } from 'node:crypto'
-import { cp, readFile, rm, stat } from 'node:fs/promises'
+import { readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import type {
   ChangedFile,
   PatchFile,
   PatchMode,
   Repo,
-  UndoEntry,
+  RemovedWorktree,
   Worktree,
   WorktreeChanges,
   WorktreeDetails,
@@ -21,17 +20,8 @@ import { findRepos } from './discover'
 import { parseGitFile, parseWorktreeList } from './porcelain'
 import { splitPatch } from './patch'
 
-interface StoredUndo extends UndoEntry {
-  adminDir: string
-  backup: string
-}
-
-const UNDO_KEY = 'worktreeUndo'
-const UNDO_LIMIT = 50
-
 export interface WorktreeDeps {
   store: Store
-  undoDir: string
   trash: (path: string) => Promise<void>
   roots: () => Promise<{ roots: string[]; depth: number }>
 }
@@ -151,17 +141,8 @@ export class WorktreeService {
     return (await git(repo, ['merge-base', '--is-ancestor', worktree.head, base])).code === 0
   }
 
-  private async undoEntries(): Promise<StoredUndo[]> {
-    return (await this.deps.store.getOne<StoredUndo[]>(UNDO_KEY)) ?? []
-  }
-
-  async undoList(): Promise<UndoEntry[]> {
-    return (await this.undoEntries()).map(({ id, repo, path, branch, removedAt }) => ({ id, repo, path, branch, removedAt }))
-  }
-
-  // Moves the folder to the Trash and lets git forget it. Git's admin folder for the worktree is copied first, because
-  // `git worktree prune` deletes it and without it a folder put back from the Trash would no longer be a worktree.
-  async remove(path: string): Promise<UndoEntry> {
+  // Deletes the worktree folder for good, uncommitted changes included, and lets git forget it. The branch is kept.
+  async remove(path: string): Promise<RemovedWorktree> {
     const { repo, worktree } = this.entry(path)
     if (worktree.main) throw new Error('This is the repository’s main folder, not a worktree. PR Sift never removes it.')
     if (worktree.bare) throw new Error('Bare repositories are not removed.')
@@ -169,39 +150,19 @@ export class WorktreeService {
       throw new Error(`This worktree is locked${worktree.lockReason ? `: ${worktree.lockReason}` : ''}. Unlock it with git first.`)
     if (worktree.prunable || !(await exists(worktree.path))) throw new Error('The folder is already gone. Use Clean up instead.')
 
-    const adminDir = await this.adminDir(worktree)
-    const id = randomUUID()
-    const backup = join(this.deps.undoDir, id)
-    await cp(adminDir, backup, { recursive: true, verbatimSymlinks: true })
-    try {
-      await this.deps.trash(worktree.path)
-    } catch (e) {
-      await rm(backup, { recursive: true, force: true })
-      throw new Error(`Could not move the folder to the Trash: ${e instanceof Error ? e.message : String(e)}`, { cause: e })
+    // Twice --force also removes a worktree git considers busy. Whatever git leaves behind, such as ignored files, goes too.
+    const removed = await git(repo, ['worktree', 'remove', '--force', '--force', worktree.path])
+    if (await exists(worktree.path)) {
+      try {
+        await rm(worktree.path, { recursive: true, force: true })
+      } catch (e) {
+        const why = removed.stderr.trim() || (e instanceof Error ? e.message : String(e))
+        throw new Error(`Could not delete the folder: ${why}`, { cause: e })
+      }
     }
     await git(repo, ['worktree', 'prune'])
     this.known.delete(worktree.path)
-
-    const entry: StoredUndo = { id, repo, path: worktree.path, branch: worktree.branch, removedAt: Date.now(), adminDir, backup }
-    const entries = [entry, ...(await this.undoEntries())]
-    for (const old of entries.slice(UNDO_LIMIT)) await rm(old.backup, { recursive: true, force: true })
-    await this.deps.store.set({ [UNDO_KEY]: entries.slice(0, UNDO_LIMIT) })
-    return { id, repo, path: entry.path, branch: entry.branch, removedAt: entry.removedAt }
-  }
-
-  async undo(id: string): Promise<{ ok: boolean; error?: string }> {
-    const entries = await this.undoEntries()
-    const entry = entries.find((e) => e.id === id)
-    if (!entry) return { ok: false, error: 'Nothing to undo for this worktree any more.' }
-    if (!(await exists(entry.path))) {
-      return { ok: false, error: `Put the folder back from the Trash first, to ${entry.path}, then press Undo again.` }
-    }
-    if (!(await exists(entry.adminDir))) await cp(entry.backup, entry.adminDir, { recursive: true, verbatimSymlinks: true })
-    const repaired = await git(entry.repo, ['worktree', 'repair', entry.path])
-    if (repaired.code !== 0) return { ok: false, error: repaired.stderr.trim() || 'git worktree repair failed.' }
-    await rm(entry.backup, { recursive: true, force: true })
-    await this.deps.store.set({ [UNDO_KEY]: entries.filter((e) => e.id !== id) })
-    return { ok: true }
+    return { repo, path: worktree.path, branch: worktree.branch }
   }
 
   // Files with changes, and the latest commits, so the person can see what a worktree holds before deciding.

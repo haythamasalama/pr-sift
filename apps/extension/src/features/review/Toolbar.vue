@@ -41,7 +41,11 @@ const openSettings = useSettingsOpener()
 </script>
 
 <template>
-  <header class="flex flex-wrap items-center gap-x-2 gap-y-2 xl:flex-nowrap border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4">
+  <!-- On a GitHub page the header wraps to two rows below xl; the desktop app's window has the room, so it keeps one row. -->
+  <header
+    class="flex items-center gap-x-2 gap-y-2 border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4"
+    :class="back ? 'flex-nowrap' : 'flex-wrap xl:flex-nowrap'"
+  >
     <Button
       v-if="compact"
       variant="outline"
@@ -70,7 +74,7 @@ const openSettings = useSettingsOpener()
     <Button v-if="!back" variant="ghost" size="icon-sm" class="order-1 shrink-0 xl:hidden" aria-label="Close" @click="emit('close')"
       ><X
     /></Button>
-    <div class="order-2 basis-full xl:hidden" />
+    <div v-if="!back" class="order-2 basis-full xl:hidden" />
 
     <Skeleton v-if="loading" class="order-3 h-4 w-11 xl:order-none" />
     <div
@@ -84,7 +88,7 @@ const openSettings = useSettingsOpener()
       >
     </div>
 
-    <div class="order-3 flex-1 xl:order-none" />
+    <div v-if="!back" class="order-3 flex-1 xl:order-none" />
 
     <div class="order-3 flex shrink-0 items-center gap-2 empty:hidden xl:order-none sm:gap-3"><slot name="actions" /></div>
 

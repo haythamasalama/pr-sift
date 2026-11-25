@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePathText } from '~/useProjectFolders'
 import { computed, onMounted, shallowRef } from 'vue'
 import { ArrowDownUp, CircleAlert, Copy, Ellipsis, ExternalLink, GitMerge, GitPullRequest, RefreshCw, Search, Trash2, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -21,13 +22,14 @@ import type { Branch } from '#shared/ipc'
 import type { PullItem } from '~/github'
 import { bridge } from '~/bridge'
 import { readCache, writeCache } from '~/cache'
-import { appInfo } from '~/appInfo'
-import { errorText, formatAgo, shortPath } from '~/format'
+import { errorText, formatAgo } from '~/format'
 import { openReview } from '~/navigation'
 import ConfirmDialog from './ConfirmDialog.vue'
 import Segmented from './Segmented.vue'
 import SectionLabel from './SectionLabel.vue'
 import StatusPill from './StatusPill.vue'
+
+const short = usePathText()
 
 const {
   repo,
@@ -268,7 +270,7 @@ onMounted(() => {
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <span class="truncate font-mono text-[12.5px]" :title="b.subject ? `${b.name}\n${b.subject}` : b.name">{{ b.name }}</span>
             <StatusPill v-if="b.current" tone="info" class="text-[11px]">Checked out</StatusPill>
-            <Hint v-else-if="b.worktree" :text="`Checked out in ${shortPath(b.worktree, appInfo.home)}`">
+            <Hint v-else-if="b.worktree" :text="`Checked out in ${short(b.worktree)}`">
               <StatusPill tone="info" class="text-[11px]">In a worktree</StatusPill>
             </Hint>
             <Hint v-if="local(b)" text="Only on this computer. It was never pushed to GitHub.">

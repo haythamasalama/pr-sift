@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, safeStorage, shell, type IpcMainInvokeEvent, type WebContents } from 'electron'
 import { existsSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,15 +34,17 @@ let window: BrowserWindow | null = null
 const userData = app.getPath('userData')
 // What the review UI reads and writes through `chrome.storage.local`.
 const shared = new Store(join(userData, 'storage.json'))
-// What only the main process uses: settings, sign-in details, undo records.
+// What only the main process uses: settings and sign-in details.
 const internal = new Store(join(userData, 'desktop.json'))
 const vault = new TokenVault(join(userData, 'token.bin'), safeStorage, internal, platform)
 const worktrees = new WorktreeService({
   store: internal,
-  undoDir: join(userData, 'undo'),
   trash: (path) => shell.trashItem(path),
   roots: () => readSettings(internal),
 })
+// Worktrees used to go to the Trash with an Undo list; they are deleted for good now, so the old undo records go.
+void rm(join(userData, 'undo'), { recursive: true, force: true }).catch(() => undefined)
+void internal.remove(['worktreeUndo']).catch(() => undefined)
 async function pickFolder(title: string) {
   const options = { properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[], title }
   const picked = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options)
@@ -202,8 +205,6 @@ function registerHandlers() {
   h('worktrees:scan', () => worktrees.scan())
   h('worktrees:details', (_e, path) => worktrees.details(String(path)))
   h('worktrees:remove', (_e, path) => worktrees.remove(String(path)))
-  h('worktrees:undo-list', () => worktrees.undoList())
-  h('worktrees:undo', (_e, id) => worktrees.undo(String(id)))
   h('worktrees:prune', (_e, repo) => worktrees.prune(String(repo)))
 
   h('leftovers:scan', async (_e, root) => {
