@@ -218,4 +218,11 @@ describe('FilterBar', () => {
     expect(wrapper.text()).toContain('.g')
     expect(wrapper.text()).toContain('Show less')
   })
+
+  it('offers the viewed list only while viewed files are hidden', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.text()).toContain('Viewed')
+    await wrapper.setProps({ reviewMode: false })
+    expect(wrapper.findAll('button').some((b) => /^Viewed/.test(b.text()))).toBe(false)
+  })
 })

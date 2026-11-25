@@ -5,6 +5,8 @@ import { computed, nextTick, shallowRef, useTemplateRef } from 'vue'
 import {
   CheckCheck,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileText,
   Folder,
@@ -181,13 +183,15 @@ const chipClass = (chip: ExtChip) => [
 
       <Button
         v-if="foldedTypes > 0 || allTypes"
-        variant="ghost"
+        variant="outline"
         size="xs"
-        class="h-[22px] rounded-sm px-1.5 text-xs font-normal text-muted-foreground"
+        class="h-[22px] gap-1 rounded-sm px-2 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground [&_svg]:size-3"
         :aria-expanded="allTypes"
+        :title="allTypes ? 'Show only the most common types' : 'Show every file type'"
         @click="allTypes = !allTypes"
       >
-        {{ allTypes ? 'Show less' : `+${foldedTypes} more` }}
+        <template v-if="allTypes"><ChevronLeft /> Show less</template>
+        <template v-else>+{{ foldedTypes }} more <ChevronRight /></template>
       </Button>
 
       <Input
@@ -356,8 +360,9 @@ const chipClass = (chip: ExtChip) => [
           <CheckCheck /> Hide viewed
         </Toggle>
       </div>
-      <Separator orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
-      <div class="flex items-center gap-1">
+      <!-- The viewed list only matters while viewed files are hidden: it is the way back to one. -->
+      <Separator v-if="reviewMode" orientation="vertical" class="hidden h-4 sm:block data-[orientation=vertical]:self-center" />
+      <div v-if="reviewMode" class="flex items-center gap-1">
         <DropdownMenu @update:open="(open) => !open && (confirmClear = false)">
           <DropdownMenuTrigger as-child>
             <Button
