@@ -67,16 +67,20 @@ const repoMatches = (patterns: string[], owner: string, repo: string) => {
   const full = `${owner}/${repo}`.toLowerCase()
   return patterns.some((p) => p === full || (p.endsWith('/*') && p.slice(0, -2) === owner.toLowerCase()))
 }
+// GitHub's GraphQL names bots without the "[bot]" the website shows, so compare logins without it.
+const person = (login: string) => login.toLowerCase().replace(/\[bot\]$/, '')
+// A bare folder name such as "docs" or "app/Models" means everything inside it.
+const expand = (globs: string[]) => globs.flatMap((g) => (/[*?]/.test(g) || /\.[^/]+$/.test(g) ? [g] : [g, `${g.replace(/\/+$/, '')}/**`]))
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 // Every reason the rule does not match this pull request; an empty list means it matches.
 export function checkRule(rule: AutoApproveRule, pull: PullFacts, now: number): string[] {
   const failed: string[] = []
-  const author = pull.author.toLowerCase()
+  const author = person(pull.author)
   const labels = pull.labels.map((l) => l.toLowerCase())
   if (rule.repos.length && !repoMatches(rule.repos, pull.owner, pull.repo)) failed.push('Repository is not in the list')
-  if (rule.authors.length && !rule.authors.includes(author)) failed.push(`Author ${pull.author} is not in the list`)
-  if (rule.excludeAuthors.includes(author)) failed.push(`Author ${pull.author} is excluded`)
+  if (rule.authors.length && !rule.authors.some((a) => person(a) === author)) failed.push(`Author ${pull.author} is not in the list`)
+  if (rule.excludeAuthors.some((a) => person(a) === author)) failed.push(`Author ${pull.author} is excluded`)
   if (rule.baseBranches.length && !rule.baseBranches.includes(pull.base)) failed.push(`Targets ${pull.base}, which is not allowed`)
   if (rule.labels.length && !rule.labels.some((l) => labels.includes(l.toLowerCase()))) failed.push('Has none of the needed labels')
   const blockedLabel = rule.blockedLabels.find((l) => labels.includes(l.toLowerCase()))
@@ -91,12 +95,12 @@ export function checkRule(rule: AutoApproveRule, pull: PullFacts, now: number): 
   if (fileRules && pull.files.length < pull.changedFiles) failed.push('Too many files to check every path')
   else {
     if (rule.paths.length) {
-      const allowed = matcher(rule.paths)
+      const allowed = matcher(expand(rule.paths))
       const outside = pull.files.find((f) => !allowed(f))
       if (outside) failed.push(`Changes ${outside}, which no allowed path covers`)
     }
     if (rule.blockedPaths.length) {
-      const blocked = matcher(rule.blockedPaths)
+      const blocked = matcher(expand(rule.blockedPaths))
       const hit = pull.files.find((f) => blocked(f))
       if (hit) failed.push(`Changes ${hit}, which is blocked`)
     }
@@ -125,7 +129,7 @@ export function evaluate(config: AutoApproveConfig, pull: PullFacts, me: string,
   }
   // These hold whatever the rules say.
   if (pull.draft) return { pull: ref, checks: [], blocked: 'It is a draft' }
-  if (pull.author.toLowerCase() === me.toLowerCase()) return { pull: ref, checks: [], blocked: 'You opened it' }
+  if (person(pull.author) === person(me)) return { pull: ref, checks: [], blocked: 'You opened it' }
   if (pull.myApprovedSha === pull.headSha) return { pull: ref, checks: [], blocked: 'You already approved this commit' }
   const checks: RuleCheck[] = config.rules
     .filter((r) => r.enabled)

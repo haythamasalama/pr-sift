@@ -6,10 +6,7 @@ const CONFIG_KEY = 'autoApprove'
 const LOG_KEY = 'autoApproveLog'
 const LOG_LIMIT = 300
 
-const QUERY = `query {
-  viewer { login }
-  search(query: "is:open is:pr review-requested:@me archived:false sort:updated-desc", type: ISSUE, first: 40) {
-    nodes { ... on PullRequest {
+const PULL_FIELDS = `nodes { ... on PullRequest {
       number title url isDraft updatedAt baseRefName headRefOid additions deletions changedFiles mergeable
       repository { name owner { login } }
       author { login }
@@ -17,9 +14,32 @@ const QUERY = `query {
       files(first: 100) { nodes { path } }
       latestReviews(first: 30) { nodes { state author { login } commit { oid } } }
       commits(last: 1) { nodes { commit { pushedDate committedDate statusCheckRollup { state } } } }
-    } }
+    } }`
+
+// Pull requests waiting for your review, plus every open one in the repositories your rules name:
+// many teams never request a reviewer, so a rule for a repository has to look at the whole repository.
+export function searchQuery(config: AutoApproveConfig) {
+  const scopes = [
+    ...new Set(
+      config.rules
+        .filter((r) => r.enabled)
+        .flatMap((r) => r.repos)
+        .map((p) => (p.endsWith('/*') ? `user:${p.slice(0, -2)}` : `repo:${p}`)),
+    ),
+  ].slice(0, 12)
+  const inRepos = scopes.length
+    ? `inRepos: search(query: ${JSON.stringify(`is:open is:pr archived:false -author:@me sort:updated-desc ${scopes.join(' ')}`)}, type: ISSUE, first: 50) {
+    ${PULL_FIELDS}
+  }`
+    : ''
+  return `query {
+  viewer { login }
+  search(query: "is:open is:pr review-requested:@me archived:false sort:updated-desc", type: ISSUE, first: 40) {
+    ${PULL_FIELDS}
   }
+  ${inRepos}
 }`
+}
 
 interface RawPull {
   number: number
@@ -88,7 +108,7 @@ export class AutoApproveService {
   // Commits already logged as "would approve", so a dry run doesn't repeat itself every round.
   private seen = new Set<string>()
   // The last answer from GitHub, so editing a rule can re-check it without asking again on every key.
-  private cache?: { at: number; me: string; pulls: PullFacts[] }
+  private cache?: { at: number; scope: string; me: string; pulls: PullFacts[] }
 
   constructor(private readonly deps: AutoApproveDeps) {}
 
@@ -154,17 +174,19 @@ export class AutoApproveService {
     this.timer = (this.deps.setTimer ?? setTimeout)(() => void this.run().catch(() => undefined), ms)
   }
 
-  private async fetch(): Promise<{ me: string; pulls: PullFacts[] }> {
-    const res = await this.deps.request({ type: 'gh', path: '/graphql', method: 'POST', body: { query: QUERY } })
+  private async fetch(config: AutoApproveConfig): Promise<{ me: string; pulls: PullFacts[] }> {
+    const res = await this.deps.request({ type: 'gh', path: '/graphql', method: 'POST', body: { query: searchQuery(config) } })
     const body = res.data as {
-      data?: { viewer: { login: string }; search: { nodes: (RawPull | null)[] } }
+      data?: { viewer: { login: string }; search: { nodes: (RawPull | null)[] }; inRepos?: { nodes: (RawPull | null)[] } }
       message?: string
       errors?: { message: string }[]
     }
     if (!res.ok || !body?.data) throw new Error(body?.message ?? body?.errors?.[0]?.message ?? `GitHub answered ${res.status}.`)
     const me = body.data.viewer.login
-    const result = { me, pulls: body.data.search.nodes.filter((n): n is RawPull => !!n?.repository).map((n) => toFacts(n, me)) }
-    this.cache = { at: this.now(), ...result }
+    const nodes = [...body.data.search.nodes, ...(body.data.inRepos?.nodes ?? [])].filter((n): n is RawPull => !!n?.repository)
+    const unique = [...new Map(nodes.map((n) => [n.url, n])).values()]
+    const result = { me, pulls: unique.map((n) => toFacts(n, me)) }
+    this.cache = { at: this.now(), scope: searchQuery(config), ...result }
     return result
   }
 
@@ -174,8 +196,10 @@ export class AutoApproveService {
   // A draft config is checked as given (after cleaning), against GitHub's answer from the last minute and a half.
   async preview(draft?: unknown, refresh = false): Promise<Evaluation[]> {
     const config = draft === undefined || draft === null ? await this.config() : cleanConfig(draft)
-    const fresh = this.cache && !refresh && this.now() - this.cache.at < AutoApproveService.CACHE_MS
-    const { me, pulls } = fresh ? this.cache! : await this.fetch()
+    // A rule that names a new repository needs a new search, not the cached one.
+    const fresh =
+      this.cache && !refresh && this.cache.scope === searchQuery(config) && this.now() - this.cache.at < AutoApproveService.CACHE_MS
+    const { me, pulls } = fresh ? this.cache! : await this.fetch(config)
     return pulls.map((p) => evaluate(config, p, me, this.now()))
   }
 
@@ -186,7 +210,7 @@ export class AutoApproveService {
     await this.changed()
     try {
       const config = await this.config()
-      const { me, pulls } = await this.fetch()
+      const { me, pulls } = await this.fetch(config)
       const entries: AutoApproveLogEntry[] = []
       for (const pull of pulls) {
         const result = evaluate(config, pull, me, this.now())

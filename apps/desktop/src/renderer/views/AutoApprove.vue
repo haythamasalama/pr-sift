@@ -217,9 +217,12 @@ const matchCount = (r: AutoApproveRule) => evaluations.value?.filter((e) => pass
 const forRule = computed(() => {
   const r = rule.value
   if (!r || !evaluations.value) return { yes: [], no: [] as { e: Evaluation; why: string }[] }
+  // Pull requests from repositories this rule doesn't cover are other rules' business.
+  const outOfScope = (e: Evaluation) =>
+    r.repos.length > 0 && !!e.checks.find((c) => c.ruleId === r.id)?.failed.includes('Repository is not in the list')
   const yes = evaluations.value.filter((e) => passes(e, r.id))
   const no = evaluations.value
-    .filter((e) => !passes(e, r.id))
+    .filter((e) => !passes(e, r.id) && !outOfScope(e))
     .map((e) => ({ e, why: e.blocked ?? e.checks.find((c) => c.ruleId === r.id)?.failed.join(' · ') ?? '' }))
   return { yes, no }
 })
@@ -305,7 +308,7 @@ onBeforeUnmount(() => {
     <div class="flex min-w-[280px] flex-1 flex-col gap-0.5">
       <h1 class="text-xl font-semibold tracking-[-0.01em]">Auto-approve</h1>
       <p class="flex flex-wrap items-center gap-x-1.5 text-[12.5px] text-muted-foreground">
-        Checks pull requests waiting for your review
+        Checks open pull requests in your rules' repositories, and those waiting for your review,
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button variant="outline" size="xs" aria-label="How often to check"
@@ -358,8 +361,8 @@ onBeforeUnmount(() => {
       /></span>
       <h2 class="text-lg font-semibold">Let PR Sift approve the safe pull requests</h2>
       <p class="max-w-[600px] text-muted-foreground">
-        A rule says which pull requests are safe to approve: who opened them, where, and what they change. PR Sift checks the pull requests
-        waiting for your review and approves the ones that match.
+        A rule says which pull requests are safe to approve: who opened them, where, and what they change. PR Sift checks the open pull
+        requests in the repositories you name, and any waiting for your review, and approves the ones that match.
       </p>
     </div>
 
@@ -639,7 +642,9 @@ onBeforeUnmount(() => {
             <div class="flex min-w-0 flex-1 flex-col gap-1">
               <span class="text-[13px] font-semibold">This rule right now</span>
               <span class="text-xs text-faint"
-                >Pull requests waiting for your review, checked against “{{ rule.name || 'this rule' }}” as you edit.</span
+                >Open pull requests {{ rule.repos.length ? 'in these repositories' : 'waiting for your review' }}, checked against “{{
+                  rule.name || 'this rule'
+                }}” as you edit.</span
               >
             </div>
             <Hint text="Ask GitHub again">
@@ -665,7 +670,7 @@ onBeforeUnmount(() => {
               <StatusPill>{{ forRule.no.length }} not</StatusPill>
             </div>
             <p v-if="!evaluations.length" class="border-t border-border px-3.5 py-3 text-faint">
-              Nobody is waiting for your review right now.
+              No open pull requests to check right now.
             </p>
             <ul class="overflow-y-auto">
               <li v-for="e in forRule.yes" :key="e.pull.url" class="border-t border-border">

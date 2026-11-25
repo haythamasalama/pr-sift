@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ApiRequest, PullFacts } from '#shared/ipc'
 import { checkRule, cleanConfig, evaluate, newRule } from '../../src/main/autoapprove/rules'
-import { AutoApproveService } from '../../src/main/autoapprove/service'
+import { AutoApproveService, searchQuery } from '../../src/main/autoapprove/service'
 import { Store } from '../../src/main/store'
 import { tempDir } from './helpers'
 
@@ -63,6 +63,14 @@ describe('auto-approve rules', () => {
     expect(evaluate(config, pull({ author: 'Me' }), 'me', NOW).blocked).toBe('You opened it')
     expect(evaluate(config, pull({ myApprovedSha: 'abc' }), 'me', NOW).blocked).toBe('You already approved this commit')
     expect(evaluate(config, pull({ myApprovedSha: 'old' }), 'me', NOW).matched).toBe('Deps')
+  })
+
+  it('matches bots whether or not the login carries [bot], and reads a bare folder as everything in it', () => {
+    expect(checkRule({ ...rule, authors: ['dependabot[bot]'] }, pull({ author: 'dependabot' }), NOW)).toEqual([])
+    expect(checkRule({ ...rule, authors: ['dependabot'] }, pull({ author: 'dependabot[bot]' }), NOW)).toEqual([])
+    const docs = { ...newRule('d'), paths: ['docs'], requireChecks: false }
+    expect(checkRule(docs, pull({ files: ['docs/a/b.md'], changedFiles: 1 }), NOW)).toEqual([])
+    expect(checkRule(docs, pull({ files: ['src/a.ts'], changedFiles: 1 }), NOW)).toEqual(['Changes src/a.ts, which no allowed path covers'])
   })
 
   it('cleans what the window sends', () => {
@@ -142,6 +150,16 @@ describe('AutoApproveService', () => {
       body: { event: 'APPROVE', commit_id: 'abc', body: 'LGTM' },
     })
     expect((await service.status()).log[0]!.action).toBe('approved')
+  })
+
+  it('also searches every open pull request in the repositories the rules name', () => {
+    const config = cleanConfig({ rules: [{ ...newRule('a'), repos: ['acme/shop', 'globex/*'] }, { ...newRule('b'), enabled: false, repos: ['x/y'] }] })
+    const q = searchQuery(config)
+    expect(q).toContain('review-requested:@me')
+    expect(q).toContain('inRepos: search(')
+    expect(q).toContain('repo:acme/shop user:globex')
+    expect(q).not.toContain('repo:x/y')
+    expect(searchQuery(cleanConfig({ rules: [newRule('c')] }))).not.toContain('inRepos')
   })
 
   it('does not schedule anything while off', async () => {
