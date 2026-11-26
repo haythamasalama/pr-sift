@@ -152,7 +152,7 @@ describe('SettingsForm', () => {
 
   it('previews the folder indentation in a small tree', async () => {
     const wrapper = await mountForm({ settings: { treeIndent: 14, treeGuides: false } })
-    const levels = section(wrapper, 'tree').findAll('.ml-3')
+    const levels = section(wrapper, 'tree').findAll('.ml-2\\.5')
     expect(levels).toHaveLength(3)
     expect(levels.every((l) => (l.element as HTMLElement).style.paddingLeft === '14px')).toBe(true)
     expect(levels[0]!.classes()).toContain('border-transparent')
@@ -332,7 +332,9 @@ describe('SettingsForm sections', () => {
 
   it('scrolls to the section it opens on and focuses its title', async () => {
     const wrapper = await mountForm({}, { section: 'merging' })
-    expect(scrolled).toEqual([section(wrapper, 'merging').element])
+    // A second, settling scroll may land on the same section once the connection row has loaded.
+    expect(scrolled.length).toBeGreaterThan(0)
+    expect(scrolled.every((el) => el === section(wrapper, 'merging').element)).toBe(true)
     expect(document.activeElement).toBe(section(wrapper, 'merging').find('h3').element)
   })
 

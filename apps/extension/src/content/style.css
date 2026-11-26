@@ -40,6 +40,7 @@
   --color-add-fg: var(--add-fg);
   --color-del-fg: var(--del-fg);
   --color-hunk: var(--hunk);
+  --color-dot: var(--dot, var(--emphasis));
   --color-logo-tile: var(--logo-tile);
   --color-logo-mark: var(--logo-mark);
   --radius-sm: calc(var(--radius) - var(--radius-step, 2px));
