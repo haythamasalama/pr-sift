@@ -14,6 +14,7 @@ import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 import QuickMerge from '../features/quick-merge/QuickMerge.vue'
+import OpenInApp from '../features/desktop/OpenInApp.vue'
 
 const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/
 
@@ -52,6 +53,7 @@ function sync() {
 }
 
 const autoOpen = shallowRef<boolean | null>(null)
+const desktopApp = shallowRef(false)
 let decidedFor = ''
 let stopWatchingSettings = () => {}
 
@@ -72,8 +74,13 @@ onMounted(async () => {
   sync()
   timer = window.setInterval(sync, 800)
   document.addEventListener('keydown', onKey)
-  stopWatchingSettings = onSettingsChange((next) => (autoOpen.value = next.autoOpen))
-  autoOpen.value = (await getSettings()).autoOpen
+  stopWatchingSettings = onSettingsChange((next) => {
+    autoOpen.value = next.autoOpen
+    desktopApp.value = next.desktopApp
+  })
+  const settings = await getSettings()
+  autoOpen.value = settings.autoOpen
+  desktopApp.value = settings.desktopApp
   maybeAutoOpen()
 })
 onBeforeUnmount(() => {
@@ -85,11 +92,16 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs">
-    <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
+    <div v-if="pr && (dead || !open)" class="ps-root fixed right-5 bottom-5 z-30 flex items-center gap-2" :class="{ dark: githubDark }">
+      <OpenInApp
+        v-if="desktopApp && !dead"
+        :pr="pr"
+        class="size-9 rounded-lg border border-border bg-popover shadow-sm hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"
+      />
       <Button
         variant="outline"
         :class="[
-          'fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
+          'relative h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
           dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
         ]"
         :title="dead ? undefined : updateNote || undefined"
@@ -133,7 +145,9 @@ onBeforeUnmount(() => {
       :external-update="externalUpdate"
       @refreshed="acknowledged = githubRefresh"
       @close="open = false"
-    />
+    >
+      <template v-if="desktopApp" #tools><OpenInApp :pr="pr" /></template>
+    </ReviewPanel>
     <div ref="portal" />
   </div>
 </template>

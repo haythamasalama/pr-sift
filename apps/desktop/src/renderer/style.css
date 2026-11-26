@@ -32,3 +32,10 @@ body {
 @theme inline {
   --color-faint: var(--faint);
 }
+
+/* While a project is being dragged into place, the whole window shows the grabbing hand and nothing gets selected. */
+.ps-grabbing,
+.ps-grabbing * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}

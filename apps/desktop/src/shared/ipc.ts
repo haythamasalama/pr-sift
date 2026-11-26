@@ -1,4 +1,5 @@
 // The contract between the main process and the window. Every channel the preload allows is listed here.
+import type { PullLink } from './links'
 
 export interface AppInfo {
   version: string
@@ -430,6 +431,8 @@ export interface Events {
   'autoapprove:changed': AutoApproveStatus
   // Something was changed on GitHub from this app: a review, a merge, a comment.
   'github:changed': { at: number }
+  // A prsift:// link asked to open this pull request.
+  'pull:open': PullLink
 }
 
 export type EventName = keyof Events
@@ -441,6 +444,7 @@ export const EVENTS = [
   'projects:changed',
   'autoapprove:changed',
   'github:changed',
+  'pull:open',
 ] as const satisfies readonly EventName[]
 
 export interface Bridge {

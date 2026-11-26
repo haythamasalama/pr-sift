@@ -32,6 +32,8 @@ export interface Settings {
   hiddenTypes: string[]
   reviewMode: boolean
   autoOpen: boolean
+  /** Shows an "Open in PR Sift app" button on pull requests, for people who also use PR Sift for desktop. */
+  desktopApp: boolean
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode

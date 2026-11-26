@@ -91,6 +91,9 @@ const openSettings = useSettingsOpener()
       <template v-if="!bare">
         <Separator orientation="vertical" class="mx-0.5 hidden h-5 sm:block data-[orientation=vertical]:self-center" />
 
+        <!-- Room for what the page around the review adds, such as the desktop app's Share menu. -->
+        <slot name="tools" />
+
         <Button
           variant="ghost"
           size="icon"

@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ApiRequest, Events, EventName, Leftover } from '#shared/ipc'
 import { apiRequest, changesGitHub } from './github'
+import { parsePullLink, SCHEME, type PullLink } from '#shared/links'
 import { handle } from './ipc'
 import { scanLeftovers } from './leftovers/scan'
 import { findProgram, pathKey, withExtraPath } from './paths'
@@ -31,6 +32,32 @@ app.setName('PR Sift')
 if (!app.requestSingleInstanceLock()) app.quit()
 
 let window: BrowserWindow | null = null
+
+// prsift://github.com/owner/repo/pull/12 opens that pull request here. macOS hands the link over as open-url;
+// Windows and Linux start a second copy with the link in its arguments, which hands it to this one and quits.
+if (process.defaultApp) {
+  if (process.argv[1]) app.setAsDefaultProtocolClient(SCHEME, process.execPath, [resolve(process.argv[1])])
+} else app.setAsDefaultProtocolClient(SCHEME)
+let pageReady = false
+let waitingPull: PullLink | null = null
+const linkIn = (args: string[]) => args.find((a) => a.startsWith(`${SCHEME}://`))
+function openPull(link: string | undefined) {
+  const pull = link ? parsePullLink(link) : null
+  if (!pull) return
+  if (window && pageReady) {
+    send('pull:open', pull)
+    if (window.isMinimized()) window.restore()
+    window.focus()
+  } else {
+    waitingPull = pull
+    if (!window && app.isReady()) createWindow()
+  }
+}
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  openPull(url)
+})
+waitingPull = parsePullLink(linkIn(process.argv) ?? '')
 const userData = app.getPath('userData')
 // What the review UI reads and writes through `chrome.storage.local`.
 const shared = new Store(join(userData, 'storage.json'))
@@ -293,13 +320,24 @@ function createWindow() {
     },
   })
   lockDown(window.webContents)
+  pageReady = false
+  window.webContents.on('did-finish-load', () => {
+    pageReady = true
+    if (waitingPull) send('pull:open', waitingPull)
+    waitingPull = null
+  })
   window.once('ready-to-show', () => window?.show())
-  window.on('closed', () => (window = null))
+  window.on('closed', () => {
+    window = null
+    pageReady = false
+  })
   if (rendererUrl) void window.loadURL(rendererUrl)
   else void window.loadFile(rendererFile)
 }
 
-app.on('second-instance', () => {
+app.on('second-instance', (_event, argv) => {
+  const link = linkIn(argv)
+  if (link) return openPull(link)
   if (!window) return createWindow()
   if (window.isMinimized()) window.restore()
   window.focus()

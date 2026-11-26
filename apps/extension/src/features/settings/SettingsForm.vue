@@ -291,6 +291,14 @@ defineExpose({ scrollToSection })
           "
         />
       </SettingsRow>
+      <SettingsRow
+        v-if="inBrowser"
+        label="Open in the desktop app"
+        description="Adds an Open in PR Sift app button to pull requests. Needs PR Sift for desktop."
+        control-id="settings-desktop-app"
+      >
+        <Switch id="settings-desktop-app" :model-value="settings.desktopApp" @update:model-value="(v) => update('desktopApp', v)" />
+      </SettingsRow>
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>

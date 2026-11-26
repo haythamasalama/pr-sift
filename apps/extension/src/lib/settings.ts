@@ -10,6 +10,7 @@ export const DEFAULTS: Settings = {
   hiddenTypes: [],
   reviewMode: true,
   autoOpen: false,
+  desktopApp: false,
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',

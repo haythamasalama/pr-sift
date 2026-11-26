@@ -11,7 +11,13 @@ export const PROJECT_SORTS: { value: ProjectSort; label: string; hint: string }[
   { value: 'custom', label: 'Custom', hint: 'Drag projects into your own order' },
 ]
 
-const KEY = { sort: 'ps:project-sort', opened: 'ps:project-opened', custom: 'ps:project-custom' }
+const KEY = {
+  sort: 'ps:project-sort',
+  opened: 'ps:project-opened',
+  custom: 'ps:project-custom',
+  group: 'ps:project-group',
+  folded: 'ps:project-folded',
+}
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -33,6 +39,30 @@ function write(key: string, value: unknown) {
 const sort = shallowRef<ProjectSort>(read(KEY.sort, 'name'))
 const opened = shallowRef<Record<string, number>>(read(KEY.opened, {}))
 const custom = shallowRef<string[]>(read(KEY.custom, []))
+// Folders that are copies of the same GitHub repository sit together under it. On unless turned off.
+const byRepo = shallowRef<boolean>(read(KEY.group, true))
+// Repositories whose folders are folded away, by group key.
+const folded = shallowRef<string[]>(read(KEY.folded, []))
+
+export interface ProjectGroup {
+  // owner/repo for a GitHub repository, the folder path otherwise.
+  key: string
+  // The name shown on a group of several folders.
+  title: string
+  projects: Project[]
+}
+
+// Groups an already sorted list. A group sits where its first folder sits, and keeps its folders in that order.
+export function groupProjects(list: Project[], repo: boolean): ProjectGroup[] {
+  const groups = new Map<string, ProjectGroup>()
+  for (const p of list) {
+    const key = repo && p.github ? `${p.github.owner}/${p.github.repo}`.toLowerCase() : p.path
+    const group = groups.get(key)
+    if (group) group.projects.push(p)
+    else groups.set(key, { key, title: p.github && repo ? p.github.repo : p.name, projects: [p] })
+  }
+  return [...groups.values()]
+}
 
 const byName = (a: Project, b: Project) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })
 
@@ -57,9 +87,21 @@ export function sortProjects(list: Project[], how: ProjectSort, openedAt: Record
 
 export function useProjectOrder(projects: Ref<Project[] | null>) {
   const sorted = computed(() => sortProjects(projects.value ?? [], sort.value, opened.value, custom.value))
+  const groups = computed(() => groupProjects(sorted.value, byRepo.value))
   return {
     sort,
     sorted,
+    groups,
+    byRepo,
+    folded,
+    setByRepo(value: boolean) {
+      byRepo.value = value
+      write(KEY.group, value)
+    },
+    toggleFolded(key: string) {
+      folded.value = folded.value.includes(key) ? folded.value.filter((k) => k !== key) : [...folded.value, key]
+      write(KEY.folded, folded.value)
+    },
     setSort(value: ProjectSort) {
       // Switching to Custom starts from what you see now, so nothing jumps.
       if (value === 'custom' && sort.value !== 'custom') {
@@ -73,7 +115,14 @@ export function useProjectOrder(projects: Ref<Project[] | null>) {
       opened.value = { ...opened.value, [path]: Date.now() }
       write(KEY.opened, opened.value)
     },
-    // Moves a project to where another one is, for drag and drop in Custom.
+    // Keeps the order a drag left behind, and switches to Custom so it stays that way.
+    place(order: string[]) {
+      custom.value = order
+      write(KEY.custom, order)
+      sort.value = 'custom'
+      write(KEY.sort, 'custom')
+    },
+    // Moves a project to where another one is.
     move(from: string, to: string) {
       const order = sorted.value.map((p) => p.path).filter((p) => p !== from)
       const index = order.indexOf(to)

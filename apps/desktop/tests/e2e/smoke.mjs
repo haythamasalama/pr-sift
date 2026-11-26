@@ -1,6 +1,7 @@
 // Launches the built app with a throwaway profile against a stubbed GitHub, and walks through every screen.
 // Usage: node tests/e2e/smoke.mjs <projects folder> <screenshots folder>
-// The projects folder needs a repository `shop` (origin github.com/acme/shop) with a worktree on `feature/cart`.
+// The projects folder needs a repository `shop` (origin github.com/acme/shop) with a worktree on `feature/cart`,
+// a second clone of it, `shop-copy`, and a repository `docs` (origin github.com/acme/docs).
 import { _electron as electron } from 'playwright'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -182,6 +183,29 @@ await page.getByText('Add a shopping cart').click()
 await page.getByText('src/cart.js').first().waitFor({ timeout: 15_000 })
 await page.waitForTimeout(600)
 await page.screenshot({ path: join(shots, '3-review.png') })
+// Share copies the links a teammate needs, since the app has no address bar.
+await page.getByRole('button', { name: 'Share' }).click()
+await page.getByRole('menuitem', { name: /Copy PR Sift link/ }).waitFor()
+await page.waitForTimeout(250)
+await page.screenshot({ path: join(shots, '3s-review-share.png') })
+await page.getByRole('menuitem', { name: /Copy PR Sift link/ }).click()
+await page.keyboard.press('Escape')
+await page.getByRole('heading', { name: 'Needs you' }).waitFor()
+
+// A prsift:// link from the browser opens its pull request, wherever the app is.
+await electronApp.evaluate(({ BrowserWindow }) =>
+  BrowserWindow.getAllWindows()[0].webContents.send('pull:open', { owner: 'acme', repo: 'shop', number: 7 }),
+)
+await page.getByText('src/cart.js').first().waitFor({ timeout: 15_000 })
+await page.keyboard.press('Escape')
+await page.getByRole('heading', { name: 'Needs you' }).waitFor()
+// So does pasting a GitHub link outside a text field.
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', 'https://github.com/acme/shop/pull/7/files')
+  document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }))
+})
+await page.getByText('src/cart.js').first().waitFor({ timeout: 15_000 })
 await page.keyboard.press('Escape')
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 
@@ -349,6 +373,41 @@ await page.getByRole('menuitemradio', { name: /Recently opened/ }).waitFor()
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '11d-sort-projects.png') })
 await page.keyboard.press('Escape')
+
+// Folders of the same repository sit together under it; any row can be dragged into a new place.
+await page.evaluate(async (root) => {
+  await window.prSift.invoke('projects:add', [`${root}/shop-copy`, `${root}/docs`])
+}, projects)
+await page.getByTitle('acme/shop').waitFor()
+const sortIds = () => page.locator('[data-sort-id]').evaluateAll((rows) => rows.map((r) => r.dataset.sortId))
+if ((await sortIds())[0] !== 'acme/docs') throw new Error(`Expected docs first by name, got ${await sortIds()}`)
+const from = await page.getByRole('button', { name: 'docs', exact: true }).boundingBox()
+const to = await page.getByTitle('acme/shop').boundingBox()
+await page.mouse.move(from.x + 40, from.y + from.height / 2)
+await page.mouse.down()
+for (let i = 1; i <= 12; i++) await page.mouse.move(from.x + 40, from.y + from.height / 2 + ((to.y + to.height - from.y) * i) / 12)
+await page.mouse.move(from.x + 40, to.y + to.height + 30)
+await page.waitForTimeout(250)
+await page.screenshot({ path: join(shots, '18-dragging-project.png') })
+await page.mouse.up()
+if ((await sortIds())[0] !== 'acme/shop') throw new Error(`Dragging docs below shop did not stick: ${await sortIds()}`)
+await page.getByRole('button', { name: 'Sort projects' }).click()
+await page
+  .getByRole('menuitemradio', { name: /Custom/ })
+  .and(page.locator('[data-state=checked]'))
+  .waitFor()
+await page.keyboard.press('Escape')
+// The sidebar is as wide as you drag it.
+const edge = await page.getByRole('separator', { name: 'Resize the sidebar' }).boundingBox()
+await page.mouse.move(edge.x + edge.width / 2, edge.y + 200)
+await page.mouse.down()
+await page.mouse.move(edge.x + 90, edge.y + 200, { steps: 6 })
+await page.mouse.up()
+const navWidth = await page.locator('nav[aria-label="Sections"]').evaluate((n) => n.getBoundingClientRect().width)
+if (navWidth < 300) throw new Error(`The sidebar did not widen: ${navWidth}`)
+await page.waitForTimeout(250)
+await page.screenshot({ path: join(shots, '19-grouped-wide-sidebar.png') })
+await page.getByRole('separator', { name: 'Resize the sidebar' }).dblclick()
 await page.getByRole('button', { name: 'Hide the sidebar' }).click()
 await page.getByRole('button', { name: 'Needs you' }).click()
 await page.waitForTimeout(400)

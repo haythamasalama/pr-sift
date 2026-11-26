@@ -400,6 +400,7 @@ watch(
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
+      <template #tools><slot name="tools" :title="info?.title" /></template>
       <template #meta>
         <PrSummary
           v-if="status === 'ready'"
