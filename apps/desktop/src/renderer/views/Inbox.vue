@@ -73,13 +73,13 @@ onMounted(() => {
         <div class="flex items-center gap-2">
           <SectionLabel>Waiting for your review</SectionLabel><CountBadge>{{ review.length }}</CountBadge>
         </div>
-        <PullTable :groups="[{ title: 'Waiting for your review', pulls: review }]" show-repo :me="me" @changed="load" />
+        <PullTable :groups="[{ title: 'Waiting for your review', pulls: review }]" show-repo titles :me="me" @changed="load" />
       </section>
       <section v-if="mine.length" class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <SectionLabel>Yours</SectionLabel><CountBadge>{{ mine.length }}</CountBadge>
         </div>
-        <PullTable :groups="[{ title: 'Yours', pulls: mine }]" show-repo mine :me="me" @changed="load" />
+        <PullTable :groups="[{ title: 'Yours', pulls: mine }]" show-repo titles mine :me="me" @changed="load" />
       </section>
     </template>
   </div>

@@ -101,7 +101,7 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
         </Hint>
       </span>
       <!-- Checks are a dot; the word is in the hint. -->
-      <span v-if="shown.ci" class="flex w-6 shrink-0 justify-center">
+      <span v-if="shown.ci" class="flex w-14 shrink-0 justify-center">
         <Hint v-if="ci" :text="ci.hint">
           <StatusPill :tone="ci.tone" bare :aria-label="ci.hint" class="gap-0"
             ><span class="sr-only">{{ ci.text }}</span></StatusPill
