@@ -571,8 +571,8 @@ watch(
           </Button>
         </nav>
         <Tabs v-else v-model="sidebar" class="min-h-0 flex-1 gap-0">
-          <div class="flex flex-col gap-1.5 px-2 pt-2 pb-1">
-            <div class="flex items-center gap-1">
+          <div class="flex flex-col gap-2 border-b px-3.5 py-2.5">
+            <div class="flex items-center gap-1.5">
               <TabsList class="h-7 flex-1 gap-0.5 rounded-md bg-muted p-0.5">
                 <TabsTrigger
                   value="tree"
@@ -588,7 +588,7 @@ watch(
               <Button
                 variant="ghost"
                 size="icon-sm"
-                class="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+                class="-mr-1 size-7 shrink-0 text-muted-foreground hover:text-foreground"
                 title="Hide sidebar"
                 aria-label="Hide sidebar"
                 @click="hideSidebar"
@@ -603,7 +603,7 @@ watch(
                 v-model="filter.query.value"
                 placeholder="Search files"
                 aria-label="Search files"
-                class="h-7 rounded-md border-transparent bg-muted pr-7 pl-7 text-xs shadow-none md:text-xs dark:bg-muted"
+                class="h-7 rounded-md bg-background pr-7 pl-7 text-xs shadow-none md:text-xs dark:bg-background"
               />
               <Button
                 v-if="filter.query.value"
