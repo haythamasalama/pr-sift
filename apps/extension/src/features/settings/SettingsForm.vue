@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { isShadcnStyle, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
 import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
@@ -22,6 +22,9 @@ import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsGroup from './SettingsGroup.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
+import BaseColorPicker from './BaseColorPicker.vue'
+import CodePreview from './CodePreview.vue'
+import CodeThemeSelect from './CodeThemeSelect.vue'
 import StylePreview from './StylePreview.vue'
 import ThemePreview from './ThemePreview.vue'
 import TreePreview from './TreePreview.vue'
@@ -59,7 +62,7 @@ const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSect
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
-const { theme, setTheme, themeStyle, setThemeStyle, dark } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, baseColor, setBaseColor, codeLight, codeDark, setCode, dark } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
@@ -304,20 +307,44 @@ defineExpose({ scrollToSection })
       description="Applies right away, here and in the review."
       area="all"
     >
-      <div class="flex flex-col gap-3 py-3">
+      <div class="py-3">
+        <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
+          <template #preview="{ value }"><ThemePreview :mode="value" :theme-style="themeStyle" :base-color="baseColor" /></template>
+        </ChoiceCards>
+      </div>
+      <SettingsGroup id="style" title="Style" description="The look of every button, menu and panel.">
         <ChoiceCards
           :model-value="themeStyle"
           :options="THEME_STYLES"
           name="settings-style"
           label="Style"
+          min-width="7.5rem"
           @update:model-value="setThemeStyle"
         >
-          <template #preview="{ value }"><StylePreview :theme-style="value" :dark="dark" /></template>
+          <template #preview="{ value }"><StylePreview :theme-style="value" :base-color="baseColor" :dark="dark" /></template>
         </ChoiceCards>
-        <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
-          <template #preview="{ value }"><ThemePreview :mode="value" :theme-style="themeStyle" /></template>
-        </ChoiceCards>
-      </div>
+        <p class="text-xs text-muted-foreground">Vega, Nova, Maia, Lyra and Mira are the styles from shadcn/vue.</p>
+      </SettingsGroup>
+      <SettingsGroup
+        v-if="isShadcnStyle(themeStyle)"
+        id="base-color"
+        title="Base color"
+        description="The grey that backgrounds, borders and text are made of."
+      >
+        <BaseColorPicker :model-value="baseColor" :theme-style="themeStyle" @update:model-value="setBaseColor" />
+      </SettingsGroup>
+      <SettingsGroup id="code-colors" title="Code colors" description="How code is coloured in the diff, picked for each mode.">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
+            <CodeThemeSelect :model-value="codeLight" mode="light" @update:model-value="(v) => setCode('light', v)" />
+            <CodePreview :code="codeLight" :dark="false" :theme-style="themeStyle" :base-color="baseColor" />
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
+            <CodeThemeSelect :model-value="codeDark" mode="dark" @update:model-value="(v) => setCode('dark', v)" />
+            <CodePreview :code="codeDark" :dark="true" :theme-style="themeStyle" :base-color="baseColor" />
+          </div>
+        </div>
+      </SettingsGroup>
       <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">
         <div class="rounded-lg border p-1.5">
           <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />

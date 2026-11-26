@@ -2,10 +2,11 @@
 import { FieldLabel } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
-const { options, label, name } = defineProps<{
+const { options, label, name, minWidth } = defineProps<{
   options: { value: T; label: string; hint?: string }[]
   label: string
   name: string
+  minWidth?: string
 }>()
 const model = defineModel<T>({ required: true })
 </script>
@@ -15,7 +16,9 @@ const model = defineModel<T>({ required: true })
     :model-value="model"
     :aria-label="label"
     class="grid gap-2"
-    :style="{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }"
+    :style="{
+      gridTemplateColumns: minWidth ? `repeat(auto-fill, minmax(${minWidth}, 1fr))` : `repeat(${options.length}, minmax(0, 1fr))`,
+    }"
     @update:model-value="(v) => v && (model = v as T)"
   >
     <FieldLabel
