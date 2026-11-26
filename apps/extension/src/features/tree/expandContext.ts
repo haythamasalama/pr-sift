@@ -16,3 +16,5 @@ export interface TreeLayout {
 export const treeLayoutKey: InjectionKey<Ref<TreeLayout>> = Symbol('treeLayout')
 
 export const useExpandCommand = (key: InjectionKey<Ref<ExpandCommand>>) => inject(key, null)
+
+export const treeOpenFileKey: InjectionKey<Ref<string>> = Symbol('treeOpenFile')

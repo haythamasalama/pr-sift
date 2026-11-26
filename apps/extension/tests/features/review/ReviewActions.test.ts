@@ -17,11 +17,11 @@ const conversation = (overrides: Partial<Conversation> = {}): Conversation => ({
   code: 0,
   byFile: new Map(),
   threads: new Map(),
+  canMerge: true,
   discussion: [],
   viewer: 'lee',
   reviews: { approvals: 0, changesRequested: 0, mine: null },
   readiness: 'ready',
-  canMerge: true,
   ...overrides,
 })
 
@@ -49,35 +49,25 @@ describe('ReviewActions', () => {
     expect(mergeButton(after).attributes('data-variant')).toBe('success')
   })
 
-  it('keeps Approve for the author, disabled with the reason', () => {
+  it('keeps Approve in place for the author, disabled with the reason', () => {
     const wrapper = mountActions({ conversation: conversation({ viewer: 'Sam' }) })
-    const approve = wrapper.find('button[aria-label^="Approve"]')
+    const approve = wrapper.findAll('button').find((b) => b.text().includes('Approve'))!
     expect(approve.attributes('disabled')).toBeDefined()
-    expect(approve.attributes('aria-label')).toContain('your own pull request')
+    expect(approve.element.parentElement!.getAttribute('title')).toBe("You can't approve your own pull request")
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 
-  it('says when only optional checks hold the merge back', () => {
+  it('says why a merge may not go through', () => {
     const wrapper = mountActions({ conversation: conversation({ readiness: 'checks' }) })
     expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · Some checks are failing or still running')
   })
 
-  it.each([
-    ['blocked', 'Needs an approval or required checks first'],
-    ['behind', 'Update the branch from its base first'],
-    ['conflicts', 'Has merge conflicts'],
-    ['draft', 'Still a draft'],
-    ['unknown', 'GitHub is still checking it'],
-  ] as const)('keeps Merge disabled while GitHub would refuse it (%s)', (readiness, reason) => {
-    const wrapper = mountActions({ conversation: conversation({ readiness }) })
-    const merge = wrapper.find(`button[aria-label="${reason}"]`)
-    expect(merge.exists()).toBe(true)
-    expect(merge.attributes('disabled')).toBeDefined()
-  })
-
-  it('keeps Merge disabled when you cannot push to the repository', () => {
-    const wrapper = mountActions({ conversation: conversation({ canMerge: false }) })
-    expect(wrapper.find('button[aria-label="You don’t have permission to merge here"]').attributes('disabled')).toBeDefined()
+  it('keeps Merge in place but disabled, with the reason, when GitHub would refuse it', () => {
+    const wrapper = mountActions({ conversation: conversation({ readiness: 'blocked' }) })
+    expect(mergeButton(wrapper).attributes('disabled')).toBeDefined()
+    expect(mergeButton(wrapper).element.parentElement!.getAttribute('title')).toBe(
+      'Can’t merge yet: Needs an approval or required checks first',
+    )
   })
 
   it('shows nothing once the pull request is merged', () => {

@@ -37,6 +37,13 @@ describe('FilterBar', () => {
     expect(wrapper.find('[data-slot=separator]').exists()).toBe(true)
   })
 
+  it('asks to expand or collapse every file', async () => {
+    const wrapper = mountBar()
+    await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
+    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
+    expect(wrapper.emitted('expandFiles')).toEqual([[false], [true]])
+  })
+
   it('emits the chip key when a chip is clicked', async () => {
     const wrapper = mountBar()
     await button(wrapper, '.php').trigger('click')
@@ -100,7 +107,7 @@ describe('FilterBar', () => {
 
   it('shows the include state with the primary variant', () => {
     expect(button(mountBar(), '.ts').attributes('data-variant')).toBe('default')
-    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('secondary')
+    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('outline')
   })
 
   it('lets custom types be removed', async () => {
@@ -190,5 +197,39 @@ describe('FilterBar', () => {
 
   it('offers Save view only when types or folders are chosen', () => {
     expect(mountBar().text()).not.toContain('Save view')
+  })
+
+  it('folds types after the first six behind "+N more" and keeps a chosen one visible', async () => {
+    const many: ExtChip[] = ['.a', '.b', '.c', '.d', '.e', '.f', '.g', '.h'].map((ext, i) => ({
+      ext,
+      label: ext,
+      count: 10 - i,
+      custom: false,
+      ...(ext === '.h' ? { state: 'include' as const } : {}),
+    }))
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips: many,
+        listedCount: 8,
+        viewedInView: [],
+        hiddenCount: 0,
+        filtersActive: false,
+        reviewMode: false,
+        showHidden: false,
+        diffMode: 'unified' as const,
+      },
+    })
+    expect(wrapper.text()).not.toContain('.g')
+    expect(wrapper.text()).toContain('.h')
+    await button(wrapper, '+1 more').trigger('click')
+    expect(wrapper.text()).toContain('.g')
+    expect(wrapper.text()).toContain('Show less')
+  })
+
+  it('offers the viewed list only while viewed files are hidden', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.text()).toContain('Viewed')
+    await wrapper.setProps({ reviewMode: false })
+    expect(wrapper.findAll('button').some((b) => /^Viewed/.test(b.text()))).toBe(false)
   })
 })

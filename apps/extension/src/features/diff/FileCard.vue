@@ -1,19 +1,8 @@
 <script setup lang="ts">
+import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
+import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import {
-  Check,
-  ChevronDown,
-  Columns2,
-  Copy,
-  ExternalLink,
-  FileDiff,
-  FileText,
-  FolderTree,
-  ListPlus,
-  MessageSquare,
-  Rows2,
-  Undo2,
-} from '@lucide/vue'
+import { Check, ChevronDown, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, MessageSquare } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -51,8 +40,9 @@ const body = useTemplateRef<HTMLElement>('body')
 const seen = shallowRef(false)
 const editing = shallowRef(false)
 const measuredHeight = shallowRef(0)
-const collapsed = shallowRef(viewed)
 const expandCommand = useExpandCommand(cardsExpandKey)
+// A card that mounts after an expand or collapse all follows it, not just its viewed state.
+const collapsed = shallowRef(expandCommand?.value.n ? !expandCommand.value.open : viewed)
 watch(
   () => viewed,
   (value) => (collapsed.value = value),
@@ -165,8 +155,8 @@ defineExpose({ reveal, flash, el })
         :aria-label="mode === 'split' ? 'Show this file as unified' : 'Show this file as split'"
         @click="override = mode === 'split' ? 'unified' : 'split'"
       >
-        <Rows2 v-if="mode === 'split'" />
-        <Columns2 v-else />
+        <DiffUnifiedIcon v-if="mode === 'split'" />
+        <DiffSplitIcon v-else />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
@@ -182,24 +172,7 @@ defineExpose({ reveal, flash, el })
           <DropdownMenuItem :disabled="!addedLines" @select="copy(addedLines)"><ListPlus /> Copy added lines</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button
-        v-if="fileContext?.discard"
-        variant="ghost"
-        size="icon-xs"
-        title="Throw away the changes in this file"
-        aria-label="Discard changes"
-        @click="fileContext.discard(file.filename)"
-      >
-        <Undo2 />
-      </Button>
-      <Button
-        v-if="githubUrl"
-        variant="ghost"
-        size="icon-xs"
-        as-child
-        title="Open this file in the pull request on GitHub"
-        aria-label="Open on GitHub"
-      >
+      <Button variant="ghost" size="icon-xs" as-child title="Open this file in the pull request on GitHub" aria-label="Open on GitHub">
         <a :href="githubUrl" target="_blank" rel="noreferrer"><ExternalLink /></a>
       </Button>
     </div>

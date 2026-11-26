@@ -7,6 +7,7 @@ export interface LinkedIssue {
   url: string
   state: 'OPEN' | 'CLOSED'
   repo: string
+  assignees: { login: string; avatar: string }[]
   // Set for issues in another repository than the pull request.
   external: boolean
 }
@@ -18,7 +19,14 @@ export async function fetchLinkedIssues(pr: PrRef): Promise<LinkedIssue[]> {
       repository: {
         pullRequest: {
           closingIssuesReferences: {
-            nodes: { number: number; title: string; url: string; state: 'OPEN' | 'CLOSED'; repository: { nameWithOwner: string } }[]
+            nodes: {
+              number: number
+              title: string
+              url: string
+              state: 'OPEN' | 'CLOSED'
+              repository: { nameWithOwner: string }
+              assignees?: { nodes: { login: string; avatarUrl: string }[] }
+            }[]
           }
         } | null
       } | null
@@ -27,7 +35,7 @@ export async function fetchLinkedIssues(pr: PrRef): Promise<LinkedIssue[]> {
     query: `query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
         pullRequest(number: $number) {
-          closingIssuesReferences(first: 20) { nodes { number title url state repository { nameWithOwner } } }
+          closingIssuesReferences(first: 20) { nodes { number title url state repository { nameWithOwner } assignees(first: 5) { nodes { login avatarUrl } } } }
         }
       }
     }`,
@@ -40,6 +48,7 @@ export async function fetchLinkedIssues(pr: PrRef): Promise<LinkedIssue[]> {
     url: n.url,
     state: n.state,
     repo: n.repository.nameWithOwner,
+    assignees: (n.assignees?.nodes ?? []).map((a) => ({ login: a.login, avatar: a.avatarUrl })),
     external: n.repository.nameWithOwner.toLowerCase() !== self,
   }))
 }

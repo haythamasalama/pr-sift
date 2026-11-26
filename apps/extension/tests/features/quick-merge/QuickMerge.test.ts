@@ -141,21 +141,22 @@ describe('QuickMerge', () => {
     expect(ourButton()).toBeNull()
   })
 
-  it("stays hidden when GitHub's button is disabled or the branch has conflicts", async () => {
+  it("stays in place but disabled, with the reason, when GitHub's button is disabled or the branch has conflicts", async () => {
     github('dirty')
     mergeBox()
     mountQuickMerge()
-    await vi.waitFor(() => expect(host()).not.toBeNull())
+    await vi.waitFor(() => expect(ourButton()).not.toBeNull())
     await flushPromises()
-    expect(ourButton()).toBeNull()
+    expect(ourButton()!.disabled).toBe(true)
+    expect(ourButton()!.parentElement!.title).toBe('Can’t merge yet: Has merge conflicts')
 
     document.body.innerHTML = ''
     github()
     mergeBox('Squash and merge', true)
     mountQuickMerge()
-    await vi.waitFor(() => expect(host()).not.toBeNull())
+    await vi.waitFor(() => expect(ourButton()).not.toBeNull())
     await flushPromises()
-    expect(ourButton()).toBeNull()
+    expect(ourButton()!.disabled).toBe(true)
   })
 
   it('moves back next to the merge button when GitHub re-renders the merge box', async () => {

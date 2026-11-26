@@ -10,10 +10,14 @@
 | Add your own type            | **+ type**, e.g. `.blade.php`, `.test.ts`                                                                              |
 | Undo every filter            | **Reset filters**                                                                                                      |
 | Jump to a folder or file     | Click it in the tree; search above the tree opens matching folders                                                     |
-| Expand or collapse a subtree | The two icons on a folder row                                                                                          |
-| Mark a folder as viewed      | The checkbox on the folder row                                                                                         |
+| Use a smart filter           | The sparkle button beside the search: categories, recurring folders and parent folders                                 |
+| Expand or collapse a subtree | The two icons that show when you hover a folder row; the ones beside **All folders** do the whole tree                 |
+| Mark a folder as viewed      | The circle at the end of the folder row                                                                                |
 | Hide what you have read      | **Hide viewed**; the ring shows what is left                                                                           |
 | Split one file               | The split icon on the file header                                                                                      |
+| Review one commit or a range | The commits menu under the title; shift-click a second commit for a range                                              |
+| Hide the sidebar             | The panel button beside the search; the rail of icons brings it back                                                   |
+| Open or close every file     | The two chevron buttons beside the diff view toggle                                                                    |
 | Copy name, path, diff, lines | The copy icon on the file header                                                                                       |
 | Write a note on many lines   | Drag from the `+` next to a line, or select code and press **Add note**                                                |
 | Resolve, edit or post a note | The icons on the note, or in **Notes**                                                                                 |

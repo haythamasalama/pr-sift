@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { CircleAlert, GitMerge, X } from '@lucide/vue'
-import { formatPerson, MERGE_ACTIONS } from '@pr-sift/core'
+import { formatPerson, MERGE_ACTIONS, mergeReadiness, type MergeReadiness } from '@pr-sift/core'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -27,14 +27,31 @@ const merged = shallowRef('')
 let stopToken = () => {}
 let noticeTimer = 0
 
-const visible = computed(() => found.value && enabled.value && connected.value && mergeable.value && Boolean(plan.value))
+const BLOCKED: Partial<Record<MergeReadiness, string>> = {
+  conflicts: 'Has merge conflicts',
+  blocked: 'Needs an approval or required checks first',
+  behind: 'Update the branch from its base first',
+  draft: 'Still a draft',
+}
+
+// Like GitHub's own button, it stays in place when merging isn't possible yet, disabled with the reason.
+const visible = computed(() => found.value && connected.value && Boolean(plan.value))
+const blocked = computed(() => {
+  if (mergeable.value && enabled.value) return ''
+  return BLOCKED[mergeReadiness(context.value?.mergeableState)] ?? 'GitHub is still checking it'
+})
 const action = computed(() => (plan.value ? MERGE_ACTIONS[plan.value.method] : ''))
 const label = computed(() => (plan.value?.withoutAi ? 'Merge without AI' : action.value))
 
+// Load as soon as there is a token, before GitHub finishes drawing its merge box, so the button shows with it.
+let loaded = false
 watch(
-  [found, connected],
-  ([present, token]) => {
-    if (present && token && !context.value && !loading.value) void load()
+  connected,
+  (token) => {
+    if (token && !loaded && !loading.value) {
+      loaded = true
+      void load()
+    }
   },
   { immediate: true },
 )
@@ -65,7 +82,19 @@ onBeforeUnmount(() => {
   <Teleport :to="target">
     <div v-if="visible && plan" class="ps-root flex items-center" :class="{ dark }">
       <Popover v-model:open="open">
-        <PopoverTrigger as-child>
+        <span v-if="blocked" class="inline-flex cursor-not-allowed" :title="`Can’t merge yet: ${blocked}`" tabindex="0">
+          <Button
+            variant="outline"
+            disabled
+            class="h-8 gap-2 rounded-md bg-popover pr-3 pl-1.5 align-middle text-popover-foreground shadow-xs dark:bg-popover"
+          >
+            <BrandPulse class="size-5">
+              <BrandMark class="size-3" />
+            </BrandPulse>
+            {{ label }}
+          </Button>
+        </span>
+        <PopoverTrigger v-else as-child>
           <Button
             variant="outline"
             class="h-8 gap-2 rounded-md bg-popover pr-3 pl-1.5 align-middle text-popover-foreground shadow-xs hover:border-muted-foreground/40 hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"

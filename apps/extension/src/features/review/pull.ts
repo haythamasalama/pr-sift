@@ -10,9 +10,9 @@ export interface Loaded {
   headSha: string
 }
 
-const basePath = (pr: PrRef) => `/${pr.owner}/${pr.repo}/pull/${pr.number}`
+export const basePath = (pr: PrRef) => `/${pr.owner}/${pr.repo}/pull/${pr.number}`
 
-async function fetchDiff(base: string, fresh = false): Promise<string> {
+export async function fetchDiff(base: string, fresh = false): Promise<string> {
   const problems: string[] = []
   try {
     const res = await fetch(base + '.diff', { credentials: 'same-origin', cache: fresh ? 'no-store' : 'default' })

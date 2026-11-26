@@ -40,5 +40,6 @@ export interface Settings {
   removedCoAuthors: string[]
   keptCoAuthors: string[]
   showResolved: boolean
+  sidebarCollapsed: boolean
   assistant: 'claude-code' | 'codex' | 'cursor' | 'copilot' | 'claude' | 'chatgpt' | 'clipboard'
 }
