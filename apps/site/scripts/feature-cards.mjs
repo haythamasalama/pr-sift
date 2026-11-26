@@ -140,30 +140,27 @@ export function featureVisual(id, icon) {
     },
 
     theme: () => {
-      // Each tile is a tiny diff drawn in that theme's own corners and type, so the difference shows without colour.
-      const lines = [
-        ['', 'w-3/5'],
-        ['bg-del-bg text-del', 'w-1/2'],
-        ['bg-add-bg text-add', 'w-4/5'],
-        ['bg-add-bg text-add', 'w-2/5'],
+      // The same swatches as Settings > Appearance: each theme's surface, a muted block and its primary colour.
+      const THEMES = [
+        ['GitHub', 'rounded-md', 'rounded-sm', 'bg-[#0969da]', true],
+        ['PR Sift', 'rounded', 'rounded-[2px]', 'bg-ink'],
+        ['Minimal', 'rounded-[10px]', 'rounded-sm', 'bg-ink'],
+        ['Soft', 'rounded-2xl', 'rounded-[5px]', 'bg-ink'],
+        ['Mono', 'rounded-none', 'rounded-none', 'bg-ink'],
       ]
-        .map(
-          ([tone, width]) =>
-            `<span class="flex h-2.5 items-center px-1.5 ${tone}"><span class="h-[3px] rounded-full bg-current opacity-60 ${width}"></span></span>`,
-        )
-        .join('')
-      const tile = (name, { radius, font, selected = false, dark = false }) =>
-        `<span class="flex flex-col gap-2"><span class="${dark ? 'dark' : 'light'} relative flex h-16 flex-col justify-center overflow-hidden border border-line bg-paper text-muted ${radius} ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-raised' : ''}">${lines}</span><span class="text-center text-xs ${font} ${selected ? 'font-medium' : 'text-muted'}">${name}</span></span>`
-      const modes = ['Light', 'Dark', 'System']
+      const swatch = ([name, outer, inner, primary, selected]) =>
+        `<span class="flex flex-col items-center gap-1.5 text-[11px] font-medium ${selected ? 'text-ink' : 'text-muted'}"><span class="flex h-[30px] w-11 items-center justify-center gap-1 border border-line bg-paper ${outer} ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper' : ''}"><span class="h-2 w-3 border border-line bg-raised ${inner}"></span><span class="h-2 w-4 ${primary} ${inner}"></span></span>${name}</span>`
+      const modes = ['System', 'Light', 'Dark']
         .map(
           (m) =>
-            `<span class="flex-1 rounded-[5px] py-1 text-center ${m === 'System' ? 'bg-paper font-medium shadow-sm' : 'text-muted'}">${m}</span>`,
+            `<span class="flex-1 rounded-[5px] py-1 text-center ${m === 'System' ? 'bg-paper font-medium shadow-[0_1px_2px_rgb(0_0_0/0.12)]' : 'text-muted'}">${m}</span>`,
         )
         .join('')
-      return `<div class="flex w-full max-w-[300px] flex-col gap-3">
-        <div class="grid grid-cols-3 gap-3">${tile('GitHub', { radius: 'rounded-md', font: '', selected: true })}${tile('PR Sift', { radius: 'rounded', font: '', dark: true })}${tile('Mono', { radius: 'rounded-none', font: 'font-mono' })}</div>
-        <div class="flex rounded-md border border-line bg-raised p-0.5 text-[11.5px]">${modes}</div>
-      </div>`
+      return panel(
+        'flex max-w-[330px] flex-col gap-2.5 px-3.5 pt-3 pb-3.5 text-[12.5px]',
+        `${label('Mode')}<div class="flex rounded-md bg-raised p-[3px] text-xs">${modes}</div>
+        ${label('Theme', 'mt-1')}<div class="flex justify-between">${THEMES.map(swatch).join('')}</div>`,
+      )
     },
 
     notes: () =>
