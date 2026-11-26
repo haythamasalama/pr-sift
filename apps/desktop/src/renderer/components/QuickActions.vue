@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Spinner } from '@/components/ui/spinner'
 import { getSettings, onSettingsChange, saveSetting } from '@/lib/settings'
 import ReviewPopover from '@/features/review/ReviewPopover.vue'
+import BypassRules from '@/features/quick-merge/BypassRules.vue'
 import { useQuickMerge } from '@/features/quick-merge/useQuickMerge'
 import type { PullItem } from '~/github'
 import { useAuth } from '~/useAuth'
@@ -92,12 +93,21 @@ const mergeBlocked = computed(() => {
   return MERGE_BLOCK_REASON[state.value] ?? ''
 })
 const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
-const mergeTitle = computed(() => [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
+const mergeTitle = computed(() => {
+  const note = state.value === 'blocked' && pull.mergeableNow ? 'You can bypass the rules' : readiness.value?.text
+  return [current.value.action, note].filter(Boolean).join(' · ')
+})
 
 const open = shallowRef(false)
-const { plan, mergeable, loading, busy, error, load, submit } = useQuickMerge(prRef)
-const action = computed(() => (plan.value ? MERGE_ACTIONS[plan.value.method] : current.value.action))
-watch(open, (value) => value && void load())
+const { plan, ready, canBypass, bypass, mergeable, loading, busy, error, load, submit } = useQuickMerge(prRef)
+const bypassing = computed(() => canBypass.value && bypass.value)
+const action = computed(() =>
+  bypassing.value ? 'Bypass rules and merge' : plan.value ? MERGE_ACTIONS[plan.value.method] : current.value.action,
+)
+watch(open, (value) => {
+  bypass.value = false
+  if (value) void load()
+})
 
 async function confirm() {
   const sha = await submit()
@@ -192,7 +202,8 @@ async function confirm() {
             <CircleAlert />
             <AlertDescription>{{ error }}</AlertDescription>
           </Alert>
-          <Alert v-else-if="!loading && plan && !mergeable">
+          <BypassRules v-else-if="!loading && plan && canBypass" v-model="bypass" />
+          <Alert v-else-if="!loading && plan && !ready">
             <CircleAlert />
             <AlertDescription
               >GitHub can’t merge this pull request right now. It may need reviews, passing checks or an update.</AlertDescription
@@ -200,7 +211,7 @@ async function confirm() {
           </Alert>
           <div class="flex justify-end gap-2">
             <Button variant="outline" size="sm" @click="open = false">Cancel</Button>
-            <Button variant="success" size="sm" :disabled="busy || loading || !mergeable" @click="confirm">
+            <Button :variant="bypassing ? 'destructive' : 'success'" size="sm" :disabled="busy || loading || !mergeable" @click="confirm">
               <Spinner v-if="busy || loading" /><GitMerge v-else />
               {{ action }}
             </Button>

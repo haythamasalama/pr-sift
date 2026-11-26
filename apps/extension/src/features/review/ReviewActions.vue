@@ -68,11 +68,15 @@ const MERGE_BLOCK_REASON: Partial<Record<MergeReadiness, string>> = {
 }
 const mergeBlocked = computed(() => {
   const state = conversation?.readiness ?? 'unknown'
+  // When you may bypass the branch rules, the merge sheet offers that instead, like GitHub's own box.
+  if (state === 'blocked' && conversation?.canBypass) return ''
   return MERGE_BLOCKED.includes(state) ? (MERGE_BLOCK_REASON[state] ?? '') : ''
 })
-const mergeTitle = computed(() =>
-  mergeBlocked.value ? `Can’t merge yet: ${mergeBlocked.value}` : [current.value.action, readiness.value?.text].filter(Boolean).join(' · '),
-)
+const mergeTitle = computed(() => {
+  if (mergeBlocked.value) return `Can’t merge yet: ${mergeBlocked.value}`
+  const note = conversation?.readiness === 'blocked' && conversation.canBypass ? 'You can bypass the rules' : readiness.value?.text
+  return [current.value.action, note].filter(Boolean).join(' · ')
+})
 
 function onReviewed(event: ReviewEvent) {
   if (event === 'APPROVE') verdict.value = 'approved'

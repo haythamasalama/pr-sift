@@ -18,6 +18,7 @@ const conversation = (overrides: Partial<Conversation> = {}): Conversation => ({
   byFile: new Map(),
   threads: new Map(),
   canMerge: true,
+  canBypass: false,
   discussion: [],
   viewer: 'lee',
   reviews: { approvals: 0, changesRequested: 0, mine: null },
@@ -68,6 +69,12 @@ describe('ReviewActions', () => {
     expect(mergeButton(wrapper).element.parentElement!.getAttribute('title')).toBe(
       'Can’t merge yet: Needs an approval or required checks first',
     )
+  })
+
+  it('lets you merge a blocked pull request when you may bypass its rules', () => {
+    const wrapper = mountActions({ conversation: conversation({ readiness: 'blocked', canBypass: true }) })
+    expect(mergeButton(wrapper).attributes('disabled')).toBeUndefined()
+    expect(mergeButton(wrapper).attributes('title')).toBe('Squash and merge · You can bypass the rules')
   })
 
   it('shows nothing once the pull request is merged', () => {

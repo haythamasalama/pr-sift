@@ -13,6 +13,8 @@ export interface MergeContext {
   squashTitle?: SquashTitleMode
   squashMessage?: SquashMessageMode
   mergeableState?: string
+  // You may merge it now even though its branch rules aren't met, as an admin or a ruleset bypass actor.
+  canBypass?: boolean
 }
 
 interface ApiPull {
@@ -45,10 +47,11 @@ const pullPath = (pr: PrRef) => `${repoPath(pr)}/pulls/${pr.number}`
 export async function loadMergeContext(pr: PrRef): Promise<MergeContext> {
   const commitPage = (page: number) => gh<ApiCommit[]>(`${pullPath(pr)}/commits?per_page=100&page=${page}`)
   // The first page of commits loads with the pull request itself; most pull requests need no second round trip.
-  const [pull, repo, first] = await Promise.all([
+  const [pull, repo, first, canBypass] = await Promise.all([
     gh<ApiPull>(pullPath(pr)),
     gh<ApiRepo>(repoPath(pr)).catch((): ApiRepo => ({})),
     commitPage(1),
+    canBypassRules(pr),
   ])
   const pages = Math.min(MAX_COMMIT_PAGES, Math.max(1, Math.ceil(pull.commits / 100)))
   const lists = [first, ...(await Promise.all(Array.from({ length: pages - 1 }, (_, i) => commitPage(i + 2))))]
@@ -70,7 +73,23 @@ export async function loadMergeContext(pr: PrRef): Promise<MergeContext> {
     squashTitle: repo.squash_merge_commit_title,
     squashMessage: repo.squash_merge_commit_message,
     mergeableState: pull.mergeable_state,
+    canBypass,
   }
+}
+
+/** Whether GitHub lets you merge this pull request before its branch rules are met. A failed ask counts as no. */
+export async function canBypassRules(pr: PrRef): Promise<boolean> {
+  const res = await gh<{ data?: { repository?: { pullRequest?: { viewerCanMergeAsAdmin?: boolean } | null } | null } }>(
+    '/graphql',
+    'POST',
+    {
+      query: `query($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) { pullRequest(number: $number) { viewerCanMergeAsAdmin } }
+      }`,
+      variables: { owner: pr.owner, repo: pr.repo, number: pr.number },
+    },
+  ).catch(() => null)
+  return res?.data?.repository?.pullRequest?.viewerCanMergeAsAdmin === true
 }
 
 export function submitReview(pr: PrRef, sha: string, event: ReviewEvent, comment: string) {

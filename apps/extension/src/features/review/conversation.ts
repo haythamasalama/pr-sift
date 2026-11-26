@@ -9,6 +9,7 @@ import {
 } from '@pr-sift/core'
 import { gh } from './github'
 import type { Note, PrRef } from '../../lib/types'
+import { canBypassRules } from './actions'
 
 export interface GithubComment {
   id: number
@@ -40,6 +41,8 @@ export interface Conversation {
   readiness: MergeReadiness
   // You can push to the repository, so a merge is yours to make.
   canMerge: boolean
+  // You may merge before the branch rules are met (an admin or a ruleset bypass actor).
+  canBypass: boolean
 }
 
 interface ApiRepo {
@@ -103,7 +106,7 @@ const VERDICTS: Record<string, ReviewVerdict> = { APPROVED: 'approved', CHANGES_
 
 export async function fetchConversation(pr: PrRef): Promise<Conversation> {
   const base = `/repos/${pr.owner}/${pr.repo}/pulls/${pr.number}`
-  const [pull, viewer, reviews, issueComments, repo] = await Promise.all([
+  const [pull, viewer, reviews, issueComments, repo, canBypass] = await Promise.all([
     gh<{ comments: number; review_comments: number; mergeable_state?: string }>(base),
     gh<ApiUser>('/user')
       .then((u) => u.login)
@@ -113,6 +116,7 @@ export async function fetchConversation(pr: PrRef): Promise<Conversation> {
       (): ApiIssueComment[] => [],
     ),
     gh<ApiRepo>(`/repos/${pr.owner}/${pr.repo}`).catch((): ApiRepo => ({})),
+    canBypassRules(pr),
   ])
   let mergeableState = pull.mergeable_state
   if (mergeableState === 'unknown') {
@@ -169,5 +173,6 @@ export async function fetchConversation(pr: PrRef): Promise<Conversation> {
     ),
     readiness: mergeReadiness(mergeableState),
     canMerge: !repo.archived && Boolean(repo.permissions?.push || repo.permissions?.maintain || repo.permissions?.admin),
+    canBypass,
   }
 }

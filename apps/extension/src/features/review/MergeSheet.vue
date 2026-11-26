@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { DEFAULTS, getSettings, saveSetting } from '../../lib/settings'
 import type { PrInfo, PrRef } from '../../lib/types'
+import BypassRules from '../quick-merge/BypassRules.vue'
 import { TOKENS_URL, explain, loadMergeContext, merge, type MergeContext } from './actions'
 
 const {
@@ -76,6 +77,9 @@ const busy = shallowRef(false)
 const error = shallowRef('')
 
 const current = computed(() => METHODS.find((m) => m.value === method.value)!)
+// Held only by its branch rules and you may skip them: the merge waits for the bypass box, like on GitHub.
+const canBypass = computed(() => context.value?.mergeableState === 'blocked' && context.value.canBypass === true)
+const bypass = shallowRef(false)
 const warning = computed(() => WARNINGS[context.value?.mergeableState ?? ''])
 const description = computed(() =>
   info?.base && info.head ? `Into ${info.base} from ${info.head}` : `#${pr.number} ${info?.title ?? ''}`.trim(),
@@ -194,7 +198,8 @@ async function submit() {
         </Alert>
         <div v-else-if="!context" class="flex items-center gap-2 text-sm text-muted-foreground"><Spinner /> Loading the commits…</div>
         <FieldGroup v-else>
-          <p v-if="warning" class="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <BypassRules v-if="canBypass" v-model="bypass" />
+          <p v-else-if="warning" class="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span class="size-1.5 shrink-0 rounded-full" :class="warning.tone" />{{ warning.text }}
           </p>
 
@@ -277,10 +282,15 @@ async function submit() {
       </div>
       <SheetFooter class="flex-row justify-end border-t bg-muted/40 p-3">
         <Button variant="outline" size="sm" @click="emit('close')">Cancel</Button>
-        <Button variant="success" size="sm" :disabled="!context || busy" @click="submit">
+        <Button
+          :variant="bypass && canBypass ? 'destructive' : 'success'"
+          size="sm"
+          :disabled="!context || busy || (canBypass && !bypass)"
+          @click="submit"
+        >
           <Spinner v-if="busy" />
           <GitMerge v-else />
-          {{ current.action }}
+          {{ bypass && canBypass ? 'Bypass rules and merge' : current.action }}
         </Button>
       </SheetFooter>
     </SheetContent>
