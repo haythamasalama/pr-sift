@@ -22,7 +22,7 @@ const model = defineModel<T>({ required: true })
       v-for="option in options"
       :key="option.value"
       :for="`${name}-${option.value}`"
-      class="flex w-full cursor-pointer flex-col items-stretch gap-1.5 rounded-lg border p-1.5 text-xs font-normal has-data-[state=checked]:border-emphasis has-data-[state=checked]:ring-1 has-data-[state=checked]:ring-emphasis"
+      class="flex w-full cursor-pointer flex-col items-stretch gap-1.5 rounded-lg border p-1.5 text-xs font-normal has-data-[state=checked]:border-ring has-data-[state=checked]:ring-1 has-data-[state=checked]:ring-ring"
       :title="option.hint"
     >
       <slot name="preview" :value="option.value" />

@@ -13,6 +13,7 @@ export const DEFAULTS: Settings = {
   diffView: 'unified',
   sidebarWidth: 320,
   theme: 'system',
+  themeStyle: 'github',
   treeIndent: 6,
   treeGuides: true,
   mergeMethod: 'squash',

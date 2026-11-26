@@ -21,7 +21,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark } = useAppearance()
+const { dark, themeStyle } = useAppearance()
 const githubDark = useGithubDark()
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
@@ -84,8 +84,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="ps-root" :class="{ dark }">
-    <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
+  <div ref="root" class="ps-root" :class="{ dark }" :data-style="themeStyle">
+    <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }" data-style="github">
       <Button
         variant="outline"
         class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
