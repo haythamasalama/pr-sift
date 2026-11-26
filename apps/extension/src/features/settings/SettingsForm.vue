@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { isShadcnStyle, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { codeFor, isShadcnStyle, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
 import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
@@ -62,7 +62,7 @@ const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSect
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
-const { theme, setTheme, themeStyle, setThemeStyle, baseColor, setBaseColor, codeLight, codeDark, setCode, dark } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, baseColor, setBaseColor, codeTheme, setCodeTheme, dark } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
@@ -333,16 +333,15 @@ defineExpose({ scrollToSection })
       >
         <BaseColorPicker :model-value="baseColor" :theme-style="themeStyle" @update:model-value="setBaseColor" />
       </SettingsGroup>
-      <SettingsGroup id="code-colors" title="Code colors" description="How code is coloured in the diff, picked for each mode.">
-        <div class="flex flex-col gap-3 sm:flex-row">
-          <div class="flex min-w-0 flex-1 flex-col gap-2">
-            <CodeThemeSelect :model-value="codeLight" mode="light" @update:model-value="(v) => setCode('light', v)" />
-            <CodePreview :code="codeLight" :dark="false" :theme-style="themeStyle" :base-color="baseColor" />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col gap-2">
-            <CodeThemeSelect :model-value="codeDark" mode="dark" @update:model-value="(v) => setCode('dark', v)" />
-            <CodePreview :code="codeDark" :dark="true" :theme-style="themeStyle" :base-color="baseColor" />
-          </div>
+      <SettingsGroup
+        id="code-colors"
+        title="Code colors"
+        description="How code is coloured in the diff. Each one has a light and a dark version."
+      >
+        <CodeThemeSelect :model-value="codeTheme" @update:model-value="setCodeTheme" />
+        <div class="grid gap-2 sm:grid-cols-2">
+          <CodePreview :code="codeFor(codeTheme, false)" :dark="false" :theme-style="themeStyle" :base-color="baseColor" />
+          <CodePreview :code="codeFor(codeTheme, true)" :dark="true" :theme-style="themeStyle" :base-color="baseColor" />
         </div>
       </SettingsGroup>
       <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">

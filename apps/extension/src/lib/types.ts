@@ -39,8 +39,7 @@ export interface Settings {
   theme: ThemeMode
   themeStyle: ThemeStyle
   baseColor: BaseColor
-  codeLight: string
-  codeDark: string
+  codeTheme: string
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod
