@@ -18,6 +18,8 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: Approve and Merge stay on the title's row while there is room beside it, also with page zoom or a larger
   default font in Chrome.
 - Review: The commits menu uses smaller text, and the time of each commit is short and stays on one line.
+- Review: An approval you sent from GitHub, another tab or the desktop app turns Approve into Approved when you come back
+  to the review, and Approved has a light green fill so it reads as done.
 - Options: When Chrome limits Check for updates, About now says Chrome updates PR Sift on its own within a few hours,
   and Update in Chrome opens the extensions page, where Update checks right away.
 

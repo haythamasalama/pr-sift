@@ -157,13 +157,23 @@ const conversation = shallowRef<Conversation | null>(null)
 const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
 const actionNote = shallowRef('')
 
+let conversationAt = 0
+
 async function loadConversation() {
   if (!tokenAvailable.value) return
+  conversationAt = Date.now()
   try {
     conversation.value = await fetchConversation(pr)
   } catch {
     conversation.value = null
   }
+}
+
+// An approval sent from GitHub, another tab or the desktop app shows once you come back to this tab.
+const CONVERSATION_FRESH = 15_000
+function reloadConversationOnReturn() {
+  if (document.visibilityState !== 'visible' || Date.now() - conversationAt < CONVERSATION_FRESH) return
+  void loadConversation()
 }
 
 function announce(text: string) {
@@ -343,8 +353,16 @@ async function onUndoKey(e: KeyboardEvent) {
   if (filter.inScope.value.some((f) => f.filename === restored[0])) await list.value?.scrollTo(restored[0]!)
 }
 
-onMounted(() => window.addEventListener('keydown', onUndoKey, true))
-onBeforeUnmount(() => window.removeEventListener('keydown', onUndoKey, true))
+onMounted(() => {
+  window.addEventListener('keydown', onUndoKey, true)
+  window.addEventListener('focus', reloadConversationOnReturn)
+  document.addEventListener('visibilitychange', reloadConversationOnReturn)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onUndoKey, true)
+  window.removeEventListener('focus', reloadConversationOnReturn)
+  document.removeEventListener('visibilitychange', reloadConversationOnReturn)
+})
 
 const removeExtension = (ext: string) => setCustomExtensions(settings.value.customExtensions.filter((e) => e !== ext))
 

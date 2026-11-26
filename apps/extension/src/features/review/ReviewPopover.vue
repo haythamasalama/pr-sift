@@ -96,7 +96,7 @@ async function submit() {
       <Button
         v-if="mine === 'approved'"
         variant="outline"
-        class="shrink-0 px-3 text-[13px] text-success-fg hover:text-success-fg"
+        class="shrink-0 border-success-fg/30 bg-success-fg/10 px-3 text-[13px] text-success-fg hover:bg-success-fg/15 hover:text-success-fg"
         title="You approved this pull request. Review it again."
       >
         <CheckCheck /><span class="hidden sm:inline">Approved</span>

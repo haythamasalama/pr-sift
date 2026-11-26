@@ -40,6 +40,8 @@ async function api(msg: ApiMessage) {
   if (url.origin !== 'https://api.github.com') return { ok: false, status: 400, data: { message: 'Invalid API path.' } }
   const res = await fetch(url, {
     method: msg.method ?? 'GET',
+    // GitHub marks API answers cacheable for 60 s; revalidate so a new review or merge state shows at once.
+    cache: 'no-cache',
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: msg.accept && ACCEPT.test(msg.accept) ? msg.accept : 'application/vnd.github+json',
