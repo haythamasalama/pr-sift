@@ -1,6 +1,6 @@
 import { alive, onStorageKey, storageGet, storageRemove } from './extension'
 
-export const STORE_URL = 'https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln'
+const STORE_URL = 'https://chromewebstore.google.com/detail/pr-sift/kdbgdnoafohnnojmoaaabdomgfigdhln'
 export const REVIEWS_URL = `${STORE_URL}/reviews`
 export const CHANGELOG_URL = 'https://pr-sift.haythamasalama.me/changelog/'
 
@@ -64,7 +64,3 @@ export const watchUpdateReady = (callback: (version: string | undefined) => void
 export const watchUpdated = (callback: (info: UpdatedInfo | undefined) => void) => watchKey('updated', callback)
 
 export const dismissUpdated = () => storageRemove('updated')
-
-export function openReviews() {
-  window.open(REVIEWS_URL, '_blank', 'noopener')
-}
