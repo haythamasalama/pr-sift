@@ -406,7 +406,7 @@ function homePage() {
   const FEATURE_SPAN = { views: 'md:col-span-2', merge: 'lg:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
   const featureCard = (f) => `
         <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
-          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8"${f.id === 'theme' ? '' : ' aria-hidden="true"'}>${featureVisual(f.id, icon)}</div>
+          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8">${featureVisual(f.id, icon)}</div>
           <div class="p-5 sm:px-6 sm:pb-6">
             <h3 class="flex items-center gap-2.5 text-[17px] font-semibold">${icon(f.icon, 'size-[18px] shrink-0')}${esc(f.title)}</h3>
             <p class="mt-1.5 leading-relaxed text-muted">${esc(f.text)}</p>
