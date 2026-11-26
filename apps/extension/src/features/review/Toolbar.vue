@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CircleHelp, Monitor, Moon, NotepadText, Palette, PanelLeft, RotateCw, Settings, Sun, SwatchBook, X } from '@lucide/vue'
+import { CircleHelp, Monitor, Moon, NotepadText, Palette, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -19,10 +19,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { BASE_COLORS, isShadcnStyle, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { BaseColor, ThemeMode, ThemeStyle } from '../../lib/types'
+import type { ThemeMode, ThemeStyle } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -35,9 +35,8 @@ defineProps<{
   loading?: boolean
 }>()
 
-const { theme, setTheme, themeStyle, setThemeStyle, baseColor, setBaseColor } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle } = useAppearance()
 const styleLabel = computed(() => THEME_STYLES.find((s) => s.value === themeStyle.value)?.label)
-const baseLabel = computed(() => BASE_COLORS.find((c) => c.value === baseColor.value)?.label)
 const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ openNotes: []; toggleSidebar: []; close: [] }>()
@@ -123,35 +122,18 @@ const openSettings = useSettingsOpener()
           <DropdownMenuGroup>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Palette /> Style<span class="ml-auto text-xs text-muted-foreground">{{ styleLabel }}</span>
+                <Palette /> Theme<span class="ml-auto text-xs text-muted-foreground">{{ styleLabel }}</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent class="w-44">
                 <DropdownMenuRadioGroup :model-value="themeStyle" @update:model-value="(v) => setThemeStyle(v as ThemeStyle)">
-                  <DropdownMenuRadioItem v-for="s in THEME_STYLES.filter((s) => !s.family)" :key="s.value" :value="s.value">{{
-                    s.label
-                  }}</DropdownMenuRadioItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel class="text-xs">shadcn/vue</DropdownMenuLabel>
-                  <DropdownMenuRadioItem v-for="s in THEME_STYLES.filter((s) => s.family)" :key="s.value" :value="s.value">{{
-                    s.label
-                  }}</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuSub v-if="isShadcnStyle(themeStyle)">
-              <DropdownMenuSubTrigger>
-                <SwatchBook /> Base color<span class="ml-auto text-xs text-muted-foreground">{{ baseLabel }}</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent class="w-40">
-                <DropdownMenuRadioGroup :model-value="baseColor" @update:model-value="(v) => setBaseColor(v as BaseColor)">
-                  <DropdownMenuRadioItem v-for="c in BASE_COLORS" :key="c.value" :value="c.value">{{ c.label }}</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem v-for="s in THEME_STYLES" :key="s.value" :value="s.value">{{ s.label }}</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+            <DropdownMenuLabel>Mode</DropdownMenuLabel>
             <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
               <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
