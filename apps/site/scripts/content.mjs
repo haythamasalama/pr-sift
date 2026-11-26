@@ -127,7 +127,7 @@ export const home = {
     {
       id: 'theme',
       icon: 'sun-moon',
-      title: 'Themes, light or dark',
+      title: 'Themes and code colors',
       text: 'GitHub, PR Sift, Minimal, Soft or Mono, with your pick of code colors. Light, dark or your system, from Settings.',
     },
     {
