@@ -14,8 +14,9 @@ import {
   FolderTree,
   GitCommitHorizontal,
   GitPullRequest,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
-  Sparkles,
   SquareTerminal,
   X,
 } from '@lucide/vue'
@@ -28,11 +29,10 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Spinner } from '@/components/ui/spinner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import FileList from '@/features/diff/FileList.vue'
 import FileTree from '@/features/tree/FileTree.vue'
 import FilterBar from '@/features/filters/FilterBar.vue'
-import ScopePanel from '@/features/filters/ScopePanel.vue'
+import SmartFiltersMenu from '@/features/filters/SmartFiltersMenu.vue'
 import Toolbar from '@/features/review/Toolbar.vue'
 import { useFileFilter } from '@/features/filters/useFileFilter'
 import { diffModeKey } from '@/features/diff/diffMode'
@@ -161,11 +161,30 @@ const tree = computed(() => buildTree(filter.pool.value))
 
 const list = useTemplateRef<InstanceType<typeof FileList>>('list')
 const main = useTemplateRef<HTMLElement>('main')
-const sidebar = shallowRef<'smart' | 'tree'>('tree')
 const compact = useMediaQuery('(max-width: 1100px)')
 const narrow = useMediaQuery('(max-width: 960px)')
 const sidebarOpen = shallowRef(false)
 const sidebarSize = useResizable(DEFAULTS.sidebarWidth, 220, 640, (width) => saveSetting('sidebarWidth', width))
+// Like the review: on wide windows the sidebar folds into a thin rail of icons, and remembers it.
+const RAIL = 44
+const collapsed = shallowRef(false)
+const searchInput = useTemplateRef<InstanceType<typeof Input>>('searchInput')
+const sidebarWidth = computed(() => (collapsed.value ? RAIL : sidebarSize.width.value))
+function hideSidebar() {
+  if (compact.value) {
+    sidebarOpen.value = false
+    return
+  }
+  collapsed.value = true
+  void saveSetting('sidebarCollapsed', true)
+}
+async function showSidebar(search = false) {
+  collapsed.value = false
+  void saveSetting('sidebarCollapsed', false)
+  if (!search) return
+  await nextTick()
+  ;(searchInput.value?.$el as HTMLInputElement | undefined)?.focus()
+}
 
 const diffMode = shallowRef<DiffMode>('unified')
 provide(
@@ -259,6 +278,7 @@ const allReviewed = computed(() => filter.inScope.value.length === 0 && filter.v
 onMounted(async () => {
   stopWatchingSettings = onSettingsChange((next) => (settings.value = next))
   settings.value = await getSettings()
+  collapsed.value = settings.value.sidebarCollapsed
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
   diffMode.value = settings.value.diffView
@@ -512,19 +532,20 @@ async function copy(text: string, what: string) {
       v-else-if="data"
       class="relative grid min-h-0 flex-1"
       :class="sidebarSize.dragging.value ? 'select-none' : ''"
-      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarSize.width.value}px 1fr` }"
+      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarWidth}px 1fr` }"
     >
       <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
       <aside
         v-show="!compact || sidebarOpen"
-        class="min-h-0 border-r bg-sidebar"
+        class="flex min-h-0 flex-col border-r bg-sidebar"
         :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
       >
         <div
-          v-if="!compact"
+          v-if="!compact && !collapsed"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize sidebar"
+          title="Drag to resize · double-click to reset"
           class="group/resize absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize transition-colors hover:bg-emphasis/25"
           :class="sidebarSize.dragging.value ? 'bg-emphasis/35' : ''"
           @pointerdown.prevent="sidebarSize.start"
@@ -534,35 +555,81 @@ async function copy(text: string, what: string) {
             class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
           />
         </div>
-        <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="border-b p-2">
-            <div class="relative flex items-center">
-              <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+        <!-- The same sidebar as the review: search, smart filters and the tree, folding into a rail of icons. -->
+        <nav v-if="!compact && collapsed" class="flex flex-col items-center gap-1 py-2" aria-label="Sidebar">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Show sidebar"
+            aria-label="Show sidebar"
+            @click="showSidebar()"
+          >
+            <PanelLeftOpen />
+          </Button>
+          <span class="my-1 h-px w-5 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Search files"
+            aria-label="Search files"
+            @click="showSidebar(true)"
+          >
+            <Search />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="relative size-8 text-muted-foreground hover:text-foreground"
+            :title="filter.selectedFolder.value ? `Tree · ${filter.selectedFolder.value}` : 'Tree'"
+            aria-label="Show the file tree"
+            @click="showSidebar()"
+          >
+            <FolderTree />
+            <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-foreground" />
+          </Button>
+        </nav>
+        <template v-else>
+          <div class="flex items-center gap-1.5 border-b px-3.5 py-2.5">
+            <div class="relative flex flex-1 items-center">
+              <Search class="pointer-events-none absolute left-2 size-3.5 text-muted-foreground" />
               <Input
+                ref="searchInput"
                 v-model="filter.query.value"
-                placeholder="Search files…"
+                placeholder="Search files"
                 aria-label="Search files"
-                class="h-8 pr-7 pl-8 text-xs md:text-xs"
+                class="h-7 rounded-md bg-background pr-7 pl-7 text-xs shadow-none md:text-xs dark:bg-background"
               />
               <Button
                 v-if="filter.query.value"
                 variant="ghost"
                 size="icon-xs"
-                class="absolute right-1"
+                class="absolute right-0.5"
                 aria-label="Clear search"
                 @click="filter.query.value = ''"
               >
                 <X />
               </Button>
             </div>
+            <SmartFiltersMenu
+              :smart="filter.smart.value"
+              :selected="filter.scopes.value"
+              @toggle="filter.toggleScope"
+              @clear="filter.setScopes([])"
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="-mr-1 size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              title="Hide sidebar"
+              aria-label="Hide sidebar"
+              @click="hideSidebar"
+            >
+              <PanelLeftClose />
+            </Button>
           </div>
-          <div class="p-2 pb-1">
-            <TabsList class="w-full">
-              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="tree" class="min-h-0 flex-1">
+          <div class="min-h-0 flex-1 overflow-auto">
             <FileTree
               :tree="tree"
               :search="filter.query.value"
@@ -587,16 +654,21 @@ async function copy(text: string, what: string) {
               @toggle-file="setViewed"
               @hide-folder="hideFolder"
             />
-          </TabsContent>
-          <TabsContent value="smart" class="min-h-0 flex-1">
-            <ScopePanel
-              :smart="filter.smart.value"
-              :selected="filter.scopes.value"
-              @toggle="filter.toggleScope"
-              @clear="filter.setScopes([])"
+          </div>
+        </template>
+        <div
+          v-if="!(collapsed && !compact)"
+          class="flex items-center gap-1.5 border-t px-3.5 py-2 text-[11px] text-muted-foreground tabular-nums"
+          :title="`${filter.progress.value.done} of ${filter.progress.value.total} files viewed`"
+        >
+          <span class="relative h-1 flex-1 overflow-hidden rounded-full bg-border">
+            <span
+              class="absolute inset-y-0 left-0 bg-emphasis transition-[width]"
+              :style="{ width: `${filter.progress.value.total ? (100 * filter.progress.value.done) / filter.progress.value.total : 0}%` }"
             />
-          </TabsContent>
-        </Tabs>
+          </span>
+          {{ filter.progress.value.done }} of {{ filter.progress.value.total }} viewed
+        </div>
       </aside>
       <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
         <Empty v-if="!files.length" class="mx-auto mt-16 max-w-sm border-0">

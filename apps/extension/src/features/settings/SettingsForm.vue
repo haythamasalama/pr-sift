@@ -184,7 +184,7 @@ defineExpose({ scrollToSection })
       v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
-      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto border-b bg-background px-4"
+      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto overflow-y-hidden border-b bg-background px-4 [scrollbar-width:none]"
     >
       <button
         v-for="t in tabs"

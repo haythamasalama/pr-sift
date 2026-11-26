@@ -20,7 +20,7 @@ const emit = defineEmits<{ changed: [] }>()
         <span class="flex-1">{{ g.title }} · {{ g.pulls.length }}</span>
         <template v-if="!i"
           ><span class="w-[120px] @max-3xl:hidden">Review</span><span class="w-20 @max-3xl:hidden">CI</span
-          ><span class="w-[236px] @max-3xl:hidden" aria-hidden="true"
+          ><span class="w-[256px] @max-3xl:hidden @5xl:w-[332px]" aria-hidden="true"
         /></template>
       </div>
       <ul :class="i && !columns ? 'border-t border-accent' : ''">

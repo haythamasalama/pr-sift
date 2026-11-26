@@ -101,7 +101,7 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
     <QuickActions
       :key="`${pull.url}@${pull.headSha}`"
       :pull="pull"
-      class="w-[236px] justify-end @max-3xl:w-auto"
+      class="w-[256px] justify-end @max-3xl:w-auto @5xl:w-[332px]"
       @changed="emit('changed')"
     />
   </li>

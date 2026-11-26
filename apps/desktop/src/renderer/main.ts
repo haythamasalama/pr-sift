@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { installFonts } from '@/lib/fonts'
 import { bridge } from './bridge'
 import { createChrome, guardFetch } from './shim/chrome'
 import { navigate } from './navigation'
@@ -15,6 +16,8 @@ async function start() {
     openSection: (section) => navigate(section === 'token' ? 'account' : 'settings'),
   })
   guardFetch(window)
+  // The PR Sift theme's IBM Plex fonts, bundled with the app.
+  installFonts()
   document.documentElement.dataset.platform = info.platform
   createApp(App).mount('#app')
 }

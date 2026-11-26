@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
-import { BadgeCheck, FolderGit2, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, Trash2 } from '@lucide/vue'
+import { ArrowDownUp, BadgeCheck, FolderGit2, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, Trash2 } from '@lucide/vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import BrandMark from '@/components/BrandMark.vue'
@@ -10,6 +18,7 @@ import { portalTargetKey } from '@/lib/portal'
 import { prKey } from '@/lib/types'
 import { useAuth } from './useAuth'
 import { useProjects } from './useProjects'
+import { PROJECT_SORTS, useProjectOrder, type ProjectSort } from './useProjectOrder'
 import { useInbox } from './useInbox'
 import { bridge } from './bridge'
 import type { AutoApproveStatus } from '#shared/ipc'
@@ -32,6 +41,14 @@ import Hint from './components/Hint.vue'
 const { dark, rootAttrs } = useAppearance()
 const { status } = useAuth()
 const { projects } = useProjects()
+const { sort, sorted, setSort, markOpened, move } = useProjectOrder(projects)
+watch(project, (path) => path && markOpened(path))
+// Custom order: drag a project onto another to take its place.
+const dragging = shallowRef<string | null>(null)
+function drop(target: string) {
+  if (dragging.value && dragging.value !== target) move(dragging.value, target)
+  dragging.value = null
+}
 const portal = useTemplateRef<HTMLElement>('portal')
 provide(portalTargetKey, portal)
 const adding = shallowRef(false)
@@ -165,8 +182,31 @@ function onAdded(paths: string[]) {
             </button>
           </Hint>
 
-          <div v-if="!collapsed" class="flex items-center justify-between px-2.5 pt-5 pb-2">
+          <div v-if="!collapsed" class="flex items-center gap-0.5 px-2.5 pt-5 pb-2">
             <SectionLabel>Projects</SectionLabel>
+            <span class="flex-1" />
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
+                  aria-label="Sort projects"
+                >
+                  <ArrowDownUp class="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" class="w-60">
+                <DropdownMenuLabel class="text-xs">Sort projects by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup :model-value="sort" @update:model-value="(v) => setSort(v as ProjectSort)">
+                  <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value" class="items-start">
+                    <span class="flex flex-col">
+                      <span>{{ o.label }}</span>
+                      <span class="text-[11px] text-muted-foreground">{{ o.hint }}</span>
+                    </span>
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button
               type="button"
               class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -179,11 +219,22 @@ function onAdded(paths: string[]) {
           </div>
           <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
           <div class="-mx-1 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
-            <Hint v-for="p in projects ?? []" :key="p.path" :text="p.name" side="right" :disabled="!collapsed">
+            <Hint v-for="p in sorted" :key="p.path" :text="p.name" side="right" :disabled="!collapsed">
               <button
                 type="button"
-                :class="[item, rail, 'text-foreground', active((view === 'project' || view === 'worktree') && project === p.path)]"
+                :draggable="sort === 'custom'"
+                :class="[
+                  item,
+                  rail,
+                  'text-foreground',
+                  active((view === 'project' || view === 'worktree') && project === p.path),
+                  dragging === p.path ? 'opacity-50' : '',
+                ]"
                 :aria-label="p.name"
+                @dragstart="dragging = p.path"
+                @dragend="dragging = null"
+                @dragover.prevent
+                @drop.prevent="drop(p.path)"
                 @click="openProject(p.path)"
               >
                 <ProjectIcon :project="p" :size="18" />
