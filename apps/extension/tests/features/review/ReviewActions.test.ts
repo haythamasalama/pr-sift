@@ -49,9 +49,11 @@ describe('ReviewActions', () => {
     expect(mergeButton(after).attributes('data-variant')).toBe('success')
   })
 
-  it('hides Approve on your own pull request, since GitHub never allows it', () => {
+  it('keeps Approve for the author, disabled with the reason', () => {
     const wrapper = mountActions({ conversation: conversation({ viewer: 'Sam' }) })
-    expect(wrapper.find('button[aria-label^="Approve"]').exists()).toBe(false)
+    const approve = wrapper.find('button[aria-label^="Approve"]')
+    expect(approve.attributes('disabled')).toBeDefined()
+    expect(approve.attributes('aria-label')).toContain('your own pull request')
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 

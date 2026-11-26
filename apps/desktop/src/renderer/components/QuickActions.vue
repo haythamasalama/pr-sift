@@ -27,8 +27,7 @@ const approveError = shallowRef('')
 const merged = shallowRef('')
 
 const isAuthor = computed(() => !!me.value && pull.author?.login.toLowerCase() === me.value)
-// GitHub never lets you approve your own pull request, so Approve is hidden there instead of disabled.
-const approveHold = computed(() => approveBlockReason({ isAuthor: false, draft: pull.draft }))
+const approveHold = computed(() => approveBlockReason({ isAuthor: isAuthor.value, draft: pull.draft }))
 // Green when nothing is off, amber when only optional checks failed or you bypass the rules.
 const ready = computed(() => pull.mergeState === 'CLEAN' || pull.mergeState === 'HAS_HOOKS')
 const mergeHold = computed(() =>
@@ -82,13 +81,13 @@ async function confirm() {
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
     <template v-else>
-      <Hint v-if="!isAuthor && approveHold" :text="approveHold">
+      <Hint v-if="approveHold" :text="approveHold">
         <span tabindex="0" class="rounded-md"
           ><Button variant="outline" size="sm" disabled aria-label="Approve"><Check />Approve</Button></span
         >
       </Hint>
       <Button
-        v-else-if="!isAuthor"
+        v-else
         :variant="approved || approveError ? 'outline' : 'success'"
         size="sm"
         :class="approved ? 'text-success-fg' : approveError ? 'text-destructive' : ''"
