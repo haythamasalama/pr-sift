@@ -53,12 +53,12 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
   <li class="flex items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0 hover:bg-muted/60">
     <button type="button" class="flex min-w-0 flex-1 items-center gap-4 py-3 text-left" @click="emit('open')">
       <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <div class="flex min-w-0 items-center gap-2">
+        <div class="flex min-w-0 items-center gap-2 overflow-hidden">
           <template v-if="showRepo"
             ><ProjectIcon :project="repoProject" :size="16" /><span class="shrink-0 text-muted-foreground">{{ pull.repo }}</span></template
           >
           <span class="truncate text-sm font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
-          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-3xl:hidden" />
+          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-4xl:hidden" />
           <Hint
             v-if="pull.mergeable === 'CONFLICTING' && !mine"
             text="It conflicts with the base branch. The author has to fix that first."
@@ -66,7 +66,7 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
             <StatusPill tone="danger">Conflicts</StatusPill>
           </Hint>
         </div>
-        <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
+        <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap text-muted-foreground">
           <span class="shrink-0 tabular-nums">#{{ pull.number }}</span>
           <span v-if="!mine" class="flex shrink-0 items-center gap-1.5">
             <Avatar class="size-4"
@@ -82,18 +82,20 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
 
-          <span v-if="pull.comments" class="flex shrink-0 items-center gap-1"><MessageSquare class="size-3.5" />{{ pull.comments }}</span>
+          <span v-if="pull.comments" class="flex shrink-0 items-center gap-1 @max-4xl:hidden"
+            ><MessageSquare class="size-3.5" />{{ pull.comments }}</span
+          >
         </div>
       </div>
-      <span class="flex w-[120px] shrink-0 @max-xl:w-auto" :class="mine ? 'justify-end' : ''">
+      <span class="flex w-[calc(18ch+1.5rem)] shrink-0 text-xs @max-xl:w-auto" :class="mine ? 'justify-end' : ''">
         <Hint v-if="review" :text="review.hint">
           <StatusPill :tone="review.tone">{{ review.text }}</StatusPill>
         </Hint>
       </span>
-      <span class="w-20 shrink-0 @max-3xl:w-4">
+      <span class="w-20 shrink-0 @max-4xl:w-4">
         <Hint v-if="ci" :text="ci.hint">
           <StatusPill :tone="ci.tone" bare
-            ><span class="@max-3xl:hidden">{{ ci.text }}</span></StatusPill
+            ><span class="@max-4xl:hidden">{{ ci.text }}</span></StatusPill
           >
         </Hint>
       </span>

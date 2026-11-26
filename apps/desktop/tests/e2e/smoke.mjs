@@ -399,6 +399,28 @@ for (const mode of ['light', 'dark']) {
   if ((await frameMode()) !== mode) throw new Error(`The window frame did not turn ${mode}: ${await frameMode()}`)
 }
 await page.locator(`#settings-theme-${startMode}`).click()
+// The Mono theme's wide letters must still fit the pull request rows.
+await page.locator('#settings-style-mono').click()
+await page.keyboard.press('Escape')
+await page.getByRole('button', { name: 'Needs you' }).click()
+await page.setViewportSize({ width: 1100, height: 780 })
+await page.waitForTimeout(500)
+await page.screenshot({ path: join(shots, '2m-inbox-mono.png') })
+{
+  const overlaps = await page.locator('li').evaluateAll((rows) =>
+    rows.flatMap((row) => {
+      const pill = row.querySelector('button > span:nth-of-type(1) [data-slot="badge"], button > span:nth-of-type(1) span')
+      const text = row.querySelector('button > div')
+      if (!pill || !text) return []
+      return pill.getBoundingClientRect().left < text.getBoundingClientRect().right - 1 ? [row.textContent?.slice(0, 40)] : []
+    }),
+  )
+  if (overlaps.length) throw new Error(`Review status runs over the title: ${overlaps.join(' | ')}`)
+}
+await page.setViewportSize({ width: 1180, height: 780 })
+await page.getByRole('button', { name: 'Settings' }).click()
+await page.getByRole('tab', { name: 'Appearance' }).click()
+await page.locator('#settings-style-github').click()
 await page.getByRole('tab', { name: 'Merging' }).click()
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '11c-settings-merging.png') })
