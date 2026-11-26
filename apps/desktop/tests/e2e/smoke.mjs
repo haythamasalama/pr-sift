@@ -366,6 +366,15 @@ await page.screenshot({ path: join(shots, '11-settings.png') })
 await page.getByRole('tab', { name: 'Appearance' }).click()
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '11b-settings-appearance.png') })
+// The window frame follows the mode picked here.
+const frameMode = () => electronApp.evaluate(({ nativeTheme }) => nativeTheme.themeSource)
+const startMode = await frameMode()
+for (const mode of ['light', 'dark']) {
+  await page.locator(`#settings-theme-${mode}`).click()
+  await page.waitForTimeout(200)
+  if ((await frameMode()) !== mode) throw new Error(`The window frame did not turn ${mode}: ${await frameMode()}`)
+}
+await page.locator(`#settings-theme-${startMode}`).click()
 await page.getByRole('tab', { name: 'Merging' }).click()
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '11c-settings-merging.png') })

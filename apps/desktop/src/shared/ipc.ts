@@ -366,6 +366,8 @@ export interface Channels {
   'autoapprove:clear-log': { args: []; result: AutoApproveStatus }
   'shell:reveal': { args: [path: string]; result: void }
   'shell:open-external': { args: [url: string]; result: void }
+  // The window frame (title bar, traffic lights) follows the app's own Light / Dark / System choice.
+  'window:appearance': { args: [mode: 'system' | 'light' | 'dark', background: string]; result: void }
 }
 
 export type Channel = keyof Channels
@@ -416,6 +418,7 @@ export const CHANNELS = [
   'autoapprove:clear-log',
   'shell:reveal',
   'shell:open-external',
+  'window:appearance',
 ] as const satisfies readonly Channel[]
 
 export interface StorageChange {

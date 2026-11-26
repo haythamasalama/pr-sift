@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import {
   ArrowDownUp,
   BadgeCheck,
@@ -55,8 +55,20 @@ import ProjectIcon from './components/ProjectIcon.vue'
 import SectionLabel from './components/SectionLabel.vue'
 import CountBadge from './components/CountBadge.vue'
 import Hint from './components/Hint.vue'
+import { hexColor } from './color'
 
-const { dark, rootAttrs } = useAppearance()
+const { theme, dark, rootAttrs } = useAppearance()
+// The title bar and window frame follow the theme chosen here, not only the system's.
+const rootEl = useTemplateRef<HTMLElement>('appRoot')
+watch(
+  [theme, dark, rootAttrs, rootEl],
+  async () => {
+    await nextTick()
+    const bg = rootEl.value ? hexColor(getComputedStyle(rootEl.value).backgroundColor) : ''
+    void bridge.invoke('window:appearance', theme.value, bg)
+  },
+  { immediate: true },
+)
 const { status } = useAuth()
 const { projects } = useProjects()
 const { sort, groups, byRepo, folded, setSort, setByRepo, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
@@ -235,7 +247,7 @@ function onAdded(paths: string[]) {
 
 <template>
   <TooltipProvider :delay-duration="250">
-    <div class="ps-root h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
+    <div ref="appRoot" class="ps-root h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
       <SignIn v-else-if="!status.signedIn" />
       <div v-else class="flex h-full">

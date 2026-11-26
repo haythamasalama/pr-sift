@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, safeStorage, shell, type IpcMainInvokeEvent, type WebContents } from 'electron'
+import { app, BrowserWindow, dialog, nativeTheme, safeStorage, shell, type IpcMainInvokeEvent, type WebContents } from 'electron'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -275,6 +275,10 @@ function registerHandlers() {
 
   h('shell:reveal', (_e, path) => shell.showItemInFolder(String(path)))
   h('shell:open-external', (_e, url) => openExternal(String(url)))
+  h('window:appearance', (_e, mode, background) => {
+    if (mode === 'system' || mode === 'light' || mode === 'dark') nativeTheme.themeSource = mode
+    if (typeof background === 'string' && /^#[0-9a-f]{6}$/i.test(background)) window?.setBackgroundColor(background)
+  })
 }
 
 const EXTERNAL_HOSTS = new Set(['github.com', 'docs.github.com', 'cli.github.com', 'pr-sift.haythamasalama.me'])
