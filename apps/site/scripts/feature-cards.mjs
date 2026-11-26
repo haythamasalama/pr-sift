@@ -149,17 +149,21 @@ export function featureVisual(id, icon) {
         ['Mono', 'rounded-none', 'rounded-none', 'bg-ink'],
       ]
       const swatch = ([name, outer, inner, primary, selected]) =>
-        `<span class="flex flex-col items-center gap-1.5 text-[11px] font-medium ${selected ? 'text-ink' : 'text-muted'}"><span class="flex h-[30px] w-11 items-center justify-center gap-1 border border-line bg-paper ${outer} ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper' : ''}"><span class="h-2 w-3 border border-line bg-raised ${inner}"></span><span class="h-2 w-4 ${primary} ${inner}"></span></span>${name}</span>`
-      const modes = ['System', 'Light', 'Dark']
+        `<button type="button" data-swatch aria-pressed="${selected ? 'true' : 'false'}" class="group flex cursor-pointer flex-col items-center gap-1.5 text-[11px] font-medium text-muted transition-colors hover:text-ink aria-pressed:text-ink"><span class="flex h-[30px] w-11 items-center justify-center gap-1 border border-line bg-paper ring-offset-2 ring-offset-paper transition-shadow group-hover:border-muted group-aria-pressed:ring-2 group-aria-pressed:ring-ink ${outer}"><span class="h-2 w-3 border border-line bg-raised ${inner}"></span><span class="h-2 w-4 ${primary} ${inner}"></span></span>${name}</button>`
+      const modes = [
+        ['system', 'System'],
+        ['light', 'Light'],
+        ['dark', 'Dark'],
+      ]
         .map(
-          (m) =>
-            `<span class="flex-1 rounded-[5px] py-1 text-center ${m === 'System' ? 'bg-paper font-medium shadow-[0_1px_2px_rgb(0_0_0/0.12)]' : 'text-muted'}">${m}</span>`,
+          ([mode, name]) =>
+            `<button type="button" data-theme-mode="${mode}" aria-pressed="false" class="flex-1 cursor-pointer rounded-[5px] py-1 text-center text-muted transition-colors hover:text-ink">${name}</button>`,
         )
         .join('')
       return panel(
         'flex max-w-[330px] flex-col gap-2.5 px-3.5 pt-3 pb-3.5 text-[12.5px]',
-        `${label('Mode')}<div class="flex rounded-md bg-raised p-[3px] text-xs">${modes}</div>
-        ${label('Theme', 'mt-1')}<div class="flex justify-between">${THEMES.map(swatch).join('')}</div>`,
+        `${label('Mode')}<div role="group" aria-label="Mode" class="flex rounded-md bg-raised p-[3px] text-xs">${modes}</div>
+        ${label('Theme', 'mt-1')}<div data-swatches role="group" aria-label="Theme" class="flex justify-between">${THEMES.map(swatch).join('')}</div>`,
       )
     },
 
