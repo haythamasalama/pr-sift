@@ -48,11 +48,9 @@ describe('ReviewActions', () => {
     expect(mergeButton(after).attributes('data-variant')).toBe('success')
   })
 
-  it('keeps Approve in place for the author, disabled with the reason', () => {
+  it('hides Approve on your own pull request and leads with Merge', () => {
     const wrapper = mountActions({ conversation: conversation({ viewer: 'Sam' }) })
-    const approve = wrapper.findAll('button').find((b) => b.text().includes('Approve'))!
-    expect(approve.attributes('disabled')).toBeDefined()
-    expect(approve.element.parentElement!.getAttribute('title')).toBe("You can't approve your own pull request")
+    expect(wrapper.findAll('button').some((b) => b.text().includes('Approve'))).toBe(false)
     expect(mergeButton(wrapper).attributes('data-variant')).toBe('success')
   })
 

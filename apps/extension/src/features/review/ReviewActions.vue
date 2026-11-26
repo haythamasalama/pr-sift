@@ -51,9 +51,8 @@ const verdict = shallowRef<ReviewVerdict | null | undefined>(undefined)
 const open = computed(() => info?.state !== 'merged' && info?.state !== 'closed')
 const isAuthor = computed(() => !!conversation?.viewer && !!info?.author && conversation.viewer.toLowerCase() === info.author.toLowerCase())
 const mine = computed(() => (verdict.value === undefined ? (conversation?.reviews.mine ?? null) : verdict.value))
-const reviewBlocked = computed(() =>
-  isAuthor.value ? "You can't approve your own pull request" : info?.state === 'draft' ? "Drafts can't be approved" : '',
-)
+// Your own pull request can never be approved by you, so Approve is not shown there at all.
+const reviewBlocked = computed(() => (info?.state === 'draft' ? "Drafts can't be approved" : ''))
 const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
 const readiness = computed(() => READINESS[conversation?.readiness ?? 'unknown'])
@@ -80,7 +79,15 @@ function onReviewed(event: ReviewEvent) {
 
 <template>
   <template v-if="open">
-    <ReviewPopover :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" :blocked="reviewBlocked" @reviewed="onReviewed" />
+    <ReviewPopover
+      v-if="!isAuthor"
+      :pr="pr"
+      :head-sha="headSha"
+      :can-act="canAct"
+      :mine="mine"
+      :blocked="reviewBlocked"
+      @reviewed="onReviewed"
+    />
     <div
       class="flex shrink-0"
       :class="mergeBlocked ? 'cursor-not-allowed' : ''"
