@@ -1,13 +1,11 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { ignoreInvalidatedContext } from '../lib/extension'
-import { installFonts } from '../lib/fonts'
 import { isolateKeyboard } from '../lib/isolate'
 import { contentStylesKey } from '../lib/shadow'
 import styles from './style.css?inline'
 
 ignoreInvalidatedContext()
-installFonts()
 
 const properties = styles.match(/@property[^{]+\{[^}]*\}/g) ?? []
 if (properties.length) {

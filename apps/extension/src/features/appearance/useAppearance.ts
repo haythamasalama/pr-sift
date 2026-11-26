@@ -1,5 +1,6 @@
 import { computed, shallowRef } from 'vue'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
+import { installFonts } from '../../lib/fonts'
 import type { Settings, ThemeMode, ThemeStyle } from '../../lib/types'
 
 export const THEME_STYLES: { value: ThemeStyle; label: string; hint: string }[] = [
@@ -45,6 +46,8 @@ function apply(settings: Partial<Settings>) {
   theme.value = settings.theme ?? DEFAULTS.theme
   themeStyle.value = pick(RENAMED[settings.themeStyle ?? ''] ?? settings.themeStyle, THEME_STYLES, DEFAULTS.themeStyle)
   codeTheme.value = pick(settings.codeTheme, CODE_THEMES, DEFAULTS.codeTheme)
+  // Only the PR Sift theme uses the bundled IBM Plex fonts, so other themes skip decoding them.
+  if (themeStyle.value === 'prsift') installFonts()
 }
 
 function start() {
@@ -81,6 +84,7 @@ export function useAppearance() {
     },
     setThemeStyle: (value: ThemeStyle) => {
       themeStyle.value = value
+      if (value === 'prsift') installFonts()
       return saveSetting('themeStyle', value)
     },
     setCodeTheme: (value: string) => {
