@@ -9,12 +9,15 @@ const {
   description,
   area = 'none',
   framed = false,
+  headless = false,
 } = defineProps<{
   id: SettingsSectionId
   title: string
   description: string
   area?: PreviewArea
   framed?: boolean
+  /** Keeps the title for screen readers only, when a tab already names the section. */
+  headless?: boolean
 }>()
 
 const elementId = computed(() => sectionElementId(id))
@@ -28,7 +31,7 @@ const elementId = computed(() => sectionElementId(id))
     class="flex scroll-mt-6 flex-col"
     :class="framed ? 'overflow-hidden rounded-lg border bg-card' : ''"
   >
-    <header class="flex items-center gap-3" :class="framed ? 'bg-muted/40 px-4 py-3' : 'pb-3'">
+    <header :class="headless ? 'sr-only' : ['flex items-center gap-3', framed ? 'bg-muted/40 px-4 py-3' : 'pb-3']">
       <span v-if="$slots.icon" class="flex h-7.5 w-11 shrink-0 items-center justify-center">
         <slot name="icon" />
       </span>
@@ -38,7 +41,7 @@ const elementId = computed(() => sectionElementId(id))
         <p class="text-xs leading-4 text-muted-foreground">{{ description }}</p>
       </div>
     </header>
-    <div class="flex flex-col divide-y divide-border border-t" :class="framed ? 'px-4' : ''">
+    <div class="flex flex-col divide-y divide-border" :class="[framed ? 'px-4' : '', headless ? '' : 'border-t']">
       <slot />
     </div>
   </section>
