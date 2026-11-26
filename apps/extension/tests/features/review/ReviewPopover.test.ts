@@ -8,7 +8,9 @@ import { installChrome } from '../../helpers/chrome'
 
 enableAutoUnmount(afterEach)
 
-function mountPopover(props: { canAct?: boolean; mine?: 'approved' | 'changes_requested' | null } = {}) {
+function mountPopover(
+  props: { canAct?: boolean; mine?: 'approved' | 'changes_requested' | null; blocked?: string; changesBlocked?: string } = {},
+) {
   const target = document.createElement('div')
   document.body.appendChild(target)
   return mount(ReviewPopover, {
@@ -22,7 +24,7 @@ const buttons = (text: string) =>
   [...document.querySelectorAll<HTMLButtonElement>('[data-slot="popover-content"] button')].filter((b) => b.textContent?.trim() === text)
 
 async function openPopover(wrapper: ReturnType<typeof mountPopover>) {
-  await wrapper.get('button').trigger('click')
+  await wrapper.get('[aria-label="Approve with a comment, request changes or comment"]').trigger('click')
   await vi.waitFor(() => expect(document.querySelector('[aria-label="Comment"]')).not.toBeNull())
 }
 
@@ -49,6 +51,18 @@ describe('ReviewPopover', () => {
     })
   })
 
+  it('approves in one click from the main button, without a comment', async () => {
+    const { sent } = installChrome(() => ({ ok: true, status: 200, data: {} }))
+    const wrapper = mountPopover()
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === 'Approve')!
+      .trigger('click')
+    await vi.waitFor(() => expect(wrapper.emitted('reviewed')).toEqual([['APPROVE']]))
+    expect(sent[0]).toMatchObject({ method: 'POST', body: { event: 'APPROVE', commit_id: 'abc' } })
+    expect(sent[0]!.body).not.toHaveProperty('body')
+  })
+
   it('asks for a comment before requesting changes', async () => {
     const { sent } = installChrome(() => ({ ok: true, status: 200, data: {} }))
     const wrapper = mountPopover()
@@ -71,6 +85,29 @@ describe('ReviewPopover', () => {
     buttons('Approve').at(-1)!.click()
     await vi.waitFor(() => expect(document.body.textContent).toContain('Can not approve your own pull request'))
     expect(wrapper.emitted('reviewed')).toBeUndefined()
+  })
+
+  it('lets the author comment on their own pull request, with Approve and Request changes off', async () => {
+    const { sent } = installChrome(() => ({ ok: true, status: 200, data: {} }))
+    const wrapper = mountPopover({
+      blocked: "You can't approve your own pull request",
+      changesBlocked: "You can't request changes on your own pull request",
+    })
+    expect(
+      wrapper
+        .findAll('button')
+        .find((b) => b.text() === 'Approve')!
+        .attributes('disabled'),
+    ).toBeDefined()
+    await wrapper.get('[aria-label="Comment on this pull request"]').trigger('click')
+    await vi.waitFor(() => expect(document.querySelector('[aria-label="Comment"]')).not.toBeNull())
+    expect(document.querySelector('#review-APPROVE')!.hasAttribute('disabled')).toBe(true)
+    expect(document.querySelector('#review-REQUEST_CHANGES')!.hasAttribute('disabled')).toBe(true)
+    expect(document.querySelector('#review-COMMENT')!.getAttribute('data-state')).toBe('checked')
+    await type('Note for reviewers')
+    buttons('Comment').at(-1)!.click()
+    await vi.waitFor(() => expect(wrapper.emitted('reviewed')).toEqual([['COMMENT']]))
+    expect(sent[0]).toMatchObject({ body: { event: 'COMMENT', body: 'Note for reviewers' } })
   })
 
   it('says when you already approved', () => {

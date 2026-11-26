@@ -43,11 +43,15 @@ const repoPath = (pr: PrRef) => `/repos/${pr.owner}/${pr.repo}`
 const pullPath = (pr: PrRef) => `${repoPath(pr)}/pulls/${pr.number}`
 
 export async function loadMergeContext(pr: PrRef): Promise<MergeContext> {
-  const [pull, repo] = await Promise.all([gh<ApiPull>(pullPath(pr)), gh<ApiRepo>(repoPath(pr)).catch((): ApiRepo => ({}))])
+  const commitPage = (page: number) => gh<ApiCommit[]>(`${pullPath(pr)}/commits?per_page=100&page=${page}`)
+  // The first page of commits loads with the pull request itself; most pull requests need no second round trip.
+  const [pull, repo, first] = await Promise.all([
+    gh<ApiPull>(pullPath(pr)),
+    gh<ApiRepo>(repoPath(pr)).catch((): ApiRepo => ({})),
+    commitPage(1),
+  ])
   const pages = Math.min(MAX_COMMIT_PAGES, Math.max(1, Math.ceil(pull.commits / 100)))
-  const lists = await Promise.all(
-    Array.from({ length: pages }, (_, i) => gh<ApiCommit[]>(`${pullPath(pr)}/commits?per_page=100&page=${i + 1}`)),
-  )
+  const lists = [first, ...(await Promise.all(Array.from({ length: pages - 1 }, (_, i) => commitPage(i + 2))))]
   return {
     title: pull.title,
     body: pull.body ?? '',

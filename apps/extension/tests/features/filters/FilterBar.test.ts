@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { shallowRef } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import FilterBar from '../../../src/features/filters/FilterBar.vue'
-import { settingsOpenerKey } from '../../../src/features/settings/useSettingsOpener'
 import { portalTargetKey } from '../../../src/lib/portal'
 import type { ExtChip } from '../../../src/lib/types'
 import { file } from '@pr-sift/core/testing'
@@ -24,6 +23,7 @@ const mountBar = () =>
       filtersActive: false,
       reviewMode: true,
       showHidden: false,
+      diffMode: 'unified' as const,
     },
   })
 
@@ -69,6 +69,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
       },
     })
     await active
@@ -88,6 +89,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
       },
     })
     const labels = wrapper.findAll('button').map((b) => b.text())
@@ -98,7 +100,7 @@ describe('FilterBar', () => {
 
   it('shows the include state with the primary variant', () => {
     expect(button(mountBar(), '.ts').attributes('data-variant')).toBe('default')
-    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('secondary')
+    expect(button(mountBar(), '.php').attributes('data-variant')).toBe('outline')
   })
 
   it('lets custom types be removed', async () => {
@@ -120,29 +122,40 @@ describe('FilterBar', () => {
     expect(button(mountBar(), 'Viewed').text()).toContain('2')
   })
 
-  it('disables mark all when there is nothing to act on', () => {
+  it('lists saved filters after the types and hides one on right-click', async () => {
     const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 0, viewedInView: [], hiddenCount: 0, filtersActive: false, reviewMode: true, showHidden: false },
+      props: {
+        chips,
+        listedCount: 4,
+        viewedInView: [],
+        hiddenCount: 0,
+        filtersActive: false,
+        reviewMode: false,
+        showHidden: false,
+        diffMode: 'unified' as const,
+        presets: [{ name: 'Tests', include: ['tests/**'] }],
+        hiddenPresets: ['Tests'],
+      },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(document.createElement('div')) } },
     })
-    expect(button(wrapper, 'Mark all').attributes('disabled')).toBeDefined()
+    const texts = wrapper.findAll('button').map((b) => b.text())
+    expect(texts.findIndex((t) => t.startsWith('.php'))).toBeLessThan(texts.indexOf('Tests'))
+    const button = wrapper.findAll('button').find((b) => b.text() === 'Tests')!
+    expect(button.classes()).toContain('line-through')
+    await button.trigger('contextmenu')
+    expect(wrapper.emitted('hidePreset')).toEqual([['Tests']])
+    await button.trigger('click')
+    expect(wrapper.emitted('selectPreset')).toEqual([['Tests']])
   })
 
-  it('emits expand and collapse commands for the file cards', async () => {
-    const wrapper = mountBar()
-    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
-    await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
-    expect(wrapper.emitted('expandCards')).toHaveLength(1)
-    expect(wrapper.emitted('collapseCards')).toHaveLength(1)
-  })
-
-  it('opens the hidden files settings from the Hidden switch', async () => {
-    const openSettings = vi.fn()
-    const wrapper = mount(FilterBar, {
-      props: { chips, listedCount: 4, viewedInView: [], hiddenCount: 1, filtersActive: false, reviewMode: true, showHidden: false },
-      global: { provide: { [settingsOpenerKey as symbol]: openSettings } },
-    })
-    await wrapper.get('button[aria-label="Edit hidden files"]').trigger('click')
-    expect(openSettings).toHaveBeenCalledWith('hidden')
+  it('shows the hidden count only when files are hidden', async () => {
+    const none = mountBar()
+    await none.setProps({ hiddenCount: 0 })
+    expect(none.text()).not.toContain('hidden')
+    await none.setProps({ hiddenCount: 2 })
+    const button = none.findAll('button').find((b) => b.text().includes('2 hidden'))!
+    await button.trigger('click')
+    expect(none.emitted('update:showHidden')).toEqual([[true]])
   })
 
   it('saves the current types and folders as a named filter', async () => {
@@ -157,6 +170,7 @@ describe('FilterBar', () => {
         filtersActive: true,
         reviewMode: true,
         showHidden: false,
+        diffMode: 'unified' as const,
         viewPatterns: ['src/**/*.ts'],
       },
       global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
@@ -176,5 +190,39 @@ describe('FilterBar', () => {
 
   it('offers Save view only when types or folders are chosen', () => {
     expect(mountBar().text()).not.toContain('Save view')
+  })
+
+  it('folds types after the first six behind "+N more" and keeps a chosen one visible', async () => {
+    const many: ExtChip[] = ['.a', '.b', '.c', '.d', '.e', '.f', '.g', '.h'].map((ext, i) => ({
+      ext,
+      label: ext,
+      count: 10 - i,
+      custom: false,
+      ...(ext === '.h' ? { state: 'include' as const } : {}),
+    }))
+    const wrapper = mount(FilterBar, {
+      props: {
+        chips: many,
+        listedCount: 8,
+        viewedInView: [],
+        hiddenCount: 0,
+        filtersActive: false,
+        reviewMode: false,
+        showHidden: false,
+        diffMode: 'unified' as const,
+      },
+    })
+    expect(wrapper.text()).not.toContain('.g')
+    expect(wrapper.text()).toContain('.h')
+    await button(wrapper, '+1 more').trigger('click')
+    expect(wrapper.text()).toContain('.g')
+    expect(wrapper.text()).toContain('Show less')
+  })
+
+  it('offers the viewed list only while viewed files are hidden', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.text()).toContain('Viewed')
+    await wrapper.setProps({ reviewMode: false })
+    expect(wrapper.findAll('button').some((b) => /^Viewed/.test(b.text()))).toBe(false)
   })
 })

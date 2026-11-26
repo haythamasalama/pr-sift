@@ -1,13 +1,23 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { AlertCircle, CheckCircle2, FolderTree, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
+import {
+  AlertCircle,
+  CheckCircle2,
+  FolderTree,
+  GitCommitHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+  Search,
+  X,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
-import { Spinner } from '@/components/ui/spinner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import ReviewSkeleton from './ReviewSkeleton.vue'
 import { useFileFilter } from '../filters/useFileFilter'
 import { diffModeKey } from '../diff/diffMode'
 import { cardsExpandKey, type ExpandCommand } from '../tree/expandContext'
@@ -19,11 +29,12 @@ import { useViewed } from './useViewed'
 import { buildTree, folderChip, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
+import { fetchCommits, loadCommitFiles, type CommitRange, type PrCommit } from './commits'
 import { fetchConversation, type Conversation, type Thread } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
-import { prKey, type DiffMode, type MergeMethod, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
+import { prKey, type DiffMode, type MergeMethod, type PrFile, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
 import FileList from '../diff/FileList.vue'
 import FileTree from '../tree/FileTree.vue'
 import FilterBar from '../filters/FilterBar.vue'
@@ -31,7 +42,7 @@ import NotesDialog from '../notes/NotesDialog.vue'
 import PrPanel from './PrPanel.vue'
 import PrSummary from './PrSummary.vue'
 import ReviewActions from './ReviewActions.vue'
-import ScopePanel from '../filters/ScopePanel.vue'
+import SmartFiltersMenu from '../filters/SmartFiltersMenu.vue'
 import Toolbar from './Toolbar.vue'
 import SettingsSheet from '../settings/SettingsSheet.vue'
 import { settingsOpenerKey } from '../settings/useSettingsOpener'
@@ -52,7 +63,41 @@ onBeforeUnmount(() => {
 })
 
 const settings = shallowRef<Settings>(DEFAULTS)
-const { files, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+const { files: prFiles, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+
+// Commits: pick one or a range to see only those changes. Viewed marks follow the pull request's own files.
+const commitList = shallowRef<PrCommit[]>([])
+const commitRange = shallowRef<CommitRange | null>(null)
+const commitFiles = shallowRef<PrFile[] | null>(null)
+const commitError = shallowRef('')
+const files = computed<PrFile[]>(() => {
+  if (!commitFiles.value) return prFiles.value
+  const prHash = new Map(prFiles.value.map((f) => [f.filename, f.hash]))
+  return commitFiles.value.map((f) => ({ ...f, hash: prHash.get(f.filename) ?? f.hash }))
+})
+async function loadCommitList() {
+  commitList.value = await fetchCommits(pr).catch(() => [])
+}
+watch(commitRange, async (range) => {
+  commitError.value = ''
+  if (!range) return (commitFiles.value = null)
+  try {
+    const loaded = await loadCommitFiles(pr, commitList.value, range)
+    if (commitRange.value === range) commitFiles.value = loaded
+  } catch (e) {
+    commitError.value = e instanceof Error ? e.message : String(e)
+    commitFiles.value = null
+  }
+})
+const commitBanner = computed(() => {
+  const r = commitRange.value
+  if (!r) return null
+  const first = commitList.value[r.from]!
+  const last = commitList.value[r.to]!
+  return r.from === r.to
+    ? { what: `commit ${last.short}`, detail: `${last.message} · ${r.to + 1} of ${commitList.value.length}` }
+    : { what: `commits ${first.short}..${last.short}`, detail: `${r.to - r.from + 1} of ${commitList.value.length} commits` }
+})
 const { viewed, isViewed, setViewed, setMany, clearAll, undo } = useViewed(computed(() => prKey(pr)))
 const notesStore = useNotes(computed(() => prKey(pr)))
 const filter = useFileFilter(
@@ -67,7 +112,6 @@ const filter = useFileFilter(
 )
 const tree = computed(() => buildTree(filter.pool.value))
 const notesOpen = shallowRef(false)
-const sidebar = shallowRef<'smart' | 'tree'>('tree')
 const list = useTemplateRef<InstanceType<typeof FileList>>('list')
 const main = useTemplateRef<HTMLElement>('main')
 
@@ -81,10 +125,30 @@ provide(
 )
 
 const sidebarSize = useResizable(DEFAULTS.sidebarWidth, 220, 760, (width) => saveSetting('sidebarWidth', width))
+// On wide screens the sidebar folds into a thin rail of icons; on small ones it is a drawer that closes instead.
+const RAIL = 44
+const collapsed = shallowRef(false)
+const searchInput = useTemplateRef<InstanceType<typeof Input>>('searchInput')
+const sidebarWidth = computed(() => (collapsed.value ? RAIL : sidebarSize.width.value))
+function hideSidebar() {
+  if (compact.value) {
+    sidebarOpen.value = false
+    return
+  }
+  collapsed.value = true
+  void saveSetting('sidebarCollapsed', true)
+}
+async function showSidebar(tab?: 'tree' | 'search') {
+  collapsed.value = false
+  void saveSetting('sidebarCollapsed', false)
+  if (tab === 'search') {
+    await nextTick()
+    ;(searchInput.value?.$el as HTMLInputElement | undefined)?.focus()
+  }
+}
 
 const cardsExpand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(cardsExpandKey, cardsExpand)
-const setAllCards = (open: boolean) => (cardsExpand.value = { open, n: cardsExpand.value.n + 1 })
 
 const tokenAvailable = shallowRef(false)
 const showResolved = shallowRef(false)
@@ -286,14 +350,20 @@ onMounted(async () => {
   settings.value = await getSettings()
   stopWatchingToken = watchToken((present) => {
     tokenAvailable.value = present
-    if (present) void loadConversation()
-    else conversation.value = null
+    if (present) {
+      void loadConversation()
+      void loadCommitList()
+    } else {
+      conversation.value = null
+      commitList.value = []
+    }
   })
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
   diffMode.value = settings.value.diffView
   showResolved.value = settings.value.showResolved
   sidebarSize.set(settings.value.sidebarWidth)
+  collapsed.value = settings.value.sidebarCollapsed
   await load(pr)
   emit('refreshed')
 })
@@ -317,25 +387,30 @@ watch(
 <template>
   <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
     <Toolbar
-      v-model:diff-mode="diffMode"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
-      :presets="settings.presets"
-      :active-preset="filter.activePreset.value?.name ?? ''"
-      :hidden-presets="filter.hiddenPresets.value"
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
       :in-view="filter.inScope.value.length"
       :note-count="notesStore.notes.value.filter((n) => !n.resolved).length"
       :compact="compact"
-      :split-disabled="narrow"
+      :loading="status === 'loading'"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
-      @select-preset="filter.togglePreset"
-      @hide-preset="filter.hidePreset"
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
       <template #meta>
-        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :info="info" :conversation="conversation" />
+        <PrSummary
+          v-if="status === 'ready'"
+          v-model:panel="panel"
+          v-model:range="commitRange"
+          :pr="pr"
+          :info="info"
+          :conversation="conversation"
+          :commit-list="commitList"
+        />
+        <div v-else-if="status === 'loading'" class="flex h-4 items-center gap-2">
+          <Skeleton class="h-2.5 w-14" /><Skeleton class="h-2.5 w-56" /><Skeleton class="h-2.5 w-16" />
+        </div>
       </template>
       <template #actions>
         <ReviewActions
@@ -349,6 +424,10 @@ watch(
           @reviewed="onReviewed"
           @merged="onMerged"
         />
+        <div v-else-if="status === 'loading'" class="flex items-center gap-2">
+          <Skeleton class="h-7 w-24" />
+          <Skeleton class="h-7 w-20" />
+        </div>
       </template>
     </Toolbar>
 
@@ -366,10 +445,15 @@ watch(
     <FilterBar
       v-if="status === 'ready'"
       v-model:show-hidden="filter.showHidden.value"
+      v-model:diff-mode="diffMode"
+      :split-disabled="narrow"
       :review-mode="filter.reviewMode.value"
       :hidden-count="filter.hiddenCount.value"
       :filters-active="filter.filtersActive.value"
       :chips="filter.chips.value"
+      :presets="settings.presets"
+      :active-preset="filter.activePreset.value?.name ?? ''"
+      :hidden-presets="filter.hiddenPresets.value"
       :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
@@ -382,9 +466,9 @@ watch(
       @unmark-viewed="setMany(filter.viewedInView.value, false)"
       @unmark-file="(file) => setViewed(file, false)"
       @clear-all="clearAll"
-      @expand-cards="setAllCards(true)"
-      @collapse-cards="setAllCards(false)"
       @save-view="saveView"
+      @select-preset="filter.togglePreset"
+      @hide-preset="filter.hidePreset"
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">
@@ -403,9 +487,7 @@ watch(
     <UpdateNotice />
     <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />
 
-    <div v-if="status === 'loading'" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-      <Spinner /> Loading pull request…
-    </div>
+    <ReviewSkeleton v-if="status === 'loading'" :compact="compact" :sidebar-width="sidebarWidth" />
 
     <Alert v-else-if="status === 'error'" variant="destructive" class="mx-auto mt-16 max-w-xl">
       <AlertCircle />
@@ -416,16 +498,16 @@ watch(
       v-else
       class="relative grid min-h-0 flex-1"
       :class="sidebarSize.dragging.value ? 'select-none' : ''"
-      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarSize.width.value}px 1fr` }"
+      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarWidth}px 1fr` }"
     >
       <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
       <aside
         v-show="!compact || sidebarOpen"
-        class="min-h-0 border-r bg-sidebar"
+        class="flex min-h-0 flex-col border-r bg-sidebar"
         :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
       >
         <div
-          v-if="!compact"
+          v-if="!compact && !collapsed"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize sidebar"
@@ -439,35 +521,80 @@ watch(
             class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
           />
         </div>
-        <Tabs v-model="sidebar" class="h-full gap-0">
-          <div class="border-b p-2">
-            <div class="relative flex items-center">
-              <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+        <nav v-if="!compact && collapsed" class="flex flex-col items-center gap-1 py-2" aria-label="Sidebar">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Show sidebar"
+            aria-label="Show sidebar"
+            @click="showSidebar()"
+          >
+            <PanelLeftOpen />
+          </Button>
+          <span class="my-1 h-px w-5 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Search files"
+            aria-label="Search files"
+            @click="showSidebar('search')"
+          >
+            <Search />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="relative size-8 text-muted-foreground hover:text-foreground"
+            :title="filter.selectedFolder.value ? `Tree · ${filter.selectedFolder.value}` : 'Tree'"
+            aria-label="Show the file tree"
+            @click="showSidebar('tree')"
+          >
+            <FolderTree />
+            <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
+          </Button>
+        </nav>
+        <template v-else>
+          <div class="flex items-center gap-1.5 border-b px-3.5 py-2.5">
+            <div class="relative flex flex-1 items-center">
+              <Search class="pointer-events-none absolute left-2 size-3.5 text-muted-foreground" />
               <Input
+                ref="searchInput"
                 v-model="filter.query.value"
-                placeholder="Search files…"
+                placeholder="Search files"
                 aria-label="Search files"
-                class="h-8 pr-7 pl-8 text-xs md:text-xs"
+                class="h-7 rounded-md bg-background pr-7 pl-7 text-xs shadow-none md:text-xs dark:bg-background"
               />
               <Button
                 v-if="filter.query.value"
                 variant="ghost"
                 size="icon-xs"
-                class="absolute right-1"
+                class="absolute right-0.5"
                 aria-label="Clear search"
                 @click="filter.query.value = ''"
               >
                 <X />
               </Button>
             </div>
+            <SmartFiltersMenu
+              :smart="filter.smart.value"
+              :selected="filter.scopes.value"
+              @toggle="filter.toggleScope"
+              @clear="filter.setScopes([])"
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="-mr-1 size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              title="Hide sidebar"
+              aria-label="Hide sidebar"
+              @click="hideSidebar"
+            >
+              <PanelLeftClose />
+            </Button>
           </div>
-          <div class="p-2 pb-1">
-            <TabsList class="w-full">
-              <TabsTrigger value="tree"><FolderTree /> Tree</TabsTrigger>
-              <TabsTrigger value="smart"><Sparkles /> Smart filters</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="tree" class="min-h-0 flex-1">
+          <div class="min-h-0 flex-1 overflow-auto">
             <FileTree
               :tree="tree"
               :search="filter.query.value"
@@ -492,16 +619,21 @@ watch(
               @toggle-file="setViewed"
               @hide-folder="hideFolder"
             />
-          </TabsContent>
-          <TabsContent value="smart" class="min-h-0 flex-1">
-            <ScopePanel
-              :smart="filter.smart.value"
-              :selected="filter.scopes.value"
-              @toggle="filter.toggleScope"
-              @clear="filter.setScopes([])"
+          </div>
+        </template>
+        <div
+          v-if="!(collapsed && !compact)"
+          class="flex items-center gap-1.5 border-t px-3.5 py-2 text-[11px] text-muted-foreground tabular-nums"
+          :title="`${filter.progress.value.done} of ${filter.progress.value.total} files viewed`"
+        >
+          <span class="relative h-1 flex-1 overflow-hidden rounded-full bg-border">
+            <span
+              class="absolute inset-y-0 left-0 bg-emphasis transition-[width]"
+              :style="{ width: `${filter.progress.value.total ? (100 * filter.progress.value.done) / filter.progress.value.total : 0}%` }"
             />
-          </TabsContent>
-        </Tabs>
+          </span>
+          {{ filter.progress.value.done }} of {{ filter.progress.value.total }} viewed
+        </div>
       </aside>
       <main ref="main" class="min-h-0 overflow-auto px-4 pb-4">
         <Empty v-if="allReviewed" class="mx-auto mt-16 max-w-sm border-0">
@@ -525,6 +657,14 @@ watch(
           <Button variant="outline" @click="filter.resetFilters">Reset filters</Button>
         </Empty>
         <div v-else class="pt-4">
+          <div v-if="commitBanner" class="mb-3 flex items-center gap-2 rounded-md border bg-muted px-3 py-1.5 text-xs" role="status">
+            <GitCommitHorizontal class="size-3.5 shrink-0 text-muted-foreground" />
+            <span class="shrink-0"
+              >Showing <span class="font-mono font-medium">{{ commitBanner.what }}</span></span
+            >
+            <span class="min-w-0 truncate text-muted-foreground">{{ commitError || commitBanner.detail }}</span>
+            <Button variant="ghost" size="xs" class="ml-auto h-6 shrink-0 text-xs" @click="commitRange = null"><X /> All changes</Button>
+          </div>
           <FileList ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
         </div>
       </main>

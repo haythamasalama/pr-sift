@@ -274,7 +274,11 @@ export const guides = [
     video: 'tour',
     sections: [
       ['file-text', 'Read the description first', 'Decide what changes and where the risk is. A few files usually carry the decision.'],
-      ['eye-off', 'Hide the noise', 'Shift-click .lock and other generated types. Open Smart filters for categories and busy folders.'],
+      [
+        'eye-off',
+        'Hide the noise',
+        'Shift-click .lock and other generated types. Open Smart filters, the sparkle beside the search, for categories and busy folders.',
+      ],
       ['layers', 'Review in passes', 'Core logic, then tests, then the rest. Short sessions catch more than one long one.'],
       [
         'check-check',
@@ -303,7 +307,7 @@ export const guides = [
         'Hide a folder or a saved filter',
         'Right-click a folder in the tree, or a saved filter such as Tests, to hide its files. Click it again to bring them back.',
       ],
-      ['eye', 'Peek when needed', 'Tick Hidden in the toolbar to see them without changing your rules.'],
+      ['eye', 'Peek when needed', 'Click the hidden count in the filter bar to see them without changing your rules.'],
     ],
   },
   {

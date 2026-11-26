@@ -32,6 +32,9 @@ const METHODS: { value: MergeMethod; action: string; hint: string }[] = [
   { value: 'rebase', action: 'Rebase and merge', hint: 'Every commit, without a merge commit' },
 ]
 
+// GitHub refuses the merge in these states, so the button stays visible but disabled, with the reason as its tooltip.
+const MERGE_BLOCKED: MergeReadiness[] = ['conflicts', 'blocked', 'behind', 'draft']
+
 const READINESS: Record<MergeReadiness, { tone: string; text: string } | null> = {
   ready: null,
   unknown: null,
@@ -48,11 +51,28 @@ const verdict = shallowRef<ReviewVerdict | null | undefined>(undefined)
 const open = computed(() => info?.state !== 'merged' && info?.state !== 'closed')
 const isAuthor = computed(() => !!conversation?.viewer && !!info?.author && conversation.viewer.toLowerCase() === info.author.toLowerCase())
 const mine = computed(() => (verdict.value === undefined ? (conversation?.reviews.mine ?? null) : verdict.value))
-const showReview = computed(() => !isAuthor.value)
-const mergeIsPrimary = computed(() => !showReview.value || mine.value === 'approved')
+// Approve always stays in place so the bar keeps its shape, disabled with the reason when it can't apply.
+const reviewBlocked = computed(() =>
+  isAuthor.value ? "You can't approve your own pull request" : info?.state === 'draft' ? "Drafts can't be approved" : '',
+)
+// GitHub lets the author comment on their own pull request, but not approve it or request changes.
+const changesBlocked = computed(() => (isAuthor.value ? "You can't request changes on your own pull request" : ''))
+const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
 const readiness = computed(() => READINESS[conversation?.readiness ?? 'unknown'])
-const mergeTitle = computed(() => [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
+const MERGE_BLOCK_REASON: Partial<Record<MergeReadiness, string>> = {
+  blocked: 'Needs an approval or required checks first',
+  behind: 'Update the branch from its base first',
+  conflicts: 'Has merge conflicts',
+  draft: 'Still a draft',
+}
+const mergeBlocked = computed(() => {
+  const state = conversation?.readiness ?? 'unknown'
+  return MERGE_BLOCKED.includes(state) ? (MERGE_BLOCK_REASON[state] ?? '') : ''
+})
+const mergeTitle = computed(() =>
+  mergeBlocked.value ? `Can’t merge yet: ${mergeBlocked.value}` : [current.value.action, readiness.value?.text].filter(Boolean).join(' · '),
+)
 
 function onReviewed(event: ReviewEvent) {
   if (event === 'APPROVE') verdict.value = 'approved'
@@ -63,17 +83,31 @@ function onReviewed(event: ReviewEvent) {
 
 <template>
   <template v-if="open">
-    <ReviewPopover v-if="showReview" :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" @reviewed="onReviewed" />
-    <div class="flex shrink-0">
+    <ReviewPopover
+      :pr="pr"
+      :head-sha="headSha"
+      :can-act="canAct"
+      :mine="mine"
+      :blocked="reviewBlocked"
+      :changes-blocked="changesBlocked"
+      @reviewed="onReviewed"
+    />
+    <div
+      class="flex shrink-0"
+      :class="mergeBlocked ? 'cursor-not-allowed' : ''"
+      :title="mergeBlocked ? mergeTitle : undefined"
+      :tabindex="mergeBlocked ? 0 : undefined"
+    >
       <Button
         :variant="mergeIsPrimary ? 'success' : 'outline'"
-        size="sm"
-        class="relative rounded-r-none"
+        :disabled="!!mergeBlocked"
+        class="relative rounded-r-none px-3 text-[13px]"
+        :class="mergeIsPrimary ? 'border-r-0' : ''"
         :title="mergeTitle"
-        :aria-label="mergeTitle"
+        :aria-label="mergeBlocked ? `${current.action}, not possible yet: ${mergeBlocked}` : mergeTitle"
         @click="sheetOpen = true"
       >
-        <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full" :class="readiness.tone" />
+        <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full ring-2 ring-sidebar" :class="readiness.tone" />
         <GitMerge />
         <span class="hidden sm:inline lg:hidden">Merge</span><span class="hidden lg:inline">{{ current.action }}</span>
       </Button>
@@ -81,9 +115,14 @@ function onReviewed(event: ReviewEvent) {
         <DropdownMenuTrigger as-child>
           <Button
             :variant="mergeIsPrimary ? 'success' : 'outline'"
-            size="icon-sm"
-            class="w-6 rounded-l-none border-l"
-            :class="mergeIsPrimary ? 'border-l-success-foreground/25' : ''"
+            :disabled="!!mergeBlocked"
+            size="icon"
+            class="w-7 rounded-l-none [&_svg:not([class*=size-])]:size-3.5"
+            :class="
+              mergeIsPrimary
+                ? 'border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))]'
+                : 'border-l-0'
+            "
             aria-label="Choose how to merge"
           >
             <ChevronDown />

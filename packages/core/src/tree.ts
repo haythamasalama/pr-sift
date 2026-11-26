@@ -29,3 +29,17 @@ export function buildTree(files: PrFile[]): TreeNode {
 export function collectFiles(node: TreeNode): PrFile[] {
   return [...node.files, ...node.dirs.flatMap(collectFiles)]
 }
+
+/** Joins a folder that holds only one folder with that folder, as GitHub does: `src/Domain` becomes one row. */
+export function compactTree(node: TreeNode): TreeNode {
+  const dirs = node.dirs.map((d) => {
+    let dir = d
+    let name = d.name
+    while (dir.files.length === 0 && dir.dirs.length === 1) {
+      dir = dir.dirs[0]!
+      name = `${name}/${dir.name}`
+    }
+    return { ...compactTree(dir), name }
+  })
+  return { ...node, dirs }
+}

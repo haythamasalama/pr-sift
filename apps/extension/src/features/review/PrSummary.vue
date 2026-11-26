@@ -12,10 +12,24 @@ import {
   MessageSquare,
 } from '@lucide/vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { PrInfo } from '../../lib/types'
+import type { PrInfo, PrRef } from '../../lib/types'
+import LinkedIssues from './LinkedIssues.vue'
+import CommitsMenu from './CommitsMenu.vue'
+import type { CommitRange, PrCommit } from './commits'
 import type { Conversation } from './conversation'
 
-const { info, conversation } = defineProps<{ info: PrInfo | null; conversation: Conversation | null }>()
+const {
+  info,
+  conversation,
+  pr,
+  commitList = [],
+} = defineProps<{
+  info: PrInfo | null
+  conversation: Conversation | null
+  pr?: PrRef
+  commitList?: PrCommit[]
+}>()
+const range = defineModel<CommitRange | null>('range', { default: null })
 const panel = defineModel<'description' | 'conversation' | null>('panel', { default: null })
 const toggle = (tab: 'description' | 'conversation') => (panel.value = panel.value === tab ? null : tab)
 
@@ -38,8 +52,10 @@ async function copyBranch(branch: string) {
 
 const state = computed(() => (info?.state ? STATES[info.state] : null))
 const verb = computed(() => (info?.state === 'merged' ? 'merged' : 'wants to merge'))
-const commits = computed(() => (info?.commits === undefined ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `))
-const comments = computed(() => (conversation ? conversation.conversation + conversation.code : 0))
+const commits = computed(() =>
+  info?.commits === undefined || commitList.length ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `,
+)
+const comments = computed(() => (conversation?.conversation ?? 0) + (conversation?.code ?? 0))
 const commentsTitle = computed(() =>
   conversation
     ? `${comments.value} comments: ${conversation.conversation} in the conversation, ${conversation.code} on the code. Show them here.`
@@ -48,7 +64,7 @@ const commentsTitle = computed(() =>
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] leading-4 text-muted-foreground">
+  <div class="flex min-w-0 items-center gap-2 overflow-hidden text-[11px] leading-4 text-muted-foreground">
     <span v-if="state" class="inline-flex shrink-0 items-center gap-1 font-medium" :class="state.tone">
       <component :is="state.icon" class="size-3" />{{ state.label }}
     </span>
@@ -77,6 +93,8 @@ const commentsTitle = computed(() =>
         </template>
       </span>
     </span>
+    <CommitsMenu v-if="commitList.length" v-model="range" :commits="commitList" />
+    <LinkedIssues v-if="pr" :key="`${pr.owner}/${pr.repo}#${pr.number}`" :pr="pr" />
     <button
       v-if="conversation"
       type="button"

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, provide, shallowRef, watch } from 'vue'
-import { ChevronsDownUp, ChevronsUpDown, Layers } from '@lucide/vue'
+import { ChevronsDownUp, ChevronsUpDown } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { treeExpandKey, treeLayoutKey, type ExpandCommand } from './expandContext'
-import { collectFiles } from '@pr-sift/core'
+import { treeExpandKey, treeLayoutKey, treeOpenFileKey, type ExpandCommand } from './expandContext'
+import { collectFiles, compactTree } from '@pr-sift/core'
 import type { PrFile, TreeNode } from '../../lib/types'
 import TreeFile from './TreeFile.vue'
 import TreeNodeView from './TreeNode.vue'
@@ -40,6 +39,7 @@ provide(
   treeLayoutKey,
   computed(() => ({ indent, guides })),
 )
+provide(treeOpenFileKey, shallowRef(''))
 const setAll = (open: boolean) => (expand.value = { open, n: expand.value.n + 1 })
 
 watch(
@@ -54,39 +54,47 @@ function showAll() {
   emit('jumpFolder', '')
 }
 
-const rootState = computed(() => {
-  const all = collectFiles(tree)
-  const done = all.filter(isViewed).length
-  return done === 0 ? 'none' : done === all.length ? 'all' : 'some'
-})
+const compact = computed(() => compactTree(tree))
+const viewedCount = computed(() => collectFiles(tree).filter(isViewed).length)
 </script>
 
 <template>
-  <nav class="h-full overflow-auto p-2 text-[13px]">
-    <div
-      class="group mb-1 flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-border/40"
-      :class="selected === '' ? 'bg-primary/15 text-primary' : ''"
-    >
-      <Checkbox
-        title="Mark everything in the tree as viewed"
-        class="after:inset-0"
-        :model-value="rootState === 'all' ? true : rootState === 'some' ? 'indeterminate' : false"
-        @update:model-value="(value) => emit('toggleViewed', '', value === true)"
-      />
-      <button type="button" class="flex flex-1 items-center gap-1.5 text-left font-medium" @click="showAll">
-        <Layers :size="14" /> All folders
-        <span class="ml-auto text-[11px] text-muted-foreground">{{ tree.count }}</span>
+  <nav class="h-full overflow-auto px-2 pt-1 pb-2 text-[13px]">
+    <div class="flex h-8 items-center gap-1 px-1.5">
+      <button
+        type="button"
+        class="flex min-w-0 flex-1 items-center gap-1.5 self-stretch text-left text-[11px] font-medium tracking-wide uppercase"
+        :class="selected === '' ? 'text-muted-foreground' : 'text-muted-foreground hover:text-foreground'"
+        :title="selected === '' ? undefined : 'Show all folders'"
+        @click="showAll"
+      >
+        All folders
+        <span class="font-normal tracking-normal tabular-nums" :title="`${viewedCount} of ${tree.count} files viewed`"
+          >{{ viewedCount }}/{{ tree.count }}</span
+        >
       </button>
-      <Button variant="ghost" size="icon-xs" title="Expand all folders" aria-label="Expand all folders" @click="setAll(true)"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="size-[22px] text-muted-foreground hover:text-foreground [&_svg]:size-[13px]"
+        title="Expand all folders"
+        aria-label="Expand all folders"
+        @click="setAll(true)"
         ><ChevronsUpDown
       /></Button>
-      <Button variant="ghost" size="icon-xs" title="Collapse all folders" aria-label="Collapse all folders" @click="setAll(false)"
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        class="size-[22px] text-muted-foreground hover:text-foreground [&_svg]:size-[13px]"
+        title="Collapse all folders"
+        aria-label="Collapse all folders"
+        @click="setAll(false)"
         ><ChevronsDownUp
       /></Button>
     </div>
 
     <TreeNodeView
-      v-for="d in tree.dirs"
+      v-for="d in compact.dirs"
       :key="d.path"
       :node="d"
       :depth="0"
@@ -99,7 +107,7 @@ const rootState = computed(() => {
       @hide-folder="emit('hideFolder', $event)"
     />
     <TreeFile
-      v-for="f in tree.files"
+      v-for="f in compact.files"
       :key="f.filename"
       :file="f"
       :viewed="isViewed(f)"

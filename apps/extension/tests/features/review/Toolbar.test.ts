@@ -8,8 +8,6 @@ import { installChrome } from '../../helpers/chrome'
 
 const props = {
   title: '#1 Title',
-  presets: [],
-  activePreset: '',
   done: 0,
   total: 3,
   inView: 3,
@@ -62,16 +60,16 @@ describe('Toolbar settings menu', () => {
   })
 })
 
-describe('Toolbar saved filters', () => {
-  it('hides a saved filter on right-click and crosses out its button', async () => {
+describe('Toolbar while loading', () => {
+  it('shows placeholders instead of the title and the progress', () => {
     installChrome()
     const wrapper = mount(Toolbar, {
-      props: { ...props, presets: [{ name: 'Tests', include: ['tests/**'] }], hiddenPresets: ['Tests'] },
-      global: { provide: { [portalTargetKey as symbol]: shallowRef(document.createElement('div')) } },
+      props: { ...props, loading: true },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(null) } },
     })
-    const button = wrapper.findAll('button').find((b) => b.text() === 'Tests')!
-    expect(button.classes()).toContain('line-through')
-    await button.trigger('contextmenu')
-    expect(wrapper.emitted('hidePreset')).toEqual([['Tests']])
+    expect(wrapper.find('h1').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('0/3')
+    expect(wrapper.findAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(2)
+    expect(wrapper.find('[aria-label="Close"]').exists()).toBe(true)
   })
 })

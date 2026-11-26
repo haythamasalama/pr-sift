@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTree, collectFiles } from '../src/tree'
+import { buildTree, collectFiles, compactTree } from '../src/tree'
 import { file } from '../src/testing'
 
 describe('buildTree', () => {
@@ -33,5 +33,19 @@ describe('collectFiles', () => {
         .map((f) => f.filename)
         .sort(),
     ).toEqual(['a/b/c.php', 'a/d.php'])
+  })
+})
+
+describe('compactTree', () => {
+  it('joins folders that hold a single folder and keeps the deepest path', () => {
+    const tree = compactTree(
+      buildTree([file('src/Domain/Core/a.php'), file('src/Domain/Core/b.php'), file('src/Http/c.php'), file('docs/x/y/z.md')]),
+    )
+    expect(tree.dirs.map((d) => d.name)).toEqual(['docs/x/y', 'src'])
+    expect(tree.dirs[0]!.path).toBe('docs/x/y')
+    expect(tree.dirs[1]!.dirs.map((d) => [d.name, d.path, d.count])).toEqual([
+      ['Domain/Core', 'src/Domain/Core', 2],
+      ['Http', 'src/Http', 1],
+    ])
   })
 })
