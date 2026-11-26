@@ -22,7 +22,9 @@ export interface Preset {
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 
-export type ThemeStyle = 'github' | 'shadcn'
+export type ThemeStyle = 'prsift' | 'github' | 'vega' | 'nova' | 'maia' | 'lyra' | 'mira'
+
+export type BaseColor = 'neutral' | 'stone' | 'zinc' | 'gray' | 'mauve' | 'olive' | 'mist' | 'taupe'
 
 export interface Settings {
   presets: Preset[]
@@ -36,6 +38,9 @@ export interface Settings {
   sidebarWidth: number
   theme: ThemeMode
   themeStyle: ThemeStyle
+  baseColor: BaseColor
+  codeLight: string
+  codeDark: string
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod

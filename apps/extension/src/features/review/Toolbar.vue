@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
+import { computed } from 'vue'
+import { CircleHelp, Monitor, Moon, NotepadText, Palette, PanelLeft, RotateCw, Settings, Sun, SwatchBook, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -13,14 +14,15 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import GithubMark from '../../components/GithubMark.vue'
-import ShadcnMark from '../../components/ShadcnMark.vue'
-import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { BASE_COLORS, isShadcnStyle, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { ThemeMode, ThemeStyle } from '../../lib/types'
+import type { BaseColor, ThemeMode, ThemeStyle } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -33,8 +35,9 @@ defineProps<{
   loading?: boolean
 }>()
 
-const { theme, setTheme, themeStyle, setThemeStyle } = useAppearance()
-const STYLE_ICONS = { github: GithubMark, shadcn: ShadcnMark }
+const { theme, setTheme, themeStyle, setThemeStyle, baseColor, setBaseColor } = useAppearance()
+const styleLabel = computed(() => THEME_STYLES.find((s) => s.value === themeStyle.value)?.label)
+const baseLabel = computed(() => BASE_COLORS.find((c) => c.value === baseColor.value)?.label)
 const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ openNotes: []; toggleSidebar: []; close: [] }>()
@@ -118,12 +121,33 @@ const openSettings = useSettingsOpener()
             <DropdownMenuSeparator />
           </template>
           <DropdownMenuGroup>
-            <DropdownMenuLabel>Style</DropdownMenuLabel>
-            <DropdownMenuRadioGroup :model-value="themeStyle" @update:model-value="(v) => setThemeStyle(v as ThemeStyle)">
-              <DropdownMenuRadioItem v-for="s in THEME_STYLES" :key="s.value" :value="s.value">
-                <component :is="STYLE_ICONS[s.value]" /> {{ s.label }}
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Palette /> Style<span class="ml-auto text-xs text-muted-foreground">{{ styleLabel }}</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent class="w-44">
+                <DropdownMenuRadioGroup :model-value="themeStyle" @update:model-value="(v) => setThemeStyle(v as ThemeStyle)">
+                  <DropdownMenuRadioItem v-for="s in THEME_STYLES.filter((s) => !s.family)" :key="s.value" :value="s.value">{{
+                    s.label
+                  }}</DropdownMenuRadioItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel class="text-xs">shadcn/vue</DropdownMenuLabel>
+                  <DropdownMenuRadioItem v-for="s in THEME_STYLES.filter((s) => s.family)" :key="s.value" :value="s.value">{{
+                    s.label
+                  }}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub v-if="isShadcnStyle(themeStyle)">
+              <DropdownMenuSubTrigger>
+                <SwatchBook /> Base color<span class="ml-auto text-xs text-muted-foreground">{{ baseLabel }}</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent class="w-40">
+                <DropdownMenuRadioGroup :model-value="baseColor" @update:model-value="(v) => setBaseColor(v as BaseColor)">
+                  <DropdownMenuRadioItem v-for="c in BASE_COLORS" :key="c.value" :value="c.value">{{ c.label }}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
