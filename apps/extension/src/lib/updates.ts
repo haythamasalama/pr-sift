@@ -64,4 +64,3 @@ export const watchUpdateReady = (callback: (version: string | undefined) => void
 export const watchUpdated = (callback: (info: UpdatedInfo | undefined) => void) => watchKey('updated', callback)
 
 export const dismissUpdated = () => storageRemove('updated')
-
