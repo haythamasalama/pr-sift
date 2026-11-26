@@ -1,6 +1,7 @@
 import { backgroundText, gh, hasToken } from './github'
 import { avatarUrl, hashText, infoFromPagePayload, parseDiff, prState } from '@pr-sift/core'
-import type { PrFile, PrInfo, PrRef, Via } from '../../lib/types'
+import { takeEarlyDiff } from '../../lib/earlyDiff'
+import { prKey, type PrFile, type PrInfo, type PrRef, type Via } from '../../lib/types'
 
 export interface Loaded {
   info: PrInfo
@@ -14,6 +15,15 @@ export const basePath = (pr: PrRef) => `/${pr.owner}/${pr.repo}/pull/${pr.number
 
 export async function fetchDiff(base: string, fresh = false): Promise<string> {
   const problems: string[] = []
+  // GitHub answers a .diff with a redirect to patch-diff.githubusercontent.com, which a fetch from the page may not
+  // follow, so the background worker reads it first and the page fetch is the fallback.
+  try {
+    const res = await backgroundText('https://github.com' + base + '.diff')
+    if (res.ok) return res.text
+    problems.push(`background fetch: ${res.error ?? res.status} (${res.url})`)
+  } catch (e) {
+    problems.push(`background fetch: ${(e as Error).message}`)
+  }
   try {
     const res = await fetch(base + '.diff', { credentials: 'same-origin', cache: fresh ? 'no-store' : 'default' })
     if (res.ok) return await res.text()
@@ -21,10 +31,12 @@ export async function fetchDiff(base: string, fresh = false): Promise<string> {
   } catch (e) {
     problems.push(`page fetch: ${(e as Error).message}`)
   }
-  const res = await backgroundText('https://github.com' + base + '.diff')
-  if (res.ok) return res.text
-  problems.push(`background fetch: ${res.error ?? res.status} (${res.url})`)
   throw new Error(problems.join('; '))
+}
+
+async function diffForLoad(base: string): Promise<string> {
+  const early = await takeEarlyDiff(base)?.catch(() => null)
+  return early ?? fetchDiff(base, true)
 }
 
 function pageInfo(doc: Document): Partial<PrInfo> {
@@ -44,7 +56,7 @@ function pageInfo(doc: Document): Partial<PrInfo> {
 
 async function loadViaSession(pr: PrRef): Promise<Omit<Loaded, 'via'>> {
   const base = basePath(pr)
-  const [diffText, pageRes] = await Promise.all([fetchDiff(base, true), fetch(base, { credentials: 'same-origin' }).catch(() => null)])
+  const [diffText, pageRes] = await Promise.all([diffForLoad(base), fetch(base, { credentials: 'same-origin' }).catch(() => null)])
   const files = parseDiff(diffText, base)
   const html = pageRes?.ok ? await pageRes.text() : ''
   const doc = new DOMParser().parseFromString(html, 'text/html')
@@ -123,6 +135,27 @@ export async function loadPr(pr: PrRef): Promise<Loaded> {
     )
   }
   return { ...(await loadViaApi(pr)), via: 'api' }
+}
+
+const PREFETCH_AGE = 30_000
+const prefetched = new Map<string, { at: number; result: Promise<Loaded> }>()
+
+/** Starts loading a pull request before the review opens, for example while the pointer is on the PR Sift button. */
+export function prefetchPr(pr: PrRef) {
+  const key = prKey(pr)
+  const entry = prefetched.get(key)
+  if (entry && Date.now() - entry.at < PREFETCH_AGE) return
+  const result = loadPr(pr)
+  result.catch(() => prefetched.delete(key))
+  prefetched.set(key, { at: Date.now(), result })
+}
+
+/** A prefetched load for this pull request, once, if it is recent. */
+export function takePrefetched(pr: PrRef): Promise<Loaded> | null {
+  const key = prKey(pr)
+  const entry = prefetched.get(key)
+  prefetched.delete(key)
+  return entry && Date.now() - entry.at < PREFETCH_AGE ? entry.result : null
 }
 
 export interface Probe {

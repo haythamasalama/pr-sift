@@ -7,7 +7,7 @@
   "author": "Haytham A. Salama (https://haythamasalama.me/)",
   "license": "MIT",
   "scripts": {
-    "build": "vite build -c vite.content.config.ts && vite build -c vite.background.config.ts && vite build -c vite.options.config.ts",
+    "build": "vite build -c vite.content.config.ts && vite build -c vite.early.config.ts && vite build -c vite.highlighter.config.ts && vite build -c vite.background.config.ts && vite build -c vite.options.config.ts",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

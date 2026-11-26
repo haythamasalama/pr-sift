@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
 })
 
 const settings = shallowRef<Settings>(DEFAULTS)
-const { files: prFiles, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+const { files: prFiles, info, status, error, headSha, outdated, load, hasUpdate, refresh } = usePullRequest()
 
 // Commits: pick one or a range to see only those changes. Viewed marks follow the pull request's own files.
 const commitList = shallowRef<PrCommit[]>([])
@@ -258,6 +258,9 @@ provide(fileContextKey, {
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
+watch(outdated, (value) => {
+  if (value) updates.available.value = true
+})
 const refreshing = shallowRef(false)
 const refreshNote = shallowRef('')
 
