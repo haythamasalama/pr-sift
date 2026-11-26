@@ -37,6 +37,13 @@ describe('FilterBar', () => {
     expect(wrapper.find('[data-slot=separator]').exists()).toBe(true)
   })
 
+  it('asks to expand or collapse every file', async () => {
+    const wrapper = mountBar()
+    await wrapper.find('[aria-label="Collapse all files"]').trigger('click')
+    await wrapper.find('[aria-label="Expand all files"]').trigger('click')
+    expect(wrapper.emitted('expandFiles')).toEqual([[false], [true]])
+  })
+
   it('emits the chip key when a chip is clicked', async () => {
     const wrapper = mountBar()
     await button(wrapper, '.php').trigger('click')

@@ -40,8 +40,9 @@ const body = useTemplateRef<HTMLElement>('body')
 const seen = shallowRef(false)
 const editing = shallowRef(false)
 const measuredHeight = shallowRef(0)
-const collapsed = shallowRef(viewed)
 const expandCommand = useExpandCommand(cardsExpandKey)
+// A card that mounts after an expand or collapse all follows it, not just its viewed state.
+const collapsed = shallowRef(expandCommand?.value.n ? !expandCommand.value.open : viewed)
 watch(
   () => viewed,
   (value) => (collapsed.value = value),

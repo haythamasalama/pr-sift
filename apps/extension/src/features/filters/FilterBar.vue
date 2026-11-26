@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Eye,
   FileText,
   Folder,
@@ -79,6 +81,7 @@ const emit = defineEmits<{
   saveView: [name: string]
   selectPreset: [name: string]
   hidePreset: [name: string]
+  expandFiles: [open: boolean]
 }>()
 
 const openSettings = useSettingsOpener()
@@ -337,6 +340,26 @@ const chipClass = (chip: ExtChip) => [
       </div>
 
       <div class="ml-auto flex flex-wrap items-center justify-end gap-x-2.5 gap-y-2 text-xs">
+        <div class="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            class="size-6 rounded-sm text-muted-foreground hover:text-foreground [&_svg]:size-[13px]"
+            title="Expand all files"
+            aria-label="Expand all files"
+            @click="emit('expandFiles', true)"
+            ><ChevronsUpDown
+          /></Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            class="size-6 rounded-sm text-muted-foreground hover:text-foreground [&_svg]:size-[13px]"
+            title="Collapse all files"
+            aria-label="Collapse all files"
+            @click="emit('expandFiles', false)"
+            ><ChevronsDownUp
+          /></Button>
+        </div>
         <ToggleGroup
           v-if="!splitDisabled"
           type="single"

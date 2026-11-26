@@ -469,6 +469,7 @@ watch(
       @save-view="saveView"
       @select-preset="filter.togglePreset"
       @hide-preset="filter.hidePreset"
+      @expand-files="(open) => (cardsExpand = { open, n: cardsExpand.n + 1 })"
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">

@@ -17,6 +17,7 @@
 | Split one file               | The split icon on the file header                                                                                      |
 | Review one commit or a range | The commits menu under the title; shift-click a second commit for a range                                              |
 | Hide the sidebar             | The panel button beside the search; the rail of icons brings it back                                                   |
+| Open or close every file     | The two chevron buttons beside the diff view toggle                                                                    |
 | Copy name, path, diff, lines | The copy icon on the file header                                                                                       |
 | Write a note on many lines   | Drag from the `+` next to a line, or select code and press **Add note**                                                |
 | Resolve, edit or post a note | The icons on the note, or in **Notes**                                                                                 |
