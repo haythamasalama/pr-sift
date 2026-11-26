@@ -13,6 +13,9 @@ Everything is stored locally with `chrome.storage.local`:
 
 Uninstalling the extension deletes all of it.
 
+To open a pull request again faster, the last four you opened are kept in `chrome.storage.session`. That is memory
+only: the extension alone can read it, and Chrome clears it when it closes.
+
 ## Network access
 
 | Host                               | Why                                                                           |
@@ -35,4 +38,6 @@ sends nothing to any assistant; you paste the notes yourself.
 ## Permissions
 
 - `storage`: the local data above.
+- `scripting`: loads the code colouring into a GitHub page only when a review there needs it, instead of on every
+  page.
 - Host access to the three hosts above, and nothing else.

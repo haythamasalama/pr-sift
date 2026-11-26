@@ -3,6 +3,16 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## Unreleased
+
+### Changed
+
+- Review: Pull requests open faster. With "Open PR Sift automatically" on, the diff starts downloading while GitHub's
+  page is still loading. A pull request you opened before shows at once and refreshes in the background, and hovering
+  the PR Sift button starts loading before you click.
+- Review: The script PR Sift adds to every GitHub page is half the size. Code colouring loads only when a review needs
+  it.
+
 ## 1.5.0 - 2026-11-26
 
 ### Added
