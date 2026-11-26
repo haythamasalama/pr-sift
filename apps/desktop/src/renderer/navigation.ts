@@ -1,5 +1,6 @@
 import { computed, shallowRef, watch } from 'vue'
 import type { PrRef } from '@/lib/types'
+import { parsePullLink } from '#shared/links'
 
 export type View = 'inbox' | 'project' | 'worktree' | 'autoapprove' | 'worktrees' | 'cleanup' | 'settings' | 'account'
 export type ProjectTab = 'pulls' | 'branches' | 'worktrees' | 'files'
@@ -39,6 +40,12 @@ export function openWorktree(path: string) {
 
 export function openReview(pr: PrRef) {
   review.value = pr
+}
+
+// A pull request link opens its review here in the app, not in the browser.
+export function openPullLink(url: string) {
+  const pr = parsePullLink(url)
+  if (pr) openReview(pr)
 }
 
 // Where the person has been, so the back button can return them there.

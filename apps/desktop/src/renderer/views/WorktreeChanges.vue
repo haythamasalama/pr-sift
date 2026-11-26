@@ -47,7 +47,7 @@ import { bridge } from '~/bridge'
 import { readCache } from '~/cache'
 import { errorText, formatAgo } from '~/format'
 import type { RepoActivity } from '~/github'
-import { goBack, project } from '~/navigation'
+import { goBack, openPullLink, project } from '~/navigation'
 import type { Commit, PatchMode, WorktreePatch } from '#shared/ipc'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Hint from '~/components/Hint.vue'
@@ -335,14 +335,14 @@ async function copy(text: string, what: string) {
     >
       <template #meta>
         <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs leading-4 whitespace-nowrap text-muted-foreground">
-          <a
+          <button
             v-if="pull"
-            :href="pull.url"
-            target="_blank"
-            rel="noreferrer"
+            type="button"
             class="inline-flex shrink-0 items-center gap-1 text-success-fg hover:underline"
-            ><GitPullRequest class="size-3.5" />#{{ pull.number }} {{ pull.draft ? 'Draft' : 'Open' }}</a
+            @click="openPullLink(pull.url)"
           >
+            <GitPullRequest class="size-3.5" />#{{ pull.number }} {{ pull.draft ? 'Draft' : 'Open' }}
+          </button>
           <span v-if="data?.base" class="shrink-0">into {{ data.base }}</span>
           <span v-if="pull || data?.base" aria-hidden="true">·</span>
           <PathText :path="path" />

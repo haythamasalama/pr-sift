@@ -295,6 +295,14 @@ const avatarOf = (login: string) => `https://avatars.githubusercontent.com/${enc
 const initial = (login: string) => (login.replace(/\[bot\]$/, '')[0] ?? '?').toUpperCase()
 
 const openPull = (e: Evaluation) => openReview({ owner: e.pull.owner, repo: e.pull.repo, number: e.pull.number })
+// A pull request in "What it approved" opens in the review here; the panel closes so the review is in view.
+// Focus doesn't go back to the panel's button, so its tooltip doesn't sit on top of the review.
+let toReview = false
+function openFromLog(entry: { pull: { owner: string; repo: string; number: number } }) {
+  toReview = true
+  historyOpen.value = false
+  openReview({ owner: entry.pull.owner, repo: entry.pull.repo, number: entry.pull.number })
+}
 
 // ── Suggestions from the repositories the rule is about. ──
 const projectRepos = computed(() =>
@@ -820,7 +828,10 @@ onBeforeUnmount(() => {
   </template>
 
   <Sheet v-model:open="historyOpen">
-    <SheetContent class="w-[min(520px,94vw)] gap-0 p-0 sm:max-w-none">
+    <SheetContent
+      class="w-[min(520px,94vw)] gap-0 p-0 sm:max-w-none"
+      @close-auto-focus="(e: Event) => (toReview ? e.preventDefault() : undefined, (toReview = false))"
+    >
       <SheetHeader class="border-b border-border p-5 pr-12">
         <SheetTitle>What it approved</SheetTitle>
         <SheetDescription>{{
@@ -847,17 +858,24 @@ onBeforeUnmount(() => {
         Nothing yet. Approvals, and in a dry run what would be approved, show up here.
       </p>
       <ul v-else class="overflow-y-auto">
-        <li v-for="entry in status.log" :key="entry.id" class="flex items-center gap-3 border-b border-accent px-5 py-2.5">
-          <Badge variant="secondary" class="w-[104px] shrink-0 justify-center font-normal" :class="TONE[ACTION[entry.action].tone]">{{
-            ACTION[entry.action].label
-          }}</Badge>
-          <div class="flex min-w-0 flex-1 flex-col">
-            <a :href="entry.pull.url" target="_blank" rel="noreferrer" class="truncate hover:text-emphasis">{{ entry.pull.title }}</a>
-            <span class="truncate text-xs text-muted-foreground"
-              >{{ entry.pull.owner }}/{{ entry.pull.repo }} #{{ entry.pull.number }} · {{ entry.rule }} · {{ formatAgo(entry.at)
-              }}<template v-if="entry.error"> · {{ entry.error }}</template></span
-            >
-          </div>
+        <li v-for="entry in status.log" :key="entry.id" class="border-b border-accent">
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 px-5 py-2.5 text-left hover:bg-accent/60 focus-visible:bg-accent/60 focus-visible:outline-none"
+            :title="`Open #${entry.pull.number} in the review`"
+            @click="openFromLog(entry)"
+          >
+            <Badge variant="secondary" class="w-[104px] shrink-0 justify-center font-normal" :class="TONE[ACTION[entry.action].tone]">{{
+              ACTION[entry.action].label
+            }}</Badge>
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate">{{ entry.pull.title }}</span>
+              <span class="truncate text-xs text-muted-foreground"
+                >{{ entry.pull.owner }}/{{ entry.pull.repo }} #{{ entry.pull.number }} · {{ entry.rule }} · {{ formatAgo(entry.at)
+                }}<template v-if="entry.error"> · {{ entry.error }}</template></span
+              >
+            </div>
+          </button>
         </li>
       </ul>
     </SheetContent>

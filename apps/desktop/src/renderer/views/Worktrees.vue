@@ -35,7 +35,7 @@ import type { Repo, Worktree, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
 import { isFresh, readCache, writeCache } from '~/cache'
 import { errorText, formatAgo, formatBytes } from '~/format'
-import { openWorktree } from '~/navigation'
+import { openPullLink, openWorktree } from '~/navigation'
 import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
@@ -436,13 +436,13 @@ watch(
             </div>
             <span class="flex w-[130px] shrink-0 items-center text-xs whitespace-nowrap @max-2xl:hidden">
               <Hint v-if="pullFor(w)" :text="pullFor(w)!.title">
-                <a
-                  :href="pullFor(w)!.url"
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
                   class="inline-flex items-center gap-1.5 text-success-fg hover:underline"
-                  ><GitPullRequest class="size-3.5" />#{{ pullFor(w)!.number }} {{ pullFor(w)!.draft ? 'Draft' : 'Open' }}</a
+                  @click.stop="openPullLink(pullFor(w)!.url)"
                 >
+                  <GitPullRequest class="size-3.5" />#{{ pullFor(w)!.number }} {{ pullFor(w)!.draft ? 'Draft' : 'Open' }}
+                </button>
               </Hint>
               <Hint v-else-if="details.get(w.path)?.merged" text="Its branch is already in the main branch">
                 <span class="inline-flex items-center gap-1.5 text-merged"><GitMerge class="size-3.5" />Merged</span>
