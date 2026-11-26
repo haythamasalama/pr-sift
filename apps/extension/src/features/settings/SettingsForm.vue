@@ -155,12 +155,12 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-8'">
+  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
     <nav
       v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
-      class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-5 overflow-x-auto border-b bg-background px-4"
+      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto border-b bg-background px-4"
     >
       <button
         v-for="t in SHEET_TABS"
@@ -320,7 +320,7 @@ defineExpose({ scrollToSection })
       description="Applies right away, here and in the review."
       area="all"
     >
-      <div class="pb-5" :class="layout === 'page' ? 'pt-4' : ''"><AppearancePreview /></div>
+      <div class="pb-5" :class="layout === 'page' ? 'pt-4' : 'pt-3'"><AppearancePreview /></div>
       <SettingsRow label="Mode" :description="MODE_HINTS[theme]">
         <SegmentedControl :model-value="theme" :options="THEMES" name="settings-theme" label="Mode" @update:model-value="setTheme" />
       </SettingsRow>
