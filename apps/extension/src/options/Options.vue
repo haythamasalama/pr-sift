@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 import { Eye, FolderTree, Palette } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import BrandMark from '../components/BrandMark.vue'
+import BrandLogo from '../components/BrandLogo.vue'
 import BrandIcon from '../components/BrandIcon.vue'
 import GithubMark from '../components/GithubMark.vue'
 import { useAppearance } from '../features/appearance/useAppearance'
@@ -43,9 +43,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', track))
   <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
     <div class="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <header class="flex items-center gap-3">
-        <div class="flex size-9 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
-          <BrandMark />
-        </div>
+        <BrandLogo class="size-9 shrink-0" />
         <div class="flex flex-col">
           <h1 class="text-lg leading-6 font-semibold">PR Sift settings</h1>
           <p class="text-sm text-muted-foreground">Changes apply right away, here and in open reviews.</p>
