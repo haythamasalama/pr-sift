@@ -355,7 +355,7 @@ function onAdded(paths: string[]) {
             </button>
           </div>
           <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
-          <div ref="projectList" class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1">
+          <div ref="projectList" class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-1">
             <TransitionGroup tag="div" class="flex flex-col gap-0.5" move-class="transition-transform duration-200 ease-out">
               <div
                 v-for="g in shownGroups"

@@ -1,7 +1,7 @@
 // Launches the built app with a throwaway profile against a stubbed GitHub, and walks through every screen.
 // Usage: node tests/e2e/smoke.mjs <projects folder> <screenshots folder>
 // The projects folder needs a repository `shop` (origin github.com/acme/shop) with a worktree on `feature/cart`,
-// a second clone of it, `shop-copy`, and a repository `docs` (origin github.com/acme/docs).
+// a second clone of it, `shop-copy`, a repository `docs` (origin github.com/acme/docs) and repositories `r0` to `r7`.
 import { _electron as electron } from 'playwright'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -425,6 +425,35 @@ if (
 )
   throw new Error('A grip shows on a row the pointer is not on')
 await page.screenshot({ path: join(shots, '19b-grip-on-hover.png') })
+// A short project list never scrolls, sideways or down.
+const listOverflow = await page
+  .locator('[data-sort-id]')
+  .first()
+  .evaluate((row) => {
+    const list = row.closest('.overflow-y-auto')
+    return { x: list.scrollWidth - list.clientWidth, y: list.scrollHeight - list.clientHeight }
+  })
+if (listOverflow.x > 0 || listOverflow.y > 0) throw new Error(`The project list scrolls: ${JSON.stringify(listOverflow)}`)
+// A long list scrolls down with a slim scrollbar that shows only under the pointer, and never sideways.
+await page.evaluate(async (root) => {
+  await window.prSift.invoke(
+    'projects:add',
+    Array.from({ length: 8 }, (_, i) => `${root}/r${i}`),
+  )
+}, projects)
+await page.getByRole('button', { name: 'r7', exact: true }).waitFor()
+await page.getByRole('button', { name: 'r3', exact: true }).hover()
+await page.waitForTimeout(300)
+const longList = await page
+  .locator('[data-sort-id]')
+  .first()
+  .evaluate((row) => {
+    const list = row.closest('.overflow-y-auto')
+    return { x: list.scrollWidth - list.clientWidth }
+  })
+if (longList.x > 0) throw new Error(`The project list scrolls sideways: ${longList.x}px`)
+await page.screenshot({ path: join(shots, '19c-many-projects.png') })
+await page.mouse.move(700, 400)
 await page.mouse.move(600, 400)
 await page.getByRole('separator', { name: 'Resize the sidebar' }).dblclick()
 await page.getByRole('button', { name: 'Hide the sidebar' }).click()
