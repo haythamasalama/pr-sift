@@ -38,7 +38,8 @@ const verdict = shallowRef<ReviewVerdict | null | undefined>(undefined)
 const open = computed(() => info?.state !== 'merged' && info?.state !== 'closed')
 const isAuthor = computed(() => !!conversation?.viewer && !!info?.author && conversation.viewer.toLowerCase() === info.author.toLowerCase())
 const mine = computed(() => (verdict.value === undefined ? (conversation?.reviews.mine ?? null) : verdict.value))
-const approveHold = computed(() => approveBlockReason({ isAuthor: isAuthor.value, draft: conversation?.readiness === 'draft' }))
+// GitHub never lets you approve your own pull request, so Approve is hidden there instead of disabled.
+const approveHold = computed(() => approveBlockReason({ isAuthor: false, draft: conversation?.readiness === 'draft' }))
 const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
 const readiness = computed(() =>
@@ -59,7 +60,15 @@ function onReviewed(event: ReviewEvent) {
 
 <template>
   <template v-if="open">
-    <ReviewPopover :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" :hold="approveHold" @reviewed="onReviewed" />
+    <ReviewPopover
+      v-if="!isAuthor"
+      :pr="pr"
+      :head-sha="headSha"
+      :can-act="canAct"
+      :mine="mine"
+      :hold="approveHold"
+      @reviewed="onReviewed"
+    />
     <div class="flex shrink-0" :title="mergeHold ?? undefined">
       <Button
         :variant="mergeIsPrimary && !mergeHold ? 'success' : 'outline'"
