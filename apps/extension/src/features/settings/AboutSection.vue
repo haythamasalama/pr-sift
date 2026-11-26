@@ -30,7 +30,7 @@ function checkForUpdates() {
 
 <template>
   <SettingsSection id="about" title="About" description="Your version, updates and help." :framed="framed" :headless="!framed">
-    <div class="flex flex-col gap-6" :class="framed ? 'py-4' : ''">
+    <div class="flex flex-col gap-6" :class="framed ? 'py-4' : 'pt-3'">
       <div v-if="updated" class="flex items-center gap-2 text-xs">
         <PackageCheck class="size-4 shrink-0 text-success-fg" />
         <span class="flex-1">Updated to {{ updated.version }}.</span>

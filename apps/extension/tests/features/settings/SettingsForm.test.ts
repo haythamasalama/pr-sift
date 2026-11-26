@@ -38,6 +38,8 @@ async function addChip(wrapper: Wrapper, label: string, value: string) {
   await flushPromises()
 }
 
+enableAutoUnmount(afterEach)
+
 afterEach(() => {
   vi.useRealTimers()
   document.body.innerHTML = ''
@@ -316,8 +318,6 @@ describe('SettingsForm saved filters', () => {
 
 describe('SettingsForm sections', () => {
   let scrolled: Element[]
-
-  enableAutoUnmount(afterEach)
 
   beforeEach(() => {
     scrolled = []
