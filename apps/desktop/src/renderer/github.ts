@@ -158,7 +158,6 @@ export interface RepoInfo {
   forks: number
   language?: { name: string; color?: string }
   topics: string[]
-  license?: string
   private: boolean
   pushedAt?: number
   ownerAvatar?: string
@@ -183,7 +182,6 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
       isPrivate?: boolean
       pushedAt?: string | null
       primaryLanguage?: { name: string; color: string | null } | null
-      licenseInfo?: { spdxId: string | null; name: string } | null
       repositoryTopics?: { nodes: { topic: { name: string } }[] }
       owner?: { avatarUrl: string }
       viewerPermission?: string | null
@@ -196,7 +194,6 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
         defaultBranchRef { name }
         description homepageUrl stargazerCount forkCount isPrivate pushedAt
         primaryLanguage { name color }
-        licenseInfo { spdxId name }
         repositoryTopics(first: 8) { nodes { topic { name } } }
         owner { avatarUrl }
         viewerPermission isArchived
@@ -217,11 +214,6 @@ export async function loadRepo(owner: string, name: string): Promise<RepoActivit
       forks: r.forkCount ?? 0,
       language: r.primaryLanguage ? { name: r.primaryLanguage.name, color: r.primaryLanguage.color ?? undefined } : undefined,
       topics: r.repositoryTopics?.nodes.map((n) => n.topic.name) ?? [],
-      license: r.licenseInfo
-        ? r.licenseInfo.spdxId && r.licenseInfo.spdxId !== 'NOASSERTION'
-          ? r.licenseInfo.spdxId
-          : r.licenseInfo.name
-        : undefined,
       private: r.isPrivate ?? false,
       pushedAt: r.pushedAt ? Date.parse(r.pushedAt) : undefined,
       ownerAvatar: r.owner?.avatarUrl,
