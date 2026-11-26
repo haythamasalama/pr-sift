@@ -179,7 +179,7 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
+  <div ref="root" class="@container flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
     <nav
       v-if="layout === 'tabs'"
       aria-label="Settings"
@@ -192,13 +192,16 @@ defineExpose({ scrollToSection })
         type="button"
         role="tab"
         :aria-selected="tab === t.id"
+        :aria-label="t.label"
+        :title="t.label"
         class="-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0"
         :class="
           tab === t.id ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
         "
         @click="openTab(t.id)"
       >
-        <component :is="t.icon" />{{ t.label }}
+        <!-- When the tabs don't fit, the others show only their icon. -->
+        <component :is="t.icon" /><span :class="tab === t.id ? '' : '@max-xl:hidden'">{{ t.label }}</span>
       </button>
     </nav>
 

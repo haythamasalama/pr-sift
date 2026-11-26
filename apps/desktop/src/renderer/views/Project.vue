@@ -38,6 +38,9 @@ import { canGoBack, goBack, project, projectTab, view, type ProjectTab } from '~
 import { useAuth } from '~/useAuth'
 import { useProjects } from '~/useProjects'
 import PullTable from '~/components/PullTable.vue'
+import PullFilterMenu from '~/components/PullFilterMenu.vue'
+import PullViewMenu from '~/components/PullViewMenu.vue'
+import { NO_FILTERS, matchesFilters, type PullFilters } from '~/pulls/filters'
 import Segmented from '~/components/Segmented.vue'
 import BranchList from '~/components/BranchList.vue'
 import ProjectIcon from '~/components/ProjectIcon.vue'
@@ -66,12 +69,14 @@ let noteTimer: ReturnType<typeof setTimeout> | undefined
 const me = computed(() => status.value?.account?.login)
 const pullQuery = shallowRef('')
 const pullFilter = shallowRef<'all' | 'mine' | 'drafts' | 'ready'>('all')
+const pullFilters = shallowRef<PullFilters>({ ...NO_FILTERS })
 const visiblePulls = computed(() => {
   const q = pullQuery.value.trim().toLowerCase()
   return (activity.value?.pulls ?? []).filter((p) => {
     if (pullFilter.value === 'mine' && p.author?.login !== me.value) return false
     if (pullFilter.value === 'drafts' && !p.draft) return false
     if (pullFilter.value === 'ready' && (p.draft || p.decision === 'APPROVED')) return false
+    if (!matchesFilters(p, pullFilters.value)) return false
     if (!q) return true
     return [p.title, p.branch, p.author?.login ?? '', `#${p.number}`, ...p.labels.map((l) => l.name)].some((x) =>
       x.toLowerCase().includes(q),
@@ -298,11 +303,15 @@ async function confirmRemove() {
           type="button"
           role="tab"
           :aria-selected="projectTab === t.id"
+          :aria-label="t.label"
+          :title="t.label"
           class="relative flex h-10 shrink-0 items-center gap-1.5 px-0.5 whitespace-nowrap transition-colors"
           :class="projectTab === t.id ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
           @click="projectTab = t.id"
         >
-          <component :is="t.icon" class="size-4" />{{ t.label }}<CountBadge v-if="t.count !== undefined">{{ t.count }}</CountBadge>
+          <!-- In a narrow window the tabs keep their icons and counts; the open tab keeps its name too. -->
+          <component :is="t.icon" class="size-4" /><span :class="projectTab === t.id ? '' : '@max-2xl:hidden'">{{ t.label }}</span
+          ><CountBadge v-if="t.count !== undefined">{{ t.count }}</CountBadge>
           <span class="absolute inset-x-0 -bottom-px h-0.5 rounded-full" :class="projectTab === t.id ? 'bg-emphasis' : ''" />
         </button>
       </nav>
@@ -327,6 +336,7 @@ async function confirmRemove() {
             <InputGroupInput v-model="pullQuery" placeholder="Filter by title, branch, author" aria-label="Filter pull requests" />
           </InputGroup>
           <Segmented v-model="pullFilter" :options="FILTERS" label="Show" />
+          <PullFilterMenu v-model="pullFilters" :pulls="activity.pulls" />
           <span class="ml-auto flex shrink-0 items-center gap-2">
             <span v-if="loadedAt" class="text-xs text-muted-foreground">Updated {{ formatAgo(loadedAt) }}</span>
 
@@ -340,6 +350,7 @@ async function confirmRemove() {
             >
               <Spinner v-if="loading" /><RefreshCw v-else />
             </Button>
+            <PullViewMenu />
           </span>
         </div>
         <p v-if="!activity.pulls.length" class="text-muted-foreground">No open pull requests.</p>

@@ -13,16 +13,19 @@ async function pick() {
 </script>
 
 <template>
-  <Empty class="m-6 border border-dashed border-border">
-    <EmptyHeader>
-      <EmptyMedia variant="icon"><FolderPlus /></EmptyMedia>
-      <EmptyTitle>Add your projects folder</EmptyTitle>
-      <EmptyDescription
-        >Pick the folder where your repositories live, such as Projects or Desktop/projects. You can add more in Settings.</EmptyDescription
-      >
-    </EmptyHeader>
-    <EmptyContent>
-      <Button @click="pick"><FolderPlus /> Add a folder</Button>
-    </EmptyContent>
-  </Empty>
+  <div class="p-6">
+    <Empty class="border border-dashed border-border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon"><FolderPlus /></EmptyMedia>
+        <EmptyTitle>Add your projects folder</EmptyTitle>
+        <EmptyDescription
+          >Pick the folder where your repositories live, such as Projects or Desktop/projects. You can add more in
+          Settings.</EmptyDescription
+        >
+      </EmptyHeader>
+      <EmptyContent>
+        <Button @click="pick"><FolderPlus /> Add a folder</Button>
+      </EmptyContent>
+    </Empty>
+  </div>
 </template>

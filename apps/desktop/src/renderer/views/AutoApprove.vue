@@ -751,16 +751,36 @@ onBeforeUnmount(() => {
         <li
           v-for="r in draft.rules"
           :key="r.id"
-          class="flex items-start gap-4 border-t border-accent p-4 first:border-t-0 hover:bg-muted/60"
+          class="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-1 border-t border-accent p-4 first:border-t-0 hover:bg-muted/60"
         >
           <Switch
             :model-value="r.enabled"
             :aria-label="`Turn ${r.name || 'this rule'} on or off`"
             @update:model-value="(v) => toggleRule(r, v)"
           />
-          <button type="button" class="flex min-w-0 flex-1 flex-col gap-1 text-left" @click="autoRule = r.id">
-            <span class="text-sm font-semibold" :class="r.enabled ? '' : 'text-muted-foreground'">{{ r.name || 'Untitled rule' }}</span>
-            <dl class="mt-1 grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 text-[13px]">
+          <button
+            type="button"
+            class="min-w-0 truncate text-left text-sm font-semibold"
+            :class="r.enabled ? '' : 'text-muted-foreground'"
+            @click="autoRule = r.id"
+          >
+            {{ r.name || 'Untitled rule' }}
+          </button>
+          <Badge v-if="!r.enabled" variant="secondary" class="bg-muted font-normal text-muted-foreground">Paused</Badge>
+          <Badge v-else-if="matchCount(r)" variant="secondary" class="bg-add-bg font-normal text-success-fg"
+            >{{ matchCount(r) }} would be approved</Badge
+          >
+          <Badge v-else-if="matchCount(r) === 0" variant="secondary" class="bg-muted font-normal text-muted-foreground"
+            >None right now</Badge
+          >
+          <Spinner v-else class="text-muted-foreground" />
+
+          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`Edit ${r.name}`" @click="autoRule = r.id"
+            ><Pencil
+          /></Button>
+          <!-- The facts get the card's full width under the name, so they wrap less in a narrow window. -->
+          <button type="button" class="col-span-3 col-start-2 min-w-0 text-left" tabindex="-1" @click="autoRule = r.id">
+            <dl class="grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 text-[13px]">
               <template v-for="f in facts(r)" :key="f.label">
                 <dt class="flex h-5 items-center text-xs text-muted-foreground">{{ f.label }}</dt>
                 <dd class="flex min-w-0 flex-wrap items-center gap-1">
@@ -768,7 +788,7 @@ onBeforeUnmount(() => {
                     <span
                       v-for="login in f.values.slice(0, PEOPLE_SHOWN)"
                       :key="login"
-                      class="flex h-5 items-center gap-1 rounded border border-border bg-muted px-1 text-[11px] leading-none"
+                      class="flex h-5 items-center gap-1 rounded border border-border bg-muted px-1 text-[11px] leading-none whitespace-nowrap"
                       ><img :src="avatarOf(login)" alt="" class="size-3.5 rounded-full" />{{ login }}</span
                     >
                     <span
@@ -783,7 +803,7 @@ onBeforeUnmount(() => {
                     <span
                       v-for="v in f.values"
                       :key="v"
-                      class="flex h-5 items-center rounded border border-border bg-muted px-1.5 text-[11px] leading-none"
+                      class="flex h-5 items-center rounded border border-border bg-muted px-1.5 text-[11px] leading-none whitespace-nowrap"
                       :class="f.kind === 'branch' || f.kind === 'path' ? 'font-mono' : f.kind === 'repo' ? 'font-medium' : ''"
                       >{{ v }}</span
                     >
@@ -793,18 +813,6 @@ onBeforeUnmount(() => {
               </template>
             </dl>
           </button>
-          <Badge v-if="!r.enabled" variant="secondary" class="bg-muted font-normal text-muted-foreground">Paused</Badge>
-          <Badge v-else-if="matchCount(r)" variant="secondary" class="bg-add-bg font-normal text-success-fg"
-            >{{ matchCount(r) }} would be approved</Badge
-          >
-          <Badge v-else-if="matchCount(r) === 0" variant="secondary" class="bg-muted font-normal text-muted-foreground"
-            >None right now</Badge
-          >
-          <Spinner v-else class="text-muted-foreground" />
-
-          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`Edit ${r.name}`" @click="autoRule = r.id"
-            ><Pencil
-          /></Button>
         </li>
       </ul>
       <p class="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
