@@ -26,32 +26,32 @@ const openSettings = useSettingsOpener()
 </script>
 
 <template>
-  <header class="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4 xl:flex-nowrap">
+  <header class="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4 md:flex-nowrap">
     <Button
       v-if="compact"
       variant="outline"
       size="icon-sm"
-      class="order-1 shrink-0 xl:order-none"
+      class="order-1 shrink-0 md:order-none"
       aria-label="Toggle sidebar"
       title="Files and filters"
       @click="emit('toggleSidebar')"
     >
       <PanelLeft />
     </Button>
-    <div class="order-1 flex min-w-0 flex-1 flex-col gap-0.5 xl:order-none">
+    <div class="order-1 flex min-w-0 flex-1 flex-col gap-0.5 md:order-none">
       <div v-if="loading" class="flex h-5 items-center"><Skeleton class="h-3 w-[min(30rem,60vw)]" /></div>
       <h1 v-else class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
     </div>
-    <Button variant="ghost" size="icon" class="order-1 shrink-0 text-muted-foreground xl:hidden" aria-label="Close" @click="emit('close')"
+    <Button variant="ghost" size="icon" class="order-1 shrink-0 text-muted-foreground md:hidden" aria-label="Close" @click="emit('close')"
       ><X
     /></Button>
-    <div class="order-2 basis-full xl:hidden" />
+    <div class="order-2 basis-full md:hidden" />
 
-    <Skeleton v-if="loading" class="order-3 h-4 w-11 xl:order-none" />
+    <Skeleton v-if="loading" class="order-3 h-4 w-11 md:order-none" />
     <div
       v-else
-      class="order-3 flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold tabular-nums xl:order-none"
+      class="order-3 flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold tabular-nums md:order-none"
       :title="`${done} of ${total} files viewed · ${total - done} left · ${inView} in the current view`"
     >
       <ProgressRing :done="done" :total="total" />
@@ -60,9 +60,9 @@ const openSettings = useSettingsOpener()
       >
     </div>
 
-    <div class="order-3 flex-1 xl:hidden" />
+    <div class="order-3 flex-1 md:hidden" />
 
-    <div class="order-3 flex shrink-0 items-center gap-2 xl:order-none">
+    <div class="order-3 flex shrink-0 items-center gap-2 md:order-none">
       <div class="flex shrink-0 items-center gap-2 empty:hidden"><slot name="actions" /></div>
 
       <Separator orientation="vertical" class="mx-0.5 hidden h-5 sm:block data-[orientation=vertical]:self-center" />
@@ -98,7 +98,7 @@ const openSettings = useSettingsOpener()
       <Button
         variant="ghost"
         size="icon"
-        class="hidden shrink-0 text-muted-foreground xl:inline-flex"
+        class="hidden shrink-0 text-muted-foreground md:inline-flex"
         aria-label="Close"
         @click="emit('close')"
         ><X

@@ -457,6 +457,8 @@ watch(
       :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
+      :quick="filter.smart.value.categories"
+      :quick-selected="filter.scopes.value"
       @update:review-mode="setReviewMode"
       @toggle-extension="filter.toggleChip"
       @reset-filters="filter.resetFilters"
@@ -470,6 +472,7 @@ watch(
       @select-preset="filter.togglePreset"
       @hide-preset="filter.hidePreset"
       @expand-files="(open) => (cardsExpand = { open, n: cardsExpand.n + 1 })"
+      @toggle-quick="filter.toggleScope"
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">
