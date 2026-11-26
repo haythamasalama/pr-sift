@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, type Component, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { ChevronRight, CircleCheck, Eye, FolderTree, Monitor, Moon, Palette, RotateCcw, Sun } from '@lucide/vue'
+import { ChevronRight, CircleCheck, Columns2, Monitor, Moon, RotateCcw, Rows2, Sun } from '@lucide/vue'
 import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
@@ -9,15 +9,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
 import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
-import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
-import DiffPreview from './DiffPreview.vue'
 import PatternList from './PatternList.vue'
 import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsGroup from './SettingsGroup.vue'
@@ -25,6 +21,7 @@ import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 import AppearancePreview from './AppearancePreview.vue'
 import CodeThemeSelect from './CodeThemeSelect.vue'
+import SegmentedControl from './SegmentedControl.vue'
 import ThemeSwatches from './ThemeSwatches.vue'
 import TreePreview from './TreePreview.vue'
 import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
@@ -50,18 +47,18 @@ const MODE_HINTS: Record<ThemeMode, string> = {
   dark: 'Always dark.',
 }
 
-const DIFF_VIEWS: { value: DiffMode; label: string; hint: string }[] = [
-  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column' },
-  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.' },
+const DIFF_VIEWS: { value: DiffMode; label: string; hint: string; icon: Component }[] = [
+  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column.', icon: Rows2 },
+  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.', icon: Columns2 },
 ]
 
 const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
-  { value: 'squash', label: 'Squash', hint: 'One commit on the base branch' },
-  { value: 'merge', label: 'Merge commit', hint: 'Every commit, plus a merge commit' },
-  { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit' },
+  { value: 'squash', label: 'Squash', hint: 'One commit on the base branch.' },
+  { value: 'merge', label: 'Merge commit', hint: 'Every commit, plus a merge commit.' },
+  { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit.' },
 ]
 
-const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandIcon }
+const hintOf = <T extends string>(options: { value: T; hint: string }[], value: T) => options.find((o) => o.value === value)?.hint ?? ''
 
 const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
@@ -158,20 +155,22 @@ defineExpose({ scrollToSection })
       v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
-      class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2"
+      class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-5 overflow-x-auto border-b bg-background px-4"
     >
-      <Button
+      <button
         v-for="t in SHEET_TABS"
         :key="t.id"
+        type="button"
         role="tab"
         :aria-selected="tab === t.id"
-        variant="ghost"
-        size="xs"
-        :class="tab === t.id ? 'bg-muted text-foreground' : 'text-muted-foreground'"
+        class="-mb-px border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground"
+        :class="
+          tab === t.id ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
+        "
         @click="openTab(t.id)"
       >
-        <component :is="TAB_ICONS[t.id]" />{{ t.label }}
-      </Button>
+        {{ t.label }}
+      </button>
     </nav>
 
     <AboutSection v-show="shows('about')" :framed="layout === 'page'" />
@@ -180,6 +179,7 @@ defineExpose({ scrollToSection })
       v-show="shows('github')"
       id="github"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="GitHub"
       description="Comment, review and merge without leaving the review."
     >
@@ -188,13 +188,15 @@ defineExpose({ scrollToSection })
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
       <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
-        <ChoiceCards
-          :model-value="settings.mergeMethod"
-          :options="MERGE_METHODS"
-          name="settings-merge"
-          label="Merge method"
-          @update:model-value="(v) => update('mergeMethod', v)"
-        />
+        <SettingsRow label="Merge method" :description="hintOf(MERGE_METHODS, settings.mergeMethod)" class="py-0">
+          <SegmentedControl
+            :model-value="settings.mergeMethod"
+            :options="MERGE_METHODS"
+            name="settings-merge"
+            label="Merge method"
+            @update:model-value="(v) => update('mergeMethod', v)"
+          />
+        </SettingsRow>
         <SettingsRow
           label="Leave out AI co-authors"
           :description="coAuthorSummary"
@@ -234,6 +236,7 @@ defineExpose({ scrollToSection })
       v-show="shows('review')"
       id="review"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Reviewing"
       description="How each review starts."
       area="files"
@@ -258,18 +261,15 @@ defineExpose({ scrollToSection })
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>
-      <div class="flex flex-col gap-2.5 py-3">
-        <p class="text-sm font-medium">Diff view</p>
-        <ChoiceCards
+      <SettingsRow label="Diff view" :description="hintOf(DIFF_VIEWS, settings.diffView)">
+        <SegmentedControl
           :model-value="settings.diffView"
           :options="DIFF_VIEWS"
           name="settings-diff"
           label="Diff view"
           @update:model-value="(v) => update('diffView', v)"
-        >
-          <template #preview="{ value }"><DiffPreview :mode="value" /></template>
-        </ChoiceCards>
-      </div>
+        />
+      </SettingsRow>
       <SettingsRow label="Show resolved notes" description="They stay in the diff, dimmed." control-id="settings-show-resolved">
         <Switch id="settings-show-resolved" :model-value="settings.showResolved" @update:model-value="(v) => update('showResolved', v)" />
       </SettingsRow>
@@ -279,6 +279,7 @@ defineExpose({ scrollToSection })
       v-show="shows('files')"
       id="files"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Files"
       description="What the list leaves out, and your own filters."
       area="sidebar"
@@ -316,24 +317,7 @@ defineExpose({ scrollToSection })
     >
       <div class="pb-5" :class="layout === 'page' ? 'pt-4' : ''"><AppearancePreview /></div>
       <SettingsRow label="Mode" :description="MODE_HINTS[theme]">
-        <ToggleGroup
-          type="single"
-          size="sm"
-          :model-value="theme"
-          aria-label="Mode"
-          class="gap-0.5 rounded-lg border bg-muted p-0.5"
-          @update:model-value="(v) => v && setTheme(v as ThemeMode)"
-        >
-          <ToggleGroupItem
-            v-for="m in THEMES"
-            :id="`settings-theme-${m.value}`"
-            :key="m.value"
-            :value="m.value"
-            class="data-[state=on]:bg-background data-[state=on]:shadow-xs data-[state=on]:ring-1 data-[state=on]:ring-border"
-          >
-            <component :is="m.icon" />{{ m.label }}
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <SegmentedControl :model-value="theme" :options="THEMES" name="settings-theme" label="Mode" @update:model-value="setTheme" />
       </SettingsRow>
       <SettingsRow id="settings-section-style" data-section="style" label="Theme" :description="themeHint">
         <ThemeSwatches :model-value="themeStyle" :dark="dark" @update:model-value="setThemeStyle" />
