@@ -11,6 +11,7 @@ goes under `## Unreleased` until the next release moves it under its version and
   what you are looking at, and All changes goes back.
 - Review: Closes #N shows under the title when the pull request links an issue.
 - Review: Hide the sidebar to a thin rail of icons; it stays hidden until you bring it back.
+- Review: Expand all and Collapse all files, beside the diff view toggle, open or close every file card at once.
 - Review: A loading skeleton in the shape of the review panel while the pull request loads.
 
 ### Changed

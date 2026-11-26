@@ -3,6 +3,7 @@ import { shallowRef } from 'vue'
 import { describe, expect, it } from 'vitest'
 import FileCard from '../../../src/features/diff/FileCard.vue'
 import { fileContextKey } from '../../../src/features/diff/fileContext'
+import { cardsExpandKey, type ExpandCommand } from '../../../src/features/tree/expandContext'
 import { notesContext, provideContext } from '../../helpers/context'
 import { file } from '@pr-sift/core/testing'
 
@@ -41,6 +42,23 @@ describe('FileCard', () => {
     const wrapper = mountCard({ viewed: true })
     expect(wrapper.find('[aria-label="Expand file"]').exists()).toBe(true)
     await wrapper.setProps({ viewed: false })
+    expect(wrapper.find('[aria-label="Collapse file"]').exists()).toBe(true)
+  })
+
+  it('follows expand all and collapse all, including cards mounted after the command', async () => {
+    const command = shallowRef<ExpandCommand>({ open: true, n: 0 })
+    const mountWith = () =>
+      mount(FileCard, {
+        props: { file: file('src/A.php', { additions: 1 }), viewed: false },
+        global: { provide: { ...provideContext(notesContext()), [cardsExpandKey as symbol]: command } },
+      })
+    const wrapper = mountWith()
+    command.value = { open: false, n: 1 }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[aria-label="Expand file"]').exists()).toBe(true)
+    expect(mountWith().find('[aria-label="Expand file"]').exists()).toBe(true)
+    command.value = { open: true, n: 2 }
+    await wrapper.vm.$nextTick()
     expect(wrapper.find('[aria-label="Collapse file"]').exists()).toBe(true)
   })
 
