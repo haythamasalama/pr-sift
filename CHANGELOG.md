@@ -17,6 +17,8 @@ goes under `## Unreleased` until the next release moves it under its version and
   Settings > Appearance. The PR Sift theme follows the website: black and white, IBM Plex and 4 px corners.
 - Appearance: Code colors. GitHub, One, Catppuccin, Gruvbox, Solarized, Tokyo Night or Night Owl, each with a light and
   a dark version.
+- Filters: Quick filters under the file types: Tests, Docs, Migrations, Translations, Config, CI / Docker and AI (agent
+  and prompt files such as CLAUDE.md, AGENTS.md and .claude/). Only the kinds this pull request touches show.
 
 ### Changed
 
@@ -34,6 +36,7 @@ goes under `## Unreleased` until the next release moves it under its version and
   About. Mode, Merge method and Diff view are segmented choices.
 - Appearance: One colour per status: a dot for new things, amber when something needs you (update ready, pull request
   changed), a green version badge after an update, and red when PR Sift needs a reload.
+- Review: The header stays on one row from tablet width.
 
 ## 1.4.0 - 2026-11-24
 

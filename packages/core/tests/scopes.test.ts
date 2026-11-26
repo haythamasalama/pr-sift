@@ -30,6 +30,10 @@ describe('matchesScope', () => {
     expect(matchesScope('src/Order.php', 'cat:tests')).toBe(false)
     expect(matchesScope('database/migrations/x.php', 'cat:migrations')).toBe(true)
     expect(matchesScope('lang/ar/ui.php', 'cat:translations')).toBe(true)
+    expect(matchesScope('CLAUDE.md', 'cat:ai')).toBe(true)
+    expect(matchesScope('.claude/skills/commit/SKILL.md', 'cat:ai')).toBe(true)
+    expect(matchesScope('.github/copilot-instructions.md', 'cat:ai')).toBe(true)
+    expect(matchesScope('docs/README.md', 'cat:ai')).toBe(false)
   })
 })
 
