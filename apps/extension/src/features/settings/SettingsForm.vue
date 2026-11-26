@@ -306,6 +306,7 @@ defineExpose({ scrollToSection })
       description="Applies right away, here and in the review."
       area="all"
     >
+      <template #icon><ThemePreview mode="system" :theme-style="themeStyle" small /></template>
       <div class="py-3">
         <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Mode" @update:model-value="setTheme">
           <template #preview="{ value }"><ThemePreview :mode="value" :theme-style="themeStyle" /></template>
