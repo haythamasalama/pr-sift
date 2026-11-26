@@ -760,16 +760,16 @@ onBeforeUnmount(() => {
           />
           <button type="button" class="flex min-w-0 flex-1 flex-col gap-1 text-left" @click="autoRule = r.id">
             <span class="text-sm font-semibold" :class="r.enabled ? '' : 'text-muted-foreground'">{{ r.name || 'Untitled rule' }}</span>
-            <dl class="mt-1 grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-1.5 text-[13px]">
+            <dl class="mt-1 grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 text-[13px]">
               <template v-for="f in facts(r)" :key="f.label">
-                <dt class="pt-0.5 text-xs text-muted-foreground">{{ f.label }}</dt>
+                <dt class="flex h-5 items-center text-xs text-muted-foreground">{{ f.label }}</dt>
                 <dd class="flex min-w-0 flex-wrap items-center gap-1">
                   <template v-if="f.kind === 'person'">
                     <span
                       v-for="login in f.values.slice(0, PEOPLE_SHOWN)"
                       :key="login"
-                      class="flex h-6 items-center gap-1.5 rounded-md border border-border bg-muted px-1.5 text-xs"
-                      ><img :src="avatarOf(login)" alt="" class="size-4 rounded-full" />{{ login }}</span
+                      class="flex h-5 items-center gap-1 rounded border border-border bg-muted px-1 text-[11px] leading-none"
+                      ><img :src="avatarOf(login)" alt="" class="size-3.5 rounded-full" />{{ login }}</span
                     >
                     <span
                       v-if="f.values.length > PEOPLE_SHOWN"
@@ -783,7 +783,7 @@ onBeforeUnmount(() => {
                     <span
                       v-for="v in f.values"
                       :key="v"
-                      class="flex h-6 items-center rounded-md border border-border bg-muted px-1.5 text-xs"
+                      class="flex h-5 items-center rounded border border-border bg-muted px-1.5 text-[11px] leading-none"
                       :class="f.kind === 'branch' || f.kind === 'path' ? 'font-mono' : f.kind === 'repo' ? 'font-medium' : ''"
                       >{{ v }}</span
                     >
