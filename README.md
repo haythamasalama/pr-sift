@@ -93,6 +93,7 @@ GitHub threads show under their lines, and the conversation opens above the file
 - 🪟 Unified or split diffs, for every file or just one
 - 📋 Copy a file's name, path, diff or added lines
 - 📄 The pull request description one click away
+- 🔀 One commit or a range of commits, picked from the title
 - 🔖 Saved filters as buttons beside the file types
 - ⚙️ Settings in a side sheet, opened right where you need them
 - ⚡ Pull requests that open straight in PR Sift, if you want

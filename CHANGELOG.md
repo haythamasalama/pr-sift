@@ -3,6 +3,29 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## Unreleased
+
+### Added
+
+- Review: Pick one commit, or shift-click a second one for a range, from the commits menu under the title. A banner says
+  what you are looking at, and All changes goes back.
+- Review: Closes #N shows under the title when the pull request links an issue.
+- Review: Hide the sidebar to a thin rail of icons; it stays hidden until you bring it back.
+- Review: A loading skeleton in the shape of the review panel while the pull request loads.
+
+### Changed
+
+- Review: A calmer two-row header. Approve and Merge always keep their place and are disabled with a short reason when
+  they cannot be used. On your own pull request Approve and Request changes are off, and the arrow opens Comment.
+- Filters: The filter bar has two fixed rows: file types and changes on top, saved filters, folders and the view below.
+  Only the first six types show, with +N more for the rest. Hide viewed has a quiet filled style, and the viewed list
+  shows only while it is on.
+- Filters: Smart filters open from the sparkle button beside the sidebar search.
+- Views: Unified and Split use GitHub's rows and columns icons.
+- Tree: Viewed marks stay visible on every file and folder. Folder actions show on hover, and All folders is a quiet
+  section label with its count.
+- Appearance: Menus and popovers have a clearer border, shadow and opening animation.
+
 ## 1.4.0 - 2026-11-24
 
 ### Added
