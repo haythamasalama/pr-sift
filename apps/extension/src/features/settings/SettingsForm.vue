@@ -293,7 +293,7 @@ defineExpose({ scrollToSection })
         <PatternList
           :model-value="settings.hide"
           label="hidden paths"
-          placeholder="**/*.lock"
+          placeholder="Add a path, like **/*.snap"
           @update:model-value="(v) => update('hide', v)"
         />
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

@@ -18,7 +18,7 @@ const {
       <slot name="aside" />
     </div>
     <p v-if="description" class="mt-0.5 text-xs text-muted-foreground">{{ description }}</p>
-    <div class="flex flex-col" :class="hideTitle ? '' : 'gap-3'">
+    <div class="flex flex-col" :class="[hideTitle ? '' : 'gap-3', description ? 'mt-3' : '']">
       <slot />
     </div>
   </div>

@@ -116,7 +116,7 @@ onMounted(async () => adopt(await storageGet<string>('token')))
           :type="visible ? 'text' : 'password'"
           autocomplete="off"
           spellcheck="false"
-          placeholder="github_pat_…"
+          placeholder="ghp_…"
         />
         <InputGroupAddon align="inline-end">
           <InputGroupButton :aria-label="visible ? 'Hide token' : 'Show token'" size="icon-xs" @click="visible = !visible">
