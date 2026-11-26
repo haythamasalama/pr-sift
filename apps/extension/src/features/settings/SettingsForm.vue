@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { useAppearance } from '../appearance/useAppearance'
+import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
 import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
@@ -22,6 +22,7 @@ import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsGroup from './SettingsGroup.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
+import StylePreview from './StylePreview.vue'
 import ThemePreview from './ThemePreview.vue'
 import TreePreview from './TreePreview.vue'
 import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
@@ -58,7 +59,7 @@ const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSect
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
-const { theme, setTheme } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, dark } = useAppearance()
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
@@ -303,9 +304,18 @@ defineExpose({ scrollToSection })
       description="Applies right away, here and in the review."
       area="all"
     >
-      <div class="py-3">
+      <div class="flex flex-col gap-3 py-3">
+        <ChoiceCards
+          :model-value="themeStyle"
+          :options="THEME_STYLES"
+          name="settings-style"
+          label="Style"
+          @update:model-value="setThemeStyle"
+        >
+          <template #preview="{ value }"><StylePreview :theme-style="value" :dark="dark" /></template>
+        </ChoiceCards>
         <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
-          <template #preview="{ value }"><ThemePreview :mode="value" /></template>
+          <template #preview="{ value }"><ThemePreview :mode="value" :theme-style="themeStyle" /></template>
         </ChoiceCards>
       </div>
       <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">
