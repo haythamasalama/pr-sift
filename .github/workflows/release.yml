@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Run by hand on main to tag and release the version in manifest.json, when a tag cannot be pushed.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,11 +22,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm package
-      - name: Check the tag matches the manifest version
-        run: test "v$(node -p "require('./apps/extension/manifest.json').version")" = "$GITHUB_REF_NAME"
+      - name: Pick the tag
+        run: |
+          VERSION="v$(node -p "require('./apps/extension/manifest.json').version")"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            test "$VERSION" = "$GITHUB_REF_NAME"
+          fi
+          echo "TAG=$VERSION" >> "$GITHUB_ENV"
       - name: Take the release notes from CHANGELOG.md
-        run: node scripts/release-notes.mjs "$GITHUB_REF_NAME" > release-notes.md
+        run: node scripts/release-notes.mjs "$TAG" > release-notes.md
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" apps/extension/pr-sift-*.zip --notes-file release-notes.md --title "PR Sift $GITHUB_REF_NAME"
+        run: gh release create "$TAG" apps/extension/pr-sift-*.zip --target "$GITHUB_SHA" --notes-file release-notes.md --title "PR Sift $TAG"
