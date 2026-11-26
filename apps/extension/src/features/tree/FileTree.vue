@@ -60,33 +60,36 @@ const viewedCount = computed(() => collectFiles(tree).filter(isViewed).length)
 
 <template>
   <nav class="h-full overflow-auto px-2 pb-2 text-[13px]">
-    <div class="flex h-7 items-center gap-1.5 rounded-sm px-1.5" :class="selected === '' ? 'bg-accent' : ''">
-      <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 text-left font-semibold" @click="showAll">
+    <div
+      class="group flex h-7 items-center gap-1 rounded-sm px-1.5 hover:bg-accent/60"
+      :class="selected === '' ? 'bg-accent text-foreground' : 'text-foreground/90'"
+    >
+      <button type="button" class="flex min-w-0 flex-1 items-center gap-1.5 self-stretch text-left font-medium" @click="showAll">
         <Layers :size="14" class="shrink-0 text-muted-foreground" /> All folders
-        <span
-          class="ml-auto text-[11px] font-normal text-muted-foreground tabular-nums"
-          :title="`${viewedCount} of ${tree.count} files viewed`"
-          >{{ viewedCount }} / {{ tree.count }}</span
-        >
       </button>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        class="size-[22px] text-muted-foreground [&_svg]:size-[13px]"
-        title="Expand all folders"
-        aria-label="Expand all folders"
-        @click="setAll(true)"
-        ><ChevronsUpDown
-      /></Button>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        class="size-[22px] text-muted-foreground [&_svg]:size-[13px]"
-        title="Collapse all folders"
-        aria-label="Collapse all folders"
-        @click="setAll(false)"
-        ><ChevronsDownUp
-      /></Button>
+      <span class="hidden shrink-0 items-center group-focus-within:flex group-hover:flex">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="size-[22px] text-muted-foreground hover:bg-transparent hover:text-foreground [&_svg]:size-[13px]"
+          title="Expand all folders"
+          aria-label="Expand all folders"
+          @click="setAll(true)"
+          ><ChevronsUpDown
+        /></Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="size-[22px] text-muted-foreground hover:bg-transparent hover:text-foreground [&_svg]:size-[13px]"
+          title="Collapse all folders"
+          aria-label="Collapse all folders"
+          @click="setAll(false)"
+          ><ChevronsDownUp
+        /></Button>
+      </span>
+      <span class="shrink-0 pr-0.5 text-[11px] text-muted-foreground tabular-nums" :title="`${viewedCount} of ${tree.count} files viewed`"
+        >{{ viewedCount }}/{{ tree.count }}</span
+      >
     </div>
 
     <TreeNodeView

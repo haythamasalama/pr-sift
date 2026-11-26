@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { AlertCircle, CheckCircle2, FolderTree, GitCommitHorizontal, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
+import {
+  AlertCircle,
+  CheckCircle2,
+  FolderTree,
+  GitCommitHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+  Search,
+  Sparkles,
+  X,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -117,6 +128,28 @@ provide(
 )
 
 const sidebarSize = useResizable(DEFAULTS.sidebarWidth, 220, 760, (width) => saveSetting('sidebarWidth', width))
+// On wide screens the sidebar folds into a thin rail of icons; on small ones it is a drawer that closes instead.
+const RAIL = 44
+const collapsed = shallowRef(false)
+const searchInput = useTemplateRef<InstanceType<typeof Input>>('searchInput')
+const sidebarWidth = computed(() => (collapsed.value ? RAIL : sidebarSize.width.value))
+function hideSidebar() {
+  if (compact.value) {
+    sidebarOpen.value = false
+    return
+  }
+  collapsed.value = true
+  void saveSetting('sidebarCollapsed', true)
+}
+async function showSidebar(tab?: 'tree' | 'smart' | 'search') {
+  collapsed.value = false
+  void saveSetting('sidebarCollapsed', false)
+  if (tab === 'tree' || tab === 'smart') sidebar.value = tab
+  if (tab === 'search') {
+    await nextTick()
+    ;(searchInput.value?.$el as HTMLInputElement | undefined)?.focus()
+  }
+}
 
 const cardsExpand = shallowRef<ExpandCommand>({ open: true, n: 0 })
 provide(cardsExpandKey, cardsExpand)
@@ -334,6 +367,7 @@ onMounted(async () => {
   diffMode.value = settings.value.diffView
   showResolved.value = settings.value.showResolved
   sidebarSize.set(settings.value.sidebarWidth)
+  collapsed.value = settings.value.sidebarCollapsed
   await load(pr)
   emit('refreshed')
 })
@@ -457,7 +491,7 @@ watch(
     <UpdateNotice />
     <AutoOpenTip v-if="status === 'ready'" :enabled="settings.autoOpen" />
 
-    <ReviewSkeleton v-if="status === 'loading'" :compact="compact" :sidebar-width="sidebarSize.width.value" />
+    <ReviewSkeleton v-if="status === 'loading'" :compact="compact" :sidebar-width="sidebarWidth" />
 
     <Alert v-else-if="status === 'error'" variant="destructive" class="mx-auto mt-16 max-w-xl">
       <AlertCircle />
@@ -468,7 +502,7 @@ watch(
       v-else
       class="relative grid min-h-0 flex-1"
       :class="sidebarSize.dragging.value ? 'select-none' : ''"
-      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarSize.width.value}px 1fr` }"
+      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarWidth}px 1fr` }"
     >
       <div v-if="compact && sidebarOpen" class="absolute inset-0 z-20 bg-black/40" @click="sidebarOpen = false" />
       <aside
@@ -477,7 +511,7 @@ watch(
         :class="compact ? 'absolute inset-y-0 left-0 z-30 w-[min(22rem,88vw)] shadow-xl' : 'relative'"
       >
         <div
-          v-if="!compact"
+          v-if="!compact && !collapsed"
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize sidebar"
@@ -491,39 +525,97 @@ watch(
             class="absolute top-1/2 left-1/2 h-8 w-1 -translate-1/2 rounded-full bg-muted-foreground/50 transition-colors group-hover/resize:bg-emphasis"
           />
         </div>
-        <Tabs v-model="sidebar" class="min-h-0 flex-1 gap-0">
-          <div class="flex flex-col gap-2 px-2 pt-2 pb-1.5">
+        <nav v-if="!compact && collapsed" class="flex flex-col items-center gap-1 py-2" aria-label="Sidebar">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Show sidebar"
+            aria-label="Show sidebar"
+            @click="showSidebar()"
+          >
+            <PanelLeftOpen />
+          </Button>
+          <span class="my-1 h-px w-5 bg-border" />
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-8 text-muted-foreground hover:text-foreground"
+            title="Search files"
+            aria-label="Search files"
+            @click="showSidebar('search')"
+          >
+            <Search />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="relative size-8 text-muted-foreground hover:text-foreground"
+            :title="filter.selectedFolder.value ? `Tree · ${filter.selectedFolder.value}` : 'Tree'"
+            aria-label="Show the file tree"
+            @click="showSidebar('tree')"
+          >
+            <FolderTree />
+            <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="relative size-8 text-muted-foreground hover:text-foreground"
+            title="Smart filters"
+            aria-label="Show smart filters"
+            @click="showSidebar('smart')"
+          >
+            <Sparkles />
+            <span v-if="filter.scopes.value.length" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
+          </Button>
+        </nav>
+        <Tabs v-else v-model="sidebar" class="min-h-0 flex-1 gap-0">
+          <div class="flex flex-col gap-1.5 px-2 pt-2 pb-1">
+            <div class="flex items-center gap-1">
+              <TabsList class="h-7 flex-1 gap-0.5 rounded-md bg-muted p-0.5">
+                <TabsTrigger
+                  value="tree"
+                  class="h-6 flex-1 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
+                  ><FolderTree /> Tree</TabsTrigger
+                >
+                <TabsTrigger
+                  value="smart"
+                  class="h-6 flex-1 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
+                  ><Sparkles /> Smart filters</TabsTrigger
+                >
+              </TabsList>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                class="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+                title="Hide sidebar"
+                aria-label="Hide sidebar"
+                @click="hideSidebar"
+              >
+                <PanelLeftClose />
+              </Button>
+            </div>
             <div class="relative flex items-center">
-              <Search class="pointer-events-none absolute left-[9px] size-3.5 text-muted-foreground" />
+              <Search class="pointer-events-none absolute left-2 size-3.5 text-muted-foreground" />
               <Input
+                ref="searchInput"
                 v-model="filter.query.value"
                 placeholder="Search files"
                 aria-label="Search files"
-                class="h-[30px] rounded-md bg-background pr-7 pl-[30px] text-xs md:text-xs dark:bg-background"
+                class="h-7 rounded-md border-transparent bg-muted pr-7 pl-7 text-xs shadow-none md:text-xs dark:bg-muted"
               />
               <Button
                 v-if="filter.query.value"
                 variant="ghost"
                 size="icon-xs"
-                class="absolute right-1"
+                class="absolute right-0.5"
                 aria-label="Clear search"
                 @click="filter.query.value = ''"
               >
                 <X />
               </Button>
             </div>
-            <TabsList class="h-7 w-full gap-0.5 rounded-md bg-muted p-0.5">
-              <TabsTrigger
-                value="tree"
-                class="h-6 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
-                ><FolderTree /> Tree</TabsTrigger
-              >
-              <TabsTrigger
-                value="smart"
-                class="h-6 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
-                ><Sparkles /> Smart filters</TabsTrigger
-              >
-            </TabsList>
           </div>
           <TabsContent value="tree" class="min-h-0 flex-1">
             <FileTree
@@ -561,7 +653,7 @@ watch(
           </TabsContent>
         </Tabs>
         <div
-          v-if="sidebar === 'tree'"
+          v-if="sidebar === 'tree' && !(collapsed && !compact)"
           class="flex items-center gap-1.5 border-t px-3.5 py-2 text-[11px] text-muted-foreground tabular-nums"
           :title="`${filter.progress.value.done} of ${filter.progress.value.total} files viewed`"
         >

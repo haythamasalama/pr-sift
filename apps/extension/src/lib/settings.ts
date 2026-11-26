@@ -20,6 +20,7 @@ export const DEFAULTS: Settings = {
   removedCoAuthors: DEFAULT_REMOVED_CO_AUTHORS,
   keptCoAuthors: [],
   showResolved: false,
+  sidebarCollapsed: false,
   assistant: 'claude-code',
 }
 
