@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import NotesDialog from '../../../src/features/notes/NotesDialog.vue'
 import { portalTargetKey } from '../../../src/lib/portal'
 import type { Note } from '../../../src/lib/types'
-import { PR } from '@pr-sift/core/testing'
+import { PR, file } from '@pr-sift/core/testing'
 import { installChrome } from '../../helpers/chrome'
 
 const note: Note = { id: 'n1', file: 'a.php', side: 'new', line: 3, lineText: '', quote: '', text: 'old text', createdAt: 0 }
@@ -67,6 +67,19 @@ describe('NotesDialog', () => {
     })
   })
 
+  it('shows every line of a range note, not only the last one', async () => {
+    installChrome()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const patch = '@@ -1,3 +1,4 @@\n function a() {\n+  return b()\n+    + c()\n }'
+    mount(NotesDialog, {
+      props: { pr: PR, title: 'T', notes: [{ ...note, startLine: 1, line: 4, lineText: '}' }], files: [file('a.php', { patch })] },
+      global: { provide: { [portalTargetKey as symbol]: shallowRef(target) } },
+      attachTo: document.body,
+    })
+    await vi.waitFor(() => expect(document.querySelector('code')?.textContent).toBe('function a() {\n  return b()\n    + c()\n}'))
+  })
+
   it('says what the resolved switch does once it is on', async () => {
     installChrome()
     const target = document.createElement('div')
@@ -92,6 +105,6 @@ describe('NotesDialog', () => {
     })
     await vi.waitFor(() => expect(document.querySelector('#show-resolved')).not.toBeNull())
     expect(document.querySelector('#show-resolved')!.hasAttribute('disabled')).toBe(true)
-    expect(document.body.textContent).toContain('none yet')
+    expect(document.body.textContent).toContain('No resolved notes yet')
   })
 })

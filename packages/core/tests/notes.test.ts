@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anchorOf, buildReviewPrompt, githubLineUrl } from '../src/notes'
+import { anchorOf, buildReviewPrompt, githubLineUrl, noteCode } from '../src/notes'
 import { parsePatch } from '../src/diff'
 import type { Note } from '../src/types'
 import { PR, file } from '../src/testing'
@@ -106,6 +106,23 @@ describe('multi-line notes', () => {
 
   it('links to the range on GitHub', async () => {
     expect(await githubLineUrl(PR, { file: 'src/a.php', side: 'new', line: 4, startLine: 2 })).toMatch(/R2-R4$/)
+  })
+})
+
+describe('noteCode', () => {
+  const patch = '@@ -1,5 +1,6 @@\n   if (a) {\n-    old()\n+    one()\n+    two()\n   }\n x'
+
+  it('gives every line of a range on the note side, without the common indent', () => {
+    expect(noteCode(patch, note({ startLine: 1, line: 4, lineText: '  }' }))).toBe('if (a) {\n  one()\n  two()\n}')
+  })
+
+  it('gives the removed lines for a note on removed code', () => {
+    expect(noteCode(patch, note({ side: 'old', startLine: 1, line: 3, lineText: '  }' }))).toBe('if (a) {\n  old()\n}')
+  })
+
+  it('gives the saved line for a one-line note or when the diff is missing', () => {
+    expect(noteCode(patch, note({ line: 2, lineText: '    one()' }))).toBe('one()')
+    expect(noteCode(undefined, note({ startLine: 1, line: 4, lineText: '  }' }))).toBe('}')
   })
 })
 
