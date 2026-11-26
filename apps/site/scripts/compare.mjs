@@ -202,7 +202,7 @@ export const compare = [
     description:
       'Octotree adds an IDE-like code tree to GitHub, with a pull request tree in its paid plan. PR Sift is free and built only for reviews.',
     values: {
-      price: ['partial', 'PR tree needs Pro, $35 a year'],
+      price: ['partial', 'PR tree needs Pro, $35 a year', 'Pro $35/yr'],
       openSource: ['unknown', 'Not listed'],
       extension: ['unknown', 'Search by name'],
       status: ['partial', 'Lines added and removed per file'],
@@ -250,7 +250,7 @@ export const compare = [
     description:
       'File Tree Filter for GitHub filters GitHub’s tree with one pattern at a time, for a one-time fee. PR Sift combines filters and adds progress and notes, for free.',
     values: {
-      price: ['partial', '$4.99 once'],
+      price: ['partial', '$4.99 once', '$4.99'],
       openSource: ['unknown', 'Not listed'],
       extension: ['yes', 'Yes'],
       status: ['unknown', 'Not listed'],

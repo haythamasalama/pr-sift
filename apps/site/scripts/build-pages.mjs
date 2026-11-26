@@ -138,7 +138,7 @@ const browsers = (cls = '') =>
   </ul>`
 
 const NAV = [
-  ['Notes', '#notes'],
+  ['Notes', '#ai'],
   ['Features', '#features'],
   ['Guides', 'guides/'],
   ['Compare', 'compare/'],
@@ -197,7 +197,7 @@ function footer() {
         <a href="${link('changelog/')}" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted hover:border-ink hover:text-ink" title="What’s new">v${VERSION}</a>
       </div>
       ${column('Product', [
-        ['Private notes', link() + '#notes'],
+        ['Private notes', link() + '#ai'],
         ['Features', link() + '#features'],
         ['Changelog', link('changelog/')],
       ])}
@@ -325,7 +325,7 @@ const appLd = {
   screenshot: ['review', 'merge', 'comments', 'filters', 'notes', 'ai-export', 'split'].map(
     (n) => SITE_URL + `media/screenshots/${n}.webp`,
   ),
-  featureList: [home.notesStory.title, home.merge.title, ...home.features.map((f) => f.title)],
+  featureList: [home.ai.title, home.merge.title, ...home.features.map((f) => f.title)],
   author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
 }
 
@@ -348,6 +348,9 @@ const STATE = {
   no: ['x', 'text-del', 'No'],
   unknown: ['minus', 'text-muted', 'Not listed'],
 }
+// Price reads better as words than as a tick, so the table says Free, Included or the amount.
+const priceCell = (value, ours) =>
+  `<span class="inline-flex items-center gap-1.5 whitespace-nowrap ${STATE[value[0]][1]}" title="${esc(value[1])}">${icon(STATE[value[0]][0], 'size-4')}<span class="${ours ? 'font-semibold text-ink' : 'text-ink'}">${esc(value[2] ?? value[1])}</span></span>`
 const stateIcon = ([state, note], cls = 'size-4') =>
   `<span class="inline-flex ${STATE[state][1]}" title="${esc(note)}">${icon(STATE[state][0], cls)}<span class="sr-only">${esc(STATE[state][2])}: ${esc(note)}</span></span>`
 const score = (values) => FEATURES.reduce((sum, [key]) => sum + (values[key][0] === 'yes' ? 1 : values[key][0] === 'partial' ? 0.5 : 0), 0)
@@ -363,7 +366,7 @@ function matrix() {
         )
         .join('')}</tr></thead>
       <tbody class="divide-y divide-line">
-        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c) => `<td class="px-3 py-2.5 text-center">${stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
+        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c, i) => `<td class="px-3 py-2.5 text-center">${key === 'price' ? priceCell(c.values[key], i === 0) : stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
       </tbody>
     </table>
   </div>
@@ -403,7 +406,7 @@ function homePage() {
       ${installButton()}
     </div>`
 
-  const FEATURE_SPAN = { views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
+  const FEATURE_SPAN = { views: 'md:col-span-2', merge: 'lg:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
   const featureCard = (f) => `
         <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
           <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
@@ -419,28 +422,11 @@ function homePage() {
         <span class="shrink-0">${installButton('md')}</span>
       </div>
       <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        ${h.features
-          .filter((f) => f.id !== 'notes')
-          .map(featureCard)
-          .join('')}
+        ${h.features.map(featureCard).join('')}
       </div>`,
   ]
 
   const sections = [
-    [
-      'notes',
-      `<div class="grid gap-12 lg:grid-cols-12 lg:items-end">
-        <div class="lg:col-span-5">
-          ${iconBox('lock')}
-          ${h2(h.notesStory.title, 'mt-5')}
-          ${lead(h.notesStory.lead)}
-          <ul class="mt-8 flex flex-col gap-6">
-            ${h.notesStory.cases.map(([ic, title, text]) => `<li class="flex gap-4">${iconBox(ic)}<span><span class="block font-medium">${esc(title)}</span><span class="mt-1 block leading-relaxed text-muted">${esc(text)}</span></span></li>`).join('\n            ')}
-          </ul>
-        </div>
-        <div class="lg:col-span-7">${video('notes', 'Writing a private note on several lines')}</div>
-      </div>`,
-    ],
     [
       'ai',
       `<div class="max-w-3xl">${iconBox('bot')}${h2(h.ai.title, 'mt-5')}${lead(h.ai.lead)}</div>
