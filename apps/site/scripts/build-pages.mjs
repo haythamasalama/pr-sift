@@ -348,9 +348,6 @@ const STATE = {
   no: ['x', 'text-del', 'No'],
   unknown: ['minus', 'text-muted', 'Not listed'],
 }
-// Price reads better as words than as a tick, so the table says Free, Included or the amount.
-const priceCell = (value, ours) =>
-  `<span class="inline-flex items-center gap-1.5 whitespace-nowrap ${STATE[value[0]][1]}" title="${esc(value[1])}">${icon(STATE[value[0]][0], 'size-4')}<span class="${ours ? 'font-semibold text-ink' : 'text-ink'}">${esc(value[2] ?? value[1])}</span></span>`
 const stateIcon = ([state, note], cls = 'size-4') =>
   `<span class="inline-flex ${STATE[state][1]}" title="${esc(note)}">${icon(STATE[state][0], cls)}<span class="sr-only">${esc(STATE[state][2])}: ${esc(note)}</span></span>`
 const score = (values) => FEATURES.reduce((sum, [key]) => sum + (values[key][0] === 'yes' ? 1 : values[key][0] === 'partial' ? 0.5 : 0), 0)
@@ -366,7 +363,7 @@ function matrix() {
         )
         .join('')}</tr></thead>
       <tbody class="divide-y divide-line">
-        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c, i) => `<td class="px-3 py-2.5 text-center">${key === 'price' ? priceCell(c.values[key], i === 0) : stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
+        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c) => `<td class="px-3 py-2.5 text-center">${stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
       </tbody>
     </table>
   </div>
