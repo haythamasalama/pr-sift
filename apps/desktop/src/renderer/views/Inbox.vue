@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, shallowRef } from 'vue'
 import { CircleAlert, RefreshCw } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,9 @@ import { isStale } from '~/useLive'
 import CountBadge from '~/components/CountBadge.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import PullTable from '~/components/PullTable.vue'
+import PullFilterMenu from '~/components/PullFilterMenu.vue'
+import PullViewMenu from '~/components/PullViewMenu.vue'
+import { NO_FILTERS, matchesFilters, type PullFilters } from '~/pulls/filters'
 import SectionLabel from '~/components/SectionLabel.vue'
 
 const { status } = useAuth()
@@ -21,8 +24,11 @@ const me = computed(() => status.value?.account?.login)
 const needsYou = (p: { decision?: string | null; checks?: string; mergeable?: string }) =>
   p.decision === 'CHANGES_REQUESTED' || p.checks === 'FAILURE' || p.checks === 'ERROR' || p.mergeable === 'CONFLICTING'
 // Those come first, so what needs you is at the top of the card.
+const filters = shallowRef<PullFilters>({ ...NO_FILTERS })
+const everything = computed(() => [...(inbox.value?.review ?? []), ...(inbox.value?.mine ?? [])])
+const review = computed(() => (inbox.value?.review ?? []).filter((p) => matchesFilters(p, filters.value)))
 const mine = computed(() => {
-  const list = inbox.value?.mine ?? []
+  const list = (inbox.value?.mine ?? []).filter((p) => matchesFilters(p, filters.value))
   return [...list.filter(needsYou), ...list.filter((p) => !needsYou(p))]
 })
 const summary = computed(() => {
@@ -58,11 +64,16 @@ onMounted(() => {
 
     <template v-if="inbox">
       <p v-if="!inbox.review.length && !inbox.mine.length" class="text-muted-foreground">You’re all caught up.</p>
-      <section v-if="inbox.review.length" class="flex flex-col gap-2">
+      <div v-else class="-mb-3 flex flex-wrap items-center gap-2">
+        <PullFilterMenu v-model="filters" :pulls="everything" />
+        <span class="ml-auto"><PullViewMenu /></span>
+      </div>
+      <p v-if="everything.length && !review.length && !mine.length" class="text-muted-foreground">No pull requests match.</p>
+      <section v-if="review.length" class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
-          <SectionLabel>Waiting for your review</SectionLabel><CountBadge>{{ inbox.review.length }}</CountBadge>
+          <SectionLabel>Waiting for your review</SectionLabel><CountBadge>{{ review.length }}</CountBadge>
         </div>
-        <PullTable :groups="[{ title: 'Waiting for your review', pulls: inbox.review }]" show-repo :me="me" @changed="load" />
+        <PullTable :groups="[{ title: 'Waiting for your review', pulls: review }]" show-repo :me="me" @changed="load" />
       </section>
       <section v-if="mine.length" class="flex flex-col gap-2">
         <div class="flex items-center gap-2">

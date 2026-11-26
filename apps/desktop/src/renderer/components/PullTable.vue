@@ -2,11 +2,14 @@
 import type { PullItem } from '~/github'
 import { openReview } from '~/navigation'
 import PullRow from './PullRow.vue'
+import Hint from './Hint.vue'
+import { usePullView } from '~/pulls/view'
 
 // Groups of pull requests in one quiet card. With `columns`, the first group's header names the columns;
 // later groups get a muted band. Without it the card has no header, for pages that title each card themselves.
 defineProps<{ groups: { title: string; pulls: PullItem[] }[]; showRepo?: boolean; me?: string; mine?: boolean; columns?: boolean }>()
 const emit = defineEmits<{ changed: [] }>()
+const { shown } = usePullView()
 </script>
 
 <template>
@@ -19,8 +22,8 @@ const emit = defineEmits<{ changed: [] }>()
       >
         <span class="flex-1">{{ g.title }} · {{ g.pulls.length }}</span>
         <template v-if="!i"
-          ><span class="w-[calc(18ch+1.5rem)] text-xs @max-3xl:hidden"><span class="text-[11px]">Review</span></span
-          ><span class="w-20 @max-3xl:hidden @max-4xl:invisible @max-4xl:w-4">CI</span
+          ><span v-if="shown.review" class="w-[calc(18ch+1.5rem)] text-xs @max-3xl:hidden"><span class="text-[11px]">Review</span></span
+          ><Hint v-if="shown.ci" text="Checks (CI)"><span class="w-6 text-center @max-3xl:hidden">CI</span></Hint
           ><span class="w-[256px] @max-3xl:hidden @5xl:w-[332px]" aria-hidden="true"
         /></template>
       </div>

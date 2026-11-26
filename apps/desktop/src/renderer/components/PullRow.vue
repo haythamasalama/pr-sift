@@ -9,10 +9,12 @@ import Hint from './Hint.vue'
 import ProjectIcon from './ProjectIcon.vue'
 import StatusPill, { type Tone } from './StatusPill.vue'
 import QuickActions from './QuickActions.vue'
+import { usePullView } from '~/pulls/view'
 
 // `mine` rows are your own pull requests: the pill says what they need from you instead of the review state.
 const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string; mine?: boolean }>()
 const emit = defineEmits<{ open: []; changed: [] }>()
+const { shown } = usePullView()
 
 type State = { text: string; tone: Tone; hint: string }
 const DECISION: Record<string, State> = {
@@ -25,11 +27,11 @@ const DECISION: Record<string, State> = {
   },
 }
 const CI: Record<string, State> = {
-  SUCCESS: { text: 'Passed', tone: 'success', hint: 'CI: all checks passed' },
-  FAILURE: { text: 'Failed', tone: 'danger', hint: 'CI: some checks failed' },
-  ERROR: { text: 'Failed', tone: 'danger', hint: 'CI: some checks could not run' },
-  PENDING: { text: 'Running', tone: 'attention', hint: 'CI: checks are still running' },
-  EXPECTED: { text: 'Waiting', tone: 'attention', hint: 'CI: checks have not started yet' },
+  SUCCESS: { text: 'Passed', tone: 'success', hint: 'Checks passed' },
+  FAILURE: { text: 'Failed', tone: 'danger', hint: 'Checks failed' },
+  ERROR: { text: 'Failed', tone: 'danger', hint: 'Checks failed: some could not run' },
+  PENDING: { text: 'Running', tone: 'attention', hint: 'Checks are running' },
+  EXPECTED: { text: 'Waiting', tone: 'attention', hint: 'Checks have not started yet' },
 }
 
 const review = computed<State | undefined>(() => {
@@ -58,7 +60,7 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
             ><ProjectIcon :project="repoProject" :size="16" /><span class="shrink-0 text-muted-foreground">{{ pull.repo }}</span></template
           >
           <span class="truncate text-sm font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
-          <LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-4xl:hidden" />
+          <template v-if="shown.labels"><LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-3xl:hidden" /></template>
           <Hint
             v-if="pull.mergeable === 'CONFLICTING' && !mine"
             text="It conflicts with the base branch. The author has to fix that first."
@@ -68,7 +70,11 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
         </div>
         <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap text-muted-foreground">
           <span class="shrink-0 tabular-nums">#{{ pull.number }}</span>
-          <span v-if="!mine" class="flex shrink-0 items-center gap-1.5">
+          <!-- In a narrow list the review status moves here, so the title keeps its room. -->
+          <Hint v-if="shown.review && review" :text="review.hint">
+            <StatusPill :tone="review.tone" class="hidden h-4 px-1.5 text-[11px] @max-3xl:inline-flex">{{ review.text }}</StatusPill>
+          </Hint>
+          <span v-if="!mine && shown.author" class="flex shrink-0 items-center gap-1.5">
             <Avatar class="size-4"
               ><AvatarImage v-if="pull.author?.avatarUrl" :src="pull.author.avatarUrl" alt="" /><AvatarFallback
                 class="text-[9px] uppercase"
@@ -76,26 +82,29 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
               ></Avatar
             >{{ pull.author?.login ?? 'ghost' }}
           </span>
-          <span class="truncate font-mono text-[11px] @max-3xl:hidden" :title="`${pull.branch} into ${pull.base}`">{{ pull.branch }}</span>
+          <span v-if="shown.branch" class="truncate font-mono text-[11px] @max-3xl:hidden" :title="`${pull.branch} into ${pull.base}`">{{
+            pull.branch
+          }}</span>
           <span class="shrink-0">{{ formatAgo(pull.updatedAt) }}</span>
-          <span class="shrink-0 tabular-nums"
+          <span v-if="shown.size" class="shrink-0 tabular-nums"
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
 
-          <span v-if="pull.comments" class="flex shrink-0 items-center gap-1 @max-4xl:hidden"
+          <span v-if="pull.comments && shown.comments" class="flex shrink-0 items-center gap-1"
             ><MessageSquare class="size-3.5" />{{ pull.comments }}</span
           >
         </div>
       </div>
-      <span class="flex w-[calc(18ch+1.5rem)] shrink-0 text-xs @max-xl:w-auto" :class="mine ? 'justify-end' : ''">
+      <span v-if="shown.review" class="flex w-[calc(18ch+1.5rem)] shrink-0 text-xs @max-3xl:hidden" :class="mine ? 'justify-end' : ''">
         <Hint v-if="review" :text="review.hint">
           <StatusPill :tone="review.tone">{{ review.text }}</StatusPill>
         </Hint>
       </span>
-      <span class="w-20 shrink-0 @max-4xl:w-4">
+      <!-- Checks are a dot; the word is in the hint. -->
+      <span v-if="shown.ci" class="flex w-6 shrink-0 justify-center">
         <Hint v-if="ci" :text="ci.hint">
-          <StatusPill :tone="ci.tone" bare
-            ><span class="@max-4xl:hidden">{{ ci.text }}</span></StatusPill
+          <StatusPill :tone="ci.tone" bare :aria-label="ci.hint" class="gap-0"
+            ><span class="sr-only">{{ ci.text }}</span></StatusPill
           >
         </Hint>
       </span>
