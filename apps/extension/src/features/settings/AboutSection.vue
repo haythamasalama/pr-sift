@@ -41,9 +41,9 @@ function checkForUpdates() {
       </div>
 
       <div class="flex flex-wrap items-center gap-3.5">
-        <BrandLogo class="size-11 shrink-0" />
+        <BrandLogo class="size-9 shrink-0" />
         <div class="flex min-w-40 flex-1 flex-col gap-0.5">
-          <h3 class="text-base leading-5 font-semibold">PR Sift</h3>
+          <h3 class="text-sm leading-5 font-semibold">PR Sift</h3>
           <p class="text-xs text-muted-foreground" aria-live="polite">
             Version {{ version }} · {{ status || 'Chrome updates it on its own.' }}
             <template v-if="ready"> Reload open GitHub tabs afterwards.</template>
