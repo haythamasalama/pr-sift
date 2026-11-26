@@ -55,6 +55,8 @@ const mine = computed(() => (verdict.value === undefined ? (conversation?.review
 const reviewBlocked = computed(() =>
   isAuthor.value ? "You can't approve your own pull request" : info?.state === 'draft' ? "Drafts can't be approved" : '',
 )
+// GitHub lets the author comment on their own pull request, but not approve it or request changes.
+const changesBlocked = computed(() => (isAuthor.value ? "You can't request changes on your own pull request" : ''))
 const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
 const current = computed(() => METHODS.find((m) => m.value === method.value) ?? METHODS[0]!)
 const readiness = computed(() => READINESS[conversation?.readiness ?? 'unknown'])
@@ -81,7 +83,15 @@ function onReviewed(event: ReviewEvent) {
 
 <template>
   <template v-if="open">
-    <ReviewPopover :pr="pr" :head-sha="headSha" :can-act="canAct" :mine="mine" :blocked="reviewBlocked" @reviewed="onReviewed" />
+    <ReviewPopover
+      :pr="pr"
+      :head-sha="headSha"
+      :can-act="canAct"
+      :mine="mine"
+      :blocked="reviewBlocked"
+      :changes-blocked="changesBlocked"
+      @reviewed="onReviewed"
+    />
     <div
       class="flex shrink-0"
       :class="mergeBlocked ? 'cursor-not-allowed' : ''"

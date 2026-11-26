@@ -19,6 +19,7 @@ const {
   canAct,
   mine,
   blocked = '',
+  changesBlocked = '',
 } = defineProps<{
   pr: PrRef
   headSha: string
@@ -26,6 +27,8 @@ const {
   mine: ReviewVerdict | null
   // Why this person can't review, such as their own pull request. The button stays, disabled, with this as its tooltip.
   blocked?: string
+  // Why Request changes isn't possible, such as on your own pull request. Comment always stays available.
+  changesBlocked?: string
 }>()
 const emit = defineEmits<{ reviewed: [event: ReviewEvent] }>()
 
@@ -48,11 +51,16 @@ const comment = shallowRef('')
 const busy = shallowRef(false)
 const error = shallowRef('')
 
+const reasonFor = (value: ReviewEvent) => (value === 'APPROVE' ? blocked : value === 'REQUEST_CHANGES' ? changesBlocked : '')
+const firstAllowed = () => EVENTS.find((e) => !reasonFor(e.value))?.value ?? 'COMMENT'
+
 const needsComment = computed(() => event.value !== 'APPROVE' && !comment.value.trim())
 const current = computed(() => EVENTS.find((e) => e.value === event.value)!)
 
 watch(open, (value) => {
-  if (value) error.value = ''
+  if (!value) return
+  error.value = ''
+  if (reasonFor(event.value)) event.value = firstAllowed()
 })
 
 async function approveNow() {
@@ -66,7 +74,7 @@ async function approveNow() {
 }
 
 async function submit() {
-  if (!canAct || busy.value || needsComment.value) return
+  if (!canAct || busy.value || needsComment.value || reasonFor(event.value)) return
   busy.value = true
   error.value = ''
   try {
@@ -102,21 +110,24 @@ async function submit() {
         <FileDiff /><span class="hidden sm:inline">Changes requested</span>
       </Button>
     </PopoverTrigger>
-    <span v-if="blocked" class="flex shrink-0 cursor-not-allowed" :title="blocked" tabindex="0" :aria-label="`Approve: ${blocked}`">
-      <Button variant="success" class="rounded-r-none border-r-0 px-3 text-[13px]" disabled>
-        <Check /><span class="hidden sm:inline">Approve</span>
-      </Button>
-      <Button
-        variant="success"
-        size="icon"
-        class="w-7 rounded-l-none border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
-        disabled
-        aria-hidden="true"
-        tabindex="-1"
-      >
-        <ChevronDown />
-      </Button>
-    </span>
+    <div v-if="blocked" class="flex shrink-0">
+      <span class="flex cursor-not-allowed" :title="blocked" tabindex="0" :aria-label="`Approve: ${blocked}`">
+        <Button variant="success" class="rounded-r-none border-r-0 px-3 text-[13px]" disabled>
+          <Check /><span class="hidden sm:inline">Approve</span>
+        </Button>
+      </span>
+      <PopoverTrigger as-child>
+        <Button
+          variant="success"
+          size="icon"
+          class="w-7 rounded-l-none border-l-0 shadow-[inset_1px_0_0_color-mix(in_oklab,var(--success-foreground)_30%,var(--success))] [&_svg:not([class*=size-])]:size-3.5"
+          :aria-label="changesBlocked ? 'Comment on this pull request' : 'Request changes or comment'"
+          :title="changesBlocked ? 'Comment on this pull request' : 'Request changes or comment'"
+        >
+          <ChevronDown />
+        </Button>
+      </PopoverTrigger>
+    </div>
     <div v-else-if="!mine" class="flex shrink-0">
       <Button
         variant="success"
@@ -161,14 +172,18 @@ async function submit() {
             v-for="e in EVENTS"
             :key="e.value"
             :for="`review-${e.value}`"
-            class="flex w-full cursor-pointer items-start gap-2.5 border-b px-2.5 py-2 font-normal last:border-b-0 hover:bg-muted/50 has-data-[state=checked]:bg-muted"
+            class="flex w-full items-start gap-2.5 border-b px-2.5 py-2 font-normal last:border-b-0"
+            :class="
+              reasonFor(e.value) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-muted/50 has-data-[state=checked]:bg-muted'
+            "
+            :title="reasonFor(e.value) || undefined"
           >
-            <RadioGroupItem :id="`review-${e.value}`" :value="e.value" class="mt-px" />
+            <RadioGroupItem :id="`review-${e.value}`" :value="e.value" :disabled="!!reasonFor(e.value)" class="mt-px" />
             <span class="flex min-w-0 flex-col gap-0.5">
               <span class="flex items-center gap-1.5 text-xs font-medium">
                 <component :is="e.icon" class="size-3.5" :class="e.tone" />{{ e.label }}
               </span>
-              <span class="text-[11px] leading-snug text-muted-foreground">{{ e.hint }}</span>
+              <span class="text-[11px] leading-snug text-muted-foreground">{{ reasonFor(e.value) || e.hint }}</span>
             </span>
           </FieldLabel>
         </RadioGroup>
@@ -179,7 +194,12 @@ async function submit() {
         <div class="flex items-center justify-end gap-2">
           <span class="mr-auto text-[11px] text-muted-foreground">Ctrl/⌘ + Enter</span>
           <Button variant="outline" size="sm" @click="open = false">Cancel</Button>
-          <Button :variant="event === 'APPROVE' ? 'success' : 'default'" size="sm" :disabled="busy || needsComment" @click="submit">
+          <Button
+            :variant="event === 'APPROVE' ? 'success' : 'default'"
+            size="sm"
+            :disabled="busy || needsComment || !!reasonFor(event)"
+            @click="submit"
+          >
             <Spinner v-if="busy" />
             <component :is="current.icon" v-else />
             {{ current.label }}
