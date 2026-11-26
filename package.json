@@ -1,7 +1,7 @@
 {
   "name": "pr-sift-workspace",
   "private": true,
-  "version": "1.5.1",
+  "version": "1.5.2",
   "type": "module",
   "description": "Review big GitHub pull requests: filter files, track what you read, send private notes to your AI and merge without AI co-authors.",
   "author": "Haytham A. Salama (https://haythamasalama.me/)",
