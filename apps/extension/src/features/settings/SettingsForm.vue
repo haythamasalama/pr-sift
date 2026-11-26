@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { ChevronRight, CircleCheck, Eye, FolderTree, Palette, RotateCcw } from '@lucide/vue'
+import { computed, nextTick, type Component, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
+import { ChevronRight, CircleCheck, Eye, FolderTree, Monitor, Moon, Palette, RotateCcw, Sun } from '@lucide/vue'
 import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
@@ -9,10 +9,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { codeFor, THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
 import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
@@ -22,10 +23,9 @@ import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsGroup from './SettingsGroup.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
-import CodePreview from './CodePreview.vue'
+import AppearancePreview from './AppearancePreview.vue'
 import CodeThemeSelect from './CodeThemeSelect.vue'
-import StylePreview from './StylePreview.vue'
-import ThemePreview from './ThemePreview.vue'
+import ThemeSwatches from './ThemeSwatches.vue'
 import TreePreview from './TreePreview.vue'
 import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
 import { useSettingsState } from './useSettingsState'
@@ -38,11 +38,17 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed' },
 ]
 
-const THEMES: { value: ThemeMode; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const THEMES: { value: ThemeMode; label: string; icon: Component }[] = [
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
 ]
+
+const MODE_HINTS: Record<ThemeMode, string> = {
+  system: 'Follows your computer.',
+  light: 'Always light.',
+  dark: 'Always dark.',
+}
 
 const DIFF_VIEWS: { value: DiffMode; label: string; hint: string }[] = [
   { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column' },
@@ -62,6 +68,7 @@ const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.i
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
 const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark } = useAppearance()
+const themeHint = computed(() => THEME_STYLES.find((t) => t.value === themeStyle.value)?.hint ?? '')
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
@@ -302,70 +309,74 @@ defineExpose({ scrollToSection })
       v-show="shows('appearance')"
       id="appearance"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Appearance"
       description="Applies right away, here and in the review."
       area="all"
     >
-      <template #icon><ThemePreview mode="system" :theme-style="themeStyle" small /></template>
-      <div class="py-3">
-        <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Mode" @update:model-value="setTheme">
-          <template #preview="{ value }"><ThemePreview :mode="value" :theme-style="themeStyle" /></template>
-        </ChoiceCards>
-      </div>
-      <SettingsGroup id="style" title="Theme" description="Colours, corners and font for all of PR Sift.">
-        <ChoiceCards
-          :model-value="themeStyle"
-          :options="THEME_STYLES"
-          name="settings-style"
-          label="Theme style"
-          min-width="7rem"
-          @update:model-value="setThemeStyle"
+      <div class="pb-5" :class="layout === 'page' ? 'pt-4' : ''"><AppearancePreview /></div>
+      <SettingsRow label="Mode" :description="MODE_HINTS[theme]">
+        <ToggleGroup
+          type="single"
+          size="sm"
+          :model-value="theme"
+          aria-label="Mode"
+          class="gap-0.5 rounded-lg border bg-muted p-0.5"
+          @update:model-value="(v) => v && setTheme(v as ThemeMode)"
         >
-          <template #preview="{ value }"><StylePreview :theme-style="value" :dark="dark" /></template>
-        </ChoiceCards>
-      </SettingsGroup>
-      <SettingsGroup
-        id="code-colors"
-        title="Code colors"
-        description="How code is coloured in the diff. Each one has a light and a dark version."
+          <ToggleGroupItem
+            v-for="m in THEMES"
+            :id="`settings-theme-${m.value}`"
+            :key="m.value"
+            :value="m.value"
+            class="data-[state=on]:bg-background data-[state=on]:shadow-xs data-[state=on]:ring-1 data-[state=on]:ring-border"
+          >
+            <component :is="m.icon" />{{ m.label }}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </SettingsRow>
+      <SettingsRow id="settings-section-style" data-section="style" label="Theme" :description="themeHint">
+        <ThemeSwatches :model-value="themeStyle" :dark="dark" @update:model-value="setThemeStyle" />
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-code-colors"
+        data-section="code-colors"
+        label="Code colors"
+        description="How code is coloured in the diff."
       >
-        <CodeThemeSelect :model-value="codeTheme" @update:model-value="setCodeTheme" />
-        <div class="grid gap-2 sm:grid-cols-2">
-          <CodePreview :code="codeFor(codeTheme, false)" :dark="false" :theme-style="themeStyle" />
-          <CodePreview :code="codeFor(codeTheme, true)" :dark="true" :theme-style="themeStyle" />
-        </div>
-      </SettingsGroup>
-      <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">
-        <div class="rounded-lg border p-1.5">
-          <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
-        </div>
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div class="flex min-w-48 flex-1 items-center gap-3">
-            <Slider
-              :model-value="[treeIndent]"
-              :min="0"
-              :max="24"
-              :step="2"
-              aria-label="Folder indentation"
-              @update:model-value="(v) => v && (treeIndent = v[0]!)"
-              @value-commit="(v) => update('treeIndent', v[0]!)"
-            />
-            <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+        <CodeThemeSelect :model-value="codeTheme" :dark="dark" @update:model-value="setCodeTheme" />
+      </SettingsRow>
+      <div id="settings-section-tree" data-section="tree" class="flex flex-col gap-3 py-3">
+        <SettingsRow label="Folder indentation" description="How far each folder is pushed in." class="py-0">
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex w-48 items-center gap-2">
+              <Slider
+                :model-value="[treeIndent]"
+                :min="0"
+                :max="24"
+                :step="2"
+                aria-label="Folder indentation"
+                @update:model-value="(v) => v && (treeIndent = v[0]!)"
+                @value-commit="(v) => update('treeIndent', v[0]!)"
+              />
+              <span class="w-10 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <Switch
+                id="settings-tree-guides"
+                size="sm"
+                :model-value="settings.treeGuides"
+                @update:model-value="(v) => update('treeGuides', v)"
+              />
+              <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <Switch
-              id="settings-tree-guides"
-              size="sm"
-              :model-value="settings.treeGuides"
-              @update:model-value="(v) => update('treeGuides', v)"
-            />
-            <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
-          </div>
-        </div>
-      </SettingsGroup>
+        </SettingsRow>
+        <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
+      </div>
     </SettingsSection>
 
-    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : '-mt-6 border-t'">
+    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : 'border-t'">
       <SettingsRow label="Reset settings">
         <template #description>
           <span aria-live="polite" class="inline-flex items-center gap-1.5">

@@ -40,10 +40,12 @@
   --color-add-fg: var(--add-fg);
   --color-del-fg: var(--del-fg);
   --color-hunk: var(--hunk);
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-logo-tile: var(--logo-tile);
+  --color-logo-mark: var(--logo-mark);
+  --radius-sm: calc(var(--radius) - var(--radius-step, 2px));
+  --radius-md: calc(var(--radius) - var(--radius-step, 2px));
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + var(--radius-step, 2px));
   --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--app-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   --font-heading: var(--font-sans);
