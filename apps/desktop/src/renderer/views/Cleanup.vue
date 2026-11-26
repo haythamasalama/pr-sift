@@ -93,7 +93,7 @@ const ghUrl = (p: Project, branch: string) =>
   p.github ? `https://github.com/${p.github.owner}/${p.github.repo}/tree/${branch.split('/').map(encodeURIComponent).join('/')}` : undefined
 
 function branchReason(b: Branch): Why | null {
-  if (b.current || b.worktree) return null
+  if (b.current || b.worktree || b.protected) return null
   if (b.merged) return 'merged'
   if (b.gone) return 'gone'
   // An old branch is only offered when GitHub has every commit, so deleting the local copy loses nothing.

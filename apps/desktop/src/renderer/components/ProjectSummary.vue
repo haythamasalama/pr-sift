@@ -10,7 +10,6 @@ defineProps<{ overview?: ProjectOverview | null; info?: RepoInfo }>()
 
 <template>
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="About this project">
-    <span v-if="overview?.packageManager">{{ overview.packageManager }}</span>
     <span v-if="info?.private">Private</span>
     <span v-if="info && info.stars">{{ info.stars }} stars</span>
     <span v-if="info?.license">{{ info.license }}</span>

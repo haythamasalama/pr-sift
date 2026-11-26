@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseGithubRemote, pickGithubRemote } from '../../src/main/projects/remote'
-import { parseBranches, parseTrack, validBranchName } from '../../src/main/projects/branches'
+import { isProtectedBranch, parseBranches, parseTrack, protectedFirst, validBranchName } from '../../src/main/projects/branches'
 import { parseStatus } from '../../src/main/worktrees/service'
 
 describe('parseGithubRemote', () => {
@@ -57,6 +57,21 @@ describe('branches', () => {
     expect(list[1]).toMatchObject({ author: 'Sam', mine: false })
   })
 
+  it('treats main lines and the default branch as protected', () => {
+    for (const name of ['main', 'master', 'develop', 'Dev', 'production', 'trunk']) expect(isProtectedBranch(name)).toBe(true)
+    for (const name of ['feat/x', 'main-old', 'fix/main']) expect(isProtectedBranch(name)).toBe(false)
+    expect(isProtectedBranch('trunk2', 'origin/trunk2')).toBe(true)
+  })
+
+  it('lists the default branch first, then the other main lines, then the rest in order', () => {
+    const S = '\u001f'
+    const names = ['feat/a', 'develop', 'master', 'fix/b', 'main', 'live']
+    const out = names.map((n) => [n, ' ', '', '', '1700000000', 's', ''].join(S)).join('\n')
+    const list = protectedFirst(parseBranches(out, new Set(), '', 'origin/live'), 'origin/live')
+    expect(list.map((b) => b.name)).toEqual(['live', 'main', 'master', 'develop', 'feat/a', 'fix/b'])
+    expect(list.filter((b) => b.protected).map((b) => b.name)).toEqual(['live', 'main', 'master', 'develop'])
+  })
+
   it('validates branch names', () => {
     for (const ok of ['main', 'fix/login', 'feat/a-b_c.1']) expect(validBranchName(ok)).toBe(true)
     for (const bad of ['-x', 'a..b', 'a b', 'a~1', 'a:b', 'x.lock', 'end/', 'end.', '']) expect(validBranchName(bad)).toBe(false)
@@ -90,6 +105,18 @@ describe('listBranches', async () => {
     expect((await deleteBranch(repo, 'wip', false)).ok).toBe(false)
     expect((await deleteBranch(repo, 'wip', true)).ok).toBe(true)
     expect((await deleteBranch(repo, '--all', true)).ok).toBe(false)
+  })
+
+  it('never deletes a main branch, even when forced', async () => {
+    const repo = makeRepo(tempDir('br-'), 'app')
+    sh(repo, 'branch', 'develop')
+    sh(repo, 'switch', '-q', '-c', 'feat/x')
+    const list = await listBranches(repo)
+    expect(list.slice(0, 2).map((b) => b.name)).toEqual(['main', 'develop'])
+    expect(list.find((b) => b.name === 'feat/x')?.protected).toBe(false)
+    const result = await deleteBranch(repo, 'develop', true)
+    expect(result).toMatchObject({ ok: false })
+    expect((await listBranches(repo)).some((b) => b.name === 'develop')).toBe(true)
   })
 })
 

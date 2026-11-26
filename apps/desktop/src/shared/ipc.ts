@@ -133,6 +133,8 @@ export interface Branch {
   // Who made the last commit, and whether that was you (by your git email).
   author?: string
   mine?: boolean
+  // The repository's main line (its default branch, or main, master, develop and the like): listed first, never deleted.
+  protected?: boolean
 }
 
 export interface BulkDeleteResult {

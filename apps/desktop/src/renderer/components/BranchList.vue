@@ -1,7 +1,20 @@
 <script setup lang="ts">
 import { usePathText } from '~/useProjectFolders'
 import { computed, onMounted, shallowRef } from 'vue'
-import { ArrowDownUp, CircleAlert, Copy, Ellipsis, ExternalLink, GitMerge, GitPullRequest, RefreshCw, Search, Trash2, X } from '@lucide/vue'
+import {
+  ArrowDownUp,
+  CircleAlert,
+  Copy,
+  Ellipsis,
+  ExternalLink,
+  GitMerge,
+  GitPullRequest,
+  Lock,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -63,7 +76,8 @@ const loading = shallowRef(false)
 
 const STALE = 60 * 24 * 60 * 60 * 1000
 const byBranch = computed(() => new Map(pulls.map((p) => [p.branch, p])))
-const locked = (b: Branch) => b.current || !!b.worktree
+const locked = (b: Branch) => b.protected || b.current || !!b.worktree
+const lockedWhy = (b: Branch) => (b.protected ? 'The main branch is never deleted' : 'Checked out, so it can’t be deleted')
 const local = (b: Branch) => !b.upstream && !b.merged
 // Old and idle, or its copy on GitHub is gone: likely left behind.
 const stale = (b: Branch) => !locked(b) && !byBranch.value.has(b.name) && (b.gone || Date.now() - b.lastCommit > STALE)
@@ -86,8 +100,12 @@ const shown = computed(() => {
   const list = (branches.value ?? []).filter(
     (b) => TESTS[filter.value](b) && (!q || [b.name, b.subject, b.author ?? ''].some((x) => x.toLowerCase().includes(q))),
   )
-  if (sort.value === 'name') return list.sort((a, b) => a.name.localeCompare(b.name))
-  return list.sort((a, b) => (sort.value === 'recent' ? b.lastCommit - a.lastCommit : a.lastCommit - b.lastCommit))
+  // Main branches stay on top in the order they came (default branch first); the rest follow the chosen sort.
+  const main = list.filter((b) => b.protected)
+  const rest = list.filter((b) => !b.protected)
+  if (sort.value === 'name') rest.sort((a, b) => a.name.localeCompare(b.name))
+  else rest.sort((a, b) => (sort.value === 'recent' ? b.lastCommit - a.lastCommit : a.lastCommit - b.lastCommit))
+  return [...main, ...rest]
 })
 const selectable = computed(() => shown.value.filter((b) => !locked(b)))
 const picked = computed(() => (branches.value ?? []).filter((b) => selected.value.has(b.name)))
@@ -254,11 +272,12 @@ onMounted(() => {
         <li
           v-for="b in shown"
           :key="b.name"
+          :data-branch="b.name"
           class="group flex h-12 items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0"
           :class="[selected.has(b.name) ? 'bg-emphasis/8' : 'hover:bg-muted/60', locked(b) ? '' : 'cursor-pointer']"
           @click="!locked(b) && toggle(b.name, !selected.has(b.name))"
         >
-          <Hint :text="locked(b) ? 'Checked out, so it can’t be deleted' : ''" :disabled="!locked(b)">
+          <Hint :text="locked(b) ? lockedWhy(b) : ''" :disabled="!locked(b)">
             <Checkbox
               :model-value="selected.has(b.name)"
               :disabled="locked(b)"
@@ -268,14 +287,21 @@ onMounted(() => {
             />
           </Hint>
           <div class="flex min-w-0 flex-1 items-center gap-2">
-            <span class="truncate font-mono text-[12.5px]" :title="b.subject ? `${b.name}\n${b.subject}` : b.name">{{ b.name }}</span>
-            <StatusPill v-if="b.current" tone="info" class="text-[11px]">Checked out</StatusPill>
-            <Hint v-else-if="b.worktree" :text="`Checked out in ${short(b.worktree)}`">
-              <StatusPill tone="info" class="text-[11px]">In a worktree</StatusPill>
+            <span class="max-w-[75%] shrink-0 truncate font-mono text-[12.5px]" :title="b.subject ? `${b.name}\n${b.subject}` : b.name">{{
+              b.name
+            }}</span>
+            <Hint v-if="b.protected" text="The main branch. It stays at the top and is never deleted.">
+              <Lock class="size-3.5 shrink-0 text-muted-foreground" aria-label="Main branch" />
             </Hint>
-            <Hint v-if="local(b)" text="Only on this computer. It was never pushed to GitHub.">
-              <StatusPill class="text-[11px]">Local only</StatusPill>
-            </Hint>
+            <div class="flex h-5 min-w-0 flex-wrap items-center gap-x-2 overflow-hidden">
+              <StatusPill v-if="b.current" tone="info" class="text-[11px]">Checked out</StatusPill>
+              <Hint v-else-if="b.worktree" :text="`Checked out in ${short(b.worktree)}`">
+                <StatusPill tone="info" class="text-[11px]">In a worktree</StatusPill>
+              </Hint>
+              <Hint v-if="local(b)" text="Only on this computer. It was never pushed to GitHub.">
+                <StatusPill class="text-[11px]">Local only</StatusPill>
+              </Hint>
+            </div>
           </div>
           <span class="flex w-[160px] shrink-0 items-center text-xs @max-2xl:w-[110px]">
             <button
@@ -327,7 +353,7 @@ onMounted(() => {
               <DropdownMenuContent align="end" class="w-52">
                 <DropdownMenuItem @select="copyName(b.name)"><Copy /> Copy the name</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" :disabled="locked(b)" @select="askDelete([b.name])"
+                <DropdownMenuItem v-if="!b.protected" variant="destructive" :disabled="locked(b)" @select="askDelete([b.name])"
                   ><Trash2 /> Delete branch</DropdownMenuItem
                 >
               </DropdownMenuContent>

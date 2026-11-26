@@ -278,6 +278,12 @@ await page.screenshot({ path: join(shots, '8-worktrees-after.png') })
 
 await tab('Branches').click()
 await page.getByText('old-merged').waitFor()
+// Main lines stay on top, and nothing offers to delete them.
+{
+  const names = await page.locator('[data-branch]').evaluateAll((rows) => rows.map((r) => r.getAttribute('data-branch')))
+  if (names.slice(0, 2).join() !== 'main,develop') throw new Error(`main branches not first: ${names.join()}`)
+  if (!(await page.getByRole('checkbox', { name: 'Select develop' }).isDisabled())) throw new Error('develop can be selected for deleting')
+}
 await page.getByRole('checkbox', { name: 'Select old-merged' }).click()
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '9-branches.png') })
