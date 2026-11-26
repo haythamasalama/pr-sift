@@ -7,6 +7,15 @@ const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
 export type Fetch = typeof fetch
 
 // The same rules as the extension's service worker: only api.github.com, only GitHub's own media types.
+// A request that changes something on GitHub (a review, a merge, a comment), so lists showing it are out of date.
+export function changesGitHub(request: { path: string; method?: string; body?: unknown }): boolean {
+  const method = (request.method ?? 'GET').toUpperCase()
+  if (method === 'GET' || method === 'HEAD') return false
+  if (request.path !== '/graphql') return true
+  const query = (request.body as { query?: unknown } | undefined)?.query
+  return typeof query === 'string' && /^\s*mutation\b/.test(query)
+}
+
 export async function apiRequest(
   token: string | undefined,
   msg: ApiRequest,

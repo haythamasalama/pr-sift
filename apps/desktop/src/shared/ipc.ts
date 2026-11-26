@@ -428,6 +428,8 @@ export interface Events {
   navigate: { view: string; section?: string }
   'projects:changed': Project[]
   'autoapprove:changed': AutoApproveStatus
+  // Something was changed on GitHub from this app: a review, a merge, a comment.
+  'github:changed': { at: number }
 }
 
 export type EventName = keyof Events
@@ -438,6 +440,7 @@ export const EVENTS = [
   'navigate',
   'projects:changed',
   'autoapprove:changed',
+  'github:changed',
 ] as const satisfies readonly EventName[]
 
 export interface Bridge {

@@ -109,6 +109,7 @@ await electronApp.evaluate(() => {
             },
           },
         })
+      if (query.includes('review:')) globalThis.inboxAsked = (globalThis.inboxAsked ?? 0) + 1
       if (query.includes('review:')) return json({ data: { review: { nodes: [pull] }, mine: { nodes: [] }, assigned: { nodes: [] } } })
       return json({ data: { repository: { defaultBranchRef: { name: 'main' }, pullRequests: { nodes: [pull] }, issues: { nodes: [] } } } })
     }
@@ -162,6 +163,16 @@ await page.screenshot({ path: join(shots, '2-inbox.png') })
 // In a list, a button shows only when you can use it: you can approve this one, but GitHub would refuse a merge.
 await page.getByRole('button', { name: 'Approve', exact: true }).first().waitFor()
 if (await page.getByRole('button', { name: 'Choose how to merge' }).count()) throw new Error('Merge shows on a blocked pull request')
+// A change made from the app (here a review) makes the lists look again on their own, with no Refresh.
+const inboxAsked = () => electronApp.evaluate(() => globalThis.inboxAsked ?? 0)
+const before = await inboxAsked()
+await page.evaluate(() =>
+  window.prSift.invoke('gh:request', { type: 'gh', path: '/repos/acme/shop/pulls/7/reviews', method: 'POST', body: { event: 'COMMENT' } }),
+)
+for (let i = 0; (await inboxAsked()) === before; i++) {
+  if (i > 40) throw new Error('Needs you did not look again after a change')
+  await page.waitForTimeout(100)
+}
 await page.setViewportSize({ width: 1600, height: 800 })
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '2w-inbox-wide.png') })

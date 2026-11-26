@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
 import { useInbox } from '~/useInbox'
+import { isStale } from '~/useLive'
 import CountBadge from '~/components/CountBadge.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import PullTable from '~/components/PullTable.vue'
@@ -35,8 +36,8 @@ const summary = computed(() => {
 })
 
 onMounted(() => {
-  // The sidebar already asked when the app opened; only ask again when that answer is getting old.
-  if (!loadedAt.value || Date.now() - loadedAt.value > 60_000) void load()
+  // The app keeps this list current; opening the page only asks again when the last answer is out of date.
+  if (isStale(loadedAt.value)) void load()
 })
 </script>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { apiRequest, scopeWarning, TokenRejected, verifyToken, type Fetch } from '../../src/main/github'
+import { apiRequest, changesGitHub, scopeWarning, TokenRejected, verifyToken, type Fetch } from '../../src/main/github'
 
 const ok = (data: unknown, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { status: 200, headers })
 
@@ -61,5 +61,18 @@ describe('scopeWarning', () => {
     expect(scopeWarning(['repo'])).toBeUndefined()
     expect(scopeWarning(null)).toBeUndefined()
     expect(scopeWarning(['read:user'])).toMatch(/repo scope/)
+  })
+})
+
+describe('changesGitHub', () => {
+  it('treats reads as no change', () => {
+    expect(changesGitHub({ path: '/repos/a/b/pulls' })).toBe(false)
+    expect(changesGitHub({ path: '/graphql', method: 'POST', body: { query: 'query { viewer { login } }' } })).toBe(false)
+    expect(changesGitHub({ path: '/graphql', method: 'POST', body: { query: '{ viewer { login } }' } })).toBe(false)
+  })
+  it('treats writes and mutations as a change', () => {
+    expect(changesGitHub({ path: '/repos/a/b/pulls/1/reviews', method: 'POST', body: { event: 'APPROVE' } })).toBe(true)
+    expect(changesGitHub({ path: '/repos/a/b/pulls/1/merge', method: 'put' })).toBe(true)
+    expect(changesGitHub({ path: '/graphql', method: 'POST', body: { query: '  mutation Approve { x }' } })).toBe(true)
   })
 })

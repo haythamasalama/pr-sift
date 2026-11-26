@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { bridge } from '~/bridge'
 import { isFresh, readCache, writeCache } from '~/cache'
+import { isStale, useLive } from '~/useLive'
 import { errorText, formatAgo } from '~/format'
 import type { ProjectOverview } from '#shared/ipc'
 import { loadRepo, type RepoActivity } from '~/github'
@@ -106,7 +107,7 @@ const repoUrl = computed(() =>
   current.value?.github ? `https://github.com/${current.value.github.owner}/${current.value.github.repo}` : '',
 )
 
-// Shows the last copy at once; asks GitHub again when it is older than a minute, or when asked to.
+// Shows the last copy at once; asks GitHub again when it is out of date, or when asked to.
 async function load(force = false) {
   const p = current.value
   error.value = ''
@@ -118,7 +119,7 @@ async function load(force = false) {
   const saved = readCache<RepoActivity>(key)
   activity.value = saved?.value ?? null
   loadedAt.value = saved?.at ?? null
-  if (!force && isFresh(saved, 60_000)) return
+  if (!force && !isStale(saved?.at)) return
   loading.value = true
   try {
     const entry = writeCache(key, await loadRepo(p.github.owner, p.github.repo))
@@ -131,6 +132,12 @@ async function load(force = false) {
     loading.value = false
   }
 }
+
+// Stays current on its own: after a change made from the app, on coming back to the window, and every so often.
+useLive(
+  () => load(true),
+  () => loadedAt.value,
+)
 
 async function loadOverview() {
   const p = current.value

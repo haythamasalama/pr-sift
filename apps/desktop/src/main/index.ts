@@ -4,8 +4,8 @@ import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Events, EventName, Leftover } from '#shared/ipc'
-import { apiRequest } from './github'
+import type { ApiRequest, Events, EventName, Leftover } from '#shared/ipc'
+import { apiRequest, changesGitHub } from './github'
 import { handle } from './ipc'
 import { scanLeftovers } from './leftovers/scan'
 import { findProgram, pathKey, withExtraPath } from './paths'
@@ -51,9 +51,15 @@ async function pickFolder(title: string) {
   return picked.canceled ? null : (picked.filePaths[0] ?? null)
 }
 const projects = new ProjectService({ store: internal, roots: () => readSettings(internal), pickFolder: () => pickFolder('Add a project') })
+// Every request to GitHub goes through here; one that changes something tells the windows to look again.
+async function github(req: ApiRequest) {
+  const res = await apiRequest(await vault.token(), req)
+  if (res.ok && changesGitHub(req)) send('github:changed', { at: Date.now() })
+  return res
+}
 const autoApprove = new AutoApproveService({
   store: internal,
-  request: async (req) => apiRequest(await vault.token(), req),
+  request: github,
   onChange: (status) => send('autoapprove:changed', status),
 })
 const leftovers = new Map<string, Leftover>()
@@ -137,7 +143,7 @@ function registerHandlers() {
     await shared.remove(list.filter((k) => k !== 'token'))
   })
   h('gh:request', async (_e, request) => {
-    const res = await apiRequest(await vault.token(), request)
+    const res = await github(request)
     if (res.status === 401 && (await vault.token())) send('auth:changed', await vault.refresh())
     return res
   })

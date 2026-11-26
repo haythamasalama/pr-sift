@@ -20,6 +20,7 @@ import { useAuth } from './useAuth'
 import { useProjects } from './useProjects'
 import { PROJECT_SORTS, useProjectOrder, type ProjectSort } from './useProjectOrder'
 import { useInbox } from './useInbox'
+import { useLive } from './useLive'
 import { bridge } from './bridge'
 import type { AutoApproveStatus } from '#shared/ipc'
 import { openProject, project, review, view, worktree, type View } from './navigation'
@@ -52,7 +53,12 @@ function drop(target: string) {
 const portal = useTemplateRef<HTMLElement>('portal')
 provide(portalTargetKey, portal)
 const adding = shallowRef(false)
-const { inbox, load: loadInbox } = useInbox()
+const { inbox, loadedAt: inboxAt, load: loadInbox } = useInbox()
+// The count in the sidebar and the Needs you page stay current on their own.
+useLive(
+  () => status.value?.signedIn && loadInbox(),
+  () => inboxAt.value,
+)
 const waitingCount = computed(() => inbox.value?.review.length ?? 0)
 const autoApprove = shallowRef<AutoApproveStatus | null>(null)
 const autoMode = computed(() => {
