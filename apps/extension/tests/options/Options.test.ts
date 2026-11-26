@@ -61,11 +61,24 @@ describe('Options page', () => {
   it.each([
     [{ status: 'no_update' }, 'You have the latest version'],
     [{ status: 'update_available', version: '1.2.0' }, 'Downloading 1.2.0…'],
-    [{ status: 'throttled' }, 'Chrome limits how often this can run. Try again in a few minutes.'],
+    [{ status: 'throttled' }, 'Chrome limits this check. It updates PR Sift on its own within a few hours.'],
     [{ status: 'error' }, 'Could not check for updates'],
   ])('reports %o from a check', async (answer, text) => {
     const wrapper = await checkWith(answer)
     expect(about(wrapper).text()).toContain(text)
+  })
+
+  it('offers the Chrome extensions page when Chrome limits the check', async () => {
+    const { sent } = installChrome(() => ({ status: 'throttled' }))
+    const wrapper = mount(Options, { attachTo: document.body })
+    await flushPromises()
+    await button(wrapper, 'Check for updates')!.trigger('click')
+    await flushPromises()
+    expect(button(wrapper, 'Check for updates')).toBeUndefined()
+    const update = button(wrapper, 'Update in Chrome')!
+    expect(update.attributes('title')).toBe('Turn on Developer mode there, then press Update')
+    await update.trigger('click')
+    expect(sent.at(-1)).toEqual({ type: 'extensions-page' })
   })
 
   it('offers a restart once the update is downloaded, and restarts on click', async () => {

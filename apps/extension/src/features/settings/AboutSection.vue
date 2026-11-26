@@ -12,7 +12,7 @@ import SettingsSection from './SettingsSection.vue'
 import { useNewMarks } from './useNewMarks'
 
 const { framed = false } = defineProps<{ framed?: boolean }>()
-const { version, ready, updated, checking, status, check, restart, dismiss } = useUpdates()
+const { version, ready, updated, checking, status, throttled, check, restart, dismiss, openExtensionsPage } = useUpdates()
 const { isNew, markSeen } = useNewMarks()
 
 const LINKS = [
@@ -50,6 +50,15 @@ function checkForUpdates() {
           </p>
         </div>
         <Button v-if="ready" size="sm" @click="restart"><RotateCw /> Restart to update to {{ ready }}</Button>
+        <Button
+          v-else-if="throttled"
+          variant="outline"
+          size="sm"
+          title="Turn on Developer mode there, then press Update"
+          @click="openExtensionsPage"
+        >
+          <ExternalLink /> Update in Chrome
+        </Button>
         <Button v-else variant="outline" size="sm" class="relative" :disabled="checking" @click="checkForUpdates">
           <Spinner v-if="checking" /><RefreshCw v-else /> Check for updates
           <NewDot v-if="isNew('updates')" class="absolute -top-1 -right-1" />

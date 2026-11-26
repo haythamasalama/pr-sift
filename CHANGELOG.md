@@ -13,6 +13,11 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: The script PR Sift adds to every GitHub page is half the size. Code colouring loads only when a review needs
   it.
 
+### Fixed
+
+- Options: When Chrome limits Check for updates, About now says Chrome updates PR Sift on its own within a few hours,
+  and Update in Chrome opens the extensions page, where Update checks right away.
+
 ## 1.5.0 - 2026-11-26
 
 ### Added
