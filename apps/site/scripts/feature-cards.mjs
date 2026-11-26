@@ -140,6 +140,7 @@ export function featureVisual(id, icon) {
     },
 
     theme: () => {
+      // Each tile is a tiny diff drawn in that theme's own corners and type, so the difference shows without colour.
       const lines = [
         ['', 'w-3/5'],
         ['bg-del-bg text-del', 'w-1/2'],
@@ -151,11 +152,18 @@ export function featureVisual(id, icon) {
             `<span class="flex h-2.5 items-center px-1.5 ${tone}"><span class="h-[3px] rounded-full bg-current opacity-60 ${width}"></span></span>`,
         )
         .join('')
-      const layer = (scope, cls = '') =>
-        `<span class="${scope} absolute inset-0 flex flex-col justify-center bg-paper text-muted ${cls}">${lines}</span>`
-      const tile = (name, layers, selected = false) =>
-        `<span class="flex flex-col gap-2"><span class="relative h-16 overflow-hidden rounded-md border border-line ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-raised' : ''}">${layers}</span><span class="text-center text-xs ${selected ? 'font-medium' : 'text-muted'}">${name}</span></span>`
-      return `<div class="grid w-full max-w-[300px] grid-cols-3 gap-3">${tile('Light', layer('light'))}${tile('Dark', layer('dark'))}${tile('System', layer('light') + layer('dark', '[clip-path:polygon(100%_0,100%_100%,0_100%)]'), true)}</div>`
+      const tile = (name, { radius, font, selected = false, dark = false }) =>
+        `<span class="flex flex-col gap-2"><span class="${dark ? 'dark' : 'light'} relative flex h-16 flex-col justify-center overflow-hidden border border-line bg-paper text-muted ${radius} ${selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-raised' : ''}">${lines}</span><span class="text-center text-xs ${font} ${selected ? 'font-medium' : 'text-muted'}">${name}</span></span>`
+      const modes = ['Light', 'Dark', 'System']
+        .map(
+          (m) =>
+            `<span class="flex-1 rounded-[5px] py-1 text-center ${m === 'System' ? 'bg-paper font-medium shadow-sm' : 'text-muted'}">${m}</span>`,
+        )
+        .join('')
+      return `<div class="flex w-full max-w-[300px] flex-col gap-3">
+        <div class="grid grid-cols-3 gap-3">${tile('GitHub', { radius: 'rounded-md', font: '', selected: true })}${tile('PR Sift', { radius: 'rounded', font: '', dark: true })}${tile('Mono', { radius: 'rounded-none', font: 'font-mono' })}</div>
+        <div class="flex rounded-md border border-line bg-raised p-0.5 text-[11.5px]">${modes}</div>
+      </div>`
     },
 
     settings: () =>
