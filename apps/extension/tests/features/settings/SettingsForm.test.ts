@@ -38,6 +38,8 @@ async function addChip(wrapper: Wrapper, label: string, value: string) {
   await flushPromises()
 }
 
+enableAutoUnmount(afterEach)
+
 afterEach(() => {
   vi.useRealTimers()
   document.body.innerHTML = ''
@@ -93,12 +95,24 @@ describe('SettingsForm', () => {
     })
   })
 
-  it('picks the theme from preview cards', async () => {
+  it('picks the mode from a segmented control', async () => {
     const wrapper = await mountForm()
-    expect(section(wrapper, 'appearance').findAll('.ps-root.dark')).toHaveLength(2)
+    expect(
+      section(wrapper, 'appearance')
+        .find('[aria-label="Mode"]')
+        .findAll('button')
+        .map((b) => b.text()),
+    ).toEqual(['System', 'Light', 'Dark'])
     await wrapper.find('#settings-theme-dark').trigger('click')
     await flushPromises()
     expect(saved().theme).toBe('dark')
+  })
+
+  it('picks a theme and a code colour', async () => {
+    const wrapper = await mountForm()
+    await wrapper.find('#settings-style-mono').trigger('click')
+    await flushPromises()
+    expect(saved().themeStyle).toBe('mono')
   })
 
   it('adds and removes hidden paths and co-authors as chips', async () => {
@@ -140,7 +154,7 @@ describe('SettingsForm', () => {
 
   it('previews the folder indentation in a small tree', async () => {
     const wrapper = await mountForm({ settings: { treeIndent: 14, treeGuides: false } })
-    const levels = section(wrapper, 'tree').findAll('.ml-3')
+    const levels = section(wrapper, 'tree').findAll('.ml-2\\.5')
     expect(levels).toHaveLength(3)
     expect(levels.every((l) => (l.element as HTMLElement).style.paddingLeft === '14px')).toBe(true)
     expect(levels[0]!.classes()).toContain('border-transparent')
@@ -305,8 +319,6 @@ describe('SettingsForm saved filters', () => {
 describe('SettingsForm sections', () => {
   let scrolled: Element[]
 
-  enableAutoUnmount(afterEach)
-
   beforeEach(() => {
     scrolled = []
     vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
@@ -320,7 +332,9 @@ describe('SettingsForm sections', () => {
 
   it('scrolls to the section it opens on and focuses its title', async () => {
     const wrapper = await mountForm({}, { section: 'merging' })
-    expect(scrolled).toEqual([section(wrapper, 'merging').element])
+    // A second, settling scroll may land on the same section once the connection row has loaded.
+    expect(scrolled.length).toBeGreaterThan(0)
+    expect(scrolled.every((el) => el === section(wrapper, 'merging').element)).toBe(true)
     expect(document.activeElement).toBe(section(wrapper, 'merging').find('h3').element)
   })
 

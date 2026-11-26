@@ -127,8 +127,8 @@ export const home = {
     {
       id: 'theme',
       icon: 'sun-moon',
-      title: 'Light, dark or your system',
-      text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
+      title: 'Themes, light or dark',
+      text: 'GitHub, PR Sift, Minimal, Soft or Mono, with your pick of code colors. Light, dark or your system, from Settings.',
     },
     {
       id: 'notes',

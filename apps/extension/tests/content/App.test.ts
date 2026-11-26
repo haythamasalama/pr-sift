@@ -43,17 +43,27 @@ describe('App launcher', () => {
     wrapper.unmount()
   })
 
-  it.each([
-    ['ready to restart', { updateReady: '1.2.0' }, 'PR Sift 1.2.0 is ready', 'bg-emphasis'],
-    ['just installed', { updated: { version: '1.2.0', previous: '1.1.0' } }, 'PR Sift was updated to 1.2.0', 'bg-success'],
-  ])('marks the launcher while an update is %s', async (_state, stored, title, colour) => {
+  it('marks the launcher with an amber dot while an update is ready to restart', async () => {
     const { store } = installChrome()
-    Object.assign(store, stored)
+    store.updateReady = '1.2.0'
     const wrapper = mount(App, { attachTo: document.body })
-    await vi.waitFor(() => expect(launcher(wrapper)?.attributes('title')).toBe(title))
+    await vi.waitFor(() => expect(launcher(wrapper)?.attributes('title')).toBe('PR Sift 1.2.0 is ready'))
     const dot = launcher(wrapper)!.find('[data-update-dot]')
-    expect(dot.classes()).toContain(colour)
-    expect(dot.text()).toBe(title)
+    expect(dot.classes()).toContain('bg-attention')
+    expect(dot.text()).toBe('PR Sift 1.2.0 is ready')
+    expect(launcher(wrapper)!.find('[data-update-badge]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('shows the new version as a green badge, not a dot, right after an update', async () => {
+    const { store } = installChrome()
+    store.updated = { version: '1.2.0', previous: '1.1.0' }
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(launcher(wrapper)?.attributes('title')).toBe('PR Sift was updated to 1.2.0'))
+    const badge = launcher(wrapper)!.find('[data-update-badge]')
+    expect(badge.classes()).toContain('text-success-fg')
+    expect(badge.text()).toContain('1.2.0')
+    expect(launcher(wrapper)!.find('[data-update-dot]').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -85,6 +95,7 @@ describe('App launcher', () => {
     await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())
     expect(launcher(wrapper)!.attributes('title')).toBeUndefined()
     expect(launcher(wrapper)!.find('[data-update-dot]').exists()).toBe(false)
+    expect(launcher(wrapper)!.find('[data-update-badge]').exists()).toBe(false)
     wrapper.unmount()
   })
 })

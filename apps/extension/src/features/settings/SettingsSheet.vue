@@ -20,7 +20,7 @@ const stayOpen = (event: Event) => event.preventDefault()
   <Sheet v-model:open="open">
     <SheetContent
       side="right"
-      class="gap-0 border-l bg-background shadow-xl data-[side=right]:w-full data-[side=right]:sm:max-w-[480px]"
+      class="gap-0 overflow-hidden border bg-background shadow-xl data-[side=right]:top-2 data-[side=right]:right-2 data-[side=right]:bottom-2 data-[side=right]:h-auto data-[side=right]:w-[calc(100%-1rem)] data-[side=right]:rounded-xl data-[side=right]:border data-[side=right]:sm:max-w-[650px]"
       @open-auto-focus="keepFocusForSection"
       @focus-outside="stayOpen"
     >

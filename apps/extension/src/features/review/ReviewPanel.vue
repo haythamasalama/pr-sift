@@ -473,7 +473,7 @@ watch(
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">
-      <template #icon><RefreshCw :class="refreshing ? 'animate-spin' : ''" /></template>
+      <template #icon><RefreshCw class="text-attention" :class="refreshing ? 'animate-spin' : ''" /></template>
       {{ refreshNote || 'New changes were pushed to this pull request.' }}
       <template #actions>
         <Button v-if="updates.available.value || externalUpdate" size="sm" :disabled="refreshing" @click="doRefresh">Refresh</Button>
@@ -553,7 +553,7 @@ watch(
             @click="showSidebar('tree')"
           >
             <FolderTree />
-            <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
+            <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-foreground" />
           </Button>
         </nav>
         <template v-else>

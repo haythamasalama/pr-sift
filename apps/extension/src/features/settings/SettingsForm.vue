@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { ChevronRight, CircleCheck, Eye, FolderTree, Palette, RotateCcw } from '@lucide/vue'
+import { computed, nextTick, type Component, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
+import { ChevronRight, CircleCheck, Eye, FolderTree, Monitor, Moon, Palette, RotateCcw, Sun } from '@lucide/vue'
 import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
@@ -9,20 +9,23 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
+import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { useAppearance } from '../appearance/useAppearance'
+import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import AboutSection from './AboutSection.vue'
-import ChoiceCards from './ChoiceCards.vue'
 import ConnectionRow from './ConnectionRow.vue'
-import DiffPreview from './DiffPreview.vue'
 import PatternList from './PatternList.vue'
 import SavedFiltersSection from './SavedFiltersSection.vue'
 import SettingsGroup from './SettingsGroup.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
-import ThemePreview from './ThemePreview.vue'
+import AppearancePreview from './AppearancePreview.vue'
+import CodeThemeSelect from './CodeThemeSelect.vue'
+import SegmentedControl from './SegmentedControl.vue'
+import ThemeSwatches from './ThemeSwatches.vue'
 import TreePreview from './TreePreview.vue'
 import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
 import { useSettingsState } from './useSettingsState'
@@ -35,30 +38,39 @@ const STATUSES = [
   { value: 'renamed', label: 'Renamed' },
 ]
 
-const THEMES: { value: ThemeMode; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const THEMES: { value: ThemeMode; label: string; icon: Component }[] = [
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
 ]
 
-const DIFF_VIEWS: { value: DiffMode; label: string; hint: string }[] = [
-  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column' },
-  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.' },
+const MODE_HINTS: Record<ThemeMode, string> = {
+  system: 'Follows your computer.',
+  light: 'Always light.',
+  dark: 'Always dark.',
+}
+
+const DIFF_VIEWS: { value: DiffMode; label: string; hint: string; icon: Component }[] = [
+  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column.', icon: DiffUnifiedIcon },
+  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.', icon: DiffSplitIcon },
 ]
 
 const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
-  { value: 'squash', label: 'Squash', hint: 'One commit on the base branch' },
-  { value: 'merge', label: 'Merge commit', hint: 'Every commit, plus a merge commit' },
-  { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit' },
+  { value: 'squash', label: 'Squash', hint: 'One commit on the base branch.' },
+  { value: 'merge', label: 'Merge commit', hint: 'Every commit, plus a merge commit.' },
+  { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit.' },
 ]
 
 const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandIcon }
+
+const hintOf = <T extends string>(options: { value: T; hint: string }[], value: T) => options.find((o) => o.value === value)?.hint ?? ''
 
 const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
 const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
 const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
 
-const { theme, setTheme } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark } = useAppearance()
+const themeHint = computed(() => THEME_STYLES.find((t) => t.value === themeStyle.value)?.hint ?? '')
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
 const root = useTemplateRef<HTMLElement>('root')
@@ -143,25 +155,27 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-8'">
+  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
     <nav
       v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
-      class="sticky top-0 z-10 -mx-4 -mb-4 flex gap-1 overflow-x-auto border-b bg-background px-4 py-2"
+      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto border-b bg-background px-4"
     >
-      <Button
+      <button
         v-for="t in SHEET_TABS"
         :key="t.id"
+        type="button"
         role="tab"
         :aria-selected="tab === t.id"
-        variant="ghost"
-        size="xs"
-        :class="tab === t.id ? 'bg-muted text-foreground' : 'text-muted-foreground'"
+        class="-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0"
+        :class="
+          tab === t.id ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
+        "
         @click="openTab(t.id)"
       >
         <component :is="TAB_ICONS[t.id]" />{{ t.label }}
-      </Button>
+      </button>
     </nav>
 
     <AboutSection v-show="shows('about')" :framed="layout === 'page'" />
@@ -170,6 +184,7 @@ defineExpose({ scrollToSection })
       v-show="shows('github')"
       id="github"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="GitHub"
       description="Comment, review and merge without leaving the review."
     >
@@ -177,14 +192,16 @@ defineExpose({ scrollToSection })
       <SettingsGroup id="token" title="Connection">
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
-      <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
-        <ChoiceCards
-          :model-value="settings.mergeMethod"
-          :options="MERGE_METHODS"
-          name="settings-merge"
-          label="Merge method"
-          @update:model-value="(v) => update('mergeMethod', v)"
-        />
+      <SettingsGroup id="merging" title="Merging" hide-title>
+        <SettingsRow label="Merge method" description="Your last choice in the review becomes the default." class="border-b">
+          <SegmentedControl
+            :model-value="settings.mergeMethod"
+            :options="MERGE_METHODS"
+            name="settings-merge"
+            label="Merge method"
+            @update:model-value="(v) => update('mergeMethod', v)"
+          />
+        </SettingsRow>
         <SettingsRow
           label="Leave out AI co-authors"
           :description="coAuthorSummary"
@@ -202,7 +219,7 @@ defineExpose({ scrollToSection })
             "
           />
         </SettingsRow>
-        <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-2">
+        <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-1 pb-3">
           <CollapsibleTrigger as-child>
             <Button variant="ghost" size="xs" class="group w-fit px-1 text-muted-foreground">
               <ChevronRight class="transition-transform group-data-[state=open]:rotate-90" /> Edit the list
@@ -224,6 +241,7 @@ defineExpose({ scrollToSection })
       v-show="shows('review')"
       id="review"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Reviewing"
       description="How each review starts."
       area="files"
@@ -248,18 +266,15 @@ defineExpose({ scrollToSection })
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
       </SettingsRow>
-      <div class="flex flex-col gap-2.5 py-3">
-        <p class="text-sm font-medium">Diff view</p>
-        <ChoiceCards
+      <SettingsRow label="Diff view" :description="hintOf(DIFF_VIEWS, settings.diffView)">
+        <SegmentedControl
           :model-value="settings.diffView"
           :options="DIFF_VIEWS"
           name="settings-diff"
           label="Diff view"
           @update:model-value="(v) => update('diffView', v)"
-        >
-          <template #preview="{ value }"><DiffPreview :mode="value" /></template>
-        </ChoiceCards>
-      </div>
+        />
+      </SettingsRow>
       <SettingsRow label="Show resolved notes" description="They stay in the diff, dimmed." control-id="settings-show-resolved">
         <Switch id="settings-show-resolved" :model-value="settings.showResolved" @update:model-value="(v) => update('showResolved', v)" />
       </SettingsRow>
@@ -269,6 +284,7 @@ defineExpose({ scrollToSection })
       v-show="shows('files')"
       id="files"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Files"
       description="What the list leaves out, and your own filters."
       area="sidebar"
@@ -299,46 +315,62 @@ defineExpose({ scrollToSection })
       v-show="shows('appearance')"
       id="appearance"
       :framed="layout === 'page'"
+      :headless="layout === 'tabs'"
       title="Appearance"
       description="Applies right away, here and in the review."
       area="all"
     >
-      <div class="py-3">
-        <ChoiceCards :model-value="theme" :options="THEMES" name="settings-theme" label="Theme" @update:model-value="setTheme">
-          <template #preview="{ value }"><ThemePreview :mode="value" /></template>
-        </ChoiceCards>
-      </div>
-      <SettingsGroup id="tree" title="Folder indentation" description="How far each folder is pushed in, in the file tree.">
-        <div class="rounded-lg border p-1.5">
+      <div class="pb-5" :class="layout === 'page' ? 'pt-4' : 'pt-3'"><AppearancePreview /></div>
+      <SettingsRow label="Mode" :description="MODE_HINTS[theme]">
+        <SegmentedControl :model-value="theme" :options="THEMES" name="settings-theme" label="Mode" @update:model-value="setTheme" />
+      </SettingsRow>
+      <SettingsRow id="settings-section-style" data-section="style" label="Theme" :description="themeHint">
+        <ThemeSwatches :model-value="themeStyle" :dark="dark" @update:model-value="setThemeStyle" />
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-code-colors"
+        data-section="code-colors"
+        label="Code colors"
+        description="How code is coloured in the diff."
+      >
+        <CodeThemeSelect :model-value="codeTheme" :dark="dark" @update:model-value="setCodeTheme" />
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-tree"
+        data-section="tree"
+        label="Folder indentation"
+        description="How far each folder is pushed in."
+      >
+        <div class="flex flex-col items-end gap-2">
+          <div class="flex items-center gap-4">
+            <div class="flex w-36 items-center gap-2">
+              <Slider
+                :model-value="[treeIndent]"
+                :min="0"
+                :max="24"
+                :step="2"
+                aria-label="Folder indentation"
+                @update:model-value="(v) => v && (treeIndent = v[0]!)"
+                @value-commit="(v) => update('treeIndent', v[0]!)"
+              />
+              <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <Switch
+                id="settings-tree-guides"
+                size="sm"
+                :model-value="settings.treeGuides"
+                @update:model-value="(v) => update('treeGuides', v)"
+              />
+              <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
+            </div>
+          </div>
           <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
         </div>
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <div class="flex min-w-48 flex-1 items-center gap-3">
-            <Slider
-              :model-value="[treeIndent]"
-              :min="0"
-              :max="24"
-              :step="2"
-              aria-label="Folder indentation"
-              @update:model-value="(v) => v && (treeIndent = v[0]!)"
-              @value-commit="(v) => update('treeIndent', v[0]!)"
-            />
-            <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <Switch
-              id="settings-tree-guides"
-              size="sm"
-              :model-value="settings.treeGuides"
-              @update:model-value="(v) => update('treeGuides', v)"
-            />
-            <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
-          </div>
-        </div>
-      </SettingsGroup>
+      </SettingsRow>
     </SettingsSection>
 
-    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : '-mt-6 border-t'">
+    <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : 'border-t'">
       <SettingsRow label="Reset settings">
         <template #description>
           <span aria-live="polite" class="inline-flex items-center gap-1.5">

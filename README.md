@@ -95,9 +95,9 @@ GitHub threads show under their lines, and the conversation opens above the file
 - 📄 The pull request description one click away
 - 🔀 One commit or a range of commits, picked from the title
 - 🔖 Saved filters as buttons beside the file types
-- ⚙️ Settings in a side sheet, opened right where you need them
+- ⚙️ Settings in a floating sheet: the gear opens it right where you need it
 - ⚡ Pull requests that open straight in PR Sift, if you want
-- 🌓 Light, dark or your system's theme
+- 🎨 Themes (GitHub, PR Sift, Minimal, Soft, Mono), code colors, and light, dark or your system
 
 See them all on the [website](https://pr-sift.haythamasalama.me/).
 

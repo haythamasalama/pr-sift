@@ -1,24 +1,11 @@
 <script setup lang="ts">
-import { CircleHelp, Monitor, Moon, NotepadText, PanelLeft, RotateCw, Settings, Sun, X } from '@lucide/vue'
+import { NotepadText, PanelLeft, Settings, X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { ThemeMode } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -31,8 +18,8 @@ defineProps<{
   loading?: boolean
 }>()
 
-const { theme, setTheme } = useAppearance()
-const { ready: updateReady, restart } = useUpdates()
+// The gear opens the settings sheet straight away; mode, theme and help live there.
+const { ready: updateReady } = useUpdates()
 
 const emit = defineEmits<{ openNotes: []; toggleSidebar: []; close: [] }>()
 const openSettings = useSettingsOpener()
@@ -96,37 +83,17 @@ const openSettings = useSettingsOpener()
         >
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="relative shrink-0 text-muted-foreground"
-            :aria-label="updateReady ? 'Options, update ready' : 'Options'"
-            :title="updateReady ? `Theme, settings and help · PR Sift ${updateReady} is ready` : 'Theme, settings and help'"
-          >
-            <Settings />
-            <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-emphasis" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-56">
-          <template v-if="updateReady">
-            <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </template>
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Theme</DropdownMenuLabel>
-            <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">
-              <DropdownMenuRadioItem value="system"><Monitor /> System</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="light"><Sun /> Light</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="dark"><Moon /> Dark</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @select="openSettings()"><Settings /> Settings</DropdownMenuItem>
-          <DropdownMenuItem @select="openSettings('about')"><CircleHelp /> Help and feedback</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="relative shrink-0 text-muted-foreground"
+        :aria-label="updateReady ? 'Settings, update ready' : 'Settings'"
+        :title="updateReady ? `Settings · PR Sift ${updateReady} is ready` : 'Settings'"
+        @click="openSettings(updateReady ? 'about' : undefined)"
+      >
+        <Settings />
+        <span v-if="updateReady" class="absolute -top-1 -right-1 size-2 rounded-full bg-attention ring-2 ring-background" />
+      </Button>
 
       <Button
         variant="ghost"

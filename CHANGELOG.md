@@ -13,6 +13,10 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: Hide the sidebar to a thin rail of icons; it stays hidden until you bring it back.
 - Review: Expand all and Collapse all files, beside the diff view toggle, open or close every file card at once.
 - Review: A loading skeleton in the shape of the review panel while the pull request loads.
+- Appearance: Themes. Pick GitHub (the default), PR Sift, Minimal, Soft or Mono, and Light, Dark or System, in
+  Settings > Appearance. The PR Sift theme follows the website: black and white, IBM Plex and 4 px corners.
+- Appearance: Code colors. GitHub, One, Catppuccin, Gruvbox, Solarized, Tokyo Night or Night Owl, each with a light and
+  a dark version.
 
 ### Changed
 
@@ -26,6 +30,10 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Tree: Viewed marks stay visible on every file and folder. Folder actions show on hover, and All folders is a quiet
   section label with its count.
 - Appearance: Menus and popovers have a clearer border, shadow and opening animation.
+- Settings: The gear opens settings straight away, in a floating sheet with text tabs, a live preview and simpler
+  About. Mode, Merge method and Diff view are segmented choices.
+- Appearance: One colour per status: a dot for new things, amber when something needs you (update ready, pull request
+  changed), a green version badge after an update, and red when PR Sift needs a reload.
 
 ## 1.4.0 - 2026-11-24
 

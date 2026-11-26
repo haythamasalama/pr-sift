@@ -21,7 +21,7 @@ const emit = defineEmits<{ toggle: [key: string]; clear: [] }>()
         :aria-label="selected.length ? `Smart filters, ${selected.length} on` : 'Smart filters'"
       >
         <Sparkles />
-        <span v-if="selected.length" class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-emphasis ring-2 ring-sidebar" />
+        <span v-if="selected.length" class="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-foreground ring-2 ring-sidebar" />
       </Button>
     </PopoverTrigger>
     <PopoverContent align="start" class="w-80 overflow-hidden p-0">

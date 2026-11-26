@@ -39,7 +39,7 @@ function card({ width, height, unit, diff = 1.1, sub }) {
 ${sub ? `<p class="sub">${sub}</p>` : ''}`
 }
 
-const browser = await chromium.launch()
+const browser = await chromium.launch({ executablePath: process.env.PR_SIFT_CHROMIUM })
 
 async function render(html, { width, height }, path, scale = 1) {
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: scale })
