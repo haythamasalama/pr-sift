@@ -27,6 +27,7 @@ goes under `## Unreleased` until the next release moves it under its version and
   sections.
 - Options: Always hidden leaves room under its description, its box suggests a new path instead of repeating one already
   in the list, and the token box shows a classic token (`ghp_…`), the kind the page asks for.
+- Appearance: The Code colors menu shows its choices again. It opened with no background or text on the settings page.
 
 ## 1.5.0 - 2026-11-26
 

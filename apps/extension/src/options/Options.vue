@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef } from 'vue'
 import { Eye, FolderTree, Palette } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import BrandLogo from '../components/BrandLogo.vue'
 import BrandIcon from '../components/BrandIcon.vue'
 import GithubMark from '../components/GithubMark.vue'
 import { useAppearance } from '../features/appearance/useAppearance'
+import { portalTargetKey } from '../lib/portal'
 import SettingsForm from '../features/settings/SettingsForm.vue'
 import { SETTINGS_TABS, TAB_OF, type SettingsSectionId, type SettingsTab } from '../features/settings/sections'
 
@@ -15,6 +16,9 @@ const { dark, rootAttrs } = useAppearance()
 const section = (location.hash.slice(1) || undefined) as SettingsSectionId | undefined
 const form = useTemplateRef<InstanceType<typeof SettingsForm>>('form')
 const current = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
+// Menus and tooltips open here, inside .ps-root, so they get the theme's colours and styles.
+const portalEl = useTemplateRef<HTMLElement>('portal')
+provide(portalTargetKey, portalEl)
 
 let pickedAt = 0
 
@@ -70,5 +74,6 @@ onBeforeUnmount(() => window.removeEventListener('scroll', track))
         </main>
       </div>
     </div>
+    <div ref="portal" />
   </div>
 </template>
