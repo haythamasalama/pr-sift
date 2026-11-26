@@ -23,33 +23,24 @@ export const BASE_COLORS: { value: BaseColor; label: string }[] = [
   { value: 'taupe', label: 'Taupe' },
 ]
 
-export const CODE_THEMES = {
-  light: [
-    { value: 'github-light', label: 'GitHub Light' },
-    { value: 'one-light', label: 'One Light' },
-    { value: 'catppuccin-latte', label: 'Catppuccin Latte' },
-    { value: 'gruvbox-light', label: 'Gruvbox Light' },
-    { value: 'solarized-light', label: 'Solarized Light' },
-  ],
-  dark: [
-    { value: 'github-dark', label: 'GitHub Dark' },
-    { value: 'one-dark', label: 'One Dark' },
-    { value: 'catppuccin-mocha', label: 'Catppuccin Mocha' },
-    { value: 'dracula', label: 'Dracula' },
-    { value: 'nord', label: 'Nord' },
-    { value: 'tokyo-night', label: 'Tokyo Night' },
-    { value: 'gruvbox-dark', label: 'Gruvbox Dark' },
-    { value: 'night-owl', label: 'Night Owl' },
-  ],
-}
+export const CODE_THEMES = [
+  { value: 'github', label: 'GitHub' },
+  { value: 'one', label: 'One' },
+  { value: 'catppuccin', label: 'Catppuccin' },
+  { value: 'gruvbox', label: 'Gruvbox' },
+  { value: 'solarized', label: 'Solarized' },
+  { value: 'tokyo-night', label: 'Tokyo Night' },
+  { value: 'night-owl', label: 'Night Owl' },
+]
+
+export const codeFor = (theme: string, dark: boolean) => `${theme}-${dark ? 'dark' : 'light'}`
 
 export const isShadcnStyle = (style: ThemeStyle) => THEME_STYLES.some((s) => s.value === style && s.family === 'shadcn')
 
 const theme = shallowRef<ThemeMode>(DEFAULTS.theme)
 const themeStyle = shallowRef<ThemeStyle>(DEFAULTS.themeStyle)
 const baseColor = shallowRef<BaseColor>(DEFAULTS.baseColor)
-const codeLight = shallowRef(DEFAULTS.codeLight)
-const codeDark = shallowRef(DEFAULTS.codeDark)
+const codeTheme = shallowRef(DEFAULTS.codeTheme)
 const systemDark = shallowRef(false)
 let started = false
 
@@ -62,8 +53,7 @@ function apply(settings: Partial<Settings>) {
   const style = (settings.themeStyle as string) === 'shadcn' ? 'vega' : settings.themeStyle
   themeStyle.value = pick(style, THEME_STYLES, DEFAULTS.themeStyle)
   baseColor.value = pick(settings.baseColor, BASE_COLORS, DEFAULTS.baseColor)
-  codeLight.value = pick(settings.codeLight, CODE_THEMES.light, DEFAULTS.codeLight)
-  codeDark.value = pick(settings.codeDark, CODE_THEMES.dark, DEFAULTS.codeDark)
+  codeTheme.value = pick(settings.codeTheme, CODE_THEMES, DEFAULTS.codeTheme)
 }
 
 function start() {
@@ -90,12 +80,11 @@ export function useAppearance() {
     theme,
     themeStyle,
     baseColor,
-    codeLight,
-    codeDark,
+    codeTheme,
     systemDark,
     dark,
     // Bind on every .ps-root so the chosen style, base colour and code colours reach it.
-    rootAttrs: computed(() => themeAttrs(themeStyle.value, baseColor.value, dark.value ? codeDark.value : codeLight.value)),
+    rootAttrs: computed(() => themeAttrs(themeStyle.value, baseColor.value, codeFor(codeTheme.value, dark.value))),
     setTheme: (value: ThemeMode) => {
       theme.value = value
       return saveSetting('theme', value)
@@ -108,9 +97,9 @@ export function useAppearance() {
       baseColor.value = value
       return saveSetting('baseColor', value)
     },
-    setCode: (mode: 'light' | 'dark', value: string) => {
-      ;(mode === 'light' ? codeLight : codeDark).value = value
-      return saveSetting(mode === 'light' ? 'codeLight' : 'codeDark', value)
+    setCodeTheme: (value: string) => {
+      codeTheme.value = value
+      return saveSetting('codeTheme', value)
     },
   }
 }
