@@ -5,6 +5,11 @@ on:
     tags: ['v*']
   # Run by hand on main to tag and release the version in manifest.json, when a tag cannot be pushed.
   workflow_dispatch:
+    inputs:
+      replace:
+        description: Delete this version's existing release and tag first, to publish it again (only before it reaches the store)
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,6 +36,14 @@ jobs:
           echo "TAG=$VERSION" >> "$GITHUB_ENV"
       - name: Take the release notes from CHANGELOG.md
         run: node scripts/release-notes.mjs "$TAG" > release-notes.md
+      - name: Remove the earlier release of this version
+        if: github.event_name == 'workflow_dispatch' && inputs.replace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release delete "$TAG" --cleanup-tag --yes
+          fi
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

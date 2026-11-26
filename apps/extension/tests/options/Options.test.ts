@@ -46,6 +46,18 @@ describe('Options page', () => {
     expect(wrapper.find('[data-section="token"]').element.contains(connect[0]!.element)).toBe(true)
   })
 
+  it('opens the Code colors menu inside the themed page, so its choices are visible', async () => {
+    installChrome()
+    const wrapper = mount(Options, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.find('[aria-label="Code colors"]').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    const menu = document.querySelector('[role="menu"]')
+    expect(menu?.closest('.ps-root')).toBe(wrapper.element)
+    expect([...menu!.querySelectorAll('[role="menuitemradio"]')].map((i) => i.textContent?.trim())).toContain('Gruvbox')
+  })
+
   it('shows the installed version and links to the changelog and the store reviews', async () => {
     installChrome()
     const wrapper = mount(Options, { attachTo: document.body })

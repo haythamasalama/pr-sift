@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import type { NotePatch } from './useNotes'
-import { buildReviewPrompt, describeLines, startOf } from '@pr-sift/core'
+import { buildReviewPrompt, describeLines, noteCode, startOf } from '@pr-sift/core'
 import type { Note, PrFile, PrRef } from '../../lib/types'
 import Modal from '../../components/Modal.vue'
 import CodeQuote from './CodeQuote.vue'
@@ -51,7 +51,7 @@ const counts = computed(() => {
 
 const resolvedLabel = computed(() => {
   const n = counts.value.resolved
-  if (!n) return 'Show resolved in the diff · none yet'
+  if (!n) return 'No resolved notes yet'
   return showResolved.value ? `Showing ${n} resolved in the diff, dimmed` : `Show resolved in the diff (${n})`
 })
 
@@ -59,6 +59,9 @@ const splitPath = (file: string) => {
   const i = file.lastIndexOf('/')
   return { dir: i === -1 ? '' : file.slice(0, i + 1), name: file.slice(i + 1) }
 }
+
+const patches = computed(() => new Map(files.map((f) => [f.filename, f.patch])))
+const codeOf = (n: Note) => n.quote.trim() || noteCode(patches.value.get(n.file), n)
 
 const grouped = computed(() => {
   const map = new Map<string, Note[]>()
@@ -155,10 +158,10 @@ function clear() {
           </header>
 
           <CodeQuote
-            v-if="n.quote || n.lineText"
-            :code="(n.quote || n.lineText).trim()"
+            v-if="codeOf(n)"
+            :code="codeOf(n)"
             :filename="n.file"
-            class="line-clamp-3 rounded-md bg-muted/60 px-2 py-1"
+            class="max-h-48 overflow-auto rounded-md bg-muted/60 px-2 py-1"
           />
 
           <div v-if="editingId === n.id" class="flex flex-col gap-2">
