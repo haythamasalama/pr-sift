@@ -46,8 +46,8 @@ function pick(index: number, event: Event) {
     <DropdownMenuContent align="start" class="w-[30rem] max-w-[90vw]">
       <DropdownMenuItem @select="range = null">
         <Check class="size-3.5 text-success-fg" :class="range ? 'invisible' : ''" />
-        <span class="font-medium">All changes</span>
-        <span class="ml-auto text-xs text-muted-foreground">{{ commits.length }} commits</span>
+        <span class="text-xs font-medium">All changes</span>
+        <span class="ml-auto text-[11px] text-muted-foreground">{{ commits.length }} commits</span>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuLabel>Show one commit</DropdownMenuLabel>
@@ -63,9 +63,13 @@ function pick(index: number, event: Event) {
             <AvatarImage v-if="c.avatar" :src="c.avatar" alt="" />
             <AvatarFallback class="text-[8px] uppercase">{{ c.author.slice(0, 1) }}</AvatarFallback>
           </Avatar>
-          <span class="min-w-0 flex-1 truncate">{{ c.message }}</span>
-          <span class="shrink-0 font-mono text-xs text-muted-foreground">{{ c.short }}</span>
-          <span class="w-20 shrink-0 text-right text-xs text-muted-foreground">{{ timeAgo(c.date) }}</span>
+          <span class="min-w-0 flex-1 truncate text-xs">{{ c.message }}</span>
+          <span class="shrink-0 font-mono text-[11px] text-muted-foreground">{{ c.short }}</span>
+          <span
+            class="w-16 shrink-0 text-right text-[11px] whitespace-nowrap text-muted-foreground"
+            :title="new Date(c.date).toLocaleString()"
+            >{{ timeAgo(c.date, Date.now(), 'narrow') }}</span
+          >
         </DropdownMenuItem>
       </div>
       <DropdownMenuSeparator />
