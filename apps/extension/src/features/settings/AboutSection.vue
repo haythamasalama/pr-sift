@@ -3,6 +3,7 @@ import { Bug, ExternalLink, Lightbulb, PackageCheck, RefreshCw, RotateCw, Sparkl
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from '@/components/ui/item'
+import BrandIcon from '../../components/BrandIcon.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import NewDot from '../../components/NewDot.vue'
 import { openReport } from '../../lib/report'
@@ -30,6 +31,7 @@ function checkForUpdates() {
 
 <template>
   <SettingsSection id="about" title="About" description="Your version, updates and help." :framed="framed" :headless="!framed">
+    <template #icon><BrandIcon class="size-6" /></template>
     <div class="flex flex-col gap-6" :class="framed ? 'py-4' : 'pt-3'">
       <div v-if="updated" class="flex items-center gap-2 text-xs">
         <PackageCheck class="size-4 shrink-0 text-success-fg" />
@@ -65,7 +67,7 @@ function checkForUpdates() {
         </Button>
       </div>
 
-      <ItemGroup class="overflow-hidden rounded-lg border">
+      <ItemGroup class="gap-0 overflow-hidden rounded-lg border has-data-[size=sm]:gap-0">
         <template v-for="(link, i) in LINKS" :key="link.label">
           <ItemSeparator v-if="i > 0" class="my-0" />
           <Item

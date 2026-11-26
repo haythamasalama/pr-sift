@@ -8,6 +8,10 @@ goes under `## Unreleased` until the next release moves it under its version and
 ### Fixed
 
 - Appearance: The settings page header shows the PR Sift logo, the same as About, instead of a blue tile.
+- Options: About's links sit in one tidy list without gaps between rows, and About has its own icon like the other
+  sections.
+- Options: Always hidden leaves room under its description, its box suggests a new path instead of repeating one already
+  in the list, and the token box shows a classic token (`ghp_…`), the kind the page asks for.
 
 ## 1.5.1 - 2026-11-26
 
