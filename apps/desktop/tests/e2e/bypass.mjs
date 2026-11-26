@@ -81,6 +81,10 @@ const fail = async (message) => {
 }
 await page.getByLabel('Personal access token').fill('ghp_example_token_for_bypass_test')
 await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+// Through the first-run steps, leaving the style and projects as they are.
+await page.getByRole('heading', { name: 'Pick your style' }).waitFor()
+await page.getByRole('button', { name: 'Continue' }).click()
+await page.getByRole('button', { name: 'Skip for now' }).click()
 await page.getByText('Add a shopping cart').waitFor()
 
 const merge = page.getByRole('button', { name: /You can bypass the rules/ })

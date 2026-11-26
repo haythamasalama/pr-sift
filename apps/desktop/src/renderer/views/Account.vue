@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue'
-import { CircleAlert, LogOut } from '@lucide/vue'
+import { CircleAlert, LogOut, Sparkles } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { bridge } from '~/bridge'
 import { clearCache } from '~/cache'
 import { useAuth } from '~/useAuth'
 import PageHeader from '~/components/PageHeader.vue'
+import { useOnboarding } from '~/onboarding/useOnboarding'
 
 const { status, set } = useAuth()
+const { restart } = useOnboarding()
 const busy = shallowRef(false)
 
 async function signOut() {
@@ -51,8 +53,9 @@ const openProfile = () => status.value?.account && bridge.invoke('shell:open-ext
       >
     </Alert>
 
-    <div>
+    <div class="flex flex-wrap gap-2">
       <Button variant="outline" :disabled="busy" @click="signOut"><LogOut /> Sign out</Button>
+      <Button variant="ghost" @click="restart"><Sparkles /> Show the welcome again</Button>
     </div>
   </div>
 </template>

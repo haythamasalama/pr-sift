@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import BrandMark from '@/components/BrandMark.vue'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
 import { useAppearance } from '@/features/appearance/useAppearance'
 import { portalTargetKey } from '@/lib/portal'
@@ -41,7 +40,9 @@ import type { AutoApproveStatus } from '#shared/ipc'
 import { openProject, openReview, project, review, view, worktree, type View } from './navigation'
 import { parsePullLink } from '#shared/links'
 import ShareMenu from './components/ShareMenu.vue'
-import SignIn from './views/SignIn.vue'
+import Onboarding from './onboarding/Onboarding.vue'
+import { useOnboarding } from './onboarding/useOnboarding'
+import AppLogo from './components/AppLogo.vue'
 import InboxView from './views/Inbox.vue'
 import ProjectView from './views/Project.vue'
 import WorktreeChanges from './views/WorktreeChanges.vue'
@@ -70,6 +71,7 @@ watch(
   { immediate: true },
 )
 const { status } = useAuth()
+const { done: onboarded } = useOnboarding()
 const { projects } = useProjects()
 const { sort, groups, byRepo, folded, setSort, setByRepo, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
 watch(project, (path) => path && markOpened(path))
@@ -249,7 +251,7 @@ function onAdded(paths: string[]) {
   <TooltipProvider :delay-duration="250">
     <div ref="appRoot" class="ps-root h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
-      <SignIn v-else-if="!status.signedIn" />
+      <Onboarding v-else-if="!status.signedIn || !onboarded" />
       <div v-else class="flex h-full">
         <nav
           class="relative flex shrink-0 flex-col gap-0.5 border-r border-border bg-background py-4"
@@ -279,9 +281,7 @@ function onAdded(paths: string[]) {
           </div>
           <div class="flex items-center gap-2.5 pt-1 pb-[18px]" :class="collapsed ? 'justify-center' : 'pl-2.5'">
             <template v-if="!collapsed">
-              <span class="flex size-[22px] items-center justify-center rounded-md bg-foreground text-background">
-                <BrandMark class="size-3.5" />
-              </span>
+              <AppLogo class="size-[22px]" />
               <span class="text-sm font-semibold">PR Sift</span>
             </template>
             <button

@@ -141,6 +141,10 @@ await page.emulateMedia({ colorScheme: 'dark' })
 await page.setViewportSize({ width: 1180, height: 780 })
 await page.getByLabel('Personal access token').fill('ghp_example_token_for_responsive_test')
 await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+// Through the first-run steps, leaving the style and projects as they are.
+await page.getByRole('heading', { name: 'Pick your style' }).waitFor()
+await page.getByRole('button', { name: 'Continue' }).click()
+await page.getByRole('button', { name: 'Skip for now' }).click()
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 await page.evaluate(async (root) => window.prSift.invoke('settings:set', { roots: [root] }), projects)
 // The pages read the folders once, so load them again.
