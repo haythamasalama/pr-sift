@@ -93,9 +93,14 @@ describe('SettingsForm', () => {
     })
   })
 
-  it('picks the theme from preview cards', async () => {
+  it('picks the mode from a segmented control', async () => {
     const wrapper = await mountForm()
-    expect(section(wrapper, 'appearance').find('[aria-label="Mode"]').findAll('.ps-root.dark')).toHaveLength(2)
+    expect(
+      section(wrapper, 'appearance')
+        .find('[aria-label="Mode"]')
+        .findAll('button')
+        .map((b) => b.text()),
+    ).toEqual(['System', 'Light', 'Dark'])
     await wrapper.find('#settings-theme-dark').trigger('click')
     await flushPromises()
     expect(saved().theme).toBe('dark')
