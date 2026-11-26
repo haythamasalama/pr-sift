@@ -100,7 +100,11 @@ onBeforeUnmount(() => {
           <BrandMark v-else class="size-3.5" />
         </BrandPulse>
         {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge v-if="externalUpdate && !dead" variant="outline" class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3">
+        <Badge
+          v-if="externalUpdate && !dead"
+          variant="outline"
+          class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3"
+        >
           <RefreshCw /> Changed
         </Badge>
         <Badge
