@@ -9,10 +9,16 @@ import { scopeLabel, type ScopeGroup, type SmartScopes } from '@pr-sift/core'
 import ScopeChip from './ScopeChip.vue'
 import ScopeRow from './ScopeRow.vue'
 
-const { smart, selected } = defineProps<{ smart: SmartScopes; selected: string[] }>()
+const { smart, selected, search } = defineProps<{
+  smart: SmartScopes
+  selected: string[]
+  // When the sidebar's own search box drives this panel, its box is hidden and this text filters it.
+  search?: string
+}>()
 const emit = defineEmits<{ toggle: [key: string]; clear: [] }>()
 
-const query = shallowRef('')
+const ownQuery = shallowRef('')
+const query = computed(() => search ?? ownQuery.value)
 const groupLimit = shallowRef(5)
 const toggled = shallowRef<Record<string, boolean>>({})
 
@@ -37,10 +43,10 @@ const prefix = (path: string) => (path.includes('/') ? path.slice(0, path.lastIn
 </script>
 
 <template>
-  <div class="flex h-full flex-col gap-5 overflow-auto p-3 text-xs">
-    <div class="relative flex items-center">
+  <div class="flex flex-col gap-5 text-xs" :class="search === undefined ? 'h-full overflow-auto p-3' : 'px-1.5 pt-1 pb-3'">
+    <div v-if="search === undefined" class="relative flex items-center">
       <Search class="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
-      <Input v-model="query" type="search" placeholder="Search folders…" class="h-8 pl-8 text-xs md:text-xs" />
+      <Input v-model="ownQuery" type="search" placeholder="Search folders…" class="h-8 pl-8 text-xs md:text-xs" />
     </div>
 
     <div v-if="selected.length" class="flex flex-col gap-1.5 rounded-md border border-primary/40 bg-primary/10 p-2">

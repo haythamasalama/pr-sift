@@ -810,7 +810,7 @@ await shot(browser, 'filters', async (page) => {
 
 await shot(browser, 'smart-filters', async (page) => {
   await openReview(page)
-  await page.getByRole('tab', { name: /Smart filters/ }).click()
+  await page.getByRole('button', { name: /^Smart filters/ }).click()
 })
 
 await shot(browser, 'notes', async (page) => {
@@ -967,13 +967,13 @@ await clip(
     await glide(page, page.getByRole('button', { name: 'Hide viewed' }))
     await pause(page, 1100)
     await camera(page, null)
-    await camera(page, page.getByRole('tab', { name: /Smart filters/ }), 1.8)
-    await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
+    await camera(page, page.getByRole('button', { name: /^Smart filters/ }), 1.8)
+    await glide(page, page.getByRole('button', { name: /^Smart filters/ }))
     await pause(page, 600)
     await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
     await pause(page, 1300)
     await glide(page, page.getByRole('button', { name: /^Tests/ }).first())
-    await glide(page, page.getByRole('tab', { name: /Tree/ }))
+    await glide(page, page.getByRole('button', { name: /^Smart filters/ }))
     await camera(page, chip(page, 'modified'), 2)
     await glide(page, chip(page, 'modified'))
     await pause(page, 1200)
@@ -1036,8 +1036,8 @@ await clip(browser, 'folders', async (page) => {
 })
 
 await clip(browser, 'smart-filters', async (page) => {
-  await camera(page, page.getByRole('tab', { name: /Smart filters/ }), 1.7)
-  await glide(page, page.getByRole('tab', { name: /Smart filters/ }))
+  await camera(page, page.getByRole('button', { name: /^Smart filters/ }), 1.7)
+  await glide(page, page.getByRole('button', { name: /^Smart filters/ }))
   await pause(page, 1000)
   for (const name of [/^Tests/, /^Migrations/, /^Translations/]) {
     await glide(page, page.getByRole('button', { name }).first())

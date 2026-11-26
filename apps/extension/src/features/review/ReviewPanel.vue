@@ -4,6 +4,7 @@ import { useMediaQuery } from '@vueuse/core'
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronRight,
   FolderTree,
   GitCommitHorizontal,
   PanelLeftClose,
@@ -19,7 +20,6 @@ import { Button } from '@/components/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import ReviewSkeleton from './ReviewSkeleton.vue'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useFileFilter } from '../filters/useFileFilter'
 import { diffModeKey } from '../diff/diffMode'
 import { cardsExpandKey, type ExpandCommand } from '../tree/expandContext'
@@ -114,7 +114,8 @@ const filter = useFileFilter(
 )
 const tree = computed(() => buildTree(filter.pool.value))
 const notesOpen = shallowRef(false)
-const sidebar = shallowRef<'smart' | 'tree'>('tree')
+// Smart filters sit above the tree as a section that folds; it opens on its own while one is in use.
+const smartOpen = shallowRef(false)
 const list = useTemplateRef<InstanceType<typeof FileList>>('list')
 const main = useTemplateRef<HTMLElement>('main')
 
@@ -144,7 +145,7 @@ function hideSidebar() {
 async function showSidebar(tab?: 'tree' | 'smart' | 'search') {
   collapsed.value = false
   void saveSetting('sidebarCollapsed', false)
-  if (tab === 'tree' || tab === 'smart') sidebar.value = tab
+  if (tab === 'smart') smartOpen.value = true
   if (tab === 'search') {
     await nextTick()
     ;(searchInput.value?.$el as HTMLInputElement | undefined)?.focus()
@@ -570,33 +571,9 @@ watch(
             <span v-if="filter.scopes.value.length" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
           </Button>
         </nav>
-        <Tabs v-else v-model="sidebar" class="min-h-0 flex-1 gap-0">
-          <div class="flex flex-col gap-2 border-b px-3.5 py-2.5">
-            <div class="flex items-center gap-1.5">
-              <TabsList class="h-7 flex-1 gap-0.5 rounded-md bg-muted p-0.5">
-                <TabsTrigger
-                  value="tree"
-                  class="h-6 flex-1 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
-                  ><FolderTree /> Tree</TabsTrigger
-                >
-                <TabsTrigger
-                  value="smart"
-                  class="h-6 flex-1 rounded-sm border-0 text-xs text-muted-foreground shadow-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-accent [&_svg]:size-[13px]"
-                  ><Sparkles /> Smart filters</TabsTrigger
-                >
-              </TabsList>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="-mr-1 size-7 shrink-0 text-muted-foreground hover:text-foreground"
-                title="Hide sidebar"
-                aria-label="Hide sidebar"
-                @click="hideSidebar"
-              >
-                <PanelLeftClose />
-              </Button>
-            </div>
-            <div class="relative flex items-center">
+        <template v-else>
+          <div class="flex items-center gap-1.5 border-b px-3.5 py-2.5">
+            <div class="relative flex flex-1 items-center">
               <Search class="pointer-events-none absolute left-2 size-3.5 text-muted-foreground" />
               <Input
                 ref="searchInput"
@@ -616,8 +593,40 @@ watch(
                 <X />
               </Button>
             </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              class="-mr-1 size-7 shrink-0 text-muted-foreground hover:text-foreground"
+              title="Hide sidebar"
+              aria-label="Hide sidebar"
+              @click="hideSidebar"
+            >
+              <PanelLeftClose />
+            </Button>
           </div>
-          <TabsContent value="tree" class="min-h-0 flex-1">
+          <div class="min-h-0 flex-1 overflow-auto">
+            <div class="px-2 pt-1">
+              <button
+                type="button"
+                class="flex h-8 w-full items-center gap-1 rounded-sm px-1.5 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase hover:text-foreground"
+                :aria-expanded="smartOpen || !!filter.scopes.value.length"
+                @click="smartOpen = !(smartOpen || !!filter.scopes.value.length)"
+              >
+                <ChevronRight class="size-3.5 transition-transform" :class="smartOpen || filter.scopes.value.length ? 'rotate-90' : ''" />
+                Smart filters
+                <span v-if="filter.scopes.value.length" class="font-normal tracking-normal text-emphasis normal-case"
+                  >{{ filter.scopes.value.length }} on</span
+                >
+              </button>
+              <ScopePanel
+                v-if="smartOpen || filter.scopes.value.length"
+                :smart="filter.smart.value"
+                :selected="filter.scopes.value"
+                :search="filter.query.value"
+                @toggle="filter.toggleScope"
+                @clear="filter.setScopes([])"
+              />
+            </div>
             <FileTree
               :tree="tree"
               :search="filter.query.value"
@@ -642,18 +651,10 @@ watch(
               @toggle-file="setViewed"
               @hide-folder="hideFolder"
             />
-          </TabsContent>
-          <TabsContent value="smart" class="min-h-0 flex-1">
-            <ScopePanel
-              :smart="filter.smart.value"
-              :selected="filter.scopes.value"
-              @toggle="filter.toggleScope"
-              @clear="filter.setScopes([])"
-            />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </template>
         <div
-          v-if="sidebar === 'tree' && !(collapsed && !compact)"
+          v-if="!(collapsed && !compact)"
           class="flex items-center gap-1.5 border-t px-3.5 py-2 text-[11px] text-muted-foreground tabular-nums"
           :title="`${filter.progress.value.done} of ${filter.progress.value.total} files viewed`"
         >
