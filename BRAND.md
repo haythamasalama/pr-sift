@@ -74,7 +74,8 @@ A rounded square tile with a funnel drawn as one stroke.
 
 ### Extension
 
-The extension draws inside github.com, so it uses GitHub's Primer colours, not the site's.
+The extension draws inside github.com. Its default **GitHub** theme uses GitHub's Primer colours, listed below. The
+other themes are in [Themes](#themes).
 
 | Token                 | Light                 | Dark                                 |
 | :-------------------- | :-------------------- | :----------------------------------- |
@@ -112,9 +113,39 @@ Merge stays the strongest button.
   file list sits on `background`, so the chrome and the content read as two layers.
 - `selected` (`rgb(212 167 44 / .28)` light, `rgb(187 128 9 / .3)` dark) marks the lines of a note range. It is
   painted over the diff colours, never instead of them.
-- The radius scale comes from `--radius` (6 px, GitHub's own) on `:root` and `:host`. Small buttons and toggles get
+- In the GitHub theme the radius scale comes from `--radius` (6 px, GitHub's own). Small buttons and toggles get
   4 px, inputs and default buttons 6 px, cards, dialogs and sheets 8 px. Badges and chips use the base radius too, so
   nothing is drawn as a pill except switches and avatars. Don't override corners per component.
+
+### Themes
+
+Settings > Appearance picks a Mode (System, Light, Dark), a Theme and Code colors. Each theme is a block of the same
+tokens in `apps/extension/src/content/themes.css`; code colours live in `codethemes.css`. New UI uses the tokens,
+so it follows every theme.
+
+| Theme            | Look                                                                             | Radius                |
+| :--------------- | :------------------------------------------------------------------------------- | :-------------------- |
+| GitHub (default) | Primer colours and GitHub blue, the system font                                  | 6 px                  |
+| PR Sift          | The site's look: black and white, IBM Plex Sans and Mono, neutral greys, no blue | 4 px on every element |
+| Minimal          | Neutral greys                                                                    | 10 px                 |
+| Soft             | Warm greys                                                                       | 16 px                 |
+| Mono             | Square corners and a monospace font                                              | 0                     |
+
+PR Sift theme values: lines and inputs `#e5e5e5` / `#262626`, surfaces `#f5f5f5` / `#0a0a0a`, muted text
+`#525252` / `#a3a3a3`, emphasis is ink (`#000000` / `#f5f5f5`). Its radius steps are flat: `--radius: 4px` and
+`--radius-step: 0px`, so buttons, inputs, menus, cards and sheets all get 4 px.
+
+### Status colours
+
+One colour per meaning, the same in every theme:
+
+| Meaning   | Token         | Where                                                                  |
+| :-------- | :------------ | :--------------------------------------------------------------------- |
+| New       | `dot`         | The dot on a new setting or feature (green in PR Sift, blue in GitHub) |
+| Needs you | `attention`   | Update ready (dot on the gear and launcher), Changed badge on a PR     |
+| Done      | `success-fg`  | The version badge right after an update                                |
+| Stopped   | `destructive` | Reload PR Sift, when the extension was reloaded under the page         |
+| State     | `foreground`  | The dot on a filter that is on                                         |
 
 ### Social cards
 
@@ -128,10 +159,11 @@ Black background, white text, GitHub's dark diff colours: removed `#f85149` on `
 | Site                                          | IBM Plex Sans                                                      | 400, 500, 600 |
 | Site code, the hero diff, numbers in the demo | IBM Plex Mono                                                      | 400, 500      |
 | Social and store cards                        | IBM Plex Sans 500/600 and IBM Plex Mono 500, embedded in the image |               |
-| Extension                                     | Inter if the visitor has it, otherwise the system UI font          |               |
-| Extension code                                | `ui-monospace`, SF Mono, Menlo                                     |               |
+| Extension                                     | The system UI font; IBM Plex Sans in the PR Sift theme             | 400, 500, 600 |
+| Extension code                                | `ui-monospace`, SF Mono, Menlo; IBM Plex Mono in the PR Sift theme | 400, 500      |
 
-- Fonts are self-hosted from `@fontsource`. Nothing loads from Google Fonts or any other host.
+- Fonts are self-hosted from `@fontsource`. Nothing loads from Google Fonts or any other host. The extension bundles
+  its IBM Plex files and adds them with the FontFace API only when the PR Sift theme is on.
 - Headings are semibold (600) with tight tracking. Nothing heavier than 600.
 - The extension UI is 13 px, like GitHub.
 
@@ -149,14 +181,14 @@ The signature move of the brand: a headline written as a two-line diff.
 
 ## Shape and space
 
-| Element                                                | Radius                        |
-| :----------------------------------------------------- | :---------------------------- |
-| Logo tile                                              | 22 % of its size              |
-| Buttons, inputs                                        | 6 px (`rounded-md`)           |
-| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)           |
-| Sibling app cards                                      | 12 px (`rounded-xl`)          |
-| Theme switch                                           | Full pill                     |
-| Extension components                                   | Base radius 6 px (`0.375rem`) |
+| Element                                                | Radius                                             |
+| :----------------------------------------------------- | :------------------------------------------------- |
+| Logo tile                                              | 22 % of its size                                   |
+| Buttons, inputs                                        | 6 px (`rounded-md`)                                |
+| Screenshots, videos, the demo, cards on the brand page | 8 px (`rounded-lg`)                                |
+| Sibling app cards                                      | 12 px (`rounded-xl`)                               |
+| Theme switch                                           | Full pill                                          |
+| Extension components                                   | Per theme, see [Themes](#themes) (4 px in PR Sift) |
 
 - Site content width 1152 px (`max-w-6xl`) with 16 px side gutters on phones and 24 px from `sm`.
 - Separate sections with space and a `line` border, not with shadows.
