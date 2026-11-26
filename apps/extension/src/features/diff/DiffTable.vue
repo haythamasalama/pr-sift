@@ -69,13 +69,25 @@ const splitRows = computed(() => buildSplitRows(rows.value))
 const highlighted = shallowRef<Map<number, string>>(new Map())
 let cancelIdle: (() => void) | null = null
 
+let highlightRun = 0
+
 function scheduleHighlight() {
   cancelIdle?.()
-  cancelIdle = whenIdle(() => (highlighted.value = highlightRows(rows.value, filename)))
+  const run = ++highlightRun
+  cancelIdle = whenIdle(() => {
+    void highlightRows(rows.value, filename)
+      .then((result) => {
+        if (run === highlightRun) highlighted.value = result
+      })
+      .catch(() => undefined)
+  })
 }
 
 watch(rows, scheduleHighlight, { immediate: true })
-onBeforeUnmount(() => cancelIdle?.())
+onBeforeUnmount(() => {
+  cancelIdle?.()
+  highlightRun++
+})
 const showAll = shallowRef(false)
 const total = computed(() => (mode === 'split' ? splitRows.value.length : rows.value.length))
 const visibleRows = computed(() => (showAll.value ? rows.value : rows.value.slice(0, LIMIT)))

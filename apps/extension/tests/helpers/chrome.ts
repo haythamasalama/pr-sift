@@ -19,6 +19,21 @@ export function installChrome(responder: Responder = () => ({ ok: false, status:
     }),
   }
 
+  const sessionStore: Record<string, unknown> = {}
+  const session = {
+    get: vi.fn(async (key: string | string[]) => {
+      const keys = typeof key === 'string' ? [key] : key
+      return Object.fromEntries(keys.filter((k) => k in sessionStore).map((k) => [k, structuredClone(sessionStore[k])]))
+    }),
+    set: vi.fn(async (values: Record<string, unknown>) => {
+      Object.assign(sessionStore, structuredClone(values))
+    }),
+    remove: vi.fn(async (key: string | string[]) => {
+      for (const k of typeof key === 'string' ? [key] : key) delete sessionStore[k]
+    }),
+    setAccessLevel: vi.fn(async (_options: { accessLevel: string }) => {}),
+  }
+
   const event = <T extends (...args: never[]) => unknown>() => ({
     addListener: vi.fn((_listener: T) => {}),
     removeListener: vi.fn((_listener: T) => {}),
@@ -36,7 +51,14 @@ export function installChrome(responder: Responder = () => ({ ok: false, status:
       requestUpdateCheck: vi.fn(async (): Promise<{ status: string; version?: string }> => ({ status: 'no_update' })),
       reload: vi.fn(),
       openOptionsPage: vi.fn(async () => {}),
-      onMessage: event<(message: unknown, sender: { id?: string }, send: (response: unknown) => void) => boolean | void>(),
+      onMessage:
+        event<
+          (
+            message: unknown,
+            sender: { id?: string; tab?: { id?: number }; frameId?: number },
+            send: (response: unknown) => void,
+          ) => boolean | void
+        >(),
       onUpdateAvailable: event<(details: { version: string }) => void>(),
       onInstalled: event<(details: { reason: string; previousVersion?: string }) => void>(),
       onStartup: event<() => void>(),
@@ -47,15 +69,19 @@ export function installChrome(responder: Responder = () => ({ ok: false, status:
       setBadgeBackgroundColor: vi.fn(async (_details: { color: string }) => {}),
       setTitle: vi.fn(async (_details: { title: string }) => {}),
     },
+    scripting: {
+      executeScript: vi.fn(async (_injection: { target: { tabId: number; frameIds?: number[] }; files: string[] }) => []),
+    },
     storage: {
       local,
+      session,
       // Listeners are recorded, not called: a test that needs a change event calls the listener itself.
       onChanged: event<(changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, area: string) => void>(),
     },
   }
 
   vi.stubGlobal('chrome', chrome)
-  return { store, sent, chrome }
+  return { store, sessionStore, sent, chrome }
 }
 
 export function invalidateExtension() {

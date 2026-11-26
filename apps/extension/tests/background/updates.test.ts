@@ -72,3 +72,27 @@ describe('background update handling', () => {
     expect('updated' in fake.store).toBe(false)
   })
 })
+
+describe('background highlighter', () => {
+  it('injects highlight.js into the frame that asked, and allows the review to read session storage', async () => {
+    const worker = await startWorker()
+    expect(fake.chrome.storage.session.setAccessLevel).toHaveBeenCalledWith({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' })
+    const send = vi.fn()
+    expect(worker.message({ type: 'highlighter' }, { ...self, tab: { id: 4 }, frameId: 2 }, send)).toBe(true)
+    await flushPromises()
+    expect(fake.chrome.scripting.executeScript).toHaveBeenCalledWith({
+      target: { tabId: 4, frameIds: [2] },
+      files: ['dist/highlighter.js'],
+    })
+    expect(send).toHaveBeenCalledWith({ ok: true })
+  })
+
+  it('does nothing for a message that did not come from a tab', async () => {
+    const worker = await startWorker()
+    const send = vi.fn()
+    worker.message({ type: 'highlighter' }, self, send)
+    await flushPromises()
+    expect(fake.chrome.scripting.executeScript).not.toHaveBeenCalled()
+    expect(send).toHaveBeenCalledWith({ ok: false })
+  })
+})

@@ -59,9 +59,12 @@ describe('NotesDialog', () => {
       attachTo: document.body,
     })
     await vi.waitFor(() => expect(document.querySelectorAll('code').length).toBe(2))
-    const codes = [...document.querySelectorAll('code')].map((c) => c.innerHTML)
-    expect(codes.some((html) => html.includes('hljs-string'))).toBe(true)
-    expect(codes.some((html) => html.includes('hljs-variable'))).toBe(true)
+    // highlight.js loads on first use, so the colours come a moment after the text.
+    await vi.waitFor(() => {
+      const codes = [...document.querySelectorAll('code')].map((c) => c.innerHTML)
+      expect(codes.some((html) => html.includes('hljs-string'))).toBe(true)
+      expect(codes.some((html) => html.includes('hljs-variable'))).toBe(true)
+    })
   })
 
   it('says what the resolved switch does once it is on', async () => {

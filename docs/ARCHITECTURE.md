@@ -36,6 +36,11 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 ## apps/extension
 
 - `content/` mounts the app inside a shadow root on `github.com` pull request pages (`main.ts`, `App.vue`).
+  `early.ts` is a tiny script that runs at `document_start` on pull request pages: when the review opens by itself, it
+  starts the `.diff` download while GitHub's page is still loading.
+- `features/diff/highlighter.ts` (highlight.js with every language) is built on its own as `dist/highlighter.js`. It is
+  not part of the script that runs on every GitHub page: the first diff or quote that needs colours asks the service
+  worker to inject it (`chrome.scripting`) into the extension's isolated world on that page.
 - `background/` is the service worker that talks to the GitHub API, reads cross-origin text and sets the toolbar
   badge while an update is ready or was just installed.
 - `options/` is the settings page, a thin page around `features/settings/SettingsForm.vue`.
@@ -51,7 +56,10 @@ updates) and `apps/extension/src/background` (network), so everything else can b
 ## Data flow
 
 1. `usePullRequest` loads the pull request (`.diff` through the page session, the API as a fallback). The same page
-   gives the author, branches, state and description. With a token, `fetchConversation` reads comment threads, the
+   gives the author, branches, state and description. The last four pull requests are kept in
+   `chrome.storage.session` (memory only, cleared when Chrome closes), so opening one again shows it at once while a
+   fresh copy loads; if the fresh copy differs, the review offers a refresh. Hovering the PR Sift button starts the
+   load early. With a token, `fetchConversation` reads comment threads, the
    conversation, reviews and merge readiness from the API.
 2. `useFileFilter` derives the visible files from filters, search, hidden rules and viewed marks.
 3. `FileList` renders cards progressively; `DiffTable` renders rows and notes.
