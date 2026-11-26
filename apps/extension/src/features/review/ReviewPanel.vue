@@ -4,14 +4,12 @@ import { useMediaQuery } from '@vueuse/core'
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronRight,
   FolderTree,
   GitCommitHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   RefreshCw,
   Search,
-  Sparkles,
   X,
 } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -44,7 +42,7 @@ import NotesDialog from '../notes/NotesDialog.vue'
 import PrPanel from './PrPanel.vue'
 import PrSummary from './PrSummary.vue'
 import ReviewActions from './ReviewActions.vue'
-import ScopePanel from '../filters/ScopePanel.vue'
+import SmartFiltersMenu from '../filters/SmartFiltersMenu.vue'
 import Toolbar from './Toolbar.vue'
 import SettingsSheet from '../settings/SettingsSheet.vue'
 import { settingsOpenerKey } from '../settings/useSettingsOpener'
@@ -114,8 +112,6 @@ const filter = useFileFilter(
 )
 const tree = computed(() => buildTree(filter.pool.value))
 const notesOpen = shallowRef(false)
-// Smart filters sit above the tree as a section that folds; it opens on its own while one is in use.
-const smartOpen = shallowRef(false)
 const list = useTemplateRef<InstanceType<typeof FileList>>('list')
 const main = useTemplateRef<HTMLElement>('main')
 
@@ -142,10 +138,9 @@ function hideSidebar() {
   collapsed.value = true
   void saveSetting('sidebarCollapsed', true)
 }
-async function showSidebar(tab?: 'tree' | 'smart' | 'search') {
+async function showSidebar(tab?: 'tree' | 'search') {
   collapsed.value = false
   void saveSetting('sidebarCollapsed', false)
-  if (tab === 'smart') smartOpen.value = true
   if (tab === 'search') {
     await nextTick()
     ;(searchInput.value?.$el as HTMLInputElement | undefined)?.focus()
@@ -559,17 +554,6 @@ watch(
             <FolderTree />
             <span v-if="filter.selectedFolder.value" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="relative size-8 text-muted-foreground hover:text-foreground"
-            title="Smart filters"
-            aria-label="Show smart filters"
-            @click="showSidebar('smart')"
-          >
-            <Sparkles />
-            <span v-if="filter.scopes.value.length" class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-emphasis" />
-          </Button>
         </nav>
         <template v-else>
           <div class="flex items-center gap-1.5 border-b px-3.5 py-2.5">
@@ -593,6 +577,12 @@ watch(
                 <X />
               </Button>
             </div>
+            <SmartFiltersMenu
+              :smart="filter.smart.value"
+              :selected="filter.scopes.value"
+              @toggle="filter.toggleScope"
+              @clear="filter.setScopes([])"
+            />
             <Button
               variant="ghost"
               size="icon-sm"
@@ -605,28 +595,6 @@ watch(
             </Button>
           </div>
           <div class="min-h-0 flex-1 overflow-auto">
-            <div class="px-2 pt-1">
-              <button
-                type="button"
-                class="flex h-8 w-full items-center gap-1 rounded-sm px-1.5 text-left text-[11px] font-medium tracking-wide text-muted-foreground uppercase hover:text-foreground"
-                :aria-expanded="smartOpen || !!filter.scopes.value.length"
-                @click="smartOpen = !(smartOpen || !!filter.scopes.value.length)"
-              >
-                <ChevronRight class="size-3.5 transition-transform" :class="smartOpen || filter.scopes.value.length ? 'rotate-90' : ''" />
-                Smart filters
-                <span v-if="filter.scopes.value.length" class="font-normal tracking-normal text-emphasis normal-case"
-                  >{{ filter.scopes.value.length }} on</span
-                >
-              </button>
-              <ScopePanel
-                v-if="smartOpen || filter.scopes.value.length"
-                :smart="filter.smart.value"
-                :selected="filter.scopes.value"
-                :search="filter.query.value"
-                @toggle="filter.toggleScope"
-                @clear="filter.setScopes([])"
-              />
-            </div>
             <FileTree
               :tree="tree"
               :search="filter.query.value"
