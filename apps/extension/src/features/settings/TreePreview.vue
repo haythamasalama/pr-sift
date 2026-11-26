@@ -10,7 +10,7 @@ const line = computed(() => (guides ? '' : 'border-transparent'))
 
 <template>
   <!-- Drawn like the review's file tree: a chevron and a folder per level, the file picked at the bottom. -->
-  <div class="w-60 rounded-lg border bg-muted/40 p-1.5 text-xs" aria-hidden="true">
+  <div class="w-48 rounded-lg border bg-muted/40 p-1 text-xs" aria-hidden="true">
     <p class="flex h-6 items-center gap-1 px-1">
       <ChevronDown class="size-3 text-muted-foreground" /><Folder class="size-3.5 text-muted-foreground" />src
     </p>

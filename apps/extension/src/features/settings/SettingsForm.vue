@@ -192,8 +192,8 @@ defineExpose({ scrollToSection })
       <SettingsGroup id="token" title="Connection">
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
-      <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
-        <SettingsRow label="Merge method" :description="hintOf(MERGE_METHODS, settings.mergeMethod)" class="border-b pt-0">
+      <SettingsGroup id="merging" title="Merging" hide-title>
+        <SettingsRow label="Merge method" description="Your last choice in the review becomes the default." class="border-b">
           <SegmentedControl
             :model-value="settings.mergeMethod"
             :options="MERGE_METHODS"
@@ -219,7 +219,7 @@ defineExpose({ scrollToSection })
             "
           />
         </SettingsRow>
-        <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-2">
+        <Collapsible v-if="settings.leaveOutCoAuthors" :default-open="section === 'merging'" class="-mt-1 pb-3">
           <CollapsibleTrigger as-child>
             <Button variant="ghost" size="xs" class="group w-fit px-1 text-muted-foreground">
               <ChevronRight class="transition-transform group-data-[state=open]:rotate-90" /> Edit the list
