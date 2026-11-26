@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, type Component, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { ChevronRight, CircleCheck, Columns2, Monitor, Moon, RotateCcw, Rows2, Sun } from '@lucide/vue'
+import { ChevronRight, CircleCheck, Eye, FolderTree, Monitor, Moon, Palette, RotateCcw, Sun } from '@lucide/vue'
 import { DEFAULT_REMOVED_CO_AUTHORS } from '@pr-sift/core'
 import { matcher } from '@pr-sift/core'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { FieldLabel } from '@/components/ui/field'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
+import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
+import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
+import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
 import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
@@ -48,8 +51,8 @@ const MODE_HINTS: Record<ThemeMode, string> = {
 }
 
 const DIFF_VIEWS: { value: DiffMode; label: string; hint: string; icon: Component }[] = [
-  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column.', icon: Rows2 },
-  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.', icon: Columns2 },
+  { value: 'unified', label: 'Unified', hint: 'Removed and added lines in one column.', icon: DiffUnifiedIcon },
+  { value: 'split', label: 'Split', hint: 'Old on the left, new on the right. Small windows use Unified.', icon: DiffSplitIcon },
 ]
 
 const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
@@ -57,6 +60,8 @@ const MERGE_METHODS: { value: MergeMethod; label: string; hint: string }[] = [
   { value: 'merge', label: 'Merge commit', hint: 'Every commit, plus a merge commit.' },
   { value: 'rebase', label: 'Rebase', hint: 'Every commit, without a merge commit.' },
 ]
+
+const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearance: Palette, about: BrandIcon }
 
 const hintOf = <T extends string>(options: { value: T; hint: string }[], value: T) => options.find((o) => o.value === value)?.hint ?? ''
 
@@ -163,13 +168,13 @@ defineExpose({ scrollToSection })
         type="button"
         role="tab"
         :aria-selected="tab === t.id"
-        class="-mb-px border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground"
+        class="-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0"
         :class="
           tab === t.id ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
         "
         @click="openTab(t.id)"
       >
-        {{ t.label }}
+        <component :is="TAB_ICONS[t.id]" />{{ t.label }}
       </button>
     </nav>
 
@@ -188,7 +193,7 @@ defineExpose({ scrollToSection })
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
       <SettingsGroup id="merging" title="Merging" description="Your last choice in the review becomes the default.">
-        <SettingsRow label="Merge method" :description="hintOf(MERGE_METHODS, settings.mergeMethod)" class="py-0">
+        <SettingsRow label="Merge method" :description="hintOf(MERGE_METHODS, settings.mergeMethod)" class="border-b pt-0">
           <SegmentedControl
             :model-value="settings.mergeMethod"
             :options="MERGE_METHODS"
