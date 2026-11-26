@@ -108,7 +108,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs">
-    <div v-if="pr && (dead || !open)" class="ps-root fixed right-5 bottom-5 z-30 flex items-center gap-2" :class="{ dark: githubDark }">
+    <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
+      <!-- .ps-root sets position: relative outside the utility layer, so the fixed corner needs its own box. -->
+      <div class="fixed right-5 bottom-5 z-30 flex items-center gap-2">
       <OpenInApp
         v-if="desktopApp && !dead"
         :pr="pr"
@@ -152,6 +154,7 @@ onBeforeUnmount(() => {
           <span class="sr-only">{{ updateNote }}</span>
         </span>
       </Button>
+      </div>
     </div>
     <QuickMerge v-if="pr && !open && !dead" :key="`quick-${prKey(pr)}`" :pr="pr" :dark="githubDark" />
     <ReviewPanel
