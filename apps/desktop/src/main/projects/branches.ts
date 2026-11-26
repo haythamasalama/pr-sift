@@ -22,42 +22,15 @@ export function parseTrack(track: string) {
   return { gone, ahead, behind }
 }
 
-// Branches that are a repository's main line by name. They come first in that order, and are never deleted.
-export const PROTECTED_BRANCHES = [
-  'main',
-  'master',
-  'develop',
-  'development',
-  'dev',
-  'staging',
-  'stage',
-  'production',
-  'prod',
-  'release',
-  'trunk',
-  'stable',
-  'qa',
-  'uat',
-]
-
-// The default branch (origin's HEAD, given as `origin/main` or `main`) is protected whatever its name.
+// The repository's main branch (origin's HEAD, given as `origin/main` or `main`). It is never deleted.
 export function isProtectedBranch(name: string, base?: string) {
-  return PROTECTED_BRANCHES.includes(name.toLowerCase()) || (!!base && name === base.replace(/^origin\//, ''))
+  return !!base && name === base.replace(/^origin\//, '')
 }
 
-// Protected branches first (the default one, then the list's order), then the rest as given.
-export function protectedFirst(branches: Branch[], base?: string): Branch[] {
-  const home = base?.replace(/^origin\//, '')
-  const rank = (b: Branch) => {
-    if (!b.protected) return Infinity
-    if (b.name === home) return -1
-    const at = PROTECTED_BRANCHES.indexOf(b.name.toLowerCase())
-    return at < 0 ? PROTECTED_BRANCHES.length : at
-  }
-  return branches
-    .map((b, i) => ({ b, i }))
-    .sort((x, y) => rank(x.b) - rank(y.b) || x.i - y.i)
-    .map(({ b }) => b)
+// The main branch first, then the rest as given.
+export function protectedFirst(branches: Branch[]): Branch[] {
+  const home = branches.findIndex((b) => b.protected)
+  return home <= 0 ? branches : [branches[home], ...branches.slice(0, home), ...branches.slice(home + 1)]
 }
 
 export function parseBranches(output: string, merged: Set<string>, email = '', base?: string): Branch[] {
@@ -106,7 +79,7 @@ export async function listBranches(repo: string): Promise<Branch[]> {
     git(repo, ['config', 'user.email']),
   ])
   if (res.code !== 0) throw new Error(res.stderr.trim() || 'git for-each-ref failed')
-  return protectedFirst(parseBranches(res.stdout, merged, email.stdout.trim().toLowerCase(), base), base)
+  return protectedFirst(parseBranches(res.stdout, merged, email.stdout.trim().toLowerCase(), base))
 }
 
 const BRANCH_NAME = /^(?!-)(?!.*\.\.)(?!.*\/\/)(?!.*@\{)[^\s~^:?*[\\]+(?<![./])$/
@@ -117,7 +90,7 @@ export function validBranchName(name: string) {
 
 export async function deleteBranch(repo: string, name: string, force: boolean) {
   if (!validBranchName(name)) return { ok: false, error: 'That is not a branch name.' }
-  if (isProtectedBranch(name, await defaultBranch(repo))) return { ok: false, error: 'This is a main branch, so it is kept.' }
+  if (isProtectedBranch(name, await defaultBranch(repo))) return { ok: false, error: 'This is the main branch, so it is kept.' }
   const res = await git(repo, ['branch', force ? '-D' : '-d', '--', name])
   if (res.code === 0) return { ok: true }
   const err = res.stderr.trim()
@@ -152,7 +125,7 @@ export async function deleteBranches(
       continue
     }
     if (b.protected) {
-      result.failed.push({ name, error: 'This is a main branch, so it is kept.' })
+      result.failed.push({ name, error: 'This is the main branch, so it is kept.' })
       continue
     }
     if (b.current || b.worktree) {

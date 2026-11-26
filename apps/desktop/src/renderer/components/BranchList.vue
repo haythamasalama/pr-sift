@@ -100,7 +100,7 @@ const shown = computed(() => {
   const list = (branches.value ?? []).filter(
     (b) => TESTS[filter.value](b) && (!q || [b.name, b.subject, b.author ?? ''].some((x) => x.toLowerCase().includes(q))),
   )
-  // Main branches stay on top in the order they came (default branch first); the rest follow the chosen sort.
+  // The main branch stays on top; the rest follow the chosen sort.
   const main = list.filter((b) => b.protected)
   const rest = list.filter((b) => !b.protected)
   if (sort.value === 'name') rest.sort((a, b) => a.name.localeCompare(b.name))
