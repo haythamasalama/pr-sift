@@ -407,6 +407,24 @@ const navWidth = await page.locator('nav[aria-label="Sections"]').evaluate((n) =
 if (navWidth < 300) throw new Error(`The sidebar did not widen: ${navWidth}`)
 await page.waitForTimeout(250)
 await page.screenshot({ path: join(shots, '19-grouped-wide-sidebar.png') })
+// Grips stay hidden until the pointer is on that row.
+const gripOpacity = (name) =>
+  page
+    .getByRole('button', { name, exact: true })
+    .locator('svg.cursor-grab')
+    .evaluate((g) => getComputedStyle(g).opacity)
+await page.getByRole('button', { name: 'docs', exact: true }).hover()
+await page.waitForTimeout(300)
+if ((await gripOpacity('docs')) !== '1') throw new Error('The grip does not show on the hovered row')
+if (
+  (await page
+    .getByTitle('acme/shop')
+    .locator('svg.cursor-grab')
+    .evaluate((g) => getComputedStyle(g).opacity)) !== '0'
+)
+  throw new Error('A grip shows on a row the pointer is not on')
+await page.screenshot({ path: join(shots, '19b-grip-on-hover.png') })
+await page.mouse.move(600, 400)
 await page.getByRole('separator', { name: 'Resize the sidebar' }).dblclick()
 await page.getByRole('button', { name: 'Hide the sidebar' }).click()
 await page.getByRole('button', { name: 'Needs you' }).click()

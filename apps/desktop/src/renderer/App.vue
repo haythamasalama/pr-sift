@@ -75,12 +75,14 @@ const shownGroups = computed(() =>
 )
 const isOpenProject = (path: string) => (view.value === 'project' || view.value === 'worktree') && project.value === path
 // The grip says a row can be dragged: always faint in Custom, on hover otherwise, solid while it is carried.
+// The grip stays out of the way: it fades in on the row under the pointer (or with keyboard focus),
+// stays while that row is dragged, and every other grip hides during a drag.
 const gripClass = (key: string) =>
   drag.dragging.value === key
-    ? 'opacity-100'
-    : sort.value === 'custom'
-      ? 'opacity-40 group-hover/row:opacity-100'
-      : 'opacity-0 group-hover/row:opacity-100'
+    ? 'opacity-100 translate-x-0'
+    : drag.dragging.value
+      ? 'opacity-0 translate-x-1'
+      : 'opacity-0 translate-x-1 group-hover/grip:translate-x-0 group-hover/grip:opacity-100 group-focus-visible/grip:translate-x-0 group-focus-visible/grip:opacity-100'
 function clickProject(path: string) {
   if (!drag.wasDrag()) openProject(path)
 }
@@ -359,14 +361,14 @@ function onAdded(paths: string[]) {
                 v-for="g in shownGroups"
                 :key="g.key"
                 :data-sort-id="g.key"
-                class="group/row relative flex flex-col gap-0.5 rounded-md"
+                class="relative flex flex-col gap-0.5 rounded-md"
                 :class="drag.dragging.value === g.key ? 'z-10 bg-accent shadow-md ring-1 ring-border' : ''"
               >
                 <!-- A repository with several folders: its name, then its folders, which fold away. Folded or in the rail, they show flat. -->
                 <template v-if="g.projects.length > 1 && !collapsed">
                   <button
                     type="button"
-                    :class="[item, 'text-foreground']"
+                    :class="[item, 'group/grip text-foreground']"
                     :aria-expanded="!folded.includes(g.key)"
                     :title="g.key"
                     @pointerdown="drag.down($event, g.key)"
@@ -381,7 +383,7 @@ function onAdded(paths: string[]) {
                     />
                     <span class="flex-1" />
                     <GripVertical
-                      class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-opacity"
+                      class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-[opacity,translate] duration-150 ease-out"
                       :class="gripClass(g.key)"
                       aria-hidden="true"
                     />
@@ -407,7 +409,7 @@ function onAdded(paths: string[]) {
                   <Hint v-for="p in g.projects" :key="p.path" :text="p.name" side="right" :disabled="!collapsed || !!drag.dragging.value">
                     <button
                       type="button"
-                      :class="[item, rail, 'text-foreground', active(isOpenProject(p.path))]"
+                      :class="[item, rail, 'group/grip text-foreground', active(isOpenProject(p.path))]"
                       :aria-label="p.name"
                       @pointerdown="drag.down($event, g.key)"
                       @click="clickProject(p.path)"
@@ -416,7 +418,7 @@ function onAdded(paths: string[]) {
                       <template v-if="!collapsed">
                         <span class="min-w-0 flex-1 truncate">{{ p.name }}</span>
                         <GripVertical
-                          class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-opacity"
+                          class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-[opacity,translate] duration-150 ease-out"
                           :class="gripClass(g.key)"
                           aria-hidden="true"
                         />
