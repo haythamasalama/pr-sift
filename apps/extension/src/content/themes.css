@@ -155,7 +155,7 @@
   --success: #1a7f37;
   --success-foreground: #ffffff;
   --success-fg: #1a7f37;
-  --attention: #9a6700;
+  --attention: #b45309;
   --add-bg: #dafbe1;
   --del-bg: #ffebe9;
   --add-fg: #1a7f37;
@@ -192,7 +192,7 @@
   --destructive: #ff6b6b;
   --success: #238636;
   --success-fg: #4ade80;
-  --attention: #d29922;
+  --attention: #fbbf24;
   --add-bg: rgb(74 222 128 / 0.18);
   --del-bg: rgb(255 107 107 / 0.2);
   --add-fg: #4ade80;
