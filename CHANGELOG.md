@@ -3,6 +3,12 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
+## Unreleased
+
+### Fixed
+
+- Appearance: The settings page header shows the PR Sift logo, the same as About, instead of a blue tile.
+
 ## 1.5.1 - 2026-11-26
 
 ### Changed
