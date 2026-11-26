@@ -159,12 +159,9 @@ await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 await page.getByText('Add a shopping cart').waitFor()
 await page.screenshot({ path: join(shots, '2-inbox.png') })
-// Merge stays in place while GitHub would refuse it, and says why, with the same words as the review.
-await page
-  .getByRole('button', { name: /not possible yet: Needs an approval/ })
-  .first()
-  .waitFor()
-await page.getByRole('button', { name: 'Choose how to merge' }).first().waitFor()
+// In a list, a button shows only when you can use it: you can approve this one, but GitHub would refuse a merge.
+await page.getByRole('button', { name: 'Approve', exact: true }).first().waitFor()
+if (await page.getByRole('button', { name: 'Choose how to merge' }).count()) throw new Error('Merge shows on a blocked pull request')
 await page.setViewportSize({ width: 1600, height: 800 })
 await page.waitForTimeout(300)
 await page.screenshot({ path: join(shots, '2w-inbox-wide.png') })

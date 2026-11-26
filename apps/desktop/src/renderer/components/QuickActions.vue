@@ -30,7 +30,7 @@ import { useAuth } from '~/useAuth'
 import Hint from './Hint.vue'
 
 // Approve and merge straight from a list, with the same buttons, rules and words as the review in the extension.
-// Both always stay in place; when GitHub would refuse, they are disabled and say why.
+// In a list each button shows only when you can use it, so rows stay calm; the review page keeps both in place, disabled with a reason.
 const { pull } = defineProps<{ pull: PullItem }>()
 const emit = defineEmits<{ changed: [] }>()
 
@@ -46,8 +46,6 @@ const isAuthor = computed(() => !!me.value && pull.author?.login.toLowerCase() =
 const reviewBlocked = computed(() =>
   isAuthor.value ? "You can't approve your own pull request" : pull.draft ? "Drafts can't be approved" : '',
 )
-// GitHub lets the author comment on their own pull request, but not approve it or request changes.
-const changesBlocked = computed(() => (isAuthor.value ? "You can't request changes on your own pull request" : ''))
 
 function onReviewed(event: ReviewEvent) {
   if (event === 'APPROVE') verdict.value = 'approved'
@@ -93,10 +91,8 @@ const mergeBlocked = computed(() => {
   if (pull.mergeableNow) return ''
   return MERGE_BLOCK_REASON[state.value] ?? ''
 })
-const mergeIsPrimary = computed(() => !mergeBlocked.value && (isAuthor.value || mine.value === 'approved'))
-const mergeTitle = computed(() =>
-  mergeBlocked.value ? `Can’t merge yet: ${mergeBlocked.value}` : [current.value.action, readiness.value?.text].filter(Boolean).join(' · '),
-)
+const mergeIsPrimary = computed(() => isAuthor.value || mine.value === 'approved')
+const mergeTitle = computed(() => [current.value.action, readiness.value?.text].filter(Boolean).join(' · '))
 
 const open = shallowRef(false)
 const { plan, mergeable, loading, busy, error, load, submit } = useQuickMerge(prRef)
@@ -118,31 +114,17 @@ async function confirm() {
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
     <template v-else>
-      <ReviewPopover
-        :pr="prRef"
-        :head-sha="pull.headSha"
-        can-act
-        :mine="mine"
-        :blocked="reviewBlocked"
-        :changes-blocked="changesBlocked"
-        @reviewed="onReviewed"
-      />
+      <ReviewPopover v-if="!reviewBlocked" :pr="prRef" :head-sha="pull.headSha" can-act :mine="mine" @reviewed="onReviewed" />
 
-      <Popover v-model:open="open">
-        <div
-          class="flex shrink-0"
-          :class="mergeBlocked ? 'cursor-not-allowed' : ''"
-          :title="mergeBlocked ? mergeTitle : undefined"
-          :tabindex="mergeBlocked ? 0 : undefined"
-        >
+      <Popover v-if="!mergeBlocked" v-model:open="open">
+        <div class="flex shrink-0">
           <PopoverTrigger as-child>
             <Button
               :variant="mergeIsPrimary ? 'success' : 'outline'"
-              :disabled="!!mergeBlocked"
               class="relative rounded-r-none px-3 text-[13px] @max-3xl:px-2"
               :class="mergeIsPrimary ? 'border-r-0' : ''"
               :title="mergeTitle"
-              :aria-label="mergeBlocked ? `${current.action}, not possible yet: ${mergeBlocked}` : mergeTitle"
+              :aria-label="mergeTitle"
             >
               <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full ring-2 ring-background" :class="readiness.tone" />
               <GitMerge /><span class="@max-3xl:hidden @5xl:hidden">Merge</span><span class="hidden @5xl:inline">{{ current.action }}</span>
@@ -152,7 +134,6 @@ async function confirm() {
             <DropdownMenuTrigger as-child>
               <Button
                 :variant="mergeIsPrimary ? 'success' : 'outline'"
-                :disabled="!!mergeBlocked"
                 size="icon"
                 class="w-7 rounded-l-none [&_svg:not([class*=size-])]:size-3.5"
                 :class="
