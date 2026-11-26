@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { BaseColor, ThemeStyle } from '../../lib/types'
+import type { ThemeStyle } from '../../lib/types'
 import { themeAttrs } from '../appearance/useAppearance'
 
-const { themeStyle, baseColor, dark } = defineProps<{ themeStyle: ThemeStyle; baseColor: BaseColor; dark: boolean }>()
+const { themeStyle, dark } = defineProps<{ themeStyle: ThemeStyle; dark: boolean }>()
 </script>
 
 <template>
@@ -10,7 +10,7 @@ const { themeStyle, baseColor, dark } = defineProps<{ themeStyle: ThemeStyle; ba
     <span
       class="ps-root flex size-full items-center justify-center gap-2 bg-background px-2"
       :class="{ dark }"
-      v-bind="themeAttrs(themeStyle, baseColor, '')"
+      v-bind="themeAttrs(themeStyle)"
     >
       <span class="flex w-14 flex-col gap-0.5 rounded-lg border border-popover-ring bg-popover p-0.5 shadow-overlay">
         <span class="flex h-2.5 items-center rounded-sm bg-accent px-1">

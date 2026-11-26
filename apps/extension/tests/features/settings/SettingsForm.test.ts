@@ -95,21 +95,17 @@ describe('SettingsForm', () => {
 
   it('picks the theme from preview cards', async () => {
     const wrapper = await mountForm()
-    expect(section(wrapper, 'appearance').find('[aria-label="Theme"]').findAll('.ps-root.dark')).toHaveLength(2)
+    expect(section(wrapper, 'appearance').find('[aria-label="Mode"]').findAll('.ps-root.dark')).toHaveLength(2)
     await wrapper.find('#settings-theme-dark').trigger('click')
     await flushPromises()
     expect(saved().theme).toBe('dark')
   })
 
-  it('offers base colours only for the shadcn/vue styles', async () => {
+  it('picks a theme and a code colour', async () => {
     const wrapper = await mountForm()
-    expect(section(wrapper, 'base-color').exists()).toBe(false)
-    await wrapper.find('#settings-style-lyra').trigger('click')
+    await wrapper.find('#settings-style-mono').trigger('click')
     await flushPromises()
-    expect(saved().themeStyle).toBe('lyra')
-    await wrapper.find('#base-stone').trigger('click')
-    await flushPromises()
-    expect(saved().baseColor).toBe('stone')
+    expect(saved().themeStyle).toBe('mono')
   })
 
   it('adds and removes hidden paths and co-authors as chips', async () => {
