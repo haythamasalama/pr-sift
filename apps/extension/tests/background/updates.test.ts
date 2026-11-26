@@ -50,6 +50,11 @@ describe('background update handling', () => {
     expect(fake.chrome.runtime.reload).not.toHaveBeenCalled()
   })
 
+  it('opens the Chrome extensions page', () => {
+    expect(worker.message({ type: 'extensions-page' }, self, vi.fn())).toBeUndefined()
+    expect(fake.chrome.tabs.create).toHaveBeenCalledWith({ url: 'chrome://extensions/' })
+  })
+
   it('restarts to apply a downloaded update', () => {
     worker.message({ type: 'apply-update' }, self, vi.fn())
     expect(fake.chrome.runtime.reload).toHaveBeenCalledOnce()

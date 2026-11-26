@@ -19,6 +19,7 @@ type Message =
   | { type: 'options'; section?: string }
   | { type: 'update-check' }
   | { type: 'apply-update' }
+  | { type: 'extensions-page' }
   | { type: 'highlighter' }
 
 // The review keeps its last few pull requests in session storage, which content scripts can only read once allowed.
@@ -84,6 +85,10 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   }
   if (msg.type === 'apply-update') {
     chrome.runtime.reload()
+    return
+  }
+  if (msg.type === 'extensions-page') {
+    void chrome.tabs.create({ url: 'chrome://extensions/' })
     return
   }
   if (msg.type === 'update-check') {

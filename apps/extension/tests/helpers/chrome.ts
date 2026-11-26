@@ -63,6 +63,9 @@ export function installChrome(responder: Responder = () => ({ ok: false, status:
       onInstalled: event<(details: { reason: string; previousVersion?: string }) => void>(),
       onStartup: event<() => void>(),
     },
+    tabs: {
+      create: vi.fn(async (_properties: { url: string }) => ({})),
+    },
     action: {
       onClicked: event<() => void>(),
       setBadgeText: vi.fn(async (_details: { text: string }) => {}),
