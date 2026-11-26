@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { AlertCircle, CheckCircle2, FolderTree, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
+import { AlertCircle, CheckCircle2, FolderTree, GitCommitHorizontal, RefreshCw, Search, Sparkles, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -20,11 +20,12 @@ import { useViewed } from './useViewed'
 import { buildTree, folderChip, githubFileUrl, githubLineUrl, normalizeExtension, cleanSavedFilters, patternsFromView } from '@pr-sift/core'
 import { watchToken } from './github'
 import { fetchFileLines } from './pull'
+import { fetchCommits, loadCommitFiles, type CommitRange, type PrCommit } from './commits'
 import { fetchConversation, type Conversation, type Thread } from './conversation'
 import { fileContextKey } from '../diff/fileContext'
 import { postReviewComment } from '../notes/review'
 import { DEFAULTS, getSettings, onSettingsChange, saveSetting } from '../../lib/settings'
-import { prKey, type DiffMode, type MergeMethod, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
+import { prKey, type DiffMode, type MergeMethod, type PrFile, type PrRef, type ReviewEvent, type Settings } from '../../lib/types'
 import FileList from '../diff/FileList.vue'
 import FileTree from '../tree/FileTree.vue'
 import FilterBar from '../filters/FilterBar.vue'
@@ -53,7 +54,41 @@ onBeforeUnmount(() => {
 })
 
 const settings = shallowRef<Settings>(DEFAULTS)
-const { files, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+const { files: prFiles, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+
+// Commits: pick one or a range to see only those changes. Viewed marks follow the pull request's own files.
+const commitList = shallowRef<PrCommit[]>([])
+const commitRange = shallowRef<CommitRange | null>(null)
+const commitFiles = shallowRef<PrFile[] | null>(null)
+const commitError = shallowRef('')
+const files = computed<PrFile[]>(() => {
+  if (!commitFiles.value) return prFiles.value
+  const prHash = new Map(prFiles.value.map((f) => [f.filename, f.hash]))
+  return commitFiles.value.map((f) => ({ ...f, hash: prHash.get(f.filename) ?? f.hash }))
+})
+async function loadCommitList() {
+  commitList.value = await fetchCommits(pr).catch(() => [])
+}
+watch(commitRange, async (range) => {
+  commitError.value = ''
+  if (!range) return (commitFiles.value = null)
+  try {
+    const loaded = await loadCommitFiles(pr, commitList.value, range)
+    if (commitRange.value === range) commitFiles.value = loaded
+  } catch (e) {
+    commitError.value = e instanceof Error ? e.message : String(e)
+    commitFiles.value = null
+  }
+})
+const commitBanner = computed(() => {
+  const r = commitRange.value
+  if (!r) return null
+  const first = commitList.value[r.from]!
+  const last = commitList.value[r.to]!
+  return r.from === r.to
+    ? { what: `commit ${last.short}`, detail: `${last.message} · ${r.to + 1} of ${commitList.value.length}` }
+    : { what: `commits ${first.short}..${last.short}`, detail: `${r.to - r.from + 1} of ${commitList.value.length} commits` }
+})
 const { viewed, isViewed, setViewed, setMany, clearAll, undo } = useViewed(computed(() => prKey(pr)))
 const notesStore = useNotes(computed(() => prKey(pr)))
 const filter = useFileFilter(
@@ -286,8 +321,13 @@ onMounted(async () => {
   settings.value = await getSettings()
   stopWatchingToken = watchToken((present) => {
     tokenAvailable.value = present
-    if (present) void loadConversation()
-    else conversation.value = null
+    if (present) {
+      void loadConversation()
+      void loadCommitList()
+    } else {
+      conversation.value = null
+      commitList.value = []
+    }
   })
   filter.loadHiddenTypes(settings.value.hiddenTypes)
   filter.reviewMode.value = settings.value.reviewMode
@@ -329,7 +369,15 @@ watch(
       @close="emit('close')"
     >
       <template #meta>
-        <PrSummary v-if="status === 'ready'" v-model:panel="panel" :pr="pr" :info="info" :conversation="conversation" />
+        <PrSummary
+          v-if="status === 'ready'"
+          v-model:panel="panel"
+          v-model:range="commitRange"
+          :pr="pr"
+          :info="info"
+          :conversation="conversation"
+          :commit-list="commitList"
+        />
         <div v-else-if="status === 'loading'" class="flex h-4 items-center gap-2">
           <Skeleton class="h-2.5 w-14" /><Skeleton class="h-2.5 w-56" /><Skeleton class="h-2.5 w-16" />
         </div>
@@ -548,6 +596,14 @@ watch(
           <Button variant="outline" @click="filter.resetFilters">Reset filters</Button>
         </Empty>
         <div v-else class="pt-4">
+          <div v-if="commitBanner" class="mb-3 flex items-center gap-2 rounded-md border bg-muted px-3 py-1.5 text-xs" role="status">
+            <GitCommitHorizontal class="size-3.5 shrink-0 text-muted-foreground" />
+            <span class="shrink-0"
+              >Showing <span class="font-mono font-medium">{{ commitBanner.what }}</span></span
+            >
+            <span class="min-w-0 truncate text-muted-foreground">{{ commitError || commitBanner.detail }}</span>
+            <Button variant="ghost" size="xs" class="ml-auto h-6 shrink-0 text-xs" @click="commitRange = null"><X /> All changes</Button>
+          </div>
           <FileList ref="list" :files="filter.inScope.value" :viewed="viewed" @set-viewed="setViewed" />
         </div>
       </main>

@@ -99,7 +99,18 @@ const PAGE_DATA = {
   },
 }
 
-const commit = (message, name, email, login) => ({ commit: { message, author: { name, email } }, author: { login } })
+let commitCount = 0
+const commit = (message, name, email, login) => {
+  const n = ++commitCount
+  const shas = ['0f1e2d3', '6b19e30', '1081140', 'cb869f7', '4e2a9d1', '9f8e7d6']
+  const sha = (shas[n] ?? `${n}a2b3c4`).padEnd(40, '0')
+  return {
+    sha,
+    parents: [{ sha: (shas[n - 1] ?? '0f1e2d3').padEnd(40, '0') }],
+    commit: { message, author: { name, email, date: new Date(Date.now() - (6 - n) * 3600_000).toISOString() } },
+    author: { login, avatar_url: login === 'haythamasalama' ? 'https://avatars.githubusercontent.com/u/37311945?v=4' : undefined },
+  }
+}
 
 const ago = (hours) => new Date(Date.now() - hours * 3600_000).toISOString()
 const AUTHOR = { login: 'haythamasalama', avatar_url: 'https://avatars.githubusercontent.com/u/37311945?v=4' }
@@ -849,6 +860,18 @@ await shot(browser, 'approve', async (page) => {
   await openReview(page)
   await page.getByRole('button', { name: 'Approve with a comment, request changes or comment' }).click()
   await page.getByRole('textbox', { name: 'Comment' }).fill('Looks good. The usage lines read well.')
+})
+
+await shot(browser, 'commits', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /^\d+ commits/ }).click()
+})
+
+await shot(browser, 'commit-picked', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: /^\d+ commits/ }).click()
+  await page.getByRole('menuitem', { name: /round totals/ }).click()
+  await page.getByRole('status').filter({ hasText: 'Showing' }).waitFor()
 })
 
 await shot(browser, 'comments', async (page) => {

@@ -14,9 +14,22 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { PrInfo, PrRef } from '../../lib/types'
 import LinkedIssues from './LinkedIssues.vue'
+import CommitsMenu from './CommitsMenu.vue'
+import type { CommitRange, PrCommit } from './commits'
 import type { Conversation } from './conversation'
 
-const { info, conversation, pr } = defineProps<{ info: PrInfo | null; conversation: Conversation | null; pr?: PrRef }>()
+const {
+  info,
+  conversation,
+  pr,
+  commitList = [],
+} = defineProps<{
+  info: PrInfo | null
+  conversation: Conversation | null
+  pr?: PrRef
+  commitList?: PrCommit[]
+}>()
+const range = defineModel<CommitRange | null>('range', { default: null })
 const panel = defineModel<'description' | 'conversation' | null>('panel', { default: null })
 const toggle = (tab: 'description' | 'conversation') => (panel.value = panel.value === tab ? null : tab)
 
@@ -39,7 +52,9 @@ async function copyBranch(branch: string) {
 
 const state = computed(() => (info?.state ? STATES[info.state] : null))
 const verb = computed(() => (info?.state === 'merged' ? 'merged' : 'wants to merge'))
-const commits = computed(() => (info?.commits === undefined ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `))
+const commits = computed(() =>
+  info?.commits === undefined || commitList.length ? '' : `${info.commits} commit${info.commits === 1 ? '' : 's'} `,
+)
 const comments = computed(() => (conversation?.conversation ?? 0) + (conversation?.code ?? 0))
 const commentsTitle = computed(() =>
   conversation
@@ -78,6 +93,7 @@ const commentsTitle = computed(() =>
         </template>
       </span>
     </span>
+    <CommitsMenu v-if="commitList.length" v-model="range" :commits="commitList" />
     <LinkedIssues v-if="pr" :key="`${pr.owner}/${pr.repo}#${pr.number}`" :pr="pr" />
     <button
       v-if="conversation"
