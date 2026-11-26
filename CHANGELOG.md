@@ -3,7 +3,7 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
-## Unreleased
+## 1.5.1 - 2026-11-26
 
 ### Changed
 
