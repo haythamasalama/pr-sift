@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import type { BaseColor, ThemeMode, ThemeStyle } from '../../lib/types'
+import type { ThemeMode, ThemeStyle } from '../../lib/types'
 import { themeAttrs } from '../appearance/useAppearance'
 
-const {
-  mode,
-  themeStyle = 'prsift',
-  baseColor = 'neutral',
-} = defineProps<{
+const { mode, themeStyle = 'prsift' } = defineProps<{
   mode: ThemeMode
   themeStyle?: ThemeStyle
-  baseColor?: BaseColor
 }>()
 
 const LINES = [
@@ -31,7 +26,7 @@ const LINES = [
       <span
         class="ps-root flex size-full flex-col justify-center bg-background py-1 font-mono text-[9px] leading-[10px] text-muted-foreground"
         :class="{ dark }"
-        v-bind="themeAttrs(themeStyle, baseColor, '')"
+        v-bind="themeAttrs(themeStyle)"
       >
         <span v-for="(line, i) in LINES" :key="i" class="flex items-center gap-1 px-1.5" :class="line.tone">
           <span class="w-1.5 shrink-0 text-center">{{ line.sign }}</span>

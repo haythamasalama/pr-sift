@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { BaseColor, ThemeStyle } from '../../lib/types'
+import type { ThemeStyle } from '../../lib/types'
 import { themeAttrs } from '../appearance/useAppearance'
 
-const { code, dark, themeStyle, baseColor } = defineProps<{ code: string; dark: boolean; themeStyle: ThemeStyle; baseColor: BaseColor }>()
+const { code, dark, themeStyle } = defineProps<{ code: string; dark: boolean; themeStyle: ThemeStyle }>()
 
 // Each line is a list of [highlight class, text] pairs, the same classes the diff uses.
 const LINES: [string, string][][] = [
@@ -38,7 +38,7 @@ const LINES: [string, string][][] = [
     <span
       class="ps-root block overflow-x-auto bg-background px-2.5 py-2 font-mono text-[11px] leading-[1.6] text-foreground"
       :class="{ dark }"
-      v-bind="themeAttrs(themeStyle, baseColor, code)"
+      v-bind="themeAttrs(themeStyle, code)"
     >
       <span v-for="(line, i) in LINES" :key="i" class="block whitespace-pre">
         <span v-for="([cls, text], j) in line" :key="j" :class="cls">{{ text }}</span>
