@@ -37,11 +37,12 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['minute', 60],
 ]
 
-export function timeAgo(iso: string, now = Date.now()): string {
+/** "3 hours ago", or "3h ago" with the narrow style where space is short. */
+export function timeAgo(iso: string, now = Date.now(), style: Intl.RelativeTimeFormatStyle = 'long'): string {
   const seconds = Math.round((new Date(iso).getTime() - now) / 1000)
   if (Number.isNaN(seconds)) return ''
   if (Math.abs(seconds) < 60) return 'just now'
-  const format = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+  const format = new Intl.RelativeTimeFormat('en', { numeric: 'auto', style })
   const [unit, size] = UNITS.find(([, size]) => Math.abs(seconds) >= size)!
   return format.format(Math.round(seconds / size), unit)
 }
