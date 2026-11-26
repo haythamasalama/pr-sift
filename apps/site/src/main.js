@@ -28,6 +28,15 @@ for (const button of themeButtons) {
   })
 }
 
+// The themes card on the home page: the mode buttons above switch the site itself, the swatches just pick one.
+for (const group of document.querySelectorAll('[data-swatches]')) {
+  group.addEventListener('click', (event) => {
+    const picked = event.target.closest('[data-swatch]')
+    if (!picked) return
+    for (const swatch of group.querySelectorAll('[data-swatch]')) swatch.setAttribute('aria-pressed', String(swatch === picked))
+  })
+}
+
 const menu = document.querySelector('[data-menu]')
 if (menu) {
   document.addEventListener('click', (event) => {

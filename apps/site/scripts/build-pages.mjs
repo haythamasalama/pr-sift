@@ -348,9 +348,6 @@ const STATE = {
   no: ['x', 'text-del', 'No'],
   unknown: ['minus', 'text-muted', 'Not listed'],
 }
-// Price reads better as words than as a tick, so the table says Free, Included or the amount.
-const priceCell = (value, ours) =>
-  `<span class="inline-flex items-center gap-1.5 whitespace-nowrap ${STATE[value[0]][1]}" title="${esc(value[1])}">${icon(STATE[value[0]][0], 'size-4')}<span class="${ours ? 'font-semibold text-ink' : 'text-ink'}">${esc(value[2] ?? value[1])}</span></span>`
 const stateIcon = ([state, note], cls = 'size-4') =>
   `<span class="inline-flex ${STATE[state][1]}" title="${esc(note)}">${icon(STATE[state][0], cls)}<span class="sr-only">${esc(STATE[state][2])}: ${esc(note)}</span></span>`
 const score = (values) => FEATURES.reduce((sum, [key]) => sum + (values[key][0] === 'yes' ? 1 : values[key][0] === 'partial' ? 0.5 : 0), 0)
@@ -366,7 +363,7 @@ function matrix() {
         )
         .join('')}</tr></thead>
       <tbody class="divide-y divide-line">
-        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c, i) => `<td class="px-3 py-2.5 text-center">${key === 'price' ? priceCell(c.values[key], i === 0) : stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
+        ${FEATURES.map(([key, ic, label]) => `<tr><th scope="row" class="px-4 py-2.5 font-normal"><span class="flex items-center gap-2.5">${icon(ic, 'size-4 text-muted')}${esc(label)}</span></th>${columns.map((c) => `<td class="px-3 py-2.5 text-center">${stateIcon(c.values[key])}</td>`).join('')}</tr>`).join('\n        ')}
       </tbody>
     </table>
   </div>
@@ -409,7 +406,7 @@ function homePage() {
   const FEATURE_SPAN = { views: 'md:col-span-2', merge: 'lg:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
   const featureCard = (f) => `
         <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
-          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
+          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8"${f.id === 'theme' ? '' : ' aria-hidden="true"'}>${featureVisual(f.id, icon)}</div>
           <div class="p-5 sm:px-6 sm:pb-6">
             <h3 class="flex items-center gap-2.5 text-[17px] font-semibold">${icon(f.icon, 'size-[18px] shrink-0')}${esc(f.title)}</h3>
             <p class="mt-1.5 leading-relaxed text-muted">${esc(f.text)}</p>
