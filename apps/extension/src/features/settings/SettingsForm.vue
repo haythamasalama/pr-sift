@@ -293,8 +293,8 @@ defineExpose({ scrollToSection })
       </SettingsRow>
       <SettingsRow
         v-if="inBrowser"
-        label="Open in the desktop app"
-        description="Adds an Open in PR Sift app button to pull requests. Needs PR Sift for desktop."
+        label="Open pull requests in the desktop app"
+        description="Links from Slack, mail or other apps open in PR Sift for desktop and the tab closes. Links inside GitHub stay here, with an Open in app button."
         control-id="settings-desktop-app"
       >
         <Switch id="settings-desktop-app" :model-value="settings.desktopApp" @update:model-value="(v) => update('desktopApp', v)" />

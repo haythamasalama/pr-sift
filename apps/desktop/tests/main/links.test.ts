@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appPullUrl, githubPullUrl, parsePullLink } from '../../src/shared/links'
+import { appPullUrl, githubPullUrl, markForBrowser, parsePullLink } from '../../src/shared/links'
 
 const pr = { owner: 'globex', repo: 'backend', number: 11377 }
 
@@ -25,5 +25,17 @@ describe('parsePullLink', () => {
   it('round-trips both links', () => {
     expect(parsePullLink(githubPullUrl(pr))).toEqual(pr)
     expect(parsePullLink(appPullUrl(pr))).toEqual(pr)
+  })
+})
+
+describe('markForBrowser', () => {
+  it('marks pull request pages the app opens, so the extension leaves them in the browser', () => {
+    expect(markForBrowser(new URL('https://github.com/a/b/pull/3/files#diff-1')).toString()).toBe(
+      'https://github.com/a/b/pull/3/files?prsift=web#diff-1',
+    )
+  })
+  it('leaves other pages alone', () => {
+    expect(markForBrowser(new URL('https://github.com/a/b/issues/3')).toString()).toBe('https://github.com/a/b/issues/3')
+    expect(markForBrowser(new URL('https://docs.github.com/a/b/pull/3')).toString()).toBe('https://docs.github.com/a/b/pull/3')
   })
 })

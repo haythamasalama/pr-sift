@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment-options {"url": "https://github.com/"}
+ */
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/content/App.vue'
@@ -13,7 +16,8 @@ describe('App launcher', () => {
       'fetch',
       vi.fn(async () => new Response('', { status: 404 })),
     )
-    history.pushState({}, '', '/o/r/pull/1/files')
+    // Handing a pull request to the app moves happy-dom to the prsift:// address, so each test starts back on GitHub.
+    ;(window as unknown as { happyDOM: { setURL: (url: string) => void } }).happyDOM.setURL('https://github.com/o/r/pull/1/files')
   })
 
   afterEach(() => {
@@ -96,6 +100,33 @@ describe('App launcher', () => {
     expect(launcher(wrapper)!.attributes('title')).toBeUndefined()
     expect(launcher(wrapper)!.find('[data-update-dot]').exists()).toBe(false)
     expect(launcher(wrapper)!.find('[data-update-badge]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('hands a pull request opened from outside GitHub to the desktop app when that setting is on', async () => {
+    const { store, sent } = installChrome()
+    store.settings = { desktopApp: true }
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(sent.some((m) => m.type === 'handoff')).toBe(true))
+    wrapper.unmount()
+  })
+
+  it('leaves pull requests the desktop app opened in the browser, and drops the stay mark from the address', async () => {
+    const { store, sent } = installChrome()
+    store.settings = { desktopApp: true }
+    history.replaceState({}, '', '/o/r/pull/1/files?prsift=web')
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())
+    expect(sent.some((m) => m.type === 'handoff')).toBe(false)
+    expect(location.href).toBe('https://github.com/o/r/pull/1/files')
+    wrapper.unmount()
+  })
+
+  it('leaves pull requests in the browser when that setting is off', async () => {
+    const { sent } = installChrome()
+    const wrapper = mount(App, { attachTo: document.body })
+    await vi.waitFor(() => expect(launcher(wrapper)).toBeDefined())
+    expect(sent.some((m) => m.type === 'handoff')).toBe(false)
     wrapper.unmount()
   })
 })

@@ -15,6 +15,7 @@ import { prKey, type PrRef } from '../lib/types'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 import QuickMerge from '../features/quick-merge/QuickMerge.vue'
 import OpenInApp from '../features/desktop/OpenInApp.vue'
+import { appLink, handOffTarget, withoutMark } from '../features/desktop/handoff'
 
 const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/
 
@@ -66,6 +67,20 @@ function maybeAutoOpen() {
 
 const reload = () => location.reload()
 
+// A pull request opened from Slack, mail or another app goes straight to PR Sift for desktop, once, when the page first loads.
+// The background closes this tab as soon as the app comes to the front.
+function handOffToApp(): boolean {
+  const navigation = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type
+  const target = handOffTarget({ url: location.href, referrer: document.referrer, navigation })
+  const clean = withoutMark(location.href)
+  if (clean) history.replaceState(history.state, '', clean)
+  if (!target) return false
+  decidedFor = prKey(target)
+  window.location.href = appLink(target)
+  void Promise.resolve(chrome.runtime.sendMessage({ type: 'handoff' })).catch(() => {})
+  return true
+}
+
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
 }
@@ -81,6 +96,7 @@ onMounted(async () => {
   const settings = await getSettings()
   autoOpen.value = settings.autoOpen
   desktopApp.value = settings.desktopApp
+  if (settings.desktopApp && !dead.value) handOffToApp()
   maybeAutoOpen()
 })
 onBeforeUnmount(() => {

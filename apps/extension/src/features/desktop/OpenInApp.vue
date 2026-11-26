@@ -2,10 +2,11 @@
 import { AppWindow } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import type { PrRef } from '@/lib/types'
+import { appLink } from './handoff'
 
 // Hands this pull request to PR Sift for desktop through its prsift:// link. The browser asks once whether to open the app.
 const { pr } = defineProps<{ pr: PrRef }>()
-const open = () => (window.location.href = `prsift://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`)
+const open = () => (window.location.href = appLink(pr))
 </script>
 
 <template>

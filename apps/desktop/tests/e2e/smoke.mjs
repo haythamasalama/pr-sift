@@ -185,10 +185,11 @@ await page.waitForTimeout(600)
 await page.screenshot({ path: join(shots, '3-review.png') })
 // Share copies the links a teammate needs, since the app has no address bar.
 await page.getByRole('button', { name: 'Share' }).click()
-await page.getByRole('menuitem', { name: /Copy PR Sift link/ }).waitFor()
+await page.getByRole('menuitem', { name: /Copy GitHub link/ }).waitFor()
+if (await page.getByRole('menuitem', { name: /PR Sift link/ }).count()) throw new Error('Share still offers a PR Sift link')
 await page.waitForTimeout(250)
 await page.screenshot({ path: join(shots, '3s-review-share.png') })
-await page.getByRole('menuitem', { name: /Copy PR Sift link/ }).click()
+await page.getByRole('menuitem', { name: /Copy GitHub link/ }).click()
 await page.keyboard.press('Escape')
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 

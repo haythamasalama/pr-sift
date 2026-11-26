@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ApiRequest, Events, EventName, Leftover } from '#shared/ipc'
 import { apiRequest, changesGitHub } from './github'
-import { parsePullLink, SCHEME, type PullLink } from '#shared/links'
+import { markForBrowser, parsePullLink, SCHEME, type PullLink } from '#shared/links'
 import { handle } from './ipc'
 import { scanLeftovers } from './leftovers/scan'
 import { findProgram, pathKey, withExtraPath } from './paths'
@@ -282,7 +282,7 @@ const EXTERNAL_HOSTS = new Set(['github.com', 'docs.github.com', 'cli.github.com
 function openExternal(url: string) {
   try {
     const parsed = new URL(url)
-    if (parsed.protocol === 'https:' && EXTERNAL_HOSTS.has(parsed.hostname)) void shell.openExternal(parsed.toString())
+    if (parsed.protocol === 'https:' && EXTERNAL_HOSTS.has(parsed.hostname)) void shell.openExternal(markForBrowser(parsed).toString())
   } catch {
     return
   }

@@ -27,4 +27,16 @@ export function parsePullLink(text: string): PullLink | null {
 }
 
 export const githubPullUrl = (p: PullLink) => `https://github.com/${p.owner}/${p.repo}/pull/${p.number}`
+// The PR Sift extension sends pull request pages opened in the browser to this app. A link the app itself
+// opens in the browser carries this mark, so it stays there instead of bouncing back. Keep it in step with
+// STAY_IN_BROWSER in apps/extension/src/features/desktop/handoff.ts.
+export const STAY_IN_BROWSER = { name: 'prsift', value: 'web' } as const
+
+export function markForBrowser(url: URL): URL {
+  const marked = new URL(url)
+  if (marked.hostname === 'github.com' && parsePullLink(marked.toString()))
+    marked.searchParams.set(STAY_IN_BROWSER.name, STAY_IN_BROWSER.value)
+  return marked
+}
+
 export const appPullUrl = (p: PullLink) => `${SCHEME}://github.com/${p.owner}/${p.repo}/pull/${p.number}`
