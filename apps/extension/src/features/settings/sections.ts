@@ -1,4 +1,5 @@
-export type SettingsSectionId = 'github' | 'token' | 'merging' | 'review' | 'files' | 'hidden' | 'filters' | 'appearance' | 'tree' | 'about'
+export type SettingsSectionId =
+  'github' | 'token' | 'merging' | 'review' | 'files' | 'hidden' | 'filters' | 'appearance' | 'style' | 'code-colors' | 'tree' | 'about'
 
 export type PreviewArea = 'toolbar' | 'filters' | 'sidebar' | 'files' | 'actions' | 'all' | 'none'
 
@@ -26,6 +27,8 @@ export const TAB_OF: Record<SettingsSectionId, SettingsTab> = {
   hidden: 'files',
   filters: 'files',
   appearance: 'appearance',
+  style: 'appearance',
+  'code-colors': 'appearance',
   tree: 'appearance',
   about: 'about',
 }

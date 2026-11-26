@@ -1,0 +1,123 @@
+/* Code colours. Each theme has a light and a dark version; the app sets data-code to the one for the current
+   mode. GitHub's are the --hl-* defaults in themes.css, so it needs no block. Only syntax colours change;
+   backgrounds and diff colours stay with the style. */
+
+.ps-root.ps-root[data-code='one-light'] {
+  --hl-keyword: #a626a4;
+  --hl-entity: #4078f2;
+  --hl-constant: #986801;
+  --hl-string: #50a14f;
+  --hl-comment: #a0a1a7;
+  --hl-tag: #e45649;
+  --hl-variable: #e45649;
+}
+
+.ps-root.ps-root[data-code='one-dark'] {
+  --hl-keyword: #c678dd;
+  --hl-entity: #61afef;
+  --hl-constant: #d19a66;
+  --hl-string: #98c379;
+  --hl-comment: #7f848e;
+  --hl-tag: #e06c75;
+  --hl-variable: #e06c75;
+}
+
+.ps-root.ps-root[data-code='catppuccin-light'] {
+  --hl-keyword: #8839ef;
+  --hl-entity: #1e66f5;
+  --hl-constant: #fe640b;
+  --hl-string: #40a02b;
+  --hl-comment: #7c7f93;
+  --hl-tag: #d20f39;
+  --hl-variable: #e64553;
+}
+
+.ps-root.ps-root[data-code='catppuccin-dark'] {
+  --hl-keyword: #cba6f7;
+  --hl-entity: #89b4fa;
+  --hl-constant: #fab387;
+  --hl-string: #a6e3a1;
+  --hl-comment: #9399b2;
+  --hl-tag: #f38ba8;
+  --hl-variable: #eba0ac;
+}
+
+.ps-root.ps-root[data-code='gruvbox-light'] {
+  --hl-keyword: #9d0006;
+  --hl-entity: #427b58;
+  --hl-constant: #8f3f71;
+  --hl-string: #79740e;
+  --hl-comment: #928374;
+  --hl-tag: #076678;
+  --hl-variable: #af3a03;
+}
+
+.ps-root.ps-root[data-code='gruvbox-dark'] {
+  --hl-keyword: #fb4934;
+  --hl-entity: #8ec07c;
+  --hl-constant: #d3869b;
+  --hl-string: #b8bb26;
+  --hl-comment: #928374;
+  --hl-tag: #83a598;
+  --hl-variable: #fe8019;
+}
+
+.ps-root.ps-root[data-code='solarized-light'] {
+  --hl-keyword: #859900;
+  --hl-entity: #268bd2;
+  --hl-constant: #d33682;
+  --hl-string: #2aa198;
+  --hl-comment: #93a1a1;
+  --hl-tag: #268bd2;
+  --hl-variable: #b58900;
+}
+
+.ps-root.ps-root[data-code='solarized-dark'] {
+  --hl-keyword: #859900;
+  --hl-entity: #268bd2;
+  --hl-constant: #d33682;
+  --hl-string: #2aa198;
+  --hl-comment: #586e75;
+  --hl-tag: #268bd2;
+  --hl-variable: #b58900;
+}
+
+.ps-root.ps-root[data-code='tokyo-night-light'] {
+  --hl-keyword: #9854f1;
+  --hl-entity: #2e7de9;
+  --hl-constant: #b15c00;
+  --hl-string: #587539;
+  --hl-comment: #848cb5;
+  --hl-tag: #f52a65;
+  --hl-variable: #8c6c3e;
+}
+
+.ps-root.ps-root[data-code='tokyo-night-dark'] {
+  --hl-keyword: #bb9af7;
+  --hl-entity: #7aa2f7;
+  --hl-constant: #ff9e64;
+  --hl-string: #9ece6a;
+  --hl-comment: #565f89;
+  --hl-tag: #f7768e;
+  --hl-variable: #e0af68;
+}
+
+.ps-root.ps-root[data-code='night-owl-light'] {
+  --hl-keyword: #994cc3;
+  --hl-entity: #4876d6;
+  --hl-constant: #aa0982;
+  --hl-string: #c96765;
+  --hl-comment: #989fb1;
+  --hl-tag: #994cc3;
+  --hl-variable: #0c969b;
+}
+
+.ps-root.ps-root[data-code='night-owl-dark'] {
+  --hl-keyword: #c792ea;
+  --hl-entity: #82aaff;
+  --hl-constant: #f78c6c;
+  --hl-string: #ecc48d;
+  --hl-comment: #637777;
+  --hl-tag: #7fdbca;
+  --hl-variable: #addb67;
+}

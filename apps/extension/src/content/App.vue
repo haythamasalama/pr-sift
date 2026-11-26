@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RefreshCw } from '@lucide/vue'
+import { Check, RefreshCw } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark } = useAppearance()
+const { dark, rootAttrs } = useAppearance()
 const githubDark = useGithubDark()
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
@@ -84,11 +84,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="ps-root" :class="{ dark }">
+  <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs">
     <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
       <Button
         variant="outline"
-        class="fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5"
+        :class="[
+          'fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
+          dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
+        ]"
         :title="dead ? undefined : updateNote || undefined"
         @click="dead ? reload() : (open = true)"
       >
@@ -97,12 +100,22 @@ onBeforeUnmount(() => {
           <BrandMark v-else class="size-3.5" />
         </BrandPulse>
         {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge v-if="externalUpdate && !dead" variant="outline" class="border-attention/50 bg-attention/15 text-attention"> Updated </Badge>
+        <Badge v-if="externalUpdate && !dead" variant="outline" class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3">
+          <RefreshCw /> Changed
+        </Badge>
+        <Badge
+          v-else-if="updated && !updateReady && !dead"
+          data-update-badge
+          variant="outline"
+          class="gap-1 border-transparent bg-success-fg/15 text-success-fg [&_svg]:size-3"
+        >
+          <Check /> {{ updated.version }}
+          <span class="sr-only">{{ updateNote }}</span>
+        </Badge>
         <span
-          v-if="updateNote && !dead"
+          v-if="updateReady && !dead"
           data-update-dot
-          class="absolute -top-1 -right-1 size-2.5 rounded-full ring-2 ring-background"
-          :class="updateReady ? 'bg-emphasis' : 'bg-success'"
+          class="absolute -top-1 -right-1 size-2.5 rounded-full bg-attention ring-2 ring-background"
         >
           <span class="sr-only">{{ updateNote }}</span>
         </span>

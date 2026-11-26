@@ -17,46 +17,37 @@ const props = {
   diffMode: 'unified' as const,
 }
 
-async function openMenu(provide: Record<symbol, unknown> = {}) {
-  const target = document.createElement('div')
-  document.body.appendChild(target)
-  const wrapper = mount(Toolbar, {
+function mountToolbar(provide: Record<symbol, unknown> = {}) {
+  return mount(Toolbar, {
     props,
-    global: { provide: { [portalTargetKey as symbol]: shallowRef(target), ...provide } },
+    global: { provide: { [portalTargetKey as symbol]: shallowRef(null), ...provide } },
     attachTo: document.body,
   })
-  await flushPromises()
-  await wrapper.find('[aria-label^="Options"]').trigger('keydown', { key: 'Enter' })
-  await vi.waitFor(() => expect(document.querySelector('[role="menu"]')).not.toBeNull())
-  return wrapper
 }
 
-const item = (label: string) =>
-  [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((el) => el.textContent?.includes(label))
-
-describe('Toolbar settings menu', () => {
+describe('Toolbar settings button', () => {
   afterEach(() => {
     document.body.innerHTML = ''
   })
 
-  it('sends help and feedback to the About settings', async () => {
+  it('opens the settings sheet straight away', async () => {
     installChrome()
     const openSettings = vi.fn()
-    const wrapper = await openMenu({ [settingsOpenerKey as symbol]: openSettings })
-    expect(wrapper.find('[aria-label="Options"]').exists()).toBe(true)
-    expect(item('Restart to update')).toBeUndefined()
-    expect(item('Report a problem')).toBeUndefined()
-    item('Help and feedback')!.click()
-    expect(openSettings).toHaveBeenCalledWith('about')
+    const wrapper = mountToolbar({ [settingsOpenerKey as symbol]: openSettings })
+    await flushPromises()
+    await wrapper.find('[aria-label="Settings"]').trigger('click')
+    expect(openSettings).toHaveBeenCalledWith(undefined)
+    expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 
-  it('marks the settings button and offers a restart once an update is ready', async () => {
-    const { store, sent } = installChrome()
+  it('marks the button and opens About once an update is ready', async () => {
+    const { store } = installChrome()
     store.updateReady = '1.2.0'
-    const wrapper = await openMenu()
-    expect(wrapper.find('[aria-label="Options, update ready"]').exists()).toBe(true)
-    item('Restart to update to 1.2.0')!.click()
-    expect(sent).toContainEqual({ type: 'apply-update' })
+    const openSettings = vi.fn()
+    const wrapper = mountToolbar({ [settingsOpenerKey as symbol]: openSettings })
+    await flushPromises()
+    await wrapper.find('[aria-label="Settings, update ready"]').trigger('click')
+    expect(openSettings).toHaveBeenCalledWith('about')
   })
 })
 

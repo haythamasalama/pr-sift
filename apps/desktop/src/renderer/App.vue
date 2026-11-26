@@ -29,7 +29,7 @@ import SectionLabel from './components/SectionLabel.vue'
 import CountBadge from './components/CountBadge.vue'
 import Hint from './components/Hint.vue'
 
-const { dark } = useAppearance()
+const { dark, rootAttrs } = useAppearance()
 const { status } = useAuth()
 const { projects } = useProjects()
 const portal = useTemplateRef<HTMLElement>('portal')
@@ -109,7 +109,7 @@ function onAdded(paths: string[]) {
 
 <template>
   <TooltipProvider :delay-duration="250">
-    <div class="ps-root h-full bg-background text-foreground" :class="{ dark }">
+    <div class="ps-root h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
       <SignIn v-else-if="!status.signedIn" />
       <div v-else class="flex h-full">

@@ -22,6 +22,8 @@ export interface Preset {
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 
+export type ThemeStyle = 'prsift' | 'github' | 'minimal' | 'soft' | 'mono'
+
 export interface Settings {
   presets: Preset[]
   hide: string[]
@@ -33,6 +35,8 @@ export interface Settings {
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
+  themeStyle: ThemeStyle
+  codeTheme: string
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod

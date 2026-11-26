@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { FileText, Folder } from '@lucide/vue'
+import { ChevronDown, FileCode, Folder } from '@lucide/vue'
 
 const { indent, guides } = defineProps<{ indent: number; guides: boolean }>()
 
@@ -9,14 +9,23 @@ const line = computed(() => (guides ? '' : 'border-transparent'))
 </script>
 
 <template>
-  <div class="rounded-md border bg-background px-2 py-1.5 text-[11px] leading-5" aria-hidden="true">
-    <p class="flex items-center gap-1"><Folder class="size-3 text-muted-foreground" />src</p>
-    <div class="ml-3 border-l" :class="line" :style="level">
-      <p class="flex items-center gap-1"><Folder class="size-3 text-muted-foreground" />Domain</p>
-      <div class="ml-3 border-l" :class="line" :style="level">
-        <p class="flex items-center gap-1"><Folder class="size-3 text-muted-foreground" />Billing</p>
-        <div class="ml-3 border-l" :class="line" :style="level">
-          <p class="flex items-center gap-1 truncate"><FileText class="size-3 shrink-0 text-muted-foreground" />GenerateInvoice.php</p>
+  <!-- Drawn like the review's file tree: a chevron and a folder per level, the file picked at the bottom. -->
+  <div class="w-50 overflow-hidden rounded-lg border bg-muted/40 p-1.5 text-xs" aria-hidden="true">
+    <p class="flex h-6 items-center gap-1 px-1">
+      <ChevronDown class="size-3 text-muted-foreground" /><Folder class="size-3.5 text-muted-foreground" />src
+    </p>
+    <div class="ml-2.5 border-l" :class="line" :style="level">
+      <p class="flex h-6 items-center gap-1 px-1">
+        <ChevronDown class="size-3 text-muted-foreground" /><Folder class="size-3.5 text-muted-foreground" />Domain
+      </p>
+      <div class="ml-2.5 border-l" :class="line" :style="level">
+        <p class="flex h-6 items-center gap-1 px-1">
+          <ChevronDown class="size-3 text-muted-foreground" /><Folder class="size-3.5 text-muted-foreground" />Billing
+        </p>
+        <div class="ml-2.5 border-l" :class="line" :style="level">
+          <p class="flex h-6 min-w-0 items-center gap-1.5 rounded-md bg-accent px-1.5 font-medium text-accent-foreground">
+            <FileCode class="size-3.5 shrink-0 text-muted-foreground" /><span class="truncate">Invoice.php</span>
+          </p>
         </div>
       </div>
     </div>
