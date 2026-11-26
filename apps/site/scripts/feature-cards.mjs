@@ -81,7 +81,7 @@ export function featureVisual(id, icon) {
         'flex max-w-[290px] flex-col gap-2.5 px-3 pt-2.5 pb-3',
         `<div class="grid grid-cols-2 rounded-md bg-raised p-[3px] text-xs"><span class="flex h-6 items-center justify-center text-muted">Tree</span><span class="flex h-6 items-center justify-center rounded bg-paper font-medium shadow-[0_1px_2px_rgb(0_0_0/0.12)]">Smart filters</span></div>
         ${label('Quick')}
-        <div class="flex flex-wrap gap-1.5">${chip('Tests', { count: 5, state: 'on' })}${chip('Docs', { count: 1 })}${chip('Migrations', { count: 2 })}${chip('Translations', { count: 6 })}${chip('Config', { count: 1 })}${chip('CI / Docker', { count: 1 })}</div>
+        <div class="flex flex-wrap gap-1.5">${chip('Tests', { count: 5, state: 'on' })}${chip('Docs', { count: 1 })}${chip('Migrations', { count: 2 })}${chip('Translations', { count: 6 })}${chip('Config', { count: 1 })}${chip('CI / Docker', { count: 1 })}${chip('AI', { count: 2 })}</div>
         ${label('Recurring folders', 'mt-0.5')}
         <div class="flex flex-col gap-1 text-xs">${[
           ['Billing', 16, 'w-full'],
@@ -164,6 +164,27 @@ export function featureVisual(id, icon) {
         <div class="grid grid-cols-3 gap-3">${tile('GitHub', { radius: 'rounded-md', font: '', selected: true })}${tile('PR Sift', { radius: 'rounded', font: '', dark: true })}${tile('Mono', { radius: 'rounded-none', font: 'font-mono' })}</div>
         <div class="flex rounded-md border border-line bg-raised p-0.5 text-[11.5px]">${modes}</div>
       </div>`
+    },
+
+    notes: () =>
+      panel(
+        'max-w-[400px] overflow-hidden',
+        `${code(20, '+', `$lines = $account->${fn('subscriptions')}`, 'add')}${code(21, '+', `->${fn('merge')}($usage)`, 'add')}
+        <div class="flex flex-col gap-1 border-y border-line bg-raised px-3 py-2 text-[12px]"><span class="flex items-center gap-1.5 text-muted">${icon('lock', 'size-3')}Lines 20–21 · only you</span><span>Check that plan discounts still apply to both.</span></div>
+        ${code(22, '', '')}`,
+      ),
+
+    merge: () => {
+      const person = (name, checked, ai = false) =>
+        `<span class="flex items-center gap-2 px-3 py-1.5 ${ai ? 'text-muted line-through' : ''}">${box(checked)}<span class="truncate font-mono text-[11px]">Co-authored-by: ${name}</span>${ai ? '<span class="ms-auto rounded border border-line px-1 text-[10px] no-underline">AI</span>' : ''}</span>`
+      return panel(
+        'max-w-[440px] overflow-hidden text-[12.5px]',
+        `<div class="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2.5">
+          <span class="inline-flex h-7 items-center gap-1.5 rounded-md border border-line bg-raised px-2.5 text-muted">Squash and merge${icon('chevron-down', 'size-3')}</span>
+          <span class="inline-flex h-7 items-center gap-1.5 rounded-md border border-ink bg-ink px-2.5 font-medium text-paper">${icon('git-merge', 'size-3.5')}Merge without AI</span>
+        </div>
+        <div class="flex flex-col py-1">${person('Taylor', true)}${person('Claude', false, true)}${person('Copilot', false, true)}</div>`,
+      )
     },
 
     settings: () =>
