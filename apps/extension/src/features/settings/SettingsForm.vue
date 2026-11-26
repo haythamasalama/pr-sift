@@ -346,10 +346,15 @@ defineExpose({ scrollToSection })
       >
         <CodeThemeSelect :model-value="codeTheme" :dark="dark" @update:model-value="setCodeTheme" />
       </SettingsRow>
-      <div id="settings-section-tree" data-section="tree" class="flex flex-col gap-3 py-3">
-        <SettingsRow label="Folder indentation" description="How far each folder is pushed in." class="py-0">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex w-48 items-center gap-2">
+      <SettingsRow
+        id="settings-section-tree"
+        data-section="tree"
+        label="Folder indentation"
+        description="How far each folder is pushed in."
+      >
+        <div class="flex flex-col items-end gap-2">
+          <div class="flex items-center gap-4">
+            <div class="flex w-36 items-center gap-2">
               <Slider
                 :model-value="[treeIndent]"
                 :min="0"
@@ -359,7 +364,7 @@ defineExpose({ scrollToSection })
                 @update:model-value="(v) => v && (treeIndent = v[0]!)"
                 @value-commit="(v) => update('treeIndent', v[0]!)"
               />
-              <span class="w-10 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
+              <span class="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{{ treeIndent }} px</span>
             </div>
             <div class="flex items-center gap-2">
               <Switch
@@ -371,9 +376,9 @@ defineExpose({ scrollToSection })
               <FieldLabel for="settings-tree-guides" class="text-xs font-normal">Guide lines</FieldLabel>
             </div>
           </div>
-        </SettingsRow>
-        <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
-      </div>
+          <TreePreview :indent="treeIndent" :guides="settings.treeGuides" />
+        </div>
+      </SettingsRow>
     </SettingsSection>
 
     <div v-show="shows('about')" data-reset :class="layout === 'page' ? 'rounded-lg border px-4' : 'border-t'">
