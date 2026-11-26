@@ -15,10 +15,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useAppearance } from '../appearance/useAppearance'
+import GithubMark from '../../components/GithubMark.vue'
+import ShadcnMark from '../../components/ShadcnMark.vue'
+import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
 import { useUpdates } from '../updates/useUpdates'
-import type { ThemeMode } from '../../lib/types'
+import type { ThemeMode, ThemeStyle } from '../../lib/types'
 import ProgressRing from './ProgressRing.vue'
 
 defineProps<{
@@ -31,7 +33,8 @@ defineProps<{
   loading?: boolean
 }>()
 
-const { theme, setTheme } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle } = useAppearance()
+const STYLE_ICONS = { github: GithubMark, shadcn: ShadcnMark }
 const { ready: updateReady, restart } = useUpdates()
 
 const emit = defineEmits<{ openNotes: []; toggleSidebar: []; close: [] }>()
@@ -114,6 +117,15 @@ const openSettings = useSettingsOpener()
             <DropdownMenuItem @select="restart"><RotateCw /> Restart to update to {{ updateReady }}</DropdownMenuItem>
             <DropdownMenuSeparator />
           </template>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Style</DropdownMenuLabel>
+            <DropdownMenuRadioGroup :model-value="themeStyle" @update:model-value="(v) => setThemeStyle(v as ThemeStyle)">
+              <DropdownMenuRadioItem v-for="s in THEME_STYLES" :key="s.value" :value="s.value">
+                <component :is="STYLE_ICONS[s.value]" /> {{ s.label }}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuLabel>Theme</DropdownMenuLabel>
             <DropdownMenuRadioGroup :model-value="theme" @update:model-value="(v) => setTheme(v as ThemeMode)">

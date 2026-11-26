@@ -22,6 +22,8 @@ export interface Preset {
 
 export type ThemeMode = 'system' | 'light' | 'dark'
 
+export type ThemeStyle = 'github' | 'shadcn'
+
 export interface Settings {
   presets: Preset[]
   hide: string[]
@@ -33,6 +35,7 @@ export interface Settings {
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
+  themeStyle: ThemeStyle
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod
