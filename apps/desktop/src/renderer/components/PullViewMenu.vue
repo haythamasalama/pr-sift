@@ -4,13 +4,19 @@ import { SlidersHorizontal } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
-import { PULL_DETAIL_GROUPS, usePullView, type PullDensity } from '~/pulls/view'
+import { PULL_DETAIL_GROUPS, PULL_GROUPINGS, usePullView, type PullDensity, type PullGrouping, type PullScope } from '~/pulls/view'
 import Segmented from './Segmented.vue'
 import LabelChip from './LabelChip.vue'
 import StatusPill from './StatusPill.vue'
 
 // Which details the pull request rows show, with a sample row that follows each switch. Holds for every list.
-const { shown, density, set, setDensity, reset, hidden, changed } = usePullView()
+// `scope` says which Group by choices fit: lists that mix repositories, or one project's list.
+const { scope = 'everywhere' } = defineProps<{ scope?: PullScope }>()
+const { shown, density, grouping, set, setDensity, setGrouping, reset, hidden, changed } = usePullView()
+const groupings = computed(() => PULL_GROUPINGS[scope])
+const how = computed(() => grouping.value[scope])
+const groupHint = computed(() => groupings.value.find((g) => g.value === how.value)?.hint ?? '')
+const groupWord = computed(() => groupings.value.find((g) => g.value === how.value)?.label.toLowerCase() ?? '')
 const compact = computed(() => density.value === 'compact')
 const DENSITIES: { value: PullDensity; label: string }[] = [
   { value: 'comfortable', label: 'Comfortable' },
@@ -22,10 +28,22 @@ const DENSITIES: { value: PullDensity; label: string }[] = [
   <Popover>
     <PopoverTrigger as-child>
       <Button size="sm" variant="outline"
-        ><SlidersHorizontal /> View<span v-if="hidden()" class="text-muted-foreground">· {{ hidden() }} hidden</span></Button
+        ><SlidersHorizontal /> View<span v-if="how !== 'none'" class="text-muted-foreground">· by {{ groupWord }}</span
+        ><span v-else-if="hidden()" class="text-muted-foreground">· {{ hidden() }} hidden</span></Button
       >
     </PopoverTrigger>
     <PopoverContent align="end" class="max-h-[min(var(--reka-popover-content-available-height),640px)] w-[400px] gap-0 overflow-hidden p-0">
+      <div class="flex shrink-0 flex-col gap-2 border-b border-border p-3.5">
+        <span class="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">Group by</span>
+        <Segmented
+          :model-value="how"
+          :options="groupings"
+          label="Group by"
+          class="w-full [&>*]:flex-1"
+          @update:model-value="(v: PullGrouping) => setGrouping(scope, v)"
+        />
+        <span class="text-xs text-muted-foreground">{{ groupHint }}</span>
+      </div>
       <div class="flex shrink-0 flex-col gap-2 border-b border-border p-3.5">
         <span class="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">Preview</span>
         <div

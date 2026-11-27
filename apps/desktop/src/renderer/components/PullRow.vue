@@ -12,7 +12,15 @@ import QuickActions from './QuickActions.vue'
 import { usePullView } from '~/pulls/view'
 
 // `mine` rows are your own pull requests: the pill says what they need from you instead of the review state.
-const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string; mine?: boolean }>()
+// `where` trims what the group heading already says: 'repo' drops the owner, 'number' keeps only #123.
+const props = defineProps<{
+  pull: PullItem
+  showRepo?: boolean
+  where?: 'full' | 'repo' | 'number'
+  indent?: boolean
+  me?: string
+  mine?: boolean
+}>()
 const emit = defineEmits<{ open: []; changed: [] }>()
 const { shown, density } = usePullView()
 const compact = computed(() => density.value === 'compact')
@@ -53,7 +61,10 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
 </script>
 
 <template>
-  <li class="flex items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0 hover:bg-muted/60">
+  <li
+    class="flex items-center gap-4 border-t border-accent pr-4 transition-colors first:border-t-0 hover:bg-muted/60"
+    :class="indent ? 'pl-[42px]' : 'pl-4'"
+  >
     <button
       type="button"
       class="flex min-w-0 flex-1 items-center gap-4 text-left"
@@ -81,7 +92,9 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
           :class="compact ? 'text-[11px]' : 'text-xs'"
         >
           <span class="flex shrink-0 items-center gap-1.5 tabular-nums" :title="`${pull.branch} into ${pull.base}`">
-            <template v-if="showRepo"><ProjectIcon :project="repoProject" :size="14" />{{ pull.owner }}/{{ pull.repo }}</template
+            <template v-if="showRepo && where !== 'number' && where !== 'repo'"
+              ><ProjectIcon :project="repoProject" :size="14" />{{ pull.owner }}/{{ pull.repo }}</template
+            ><template v-else-if="showRepo && where === 'repo'">{{ pull.repo }}</template
             >#{{ pull.number }}
           </span>
           <!-- In a narrow list the status moves here, so the title keeps its room. -->

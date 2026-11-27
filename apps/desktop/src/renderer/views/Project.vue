@@ -366,7 +366,7 @@ async function confirmRemove() {
             >
               <RefreshCw :class="{ 'animate-spin': loading }" />
             </Button>
-            <PullViewMenu />
+            <PullViewMenu scope="project" />
           </span>
         </div>
         <p v-if="!activity.pulls.length" class="text-muted-foreground">No open pull requests.</p>
