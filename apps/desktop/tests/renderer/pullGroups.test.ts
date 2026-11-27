@@ -6,7 +6,7 @@ const list = [
   pr('globex', 'backend', 'ali'),
   pr('acme', 'shop', 'sara'),
   pr('globex', 'business', 'ali'),
-  pr('globex', 'backend', 'omar'),
+  pr('Globex', 'backend', 'omar'),
 ]
 
 describe('groupPulls', () => {

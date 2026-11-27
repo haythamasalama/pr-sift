@@ -54,7 +54,7 @@ describe('grouping by repository', () => {
   const folders = [
     clone('backend', 'globex', 'backend'),
     p('notes'),
-    clone('backend-hotfix', 'globex', 'Backend'),
+    clone('backend-hotfix', 'Globex', 'Backend'),
     clone('docs', 'acme', 'docs'),
   ]
   it('puts folders of the same repository together, where the first one was', () => {
