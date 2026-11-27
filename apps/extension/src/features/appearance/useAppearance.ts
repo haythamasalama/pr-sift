@@ -4,8 +4,8 @@ import { installFonts } from '../../lib/fonts'
 import type { Settings, ThemeMode, ThemeStyle } from '../../lib/types'
 
 export const THEME_STYLES: { value: ThemeStyle; label: string; hint: string }[] = [
-  { value: 'github', label: 'GitHub', hint: 'Like github.com: GitHub blue and the system font' },
   { value: 'prsift', label: 'PR Sift', hint: 'Like the PR Sift website: black and white, IBM Plex and thin lines' },
+  { value: 'github', label: 'GitHub', hint: 'Like github.com: GitHub blue and the system font' },
   { value: 'minimal', label: 'Minimal', hint: 'Neutral greys and soft corners' },
   { value: 'soft', label: 'Soft', hint: 'Warm greys and round corners' },
   { value: 'mono', label: 'Mono', hint: 'Square corners and a monospace font' },

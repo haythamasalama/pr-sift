@@ -1,3 +1,4 @@
+import './defaults'
 import { createApp } from 'vue'
 import { bridge } from './bridge'
 import { createChrome, guardFetch } from './shim/chrome'
