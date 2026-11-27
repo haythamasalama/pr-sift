@@ -10,6 +10,14 @@ body,
   margin: 0;
 }
 
+/* The window itself never scrolls; each page scrolls inside. A scrollIntoView deep in a page (Settings, the review's
+   file list) would otherwise move the whole app up and leave an empty band below it. */
+body,
+#app,
+.ps-app {
+  overflow: clip;
+}
+
 body {
   background: #ffffff;
 }

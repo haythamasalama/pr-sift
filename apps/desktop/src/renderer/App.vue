@@ -352,10 +352,10 @@ function onAdded(paths: string[]) {
 
 <template>
   <TooltipProvider :delay-duration="250">
-    <div ref="appRoot" class="ps-root h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
+    <div ref="appRoot" class="ps-root ps-app h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
       <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
       <Onboarding v-else-if="!status.signedIn || !onboarded" />
-      <div v-else class="flex h-full">
+      <div v-else class="ps-app flex h-full">
         <nav
           class="relative flex shrink-0 flex-col gap-0.5 border-r border-border bg-background py-4"
           :class="[collapsed ? 'w-[56px] px-2' : 'px-3', resizing ? '' : 'transition-[width] duration-150']"
@@ -584,7 +584,7 @@ function onAdded(paths: string[]) {
             </Hint>
           </div>
         </nav>
-        <div class="relative min-w-0 flex-1">
+        <div class="ps-app relative min-w-0 flex-1">
           <main class="@container h-full overflow-y-auto" :inert="!!review || undefined">
             <InboxView v-if="view === 'inbox'" />
             <ProjectView v-else-if="view === 'project'" />

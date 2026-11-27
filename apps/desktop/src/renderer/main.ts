@@ -16,6 +16,8 @@ async function start() {
     openSection: (section) => navigate(section === 'token' ? 'account' : 'settings'),
   })
   guardFetch(window)
+  // Belt and braces for the rule in style.css: if anything still scrolls the window, put it back.
+  window.addEventListener('scroll', () => (window.scrollX || window.scrollY) && window.scrollTo(0, 0))
   document.documentElement.dataset.platform = info.platform
   createApp(App).mount('#app')
 }
