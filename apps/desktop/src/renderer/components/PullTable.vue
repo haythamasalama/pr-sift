@@ -6,7 +6,7 @@ import { usePullView } from '~/pulls/view'
 
 // Groups of pull requests in one quiet card. With `columns`, the first group's header names the columns;
 // later groups get a muted band. With `titles`, a page that names the card itself still gets the column titles.
-defineProps<{
+const props = defineProps<{
   groups: { title: string; pulls: PullItem[] }[]
   showRepo?: boolean
   me?: string
@@ -16,6 +16,12 @@ defineProps<{
 }>()
 const emit = defineEmits<{ changed: [] }>()
 const { shown } = usePullView()
+// Previous and Next in the review walk through this table, in the order it shows.
+const open = (p: PullItem) =>
+  openReview(
+    p,
+    props.groups.flatMap((g) => g.pulls),
+  )
 </script>
 
 <template>
@@ -29,9 +35,8 @@ const { shown } = usePullView()
       >
         <span class="flex-1">{{ columns ? `${g.title} · ${g.pulls.length}` : 'Pull request' }}</span>
         <template v-if="!i"
-          ><span v-if="shown.review" class="flex w-[calc(18ch+1.5rem)] text-xs @max-3xl:hidden" :class="mine ? 'justify-end' : ''"
-            ><span class="text-[11px]">{{ mine ? 'Status' : 'Review' }}</span></span
-          ><span v-if="shown.ci" class="w-14 text-center @max-3xl:hidden">Checks</span
+          ><span v-if="shown.review || shown.ci" class="w-[calc(18ch+2.5rem)] text-xs @max-3xl:hidden"
+            ><span class="text-[11px]">Status</span></span
           ><span class="w-[256px] text-right @max-3xl:hidden @5xl:w-[332px]">Actions</span></template
         >
       </div>
@@ -43,7 +48,7 @@ const { shown } = usePullView()
           :show-repo="showRepo"
           :me="me"
           :mine="mine"
-          @open="openReview(p)"
+          @open="open(p)"
           @changed="emit('changed')"
         />
       </ul>

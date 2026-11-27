@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { useMediaQuery } from '@vueuse/core'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
 import { useAppearance } from '@/features/appearance/useAppearance'
 import { portalTargetKey } from '@/lib/portal'
@@ -37,7 +38,12 @@ import { useLive } from './useLive'
 import { useDragSort } from './useDragSort'
 import { bridge } from './bridge'
 import type { AutoApproveStatus } from '#shared/ipc'
-import { openProject, openReview, project, review, view, worktree, type View } from './navigation'
+import { goBack, openProject, openReview, project, review, reviewFocus, stepReview, view, worktree, type View } from './navigation'
+import { refreshNow } from './useLive'
+import ReviewNav from './components/ReviewNav.vue'
+import OpenLinkDialog from './components/OpenLinkDialog.vue'
+import ShortcutsDialog from './shortcuts/ShortcutsDialog.vue'
+import type { MenuCommand } from '#shared/ipc'
 import { parsePullLink } from '#shared/links'
 import ShareMenu from './components/ShareMenu.vue'
 import Onboarding from './onboarding/Onboarding.vue'
@@ -87,7 +93,20 @@ const drag = useDragSort({
 const shownGroups = computed(() =>
   drag.preview.value ? drag.preview.value.flatMap((key) => groupByKey.value.get(key) ?? []) : groups.value,
 )
-const isOpenProject = (path: string) => (view.value === 'project' || view.value === 'worktree') && project.value === path
+// With a review open beside the sidebar, the sidebar marks the project the pull request belongs to.
+const reviewProject = computed(() => {
+  const pr = review.value
+  if (!pr) return null
+  const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
+  return projects.value?.find((p) => same(p.github?.owner, pr.owner) && same(p.github?.repo, pr.repo))?.path ?? null
+})
+const isOpenProject = (path: string) =>
+  reviewProject.value ? reviewProject.value === path : (view.value === 'project' || view.value === 'worktree') && project.value === path
+const at = (v: View) => !reviewProject.value && view.value === v
+// Choosing a place in the sidebar leaves the review for it.
+function onNavClick(e: MouseEvent) {
+  if (review.value && (e.target as Element | null)?.closest('[data-nav]')) review.value = null
+}
 // The grip says a row can be dragged: always faint in Custom, on hover otherwise, solid while it is carried.
 // The grip stays out of the way: it fades in on the row under the pointer (or with keyboard focus),
 // stays while that row is dragged, and every other grip hides during a drag.
@@ -227,8 +246,70 @@ function onPaste(e: ClipboardEvent) {
   e.preventDefault()
   openReview(pull)
 }
+// A small window gives the review all of it; the sidebar stays beside it only when there is room for both.
+const roomy = useMediaQuery('(min-width: 1000px)')
+const linkOpen = shallowRef(false)
+const shortcutsOpen = shallowRef(false)
+const typing = () => !!document.activeElement?.closest('input, textarea, [contenteditable="true"]')
+// What the menu bar's items do here. Each has its shortcut there: ⌘, for Settings, ⌘1 to ⌘4 for the views, and so on.
+function onMenu(command: MenuCommand) {
+  if (!status.value?.signedIn || !onboarded.value) return
+  const go = (v: View) => {
+    review.value = null
+    view.value = v
+  }
+  switch (command) {
+    case 'settings':
+    case 'account':
+      return go(command)
+    case 'view:inbox':
+    case 'view:autoapprove':
+    case 'view:worktrees':
+    case 'view:cleanup':
+      return go(command.slice(5) as View)
+    case 'add-project':
+      adding.value = true
+      return
+    case 'open-link':
+      linkOpen.value = true
+      return
+    case 'shortcuts':
+      shortcutsOpen.value = true
+      return
+    case 'refresh':
+      return refreshNow()
+    case 'toggle-sidebar':
+      if (review.value && reviewFocus.value) reviewFocus.value = false
+      else collapsed.value = !collapsed.value
+      return
+    case 'focus':
+      if (review.value) reviewFocus.value = !reviewFocus.value
+      return
+    case 'back':
+      if (typing()) return
+      if (review.value) review.value = null
+      else goBack()
+      return
+    case 'pull:previous':
+      return stepReview(-1)
+    case 'pull:next':
+      return stepReview(1)
+    case 'find': {
+      const scope = document.querySelector('.ps-root')
+      const field = scope?.querySelector<HTMLInputElement>(
+        review.value
+          ? 'input[placeholder*="ilter"], input[placeholder*="earch"]'
+          : 'main input[aria-label^="Filter"], main input[placeholder^="Search"], main input[placeholder^="Filter"]',
+      )
+      field?.focus()
+      field?.select()
+    }
+  }
+}
 let offPull: (() => void) | undefined
+let offMenu: (() => void) | undefined
 onMounted(() => {
+  offMenu = bridge.on('menu:command', onMenu)
   document.addEventListener('keydown', onKey)
   document.addEventListener('paste', onPaste)
   offAuto = bridge.on('autoapprove:changed', (next) => (autoApprove.value = next))
@@ -240,6 +321,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('paste', onPaste)
   offAuto?.()
   offPull?.()
+  offMenu?.()
 })
 
 function onAdded(paths: string[]) {
@@ -258,6 +340,7 @@ function onAdded(paths: string[]) {
           :class="[collapsed ? 'w-[56px] px-2' : 'px-3', resizing ? '' : 'transition-[width] duration-150']"
           :style="collapsed ? undefined : { width: `${sidebarWidth}px` }"
           aria-label="Sections"
+          @click.capture="onNavClick"
         >
           <div
             v-if="!collapsed"
@@ -296,7 +379,7 @@ function onAdded(paths: string[]) {
             </button>
           </div>
           <Hint text="Needs you" side="right" :disabled="!collapsed">
-            <button type="button" :class="[item, rail, active(view === 'inbox')]" aria-label="Needs you" @click="view = 'inbox'">
+            <button type="button" :class="[item, rail, active(at('inbox'))]" aria-label="Needs you" data-nav @click="view = 'inbox'">
               <span class="relative flex"
                 ><Inbox class="size-4" /><span
                   v-if="collapsed && waitingCount"
@@ -312,8 +395,9 @@ function onAdded(paths: string[]) {
           <Hint text="Auto-approve" side="right" :disabled="!collapsed">
             <button
               type="button"
-              :class="[item, rail, active(view === 'autoapprove')]"
+              :class="[item, rail, active(at('autoapprove'))]"
               aria-label="Auto-approve"
+              data-nav
               @click="view = 'autoapprove'"
             >
               <BadgeCheck class="size-4" />
@@ -408,6 +492,7 @@ function onAdded(paths: string[]) {
                       :class="[item, 'h-7 pl-[34px] text-[13px] text-foreground', active(isOpenProject(p.path))]"
                       :title="p.path"
                       :aria-label="p.name"
+                      data-nav
                       @click="openProject(p.path)"
                     >
                       <span class="min-w-0 truncate">{{ p.name }}</span>
@@ -423,6 +508,7 @@ function onAdded(paths: string[]) {
                       type="button"
                       :class="[item, rail, 'group/grip text-foreground', active(isOpenProject(p.path))]"
                       :aria-label="p.name"
+                      data-nav
                       @pointerdown="drag.down($event, g.key)"
                       @click="clickProject(p.path)"
                     >
@@ -452,7 +538,7 @@ function onAdded(paths: string[]) {
 
           <div class="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
             <Hint v-for="t in TOOLS" :key="t.id" :text="t.label" side="right" :disabled="!collapsed">
-              <button type="button" :class="[item, rail, active(view === t.id)]" :aria-label="t.label" @click="view = t.id">
+              <button type="button" :class="[item, rail, active(at(t.id))]" :aria-label="t.label" data-nav @click="view = t.id">
                 <component :is="t.icon" class="size-4" /><template v-if="!collapsed">{{ t.label }}</template>
               </button>
             </Hint>
@@ -460,8 +546,9 @@ function onAdded(paths: string[]) {
             <Hint :text="status.account?.login ?? 'Account'" side="right" :disabled="!collapsed">
               <button
                 type="button"
-                :class="[item, rail, 'h-10 text-foreground', active(view === 'account')]"
+                :class="[item, rail, 'h-10 text-foreground', active(at('account'))]"
                 aria-label="Account"
+                data-nav
                 @click="view = 'account'"
               >
                 <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 shrink-0 rounded-full" />
@@ -469,30 +556,40 @@ function onAdded(paths: string[]) {
                   status.account?.login.slice(0, 1)
                 }}</span>
                 <span v-if="!collapsed" class="flex min-w-0 flex-col leading-4 font-normal">
-                  <span class="truncate">{{ status.account?.login }}</span>
-                  <span class="truncate text-[11px] text-muted-foreground">{{
-                    status.source === 'gh' ? 'Signed in with GitHub CLI' : 'Signed in with a token'
-                  }}</span>
+                  <span class="truncate font-medium">{{ status.account?.name || status.account?.login }}</span>
+                  <span v-if="status.account?.name" class="truncate text-[11px] text-muted-foreground">{{ status.account.login }}</span>
                 </span>
               </button>
             </Hint>
           </div>
         </nav>
-        <main class="@container min-w-0 flex-1 overflow-y-auto">
-          <InboxView v-if="view === 'inbox'" />
-          <ProjectView v-else-if="view === 'project'" />
-          <WorktreeChanges v-else-if="view === 'worktree' && worktree" :key="worktree" :path="worktree" />
-          <AutoApprove v-else-if="view === 'autoapprove'" />
-          <Worktrees v-else-if="view === 'worktrees'" />
-          <Cleanup v-else-if="view === 'cleanup'" />
-          <SettingsView v-else-if="view === 'settings'" />
-          <Account v-else />
-        </main>
+        <div class="relative min-w-0 flex-1">
+          <main class="@container h-full overflow-y-auto" :inert="!!review || undefined">
+            <InboxView v-if="view === 'inbox'" />
+            <ProjectView v-else-if="view === 'project'" />
+            <WorktreeChanges v-else-if="view === 'worktree' && worktree" :key="worktree" :path="worktree" />
+            <AutoApprove v-else-if="view === 'autoapprove'" />
+            <Worktrees v-else-if="view === 'worktrees'" />
+            <Cleanup v-else-if="view === 'cleanup'" />
+            <SettingsView v-else-if="view === 'settings'" />
+            <Account v-else />
+          </main>
+          <!-- One panel either way, so switching Focus keeps the review where it is: inline beside the sidebar, or over the window. -->
+          <ReviewPanel
+            v-if="review && status?.signedIn"
+            :key="prKey(review)"
+            :pr="review"
+            back
+            :inline="!reviewFocus && roomy"
+            @close="review = null"
+          >
+            <template #tools="{ title }"><ReviewNav /><ShareMenu :pr="review" :title="title" /></template>
+          </ReviewPanel>
+        </div>
       </div>
-      <ReviewPanel v-if="review && status?.signedIn" :key="prKey(review)" :pr="review" back @close="review = null">
-        <template #tools="{ title }"><ShareMenu :pr="review" :title="title" /></template>
-      </ReviewPanel>
       <AddProjectDialog v-model:open="adding" @added="onAdded" />
+      <OpenLinkDialog v-model:open="linkOpen" />
+      <ShortcutsDialog v-model:open="shortcutsOpen" />
       <div ref="portal" />
     </div>
   </TooltipProvider>

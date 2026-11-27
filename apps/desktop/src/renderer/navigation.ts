@@ -38,9 +38,45 @@ export function openWorktree(path: string) {
   view.value = 'worktree'
 }
 
-export function openReview(pr: PrRef) {
+// The list the open review came from, so Previous and Next walk through it.
+export const reviewList = shallowRef<PrRef[]>([])
+const samePr = (a: PrRef, b: PrRef) =>
+  a.number === b.number && a.owner.toLowerCase() === b.owner.toLowerCase() && a.repo.toLowerCase() === b.repo.toLowerCase()
+
+export function openReview(pr: PrRef, list?: PrRef[]) {
   review.value = pr
+  reviewList.value = list?.some((p) => samePr(p, pr)) ? list.map(({ owner, repo, number }) => ({ owner, repo, number })) : []
 }
+
+// Where the open review sits in its list: its index, and the pull requests before and after it.
+export const reviewPlace = computed(() => {
+  const pr = review.value
+  const list = reviewList.value
+  const at = pr ? list.findIndex((p) => samePr(p, pr)) : -1
+  return { at, total: list.length, previous: at > 0 ? list[at - 1] : undefined, next: at >= 0 ? list[at + 1] : undefined }
+})
+export function stepReview(by: -1 | 1) {
+  const to = by < 0 ? reviewPlace.value.previous : reviewPlace.value.next
+  if (to) review.value = to
+}
+
+// Focus shows the review over the whole window; otherwise the app's sidebar stays beside it. Remembered.
+const FOCUS_KEY = 'ps:review-focus'
+const readFocus = () => {
+  try {
+    return localStorage.getItem(FOCUS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+export const reviewFocus = shallowRef(readFocus())
+watch(reviewFocus, (on) => {
+  try {
+    localStorage.setItem(FOCUS_KEY, on ? '1' : '0')
+  } catch {
+    // Nothing to remember without storage.
+  }
+})
 
 // A pull request link opens its review here in the app, not in the browser.
 export function openPullLink(url: string) {

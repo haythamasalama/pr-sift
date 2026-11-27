@@ -21,6 +21,8 @@ import { deleteBranch, deleteBranches, listBranches } from './projects/branches'
 import { AutoApproveService } from './autoapprove/service'
 import { openIn } from './launch'
 import { overview } from './projects/overview'
+import { buildMenu } from './menu'
+import { rememberBounds, savedBounds } from './windowState'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const platform = process.platform
@@ -305,10 +307,13 @@ function lockDown(contents: WebContents) {
   contents.on('will-attach-webview', (event) => event.preventDefault())
 }
 
+const windowFile = join(userData, 'window.json')
 function createWindow() {
+  const saved = savedBounds(windowFile)
   window = new BrowserWindow({
-    width: 1180,
-    height: 780,
+    width: saved?.width ?? 1180,
+    height: saved?.height ?? 780,
+    ...(saved ? { x: saved.x, y: saved.y } : {}),
     minWidth: 760,
     minHeight: 520,
     title: 'PR Sift',
@@ -324,6 +329,8 @@ function createWindow() {
     },
   })
   lockDown(window.webContents)
+  rememberBounds(window, windowFile)
+  if (saved?.maximized) window.maximize()
   pageReady = false
   window.webContents.on('did-finish-load', () => {
     pageReady = true
@@ -356,6 +363,10 @@ app.whenReady().then(() => {
     safeStorage.setUsePlainTextEncryption(true)
   }
   registerHandlers()
+  buildMenu(platform, (command) => {
+    if (!window) createWindow()
+    send('menu:command', command)
+  })
   createWindow()
   void vault.refresh().then((status) => send('auth:changed', status))
   void autoApprove.start()

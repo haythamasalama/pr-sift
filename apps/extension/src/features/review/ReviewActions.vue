@@ -113,7 +113,7 @@ function onReviewed(event: ReviewEvent) {
       >
         <span v-if="readiness" class="absolute -top-1 -left-1 size-2 rounded-full ring-2 ring-sidebar" :class="readiness.tone" />
         <GitMerge />
-        <span class="hidden sm:inline lg:hidden">Merge</span><span class="hidden lg:inline">{{ current.action }}</span>
+        <span class="hidden @[40rem]:inline @5xl:hidden">Merge</span><span class="hidden @5xl:inline">{{ current.action }}</span>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>

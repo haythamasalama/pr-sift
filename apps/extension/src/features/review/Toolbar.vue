@@ -32,14 +32,14 @@ const openSettings = useSettingsOpener()
 <template>
   <!-- On a GitHub page the header wraps to two rows below xl; the desktop app's window has the room, so it keeps one row. -->
   <header
-    class="flex min-h-14 items-center gap-x-2 gap-y-2 border-b bg-sidebar px-3 py-2 sm:gap-x-3 sm:px-4"
-    :class="back ? 'flex-nowrap' : 'flex-wrap xl:flex-nowrap'"
+    class="flex min-h-14 items-center gap-x-2 gap-y-2 border-b bg-sidebar px-3 py-2 @[40rem]:gap-x-3 @[40rem]:px-4"
+    :class="back ? 'flex-nowrap' : 'flex-wrap @7xl:flex-nowrap'"
   >
     <Button
       v-if="compact"
       variant="outline"
       size="icon-sm"
-      class="order-1 shrink-0 xl:order-none"
+      class="order-1 shrink-0 @7xl:order-none"
       aria-label="Toggle sidebar"
       title="Files and filters"
       @click="emit('toggleSidebar')"
@@ -50,12 +50,12 @@ const openSettings = useSettingsOpener()
       v-if="back"
       variant="ghost"
       size="icon-sm"
-      class="order-1 shrink-0 text-muted-foreground xl:order-none"
+      class="order-1 shrink-0 text-muted-foreground @7xl:order-none"
       aria-label="Back"
       @click="emit('close')"
       ><ArrowLeft
     /></Button>
-    <div class="order-1 flex min-w-0 flex-1 flex-col gap-0.5 xl:order-none">
+    <div class="order-1 flex min-w-0 flex-1 flex-col gap-0.5 @7xl:order-none">
       <div v-if="loading" class="flex h-5 items-center"><Skeleton class="h-3 w-[min(30rem,60vw)]" /></div>
       <h1 v-else class="truncate text-sm leading-5 font-semibold" :title="title">{{ title }}</h1>
       <slot name="meta" />
@@ -64,17 +64,17 @@ const openSettings = useSettingsOpener()
       v-if="!back"
       variant="ghost"
       size="icon"
-      class="order-1 shrink-0 text-muted-foreground xl:hidden"
+      class="order-1 shrink-0 text-muted-foreground @7xl:hidden"
       aria-label="Close"
       @click="emit('close')"
       ><X
     /></Button>
-    <div v-if="!back" class="order-2 basis-full xl:hidden" />
+    <div v-if="!back" class="order-2 basis-full @7xl:hidden" />
 
-    <Skeleton v-if="loading" class="order-3 h-4 w-11 xl:order-none" />
+    <Skeleton v-if="loading" class="order-3 h-4 w-11 @7xl:order-none" />
     <div
       v-else
-      class="order-3 flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold tabular-nums xl:order-none"
+      class="order-3 flex shrink-0 items-center gap-1.5 px-1 text-xs font-semibold tabular-nums @7xl:order-none"
       :title="`${done} of ${total} files viewed · ${total - done} left · ${inView} in the current view`"
     >
       <ProgressRing :done="done" :total="total" />
@@ -83,13 +83,13 @@ const openSettings = useSettingsOpener()
       >
     </div>
 
-    <div v-if="!back" class="order-3 flex-1 xl:hidden" />
+    <div v-if="!back" class="order-3 flex-1 @7xl:hidden" />
 
-    <div class="order-3 flex shrink-0 items-center gap-2 xl:order-none">
+    <div class="order-3 flex shrink-0 items-center gap-2 @7xl:order-none">
       <div class="flex shrink-0 items-center gap-2 empty:hidden"><slot name="actions" /></div>
 
       <template v-if="!bare">
-        <Separator orientation="vertical" class="mx-0.5 hidden h-5 sm:block data-[orientation=vertical]:self-center" />
+        <Separator orientation="vertical" class="mx-0.5 hidden h-5 @[40rem]:block data-[orientation=vertical]:self-center" />
 
         <!-- Room for what the page around the review adds, such as the desktop app's Share menu. -->
         <slot name="tools" />
@@ -127,7 +127,7 @@ const openSettings = useSettingsOpener()
         v-if="!back"
         variant="ghost"
         size="icon"
-        class="hidden shrink-0 text-muted-foreground xl:inline-flex"
+        class="hidden shrink-0 text-muted-foreground @7xl:inline-flex"
         aria-label="Close"
         @click="emit('close')"
         ><X

@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { bridge } from './bridge'
 
 // Keeps lists current without a Refresh button: they look again when you change something on GitHub from the app,
@@ -18,6 +18,13 @@ bridge.on('github:changed', ({ at }) => (changedAt.value = at))
 
 const visible = () => document.visibilityState === 'visible'
 
+// Refresh in the menu (⌘R) asks every open list again now.
+const asked = shallowRef(0)
+export function refreshNow() {
+  changedAt.value = Date.now()
+  asked.value++
+}
+
 // True when a list loaded at `at` is older than a change made from the app, or than LIVE.staleMs.
 export function isStale(at: number | null | undefined, now = Date.now()) {
   return !at || at < changedAt.value || now - at > LIVE.staleMs
@@ -34,6 +41,7 @@ export function useLive(load: () => unknown, loadedAt: () => number | null | und
   }
 
   let off: (() => void) | undefined
+  watch(asked, () => void load())
   onMounted(() => {
     refreshIfStale()
     off = bridge.on('github:changed', onChange)

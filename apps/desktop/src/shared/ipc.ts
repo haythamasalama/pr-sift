@@ -438,7 +438,27 @@ export interface Events {
   'github:changed': { at: number }
   // A prsift:// link asked to open this pull request.
   'pull:open': PullLink
+  // An item in the menu bar was chosen, or its shortcut pressed.
+  'menu:command': MenuCommand
 }
+
+export type MenuCommand =
+  | 'settings'
+  | 'account'
+  | 'add-project'
+  | 'open-link'
+  | 'refresh'
+  | 'find'
+  | 'view:inbox'
+  | 'view:autoapprove'
+  | 'view:worktrees'
+  | 'view:cleanup'
+  | 'toggle-sidebar'
+  | 'focus'
+  | 'back'
+  | 'pull:previous'
+  | 'pull:next'
+  | 'shortcuts'
 
 export type EventName = keyof Events
 
@@ -450,6 +470,7 @@ export const EVENTS = [
   'autoapprove:changed',
   'github:changed',
   'pull:open',
+  'menu:command',
 ] as const satisfies readonly EventName[]
 
 export interface Bridge {
