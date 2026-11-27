@@ -372,6 +372,7 @@ export interface Channels {
   'shell:open-external': { args: [url: string]; result: void }
   // The window frame (title bar, traffic lights) follows the app's own Light / Dark / System choice.
   'window:appearance': { args: [mode: 'system' | 'light' | 'dark', background: string]; result: void }
+  'window:zoom': { args: [percent: number]; result: void }
 }
 
 export type Channel = keyof Channels
@@ -423,6 +424,7 @@ export const CHANNELS = [
   'shell:reveal',
   'shell:open-external',
   'window:appearance',
+  'window:zoom',
 ] as const satisfies readonly Channel[]
 
 export interface StorageChange {
@@ -453,6 +455,9 @@ export type MenuCommand =
   | 'find'
   | 'view:inbox'
   | 'view:autoapprove'
+  | 'zoom:in'
+  | 'zoom:out'
+  | 'zoom:reset'
   | 'view:pulls'
   | 'view:branches'
   | 'view:worktrees'

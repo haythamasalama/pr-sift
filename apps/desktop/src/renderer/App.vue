@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@vueuse/core'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
-import { useAppearance } from '@/features/appearance/useAppearance'
+import { UI_SCALES, stepStop, useAppearance } from '@/features/appearance/useAppearance'
 import { portalTargetKey } from '@/lib/portal'
 import { prKey } from '@/lib/types'
 import { useAuth } from './useAuth'
@@ -79,7 +79,9 @@ import CountBadge from './components/CountBadge.vue'
 import Hint from './components/Hint.vue'
 import { anyColorHex } from './color'
 
-const { theme, dark, rootAttrs } = useAppearance()
+const { theme, dark, rootAttrs, uiScale, setUiScale } = useAppearance()
+// Interface size zooms the whole window. ⌘+ and ⌘− step through the same stops as the setting.
+watch(uiScale, (percent) => void bridge.invoke('window:zoom', percent), { immediate: true })
 // The title bar and window frame follow the theme chosen here, not only the system's.
 const rootEl = useTemplateRef<HTMLElement>('appRoot')
 watch(
@@ -341,6 +343,10 @@ watch(status, () => {
   waitingCommand = null
 })
 function onMenu(command: MenuCommand) {
+  // The interface size works on every screen, the sign-in too.
+  if (command === 'zoom:in' || command === 'zoom:out')
+    return void setUiScale(stepStop(UI_SCALES, uiScale.value, command === 'zoom:in' ? 1 : -1))
+  if (command === 'zoom:reset') return void setUiScale(100)
   // A command that arrives with a new window waits for the sign-in check.
   if (!status.value) {
     waitingCommand = command

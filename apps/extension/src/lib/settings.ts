@@ -16,6 +16,8 @@ export const DEFAULTS: Settings = {
   theme: 'system',
   themeStyle: 'github',
   codeTheme: 'github',
+  uiScale: 100,
+  codeSize: 12,
   treeIndent: 6,
   treeGuides: true,
   mergeMethod: 'squash',

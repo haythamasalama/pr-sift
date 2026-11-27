@@ -31,11 +31,24 @@ export const CODE_THEMES = [
   { value: 'night-owl', label: 'Night Owl' },
 ]
 
+// Sizes snap to stops, as in macOS and Figma, so text never lands on a blurry half pixel.
+export const UI_SCALES = [80, 90, 100, 110, 125, 150]
+export const CODE_SIZES = [11, 12, 13, 14, 15, 16, 18]
+const nearest = (list: number[], value: unknown, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? list.reduce((best, x) => (Math.abs(x - value) < Math.abs(best - value) ? x : best), list[0]!)
+    : fallback
+// The next stop up or down from `value`, or the same one at either end.
+export const stepStop = (list: number[], value: number, by: -1 | 1) =>
+  list[Math.min(list.length - 1, Math.max(0, list.indexOf(nearest(list, value, value)) + by))]!
+
 export const codeFor = (theme: string, dark: boolean) => `${theme}-${dark ? 'dark' : 'light'}`
 
 const theme = shallowRef<ThemeMode>(DEFAULTS.theme)
 const themeStyle = shallowRef<ThemeStyle>(DEFAULTS.themeStyle)
 const codeTheme = shallowRef(DEFAULTS.codeTheme)
+const uiScale = shallowRef(DEFAULTS.uiScale)
+const codeSize = shallowRef(DEFAULTS.codeSize)
 const systemDark = shallowRef(false)
 let started = false
 
@@ -46,6 +59,8 @@ function apply(settings: Partial<Settings>) {
   theme.value = settings.theme ?? DEFAULTS.theme
   themeStyle.value = pick(RENAMED[settings.themeStyle ?? ''] ?? settings.themeStyle, THEME_STYLES, DEFAULTS.themeStyle)
   codeTheme.value = pick(settings.codeTheme, CODE_THEMES, DEFAULTS.codeTheme)
+  uiScale.value = nearest(UI_SCALES, settings.uiScale, DEFAULTS.uiScale)
+  codeSize.value = nearest(CODE_SIZES, settings.codeSize, DEFAULTS.codeSize)
   // Only the PR Sift theme uses the bundled IBM Plex fonts, so other themes skip decoding them.
   if (themeStyle.value === 'prsift') installFonts()
 }
@@ -63,8 +78,8 @@ function start() {
 
 export const isDark = (mode: ThemeMode, system: boolean) => (mode === 'system' ? system : mode === 'dark')
 
-export function themeAttrs(style: ThemeStyle, code = '') {
-  return { 'data-style': style, 'data-code': code || undefined }
+export function themeAttrs(style: ThemeStyle, code = '', codePx = DEFAULTS.codeSize) {
+  return { 'data-style': style, 'data-code': code || undefined, style: { '--ps-code-size': `${codePx}px` } }
 }
 
 export function useAppearance() {
@@ -77,7 +92,19 @@ export function useAppearance() {
     systemDark,
     dark,
     // Bind on every .ps-root so the chosen theme and code colours reach it.
-    rootAttrs: computed(() => themeAttrs(themeStyle.value, codeFor(codeTheme.value, dark.value))),
+    rootAttrs: computed(() => themeAttrs(themeStyle.value, codeFor(codeTheme.value, dark.value), codeSize.value)),
+    uiScale,
+    codeSize,
+    // In the browser the interface size scales PR Sift's own panels; the desktop app zooms its window instead.
+    zoomStyle: computed(() => (uiScale.value === 100 ? undefined : { zoom: uiScale.value / 100 })),
+    setUiScale: (value: number) => {
+      uiScale.value = nearest(UI_SCALES, value, DEFAULTS.uiScale)
+      return saveSetting('uiScale', uiScale.value)
+    },
+    setCodeSize: (value: number) => {
+      codeSize.value = nearest(CODE_SIZES, value, DEFAULTS.codeSize)
+      return saveSetting('codeSize', codeSize.value)
+    },
     setTheme: (value: ThemeMode) => {
       theme.value = value
       return saveSetting('theme', value)

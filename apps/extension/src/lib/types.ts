@@ -39,6 +39,9 @@ export interface Settings {
   theme: ThemeMode
   themeStyle: ThemeStyle
   codeTheme: string
+  // Interface size in percent, and the code size in reviews in pixels. Both snap to fixed stops.
+  uiScale: number
+  codeSize: number
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod

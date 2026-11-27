@@ -23,7 +23,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark, rootAttrs } = useAppearance()
+const { dark, rootAttrs, zoomStyle } = useAppearance()
 const githubDark = useGithubDark()
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
@@ -107,53 +107,53 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs">
+  <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs" :style="zoomStyle">
     <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
       <!-- .ps-root sets position: relative outside the utility layer, so the fixed corner needs its own box. -->
       <div class="fixed right-5 bottom-5 z-30 flex items-center gap-2">
-      <OpenInApp
-        v-if="desktopApp && !dead"
-        :pr="pr"
-        class="size-9 rounded-lg border border-border bg-popover shadow-sm hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"
-      />
-      <Button
-        variant="outline"
-        :class="[
-          'relative h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
-          dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
-        ]"
-        :title="dead ? undefined : updateNote || undefined"
-        @click="dead ? reload() : (open = true)"
-      >
-        <BrandPulse class="size-6">
-          <RefreshCw v-if="dead" />
-          <BrandMark v-else class="size-3.5" />
-        </BrandPulse>
-        {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge
-          v-if="externalUpdate && !dead"
+        <OpenInApp
+          v-if="desktopApp && !dead"
+          :pr="pr"
+          class="size-9 rounded-lg border border-border bg-popover shadow-sm hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"
+        />
+        <Button
           variant="outline"
-          class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3"
+          :class="[
+            'relative h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
+            dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
+          ]"
+          :title="dead ? undefined : updateNote || undefined"
+          @click="dead ? reload() : (open = true)"
         >
-          <RefreshCw /> Changed
-        </Badge>
-        <Badge
-          v-else-if="updated && !updateReady && !dead"
-          data-update-badge
-          variant="outline"
-          class="gap-1 border-transparent bg-success-fg/15 text-success-fg [&_svg]:size-3"
-        >
-          <Check /> {{ updated.version }}
-          <span class="sr-only">{{ updateNote }}</span>
-        </Badge>
-        <span
-          v-if="updateReady && !dead"
-          data-update-dot
-          class="absolute -top-1 -right-1 size-2.5 rounded-full bg-attention ring-2 ring-background"
-        >
-          <span class="sr-only">{{ updateNote }}</span>
-        </span>
-      </Button>
+          <BrandPulse class="size-6">
+            <RefreshCw v-if="dead" />
+            <BrandMark v-else class="size-3.5" />
+          </BrandPulse>
+          {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
+          <Badge
+            v-if="externalUpdate && !dead"
+            variant="outline"
+            class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3"
+          >
+            <RefreshCw /> Changed
+          </Badge>
+          <Badge
+            v-else-if="updated && !updateReady && !dead"
+            data-update-badge
+            variant="outline"
+            class="gap-1 border-transparent bg-success-fg/15 text-success-fg [&_svg]:size-3"
+          >
+            <Check /> {{ updated.version }}
+            <span class="sr-only">{{ updateNote }}</span>
+          </Badge>
+          <span
+            v-if="updateReady && !dead"
+            data-update-dot
+            class="absolute -top-1 -right-1 size-2.5 rounded-full bg-attention ring-2 ring-background"
+          >
+            <span class="sr-only">{{ updateNote }}</span>
+          </span>
+        </Button>
       </div>
     </div>
     <QuickMerge v-if="pr && !open && !dead" :key="`quick-${prKey(pr)}`" :pr="pr" :dark="githubDark" />

@@ -297,6 +297,11 @@ function registerHandlers() {
 
   h('shell:reveal', (_e, path) => shell.showItemInFolder(String(path)))
   h('shell:open-external', (_e, url) => openExternal(String(url)))
+  // Interface size: the whole window zooms, so text, icons and spacing grow together.
+  h('window:zoom', (e, percent) => {
+    const factor = Number(percent) / 100
+    if (factor >= 0.5 && factor <= 2) e.sender.setZoomFactor(factor)
+  })
   h('window:appearance', (_e, mode, background) => {
     if (mode === 'system' || mode === 'light' || mode === 'dark') nativeTheme.themeSource = mode
     if (typeof background === 'string' && /^#[0-9a-f]{6}$/i.test(background)) window?.setBackgroundColor(background)

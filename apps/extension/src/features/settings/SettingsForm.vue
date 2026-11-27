@@ -14,7 +14,9 @@ import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { CODE_SIZES, THEME_STYLES, UI_SCALES, useAppearance } from '../appearance/useAppearance'
+import SizeStops from './SizeStops.vue'
+import { DEFAULTS } from '../../lib/settings'
 import AboutSection from './AboutSection.vue'
 import ConnectionRow from './ConnectionRow.vue'
 import PatternList from './PatternList.vue'
@@ -93,7 +95,9 @@ const tabs = computed(() => [
 const tab = shallowRef<string>(section ? TAB_OF[section] : (extraTabs[0]?.id ?? SHEET_TABS[0]!.id))
 const shows = (id: string) => layout === 'page' || tab.value === id
 
-const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark, uiScale, setUiScale, codeSize, setCodeSize } =
+  useAppearance()
+const mod = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
 const themeHint = computed(() => THEME_STYLES.find((t) => t.value === themeStyle.value)?.hint ?? '')
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
@@ -365,6 +369,71 @@ defineExpose({ scrollToSection })
       </SettingsRow>
       <SettingsRow id="settings-section-style" data-section="style" label="Theme" :description="themeHint">
         <ThemeSwatches :model-value="themeStyle" :dark="dark" @update:model-value="setThemeStyle" />
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-ui-size"
+        data-section="ui-size"
+        label="Interface size"
+        description="Text, icons and spacing grow together, so nothing gets cramped."
+      >
+        <div class="flex min-w-[260px] flex-1 flex-col gap-2.5">
+          <SizeStops :model-value="uiScale" :stops="UI_SCALES" unit="%" label="Interface size" @update:model-value="setUiScale">
+            <template #small><span class="text-xs text-muted-foreground" aria-hidden="true">A</span></template>
+            <template #large><span class="text-lg text-muted-foreground" aria-hidden="true">A</span></template>
+          </SizeStops>
+          <div class="flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <template v-if="!inBrowser">
+              <span class="flex items-center gap-1 whitespace-nowrap"
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} +</kbd
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} −</kbd
+                >
+                anywhere</span
+              >
+              <span class="flex items-center gap-1 whitespace-nowrap"
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} 0</kbd
+                >
+                back to 100%</span
+              >
+            </template>
+            <button
+              v-if="uiScale !== DEFAULTS.uiScale"
+              type="button"
+              class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              @click="setUiScale(DEFAULTS.uiScale)"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-code-size"
+        data-section="code-size"
+        label="Code size"
+        description="Only the code in reviews and changes."
+      >
+        <div class="flex min-w-[260px] flex-1 flex-col gap-2.5">
+          <SizeStops :model-value="codeSize" :stops="CODE_SIZES" unit=" px" label="Code size" @update:model-value="setCodeSize">
+            <template #small><span class="font-mono text-[11px] text-muted-foreground" aria-hidden="true">{ }</span></template>
+            <template #large><span class="font-mono text-base text-muted-foreground" aria-hidden="true">{ }</span></template>
+          </SizeStops>
+          <div class="flex min-h-5 justify-end">
+            <button
+              v-if="codeSize !== DEFAULTS.codeSize"
+              type="button"
+              class="text-xs text-muted-foreground hover:text-foreground"
+              @click="setCodeSize(DEFAULTS.codeSize)"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </SettingsRow>
       <SettingsRow
         id="settings-section-code-colors"

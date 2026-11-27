@@ -11,7 +11,7 @@ import { SETTINGS_TABS, TAB_OF, type SettingsSectionId, type SettingsTab } from 
 
 const ICONS = { about: BrandIcon, github: GithubMark, review: Eye, files: FolderTree, appearance: Palette }
 
-const { dark, rootAttrs } = useAppearance()
+const { dark, rootAttrs, zoomStyle } = useAppearance()
 const section = (location.hash.slice(1) || undefined) as SettingsSectionId | undefined
 const form = useTemplateRef<InstanceType<typeof SettingsForm>>('form')
 const current = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
@@ -40,7 +40,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', track))
 </script>
 
 <template>
-  <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
+  <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs" :style="zoomStyle">
     <div class="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <header class="flex items-center gap-3">
         <div class="flex size-9 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
