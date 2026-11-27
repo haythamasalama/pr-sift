@@ -2,12 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { groupPulls } from '../../src/renderer/pulls/view'
 
 const pr = (owner: string, repo: string, login: string) => ({ owner, repo, author: { login } })
-const list = [
-  pr('globex', 'backend', 'ali'),
-  pr('acme', 'shop', 'sara'),
-  pr('globex', 'business', 'ali'),
-  pr('Globex', 'backend', 'omar'),
-]
+const list = [pr('globex', 'backend', 'ali'), pr('acme', 'shop', 'sara'), pr('globex', 'business', 'ali'), pr('Globex', 'backend', 'omar')]
 
 describe('groupPulls', () => {
   it('keeps one group when not grouping', () => {
