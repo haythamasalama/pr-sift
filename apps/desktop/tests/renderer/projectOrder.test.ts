@@ -29,6 +29,11 @@ describe('grouping by owner', () => {
   it('keeps the chosen order inside each owner, owners A to Z, local folders last', () => {
     expect(names(byOwner(sortProjects(list, 'recent', { '/code/docs': 2 }, [])))).toEqual(['docs', 'App', 'saas', 'notes'])
   })
+
+  it('with a Custom order, puts owners where you placed them and keeps your order inside each', () => {
+    const custom = sortProjects(list, 'custom', {}, ['/code/notes', '/code/saas', '/code/docs', '/code/App'])
+    expect(names(byOwner(custom, true))).toEqual(['saas', 'docs', 'App', 'notes'])
+  })
 })
 
 describe('dragging a project', () => {

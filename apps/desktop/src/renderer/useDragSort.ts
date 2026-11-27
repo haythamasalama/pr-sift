@@ -15,7 +15,15 @@ export const slotAt = (y: number, middles: number[]) => middles.filter((m) => m 
 const THRESHOLD = 4
 const EDGE = 28
 
-export function useDragSort(opts: { items: () => string[]; list: () => HTMLElement | null; onDrop: (order: string[]) => void }) {
+export function useDragSort(opts: {
+  items: () => string[]
+  list: () => HTMLElement | null
+  onDrop: (order: string[]) => void
+  // The data attribute that marks a row this list sorts, so two lists can share one element.
+  attr?: string
+}) {
+  const attr = opts.attr ?? 'sortId'
+  const selector = `[data-${attr.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}]`
   // The order while a drag is going on; null otherwise.
   const preview = shallowRef<string[] | null>(null)
   const dragging = shallowRef<string | null>(null)
@@ -30,8 +38,8 @@ export function useDragSort(opts: { items: () => string[]; list: () => HTMLEleme
     if (!list || !order || !dragging.value) return
     const id = dragging.value
     // offsetTop ignores the transforms of rows still sliding, so the target doesn't flicker mid-animation.
-    const middles = [...list.querySelectorAll<HTMLElement>('[data-sort-id]')]
-      .filter((row) => row.dataset.sortId !== id)
+    const middles = [...list.querySelectorAll<HTMLElement>(selector)]
+      .filter((row) => row.dataset[attr] !== id)
       .map((row) => row.offsetTop + row.offsetHeight / 2)
     const y = clientY - list.getBoundingClientRect().top + list.scrollTop
     const next = reorder(order, id, slotAt(y, middles))

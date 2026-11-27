@@ -73,13 +73,17 @@ export interface ProjectGroup {
 
 const ownerOf = (p: Project) => p.github?.owner.toLowerCase() ?? ''
 
-// Keeps the chosen order inside each owner; owners go A to Z, folders that aren't on GitHub last.
-export function byOwner(list: Project[]): Project[] {
+// Keeps the chosen order inside each owner; folders that aren't on GitHub go last. Owners go A to Z,
+// or, with `asListed` (a Custom order), in the order the list first reaches them, so owners can be dragged too.
+export function byOwner(list: Project[], asListed = false): Project[] {
+  const first = new Map<string, number>()
+  list.forEach((p, i) => first.has(ownerOf(p)) || first.set(ownerOf(p), i))
   return [...list].sort((a, b) => {
     const x = ownerOf(a)
     const y = ownerOf(b)
     if (x === y) return 0
-    return !x ? 1 : !y ? -1 : x.localeCompare(y)
+    if (!x || !y) return !x ? 1 : -1
+    return asListed ? first.get(x)! - first.get(y)! : x.localeCompare(y)
   })
 }
 
@@ -120,7 +124,7 @@ export function useProjectOrder(projects: Ref<Project[] | null>) {
   const sorted = computed(() => sortProjects(projects.value ?? [], sort.value, opened.value, custom.value))
   const groups = computed(() => {
     if (grouping.value !== 'owner') return groupProjects(sorted.value, grouping.value === 'repo')
-    return groupProjects(byOwner(sorted.value), true).map((g) => ({ ...g, owner: ownerOf(g.projects[0]!) }))
+    return groupProjects(byOwner(sorted.value, sort.value === 'custom'), true).map((g) => ({ ...g, owner: ownerOf(g.projects[0]!) }))
   })
   return {
     sort,

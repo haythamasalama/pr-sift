@@ -134,9 +134,24 @@ const drag = useDragSort({
   list: () => projectList.value,
   onDrop: (keys) => placeProjects(keys.flatMap((k) => groupByKey.value.get(k)?.projects.map((p) => p.path) ?? [])),
 })
-const shownGroups = computed(() =>
-  drag.preview.value ? drag.preview.value.flatMap((key) => groupByKey.value.get(key) ?? []) : groups.value,
-)
+// Grouped by owner, a whole owner can be dragged by its heading; its projects move with it.
+const ownerKeys = computed(() => [...new Set(groups.value.map((g) => g.owner ?? ''))])
+const ownerDrag = useDragSort({
+  items: () => ownerKeys.value,
+  list: () => projectList.value,
+  attr: 'ownerSortId',
+  onDrop: (owners) =>
+    placeProjects(owners.flatMap((o) => groups.value.filter((g) => (g.owner ?? '') === o).flatMap((g) => g.projects.map((p) => p.path)))),
+})
+const shownGroups = computed(() => {
+  const owners = ownerDrag.preview.value
+  if (owners) return owners.flatMap((o) => groups.value.filter((g) => (g.owner ?? '') === o))
+  const list = drag.preview.value ? drag.preview.value.flatMap((key) => groupByKey.value.get(key) ?? []) : groups.value
+  if (grouping.value !== 'owner') return list
+  // A project dragged among another owner's projects stays under its own owner.
+  const at = new Map(ownerKeys.value.map((o, i) => [o, i]))
+  return [...list].sort((a, b) => at.get(a.owner ?? '')! - at.get(b.owner ?? '')!)
+})
 // Grouped by owner, each owner gets a heading that folds its projects away. The rail shows them flat.
 type SidebarRow = ProjectGroup & { heading?: { owner: string; title: string; count: number; folded: boolean } }
 const sidebarRows = computed<SidebarRow[]>(() => {
@@ -606,9 +621,12 @@ function onAdded(paths: string[]) {
                 v-for="g in sidebarRows"
                 :key="g.key"
                 :data-sort-id="g.heading ? undefined : g.key"
+                :data-owner-sort-id="g.heading ? g.heading.owner : undefined"
                 class="relative flex flex-col gap-0.5 rounded-md"
                 :class="[
-                  drag.dragging.value === g.key ? 'z-10 bg-accent shadow-md ring-1 ring-border' : '',
+                  drag.dragging.value === g.key || (g.heading && ownerDrag.dragging.value === g.heading.owner)
+                    ? 'z-10 bg-accent shadow-md ring-1 ring-border'
+                    : '',
                   g.heading ? 'mt-2 first:mt-0' : '',
                 ]"
               >
@@ -617,7 +635,8 @@ function onAdded(paths: string[]) {
                   type="button"
                   :class="[item, 'h-7 gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground']"
                   :aria-expanded="!g.heading.folded"
-                  @click="toggleFolded(g.key)"
+                  @pointerdown="ownerDrag.down($event, g.heading.owner)"
+                  @click="!ownerDrag.wasDrag() && toggleFolded(g.key)"
                 >
                   <ProjectIcon v-if="g.heading.owner" :project="g.projects[0]!" :size="16" />
                   <span class="min-w-0 truncate">{{ g.heading.title }}</span>
