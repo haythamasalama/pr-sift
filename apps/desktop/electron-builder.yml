@@ -29,6 +29,7 @@ nsis:
   allowToChangeInstallationDirectory: true
 linux:
   category: Development
+  executableName: pr-sift
   target: [AppImage, deb]
   icon: build/icon.png
   maintainer: Haytham A. Salama

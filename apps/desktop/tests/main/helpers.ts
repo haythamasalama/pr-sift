@@ -7,7 +7,7 @@ export const sh = (cwd: string, ...args: string[]) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 
 export function tempDir(prefix: string) {
-  return realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+  return realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
 }
 
 export function write(path: string, content: string | Buffer = 'x') {
