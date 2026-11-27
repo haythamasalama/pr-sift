@@ -173,9 +173,22 @@ watch(
     ).length
     void load()
     void loadOverview()
+    void loadCounts(path)
   },
   { immediate: true },
 )
+
+// The Branches and Worktrees tabs show their counts as soon as the project opens, not only after you visit them.
+async function loadCounts(path: string) {
+  if (!path) return
+  const [branches, repo] = await Promise.allSettled([bridge.invoke('branches:list', path), bridge.invoke('worktrees:list', path)])
+  if (current.value?.path !== path) return
+  if (branches.status === 'fulfilled') counts.branches = writeCache(`branches:${path}`, branches.value).value.length
+  if (repo.status === 'fulfilled') {
+    writeCache(`worktrees:${path}`, [repo.value])
+    counts.worktrees = repo.value.worktrees.filter((w) => !w.main).length
+  }
+}
 
 function flash(text: string) {
   note.value = text

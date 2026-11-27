@@ -237,6 +237,12 @@ await page
   .first()
   .waitFor()
 await page.screenshot({ path: join(shots, '5-project-pulls.png') })
+// The Branches and Worktrees tabs know their counts before you visit them.
+await page.waitForFunction(() =>
+  ['Branches', 'Worktrees'].every((name) =>
+    /\d/.test([...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.includes(name))?.textContent ?? ''),
+  ),
+)
 // Filters narrow the list; the View menu hides row details everywhere.
 await page.getByRole('button', { name: /^Filter/ }).click()
 await page.getByRole('menuitem', { name: 'Author' }).click()
