@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, shallowRef } from 'vue'
-import { ArrowRight, CircleAlert, ExternalLink, Eye, EyeOff, LockKeyhole, Terminal } from '@lucide/vue'
+import { ArrowRight, ArrowUpRight, CircleAlert, Eye, EyeOff, LockKeyhole, Terminal } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/components/ui/input-group'
@@ -8,6 +8,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { bridge } from '~/bridge'
 import { clearCache } from '~/cache'
 import { useAuth } from '~/useAuth'
+import AppLogo from '~/components/AppLogo.vue'
+import Hint from '~/components/Hint.vue'
 
 const emit = defineEmits<{ next: [] }>()
 
@@ -56,108 +58,125 @@ async function switchAccount() {
   busy.value = null
 }
 
+// Three pull requests fanned above the logo, each with its checks dot: the app sifting them.
+const ROWS = [
+  { dot: 'bg-success-fg', bar: 64, style: { top: '0px', left: '8px', transform: 'rotate(-7deg)' } },
+  { dot: 'bg-attention', bar: 52, style: { top: '10px', right: '4px', transform: 'rotate(6deg)' } },
+  { dot: 'bg-destructive', bar: 40, style: { top: '30px', left: '50%', transform: 'translateX(-50%) rotate(-1deg)' } },
+]
+const safety = computed(() =>
+  status.value?.weakStorage
+    ? { text: 'Saved with basic protection', hint: 'No keyring was found. Installing GNOME Keyring or KWallet makes it safer.' }
+    : { text: 'Encrypted in your keychain', hint: 'Only ever sent to api.github.com.' },
+)
 const openCreate = () => bridge.invoke('shell:open-external', CREATE_TOKEN_URL)
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-1.5">
-      <h1 class="text-2xl font-semibold tracking-tight">Sign in to GitHub</h1>
-      <p class="text-muted-foreground">PR Sift reads your pull requests and repositories with your GitHub account.</p>
-    </div>
-
-    <div v-if="account" class="flex flex-col gap-4">
-      <div class="flex items-center gap-3 rounded-lg border border-border p-3">
-        <img v-if="account.avatarUrl" :src="account.avatarUrl" alt="" class="size-10 rounded-full" />
-        <span v-else class="flex size-10 items-center justify-center rounded-full bg-muted font-medium uppercase">{{
-          account.login.slice(0, 1)
-        }}</span>
-        <div class="flex min-w-0 flex-1 flex-col">
-          <span class="truncate font-medium">{{ account.name ?? account.login }}</span>
-          <span class="truncate text-xs text-muted-foreground"
-            >@{{ account.login }} · {{ status?.source === 'gh' ? 'GitHub CLI' : 'Personal access token' }}</span
+  <div class="relative">
+    <!-- The frame: a card lifted off a soft dot grid, with pull requests being sifted into the logo. -->
+    <div class="relative overflow-hidden rounded-2xl border border-border bg-card shadow-overlay">
+      <div class="flex flex-col items-center gap-5 px-8 pt-9 pb-7">
+        <div class="relative flex h-[104px] w-56 justify-center" aria-hidden="true">
+          <div
+            v-for="(row, i) in ROWS"
+            :key="i"
+            class="absolute flex h-6 items-center gap-2 rounded-md border border-border bg-background px-2 shadow-xs"
+            :style="row.style"
           >
-        </div>
-        <Button variant="ghost" size="sm" :disabled="busy !== null" @click="switchAccount">
-          <Spinner v-if="busy === 'out'" />Switch
-        </Button>
-      </div>
-      <Button size="lg" class="w-full" @click="emit('next')">Continue <ArrowRight /></Button>
-    </div>
-
-    <Alert v-else-if="!canStore" variant="destructive">
-      <CircleAlert />
-      <AlertDescription>
-        This system has no encrypted storage, so PR Sift can’t keep a token. On Linux, install and unlock a keyring such as GNOME Keyring or
-        KWallet, then restart PR Sift.
-      </AlertDescription>
-    </Alert>
-
-    <template v-else>
-      <div v-if="ghAvailable" class="flex flex-col gap-2">
-        <Button size="lg" class="w-full" :disabled="busy !== null" @click="importGh">
-          <Spinner v-if="busy === 'gh'" />
-          <Terminal v-else />
-          Continue with GitHub CLI
-        </Button>
-        <p class="text-center text-xs text-muted-foreground">Uses the account you signed in to with gh. Nothing to paste.</p>
-      </div>
-
-      <div v-if="ghAvailable" class="flex items-center gap-3 text-xs text-muted-foreground">
-        <span class="h-px flex-1 bg-border" />or use a token<span class="h-px flex-1 bg-border" />
-      </div>
-
-      <form class="flex flex-col gap-3" @submit.prevent="submit">
-        <div class="flex flex-col gap-1.5">
-          <div class="flex items-center justify-between gap-2">
-            <label for="token" class="font-medium">Personal access token</label>
-            <button type="button" class="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" @click="openCreate">
-              Create one <ExternalLink class="size-3" />
-            </button>
+            <span class="size-1.5 shrink-0 rounded-full" :class="row.dot" />
+            <span class="h-1.5 rounded-full bg-muted-foreground/30" :style="{ width: `${row.bar}px` }" />
           </div>
-          <InputGroup>
-            <InputGroupInput
-              id="token"
-              v-model="token"
-              :type="visible ? 'text' : 'password'"
-              placeholder="ghp_…"
-              autocomplete="off"
-              spellcheck="false"
-              :disabled="busy !== null"
-            />
-            <InputGroupAddon align="inline-end">
-              <InputGroupButton :aria-label="visible ? 'Hide token' : 'Show token'" size="icon-xs" @click="visible = !visible">
-                <EyeOff v-if="visible" />
-                <Eye v-else />
-              </InputGroupButton>
-            </InputGroupAddon>
-          </InputGroup>
-          <p class="text-xs text-muted-foreground">A classic token with the repo scope.</p>
+          <div
+            class="absolute bottom-0 flex size-14 items-center justify-center rounded-2xl border border-border bg-background shadow-overlay"
+          >
+            <AppLogo class="size-9" />
+          </div>
         </div>
-        <Button
-          type="submit"
-          size="lg"
-          class="w-full"
-          :variant="ghAvailable ? 'outline' : 'default'"
-          :disabled="!token.trim() || busy !== null"
-        >
-          <Spinner v-if="busy === 'token'" />
-          Sign in
-        </Button>
-      </form>
-    </template>
+        <h1 class="text-xl font-semibold tracking-tight">Sign in with GitHub</h1>
 
-    <Alert v-if="error" variant="destructive">
-      <CircleAlert />
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+        <div v-if="account" class="flex w-full flex-col gap-3">
+          <div class="flex items-center gap-3 rounded-lg border border-border bg-background p-3">
+            <img v-if="account.avatarUrl" :src="account.avatarUrl" alt="" class="size-9 rounded-full" />
+            <span v-else class="flex size-9 items-center justify-center rounded-full bg-muted font-medium uppercase">{{
+              account.login.slice(0, 1)
+            }}</span>
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate font-medium">{{ account.name || account.login }}</span>
+              <span class="truncate text-xs text-muted-foreground">{{ account.login }}</span>
+            </div>
+            <Button variant="ghost" size="sm" :disabled="busy !== null" @click="switchAccount">
+              <Spinner v-if="busy === 'out'" />Switch
+            </Button>
+          </div>
+          <Button size="lg" class="w-full" @click="emit('next')">Continue <ArrowRight /></Button>
+        </div>
 
-    <p class="flex items-start gap-2 text-xs text-muted-foreground">
-      <LockKeyhole class="mt-px size-3.5 shrink-0" />
-      <span v-if="status?.weakStorage"
-        >No keyring was found, so the token is stored with basic protection only. Installing GNOME Keyring or KWallet makes it safer.</span
-      >
-      <span v-else>Your token is encrypted by your system’s keychain and only sent to api.github.com.</span>
-    </p>
+        <Alert v-else-if="!canStore" variant="destructive">
+          <CircleAlert />
+          <AlertDescription>No keyring to keep the token in. Install GNOME Keyring or KWallet, then restart PR Sift.</AlertDescription>
+        </Alert>
+
+        <div v-else class="flex w-full flex-col gap-4">
+          <Button v-if="ghAvailable" size="lg" class="w-full" :disabled="busy !== null" @click="importGh">
+            <Spinner v-if="busy === 'gh'" />
+            <Terminal v-else />
+            Continue with GitHub CLI
+          </Button>
+
+          <div v-if="ghAvailable" class="flex items-center gap-3 text-xs text-muted-foreground">
+            <span class="h-px flex-1 bg-border" />or<span class="h-px flex-1 bg-border" />
+          </div>
+
+          <form class="flex flex-col gap-2" @submit.prevent="submit">
+            <InputGroup class="h-10">
+              <InputGroupInput
+                id="token"
+                v-model="token"
+                :type="visible ? 'text' : 'password'"
+                placeholder="Personal access token"
+                aria-label="Personal access token"
+                autocomplete="off"
+                spellcheck="false"
+                :disabled="busy !== null"
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton :aria-label="visible ? 'Hide token' : 'Show token'" size="icon-xs" @click="visible = !visible">
+                  <EyeOff v-if="visible" />
+                  <Eye v-else />
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            <Button
+              type="submit"
+              size="lg"
+              class="w-full"
+              :variant="ghAvailable ? 'outline' : 'default'"
+              :disabled="!token.trim() || busy !== null"
+            >
+              <Spinner v-if="busy === 'token'" />
+              Sign in
+            </Button>
+            <button
+              type="button"
+              class="mx-auto flex items-center gap-1 pt-1 text-xs text-muted-foreground hover:text-foreground"
+              @click="openCreate"
+            >
+              Create a token <ArrowUpRight class="size-3" />
+            </button>
+          </form>
+        </div>
+
+        <Alert v-if="error" variant="destructive">
+          <CircleAlert />
+          <AlertDescription>{{ error }}</AlertDescription>
+        </Alert>
+      </div>
+      <Hint :text="safety.hint">
+        <p class="flex items-center justify-center gap-1.5 border-t border-border bg-muted/40 py-2.5 text-[11px] text-muted-foreground">
+          <LockKeyhole class="size-3" />{{ safety.text }}
+        </p>
+      </Hint>
+    </div>
   </div>
 </template>
