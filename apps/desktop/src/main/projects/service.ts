@@ -31,6 +31,11 @@ export class ProjectService {
 
   constructor(private readonly deps: ProjectDeps) {}
 
+  forget() {
+    this.icons.clear()
+    this.offered.clear()
+  }
+
   async paths(): Promise<string[]> {
     return (await this.deps.store.getOne<string[]>(KEY)) ?? []
   }

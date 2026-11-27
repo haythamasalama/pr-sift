@@ -571,6 +571,23 @@ await page.getByText('vue-port-rule').waitFor()
 await page.waitForTimeout(600)
 await page.screenshot({ path: join(shots, '12e-auto-approve-list-busy.png') })
 
+// Signing out leaves nothing behind: signing in again starts from a clean app.
+await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.send('menu:command', 'account'))
+await page.getByRole('button', { name: 'Sign out' }).click()
+await page.getByText('Sign in with GitHub').waitFor()
+await page.waitForTimeout(500)
+const left = await page.evaluate(async () => ({
+  local: Object.keys(localStorage).length,
+  projects: (await window.prSift.invoke('projects:list')).length,
+  rules: (await window.prSift.invoke('autoapprove:status')).config.rules.length,
+  settings: Object.keys(await window.prSift.invoke('store:get', ['appearance', 'settings', 'reviewSettings'])).length,
+}))
+if (left.local || left.projects || left.settings) throw new Error(`Sign out left data behind: ${JSON.stringify(left)}`)
+await page.getByLabel('Personal access token').fill('ghp_example_token_for_smoke_test')
+await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+await page.getByRole('heading', { name: 'Pick your style' }).waitFor()
+await page.screenshot({ path: join(shots, '20-after-sign-out.png') })
+
 await electronApp.close()
 if (errors.length) {
   console.error('Console errors:\n' + errors.join('\n'))

@@ -165,6 +165,15 @@ export class AutoApproveService {
     this.nextRun = undefined
   }
 
+  // Signing out: stop the timer and drop everything kept in memory from the last account.
+  forget() {
+    this.stop()
+    this.seen.clear()
+    this.cache = undefined
+    this.lastRun = undefined
+    this.lastError = undefined
+  }
+
   private async schedule() {
     this.stop()
     const config = await this.config()

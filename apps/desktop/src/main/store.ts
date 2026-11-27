@@ -57,6 +57,12 @@ export class Store extends EventEmitter<{ changed: [Record<string, StorageChange
     this.emit('changed', changes)
   }
 
+  // Empties the file: used when signing out, so nothing of the person's setup stays on the computer.
+  async clear(): Promise<void> {
+    await this.load()
+    await this.remove(Object.keys(this.data))
+  }
+
   async remove(keys: string[]): Promise<void> {
     await this.load()
     const changes: Record<string, StorageChange> = {}

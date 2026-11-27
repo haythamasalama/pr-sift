@@ -31,4 +31,14 @@ describe('Store', () => {
     list.push(2)
     expect(await store.getOne('list')).toEqual([1])
   })
+
+  it('clears everything, on disk too', async () => {
+    const file = fresh()
+    const store = new Store(file)
+    await store.set({ projects: ['/a'], settings: { theme: 'dark' } })
+    await store.clear()
+    expect(await store.get(['projects', 'settings'])).toEqual({})
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({})
+    expect(await new Store(file).get(['projects'])).toEqual({})
+  })
 })

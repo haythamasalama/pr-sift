@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, nativeTheme, safeStorage, shell, type IpcMainInvokeEvent, type WebContents } from 'electron'
+import { app, BrowserWindow, dialog, nativeTheme, safeStorage, session, shell, type IpcMainInvokeEvent, type WebContents } from 'electron'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -95,6 +95,19 @@ const autoApprove = new AutoApproveService({
 const leftovers = new Map<string, Leftover>()
 const sizes = limiter(4)
 
+async function startOver() {
+  const windows = BrowserWindow.getAllWindows()
+  await Promise.all(windows.map((win) => win.webContents.loadURL('about:blank').catch(() => undefined)))
+  await session.defaultSession.clearStorageData().catch(() => undefined)
+  await session.defaultSession.clearCache().catch(() => undefined)
+  for (const win of windows) loadApp(win)
+}
+
+function loadApp(win: BrowserWindow) {
+  if (rendererUrl) void win.loadURL(rendererUrl)
+  else void win.loadFile(rendererFile)
+}
+
 function send<E extends EventName>(event: E, payload: Events[E]) {
   for (const win of BrowserWindow.getAllWindows()) win.webContents.send(event, payload)
 }
@@ -142,10 +155,16 @@ function registerHandlers() {
     if (result.status) send('auth:changed', result.status)
     return result
   })
+  // Signing out leaves nothing behind: the token, settings, projects, auto-approve rules and log, and what the window
+  // keeps in its own storage. The window then starts over at the sign-in screen.
   h('auth:sign-out', async () => {
+    autoApprove.forget()
+    projects.forget()
+    leftovers.clear()
     const status = await vault.clear()
-    send('auth:changed', status)
-    send('store:changed', { token: {} })
+    await Promise.all([shared.clear(), internal.clear()])
+    // Leave the page first, so nothing in it writes its storage again after the wipe; then load it fresh.
+    setImmediate(() => void startOver())
     return status
   })
 
@@ -345,8 +364,7 @@ function createWindow() {
     window = null
     pageReady = false
   })
-  if (rendererUrl) void window.loadURL(rendererUrl)
-  else void window.loadFile(rendererFile)
+  loadApp(window)
 }
 
 app.on('second-instance', (_event, argv) => {
