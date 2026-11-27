@@ -16,7 +16,8 @@ export const PULL_DETAILS: { value: PullDetail; label: string }[] = [
 const KEY = 'ps:pull-view'
 const ALL: Record<PullDetail, boolean> = {
   labels: true,
-  branch: true,
+  // The branch is in the hint on the number; shown in the row only when asked for.
+  branch: false,
   author: true,
   size: true,
   comments: true,

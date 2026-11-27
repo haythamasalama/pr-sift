@@ -53,13 +53,13 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
 
 <template>
   <li class="flex items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0 hover:bg-muted/60">
-    <button type="button" class="flex min-w-0 flex-1 items-center gap-4 py-3 text-left" @click="emit('open')">
+    <button type="button" class="flex min-w-0 flex-1 items-center gap-4 py-2.5 text-left" @click="emit('open')">
       <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <!-- Line one is the title alone, as GitHub lists them; where it lives goes underneath. -->
         <div class="flex min-w-0 items-center gap-2 overflow-hidden">
-          <template v-if="showRepo"
-            ><ProjectIcon :project="repoProject" :size="16" /><span class="shrink-0 text-muted-foreground">{{ pull.repo }}</span></template
-          >
-          <span class="truncate text-sm font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{ pull.title }}</span>
+          <span class="truncate text-[15px] leading-5 font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{
+            pull.title
+          }}</span>
           <template v-if="shown.labels"><LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-3xl:hidden" /></template>
           <Hint
             v-if="pull.mergeable === 'CONFLICTING' && !mine"
@@ -69,11 +69,17 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
           </Hint>
         </div>
         <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap text-muted-foreground">
-          <span class="shrink-0 tabular-nums">#{{ pull.number }}</span>
-          <!-- In a narrow list the review status moves here, so the title keeps its room. -->
-          <Hint v-if="shown.review && review" :text="review.hint">
-            <StatusPill :tone="review.tone" class="hidden h-4 px-1.5 text-[11px] @max-3xl:inline-flex">{{ review.text }}</StatusPill>
-          </Hint>
+          <span class="flex shrink-0 items-center gap-1.5 tabular-nums" :title="`${pull.branch} into ${pull.base}`">
+            <template v-if="showRepo"><ProjectIcon :project="repoProject" :size="14" />{{ pull.owner }}/{{ pull.repo }}</template
+            >#{{ pull.number }}
+          </span>
+          <!-- In a narrow list the status moves here, so the title keeps its room. -->
+          <span v-if="(shown.review && review) || (shown.ci && ci)" class="hidden items-center gap-1.5 @max-3xl:flex">
+            <StatusPill v-if="shown.ci && ci" :tone="ci.tone" bare :aria-label="ci.hint" class="gap-0"
+              ><span class="sr-only">{{ ci.text }}</span></StatusPill
+            >
+            <StatusPill v-if="shown.review && review" :tone="review.tone" class="h-4 px-1.5 text-[11px]">{{ review.text }}</StatusPill>
+          </span>
           <span v-if="!mine && shown.author" class="flex shrink-0 items-center gap-1.5">
             <Avatar class="size-4"
               ><AvatarImage v-if="pull.author?.avatarUrl" :src="pull.author.avatarUrl" alt="" /><AvatarFallback
@@ -82,30 +88,27 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
               ></Avatar
             >{{ pull.author?.login ?? 'ghost' }}
           </span>
-          <span v-if="shown.branch" class="truncate font-mono text-[11px] @max-3xl:hidden" :title="`${pull.branch} into ${pull.base}`">{{
-            pull.branch
-          }}</span>
-          <span class="shrink-0">{{ formatAgo(pull.updatedAt) }}</span>
+          <span v-if="shown.branch" class="truncate font-mono text-[11px] @max-3xl:hidden">{{ pull.branch }}</span>
+          <span class="shrink-0" :title="new Date(pull.updatedAt).toLocaleString()">{{ formatAgo(pull.updatedAt) }}</span>
           <span v-if="shown.size" class="shrink-0 tabular-nums"
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
-
           <span v-if="pull.comments && shown.comments" class="flex shrink-0 items-center gap-1"
             ><MessageSquare class="size-3.5" />{{ pull.comments }}</span
           >
         </div>
       </div>
-      <span v-if="shown.review" class="flex w-[calc(18ch+1.5rem)] shrink-0 text-xs @max-3xl:hidden" :class="mine ? 'justify-end' : ''">
-        <Hint v-if="review" :text="review.hint">
+      <!-- One status column: the checks dot, then where the review stands. The words are in the hints. -->
+      <span v-if="shown.review || shown.ci" class="flex w-[calc(18ch+2.5rem)] shrink-0 items-center gap-2 text-xs @max-3xl:hidden">
+        <span v-if="shown.ci" class="flex w-3 shrink-0 justify-center">
+          <Hint v-if="ci" :text="ci.hint">
+            <StatusPill :tone="ci.tone" bare :aria-label="ci.hint" class="gap-0"
+              ><span class="sr-only">{{ ci.text }}</span></StatusPill
+            >
+          </Hint>
+        </span>
+        <Hint v-if="shown.review && review" :text="review.hint">
           <StatusPill :tone="review.tone">{{ review.text }}</StatusPill>
-        </Hint>
-      </span>
-      <!-- Checks are a dot; the word is in the hint. -->
-      <span v-if="shown.ci" class="flex w-14 shrink-0 justify-center">
-        <Hint v-if="ci" :text="ci.hint">
-          <StatusPill :tone="ci.tone" bare :aria-label="ci.hint" class="gap-0"
-            ><span class="sr-only">{{ ci.text }}</span></StatusPill
-          >
         </Hint>
       </span>
     </button>
