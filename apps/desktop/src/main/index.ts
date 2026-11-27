@@ -4,7 +4,7 @@ import { rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { ApiRequest, Events, EventName, Leftover } from '#shared/ipc'
+import type { ApiRequest, Events, EventName, Leftover, MenuCommand } from '#shared/ipc'
 import { apiRequest, changesGitHub } from './github'
 import { markForBrowser, parsePullLink, SCHEME, type PullLink } from '#shared/links'
 import { handle } from './ipc'
@@ -42,6 +42,7 @@ if (process.defaultApp) {
 } else app.setAsDefaultProtocolClient(SCHEME)
 let pageReady = false
 let waitingPull: PullLink | null = null
+let waitingCommand: MenuCommand | null = null
 const linkIn = (args: string[]) => args.find((a) => a.startsWith(`${SCHEME}://`))
 function openPull(link: string | undefined) {
   const pull = link ? parsePullLink(link) : null
@@ -336,6 +337,8 @@ function createWindow() {
     pageReady = true
     if (waitingPull) send('pull:open', waitingPull)
     waitingPull = null
+    if (waitingCommand) send('menu:command', waitingCommand)
+    waitingCommand = null
   })
   window.once('ready-to-show', () => window?.show())
   window.on('closed', () => {
@@ -364,8 +367,10 @@ app.whenReady().then(() => {
   }
   registerHandlers()
   buildMenu(platform, (command) => {
+    // With the window closed (macOS keeps the app running), the command waits for the new page.
+    if (window && pageReady) return send('menu:command', command)
+    waitingCommand = command
     if (!window) createWindow()
-    send('menu:command', command)
   })
   createWindow()
   void vault.refresh().then((status) => send('auth:changed', status))

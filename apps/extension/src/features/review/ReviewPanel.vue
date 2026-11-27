@@ -398,7 +398,7 @@ watch(
 </script>
 
 <template>
-  <div ref="root" class="z-40 flex flex-col bg-background text-foreground" :class="inline ? 'absolute inset-0' : 'fixed inset-0'">
+  <div ref="root" class="@container z-40 flex flex-col bg-background text-foreground" :class="inline ? 'absolute inset-0' : 'fixed inset-0'">
     <Toolbar
       :back="back"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"

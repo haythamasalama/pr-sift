@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRefresh } from '~/useLive'
 import { computed, onMounted, reactive, shallowRef, watch } from 'vue'
 import {
   CircleAlert,
@@ -299,6 +300,8 @@ watch(
   () => only,
   () => only && scan(),
 )
+// Refresh (⌘R) looks again.
+useRefresh(scan)
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRefresh } from '~/useLive'
 import { computed, onMounted, reactive, shallowRef } from 'vue'
 import { CircleAlert, Ellipsis, ExternalLink, FolderOpen, RefreshCw, Trash2, X } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -211,6 +212,8 @@ async function confirmDelete() {
 }
 
 onMounted(scan)
+// Refresh (⌘R) looks again.
+useRefresh(scan)
 </script>
 
 <template>

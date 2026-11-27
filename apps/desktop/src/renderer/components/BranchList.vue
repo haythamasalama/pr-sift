@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRefresh } from '~/useLive'
 import { usePathText } from '~/useProjectFolders'
 import { computed, onMounted, shallowRef } from 'vue'
 import {
@@ -219,6 +220,8 @@ onMounted(() => {
   if (branches.value) emit('count', branches.value.length)
   void load()
 })
+// Refresh (⌘R) looks again.
+useRefresh(load)
 </script>
 
 <template>

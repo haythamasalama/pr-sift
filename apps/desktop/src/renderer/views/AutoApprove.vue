@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRefresh } from '~/useLive'
 import { computed, onBeforeUnmount, onMounted, reactive, shallowRef, watch } from 'vue'
 import {
   ArrowLeft,
@@ -381,6 +382,15 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   off?.()
   clearTimeout(previewTimer)
+})
+// Refresh (⌘R) asks for the status and the preview again.
+useRefresh(async () => {
+  try {
+    load(await bridge.invoke('autoapprove:status'))
+    void runPreview(true)
+  } catch (e) {
+    error.value = errorText(e)
+  }
 })
 </script>
 

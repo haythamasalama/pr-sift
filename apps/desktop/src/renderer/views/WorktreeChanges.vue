@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRefresh } from '~/useLive'
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import {
@@ -316,6 +317,8 @@ async function copy(text: string, what: string) {
   await navigator.clipboard.writeText(text)
   flash(`${what} copied`)
 }
+// Refresh (⌘R) looks again.
+useRefresh(load)
 </script>
 
 <template>

@@ -86,8 +86,8 @@ export function buildMenu(platform: NodeJS.Platform, run: (command: MenuCommand)
       submenu: [
         item('Back', 'back', 'CmdOrCtrl+['),
         { type: 'separator' },
-        item('Previous Pull Request', 'pull:previous', 'CmdOrCtrl+Up'),
-        item('Next Pull Request', 'pull:next', 'CmdOrCtrl+Down'),
+        item('Previous Pull Request', 'pull:previous', 'Alt+CmdOrCtrl+Up'),
+        item('Next Pull Request', 'pull:next', 'Alt+CmdOrCtrl+Down'),
       ],
     },
     { role: 'windowMenu' },

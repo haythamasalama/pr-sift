@@ -30,6 +30,11 @@ export function isStale(at: number | null | undefined, now = Date.now()) {
   return !at || at < changedAt.value || now - at > LIVE.staleMs
 }
 
+// Pages that are not lists from GitHub (worktrees, cleanup, auto-approve) look again on Refresh too.
+export function useRefresh(load: () => unknown) {
+  watch(asked, () => void load())
+}
+
 // Calls `load` when the list it feeds is out of date. `loadedAt` is when that list last came from GitHub.
 export function useLive(load: () => unknown, loadedAt: () => number | null | undefined) {
   const timers: ReturnType<typeof setTimeout>[] = []
@@ -41,7 +46,7 @@ export function useLive(load: () => unknown, loadedAt: () => number | null | und
   }
 
   let off: (() => void) | undefined
-  watch(asked, () => void load())
+  useRefresh(load)
   onMounted(() => {
     refreshIfStale()
     off = bridge.on('github:changed', onChange)

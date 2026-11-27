@@ -62,7 +62,7 @@ import ProjectIcon from './components/ProjectIcon.vue'
 import SectionLabel from './components/SectionLabel.vue'
 import CountBadge from './components/CountBadge.vue'
 import Hint from './components/Hint.vue'
-import { hexColor } from './color'
+import { anyColorHex } from './color'
 
 const { theme, dark, rootAttrs } = useAppearance()
 // The title bar and window frame follow the theme chosen here, not only the system's.
@@ -71,13 +71,24 @@ watch(
   [theme, dark, rootAttrs, rootEl],
   async () => {
     await nextTick()
-    const bg = rootEl.value ? hexColor(getComputedStyle(rootEl.value).backgroundColor) : ''
+    const bg = rootEl.value ? anyColorHex(getComputedStyle(rootEl.value).backgroundColor) : ''
     void bridge.invoke('window:appearance', theme.value, bg)
   },
   { immediate: true },
 )
 const { status } = useAuth()
-const { done: onboarded } = useOnboarding()
+const { done: onboarded, adopt } = useOnboarding()
+// The first answer about the sign-in tells whether this is someone who used the app before the walk-through.
+let adopted = false
+watch(
+  status,
+  (s) => {
+    if (!s || adopted) return
+    adopted = true
+    adopt(s.signedIn)
+  },
+  { immediate: true },
+)
 const { projects } = useProjects()
 const { sort, groups, byRepo, folded, setSort, setByRepo, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
 watch(project, (path) => path && markOpened(path))
@@ -252,8 +263,18 @@ const linkOpen = shallowRef(false)
 const shortcutsOpen = shallowRef(false)
 const typing = () => !!document.activeElement?.closest('input, textarea, [contenteditable="true"]')
 // What the menu bar's items do here. Each has its shortcut there: ⌘, for Settings, ⌘1 to ⌘4 for the views, and so on.
+let waitingCommand: MenuCommand | null = null
+watch(status, () => {
+  if (status.value && waitingCommand) onMenu(waitingCommand)
+  waitingCommand = null
+})
 function onMenu(command: MenuCommand) {
-  if (!status.value?.signedIn || !onboarded.value) return
+  // A command that arrives with a new window waits for the sign-in check.
+  if (!status.value) {
+    waitingCommand = command
+    return
+  }
+  if (!status.value.signedIn || !onboarded.value) return
   const go = (v: View) => {
     review.value = null
     view.value = v
@@ -291,15 +312,15 @@ function onMenu(command: MenuCommand) {
       else goBack()
       return
     case 'pull:previous':
-      return stepReview(-1)
     case 'pull:next':
-      return stepReview(1)
+      // Not while writing: leaving would drop the comment being typed.
+      if (!typing()) stepReview(command === 'pull:next' ? 1 : -1)
+      return
     case 'find': {
-      const scope = document.querySelector('.ps-root')
+      // The review's file search when a review is open, otherwise the page's filter.
+      const scope = review.value ? document.querySelector('[data-review]') : document.querySelector('.ps-root main')
       const field = scope?.querySelector<HTMLInputElement>(
-        review.value
-          ? 'input[placeholder*="ilter"], input[placeholder*="earch"]'
-          : 'main input[aria-label^="Filter"], main input[placeholder^="Search"], main input[placeholder^="Filter"]',
+        'input[aria-label^="Filter"], input[placeholder^="Search"], input[placeholder^="Filter"]',
       )
       field?.focus()
       field?.select()
@@ -580,6 +601,7 @@ function onAdded(paths: string[]) {
             :key="prKey(review)"
             :pr="review"
             back
+            data-review
             :inline="!reviewFocus && roomy"
             @close="review = null"
           >

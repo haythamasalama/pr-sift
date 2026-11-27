@@ -75,7 +75,7 @@ const commentsTitle = computed(() =>
       </Avatar>
       <span class="truncate">
         <span class="font-medium text-foreground">{{ info.author }}</span>{{ ' ' }}
-        <span class="hidden @7xl:inline">{{ `${verb} ${commits}into ` }}</span>
+        <span class="hidden @[96rem]:inline">{{ `${verb} ${commits}into ` }}</span>
         <template v-for="(branch, i) in [info.base, info.head]" :key="i">
           <button
             type="button"
@@ -87,8 +87,8 @@ const commentsTitle = computed(() =>
             {{ branch }}<Check v-if="copied === branch" class="size-3" />
           </button>
           <template v-if="i === 0">
-            <span class="hidden @7xl:inline">{{ ' from ' }}</span>
-            <ArrowLeft class="mx-0.5 inline size-3 align-[-2px] @7xl:hidden" aria-label="from" />
+            <span class="hidden @[96rem]:inline">{{ ' from ' }}</span>
+            <ArrowLeft class="mx-0.5 inline size-3 align-[-2px] @[96rem]:hidden" aria-label="from" />
           </template>
         </template>
       </span>

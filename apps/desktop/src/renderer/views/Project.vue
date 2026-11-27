@@ -162,6 +162,9 @@ async function loadOverview() {
 watch(
   () => current.value?.path,
   () => {
+    // Filters belong to the project they were picked in.
+    pullQuery.value = ''
+    pullFilters.value = { ...NO_FILTERS }
     // Counts from the last look, until the tabs look again.
     const path = current.value?.path ?? ''
     counts.branches = readCache<unknown[]>(`branches:${path}`)?.value.length
