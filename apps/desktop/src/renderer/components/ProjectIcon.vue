@@ -20,7 +20,7 @@ const avatar = (owner: string) => `https://avatars.githubusercontent.com/${encod
     v-if="project.github && failed < 1"
     :src="avatar(project.github.owner)"
     alt=""
-    class="shrink-0"
+    class="max-w-none shrink-0"
     :style="{ width: `${size}px`, height: `${size}px`, borderRadius: radius() }"
     @error="failed = 1"
   />
@@ -28,7 +28,7 @@ const avatar = (owner: string) => `https://avatars.githubusercontent.com/${encod
     v-else-if="project.icon && failed < 2"
     :src="project.icon"
     alt=""
-    class="shrink-0 object-contain"
+    class="max-w-none shrink-0 object-contain"
     :style="{ width: `${size}px`, height: `${size}px`, borderRadius: radius() }"
     @error="failed = 2"
   />
