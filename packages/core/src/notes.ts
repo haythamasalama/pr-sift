@@ -28,6 +28,23 @@ function contextFor(patch: string | undefined, note: Note): string {
     .join('\n')
 }
 
+/** The code a note covers on its own side, every line of a range, without the common indent. */
+export function noteCode(patch: string | undefined, note: Note): string {
+  const start = startOf(note)
+  if (!patch || start === note.line) return note.lineText.trim()
+  const rows = parsePatch(patch).filter((r) => {
+    const no = note.side === 'new' ? (r.kind === 'del' ? '' : r.newNo) : r.kind === 'add' ? '' : r.oldNo
+    return r.kind !== 'hunk' && no !== '' && no >= start && no <= note.line
+  })
+  if (!rows.length) return note.lineText.trim()
+  const text = rows.map((r) => r.text.replace(/\s+$/, ''))
+  const indent = Math.min(...text.filter((t) => t).map((t) => t.match(/^\s*/)![0].length))
+  return text
+    .map((t) => t.slice(Number.isFinite(indent) ? indent : 0))
+    .join('\n')
+    .replace(/^\n+|\n+$/g, '')
+}
+
 export function buildReviewPrompt(pr: PrRef, title: string, notes: Note[], files: PrFile[]): string {
   const byFile = new Map<string, Note[]>()
   for (const n of [...notes].filter((n) => !n.resolved).sort((a, b) => a.file.localeCompare(b.file) || startOf(a) - startOf(b))) {

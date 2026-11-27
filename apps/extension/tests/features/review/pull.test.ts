@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchProbe, loadPr } from '../../../src/features/review/pull'
+import { fetchProbe, loadPr, prefetchPr, takePrefetched } from '../../../src/features/review/pull'
+import { setEarlyDiff } from '../../../src/lib/earlyDiff'
 import { installChrome } from '../../helpers/chrome'
 import { PR, SAMPLE_DIFF } from '@pr-sift/core/testing'
 
@@ -120,6 +121,56 @@ describe('loadPr', () => {
     expect(sent.find((m) => m.path === '/repos/o/r/pulls/7')?.accept).toBe('application/vnd.github.html+json')
     expect(result.files[0]).toMatchObject({ filename: 'a.php', hash: 'blob1' })
     expect(result.signature).toBe('head1')
+  })
+})
+
+describe('reading the diff', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const diffOk = (message: { type: string }) =>
+    message.type === 'text' ? { ok: true, status: 200, url: 'u', text: SAMPLE_DIFF } : { ok: false, status: 401, data: {} }
+
+  it('asks the background worker first, so the page does not try the redirect it cannot follow', async () => {
+    const { sent } = installChrome(diffOk)
+    const urls: string[] = []
+    mockFetch((url) => {
+      urls.push(url)
+      return new Response(pageHtml)
+    })
+    const result = await loadPr(PR)
+    expect(result.files).toHaveLength(5)
+    expect(sent.find((m) => m.type === 'text')?.url).toBe('https://github.com/o/r/pull/7.diff')
+    expect(urls.some((u) => u.endsWith('.diff'))).toBe(false)
+  })
+
+  it('uses the diff the early script already started for this pull request, once', async () => {
+    const { sent } = installChrome()
+    mockFetch(() => new Response(pageHtml))
+    setEarlyDiff({ base: '/o/r/pull/7', at: Date.now(), text: Promise.resolve(SAMPLE_DIFF) })
+    expect((await loadPr(PR)).files).toHaveLength(5)
+    expect(sent.filter((m) => m.type === 'text')).toHaveLength(0)
+    setEarlyDiff({ base: '/o/r/pull/8', at: Date.now(), text: Promise.resolve(SAMPLE_DIFF) })
+    mockFetch((url) => (url.endsWith('.diff') ? new Response(SAMPLE_DIFF + '\n+x') : new Response(pageHtml)))
+    await loadPr(PR)
+    expect(sent.filter((m) => m.type === 'text')).toHaveLength(1)
+  })
+
+  it('falls back to a normal read when the early script got nothing', async () => {
+    installChrome(diffOk)
+    mockFetch(() => new Response(pageHtml))
+    setEarlyDiff({ base: '/o/r/pull/7', at: Date.now(), text: Promise.resolve(null) })
+    expect((await loadPr(PR)).files).toHaveLength(5)
+  })
+
+  it('hands a prefetched load to the review once and starts it only once', async () => {
+    const { sent } = installChrome(diffOk)
+    mockFetch(() => new Response(pageHtml))
+    prefetchPr(PR)
+    prefetchPr(PR)
+    const result = await takePrefetched(PR)
+    expect(result?.files).toHaveLength(5)
+    expect(sent.filter((m) => m.type === 'text')).toHaveLength(1)
+    expect(takePrefetched(PR)).toBeNull()
   })
 })
 

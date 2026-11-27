@@ -20,6 +20,8 @@ type Message =
   | { type: 'update-check' }
   | { type: 'apply-update' }
   | { type: 'handoff' }
+  | { type: 'extensions-page' }
+  | { type: 'highlighter' }
 
 // After a pull request page hands itself to PR Sift for desktop, its tab closes once the app comes to the front
 // (Chrome loses focus to another app). If that doesn't happen soon, for example when the app isn't installed
@@ -41,6 +43,17 @@ function closeWhenAppOpens(tabId: number, send: (result: { closed: boolean }) =>
   const timer = setTimeout(() => finish(false), HANDOFF_WAIT_MS)
 }
 
+// The review keeps its last few pull requests in session storage, which content scripts can only read once allowed.
+void chrome.storage.session.setAccessLevel?.({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => undefined)
+
+// highlight.js is loaded into a page only when a review there needs colours, into the extension's isolated world.
+async function injectHighlighter(sender: chrome.runtime.MessageSender) {
+  const tabId = sender.tab?.id
+  if (tabId === undefined) return { ok: false }
+  await chrome.scripting.executeScript({ target: { tabId, frameIds: [sender.frameId ?? 0] }, files: ['dist/highlighter.js'] })
+  return { ok: true }
+}
+
 async function api(msg: ApiMessage) {
   const { token } = (await chrome.storage.local.get('token')) as { token?: string }
   if (!token) return { ok: false, status: 401, data: { message: 'No token set in the extension options.' } }
@@ -48,6 +61,8 @@ async function api(msg: ApiMessage) {
   if (url.origin !== 'https://api.github.com') return { ok: false, status: 400, data: { message: 'Invalid API path.' } }
   const res = await fetch(url, {
     method: msg.method ?? 'GET',
+    // GitHub marks API answers cacheable for 60 s; revalidate so a new review or merge state shows at once.
+    cache: 'no-cache',
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: msg.accept && ACCEPT.test(msg.accept) ? msg.accept : 'application/vnd.github+json',
@@ -100,8 +115,16 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
     closeWhenAppOpens(sender.tab.id, send)
     return true
   }
+  if (msg.type === 'extensions-page') {
+    void chrome.tabs.create({ url: 'chrome://extensions/' })
+    return
+  }
   if (msg.type === 'update-check') {
     void checkForUpdate().then(send)
+    return true
+  }
+  if (msg.type === 'highlighter') {
+    injectHighlighter(sender).then(send, (e: unknown) => send({ ok: false, error: String(e) }))
     return true
   }
   const task = msg.type === 'gh' ? api(msg) : msg.type === 'text' ? fetchText(msg.url) : null

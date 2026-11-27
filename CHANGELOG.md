@@ -3,7 +3,35 @@
 Each entry starts with the area it touches: Filters, Tree, Review, Notes, AI, Views, Appearance, Security or License. New work
 goes under `## Unreleased` until the next release moves it under its version and date.
 
-## Unreleased
+## 1.5.1 - 2026-11-26
+
+### Changed
+
+- Review: Pull requests open faster. With "Open PR Sift automatically" on, the diff starts downloading while GitHub's
+  page is still loading. A pull request you opened before shows at once and refreshes in the background, and hovering
+  the PR Sift button starts loading before you click.
+- Review: The script PR Sift adds to every GitHub page is half the size. Code colouring loads only when a review needs
+  it.
+
+### Fixed
+
+- Review: Approve and Merge stay on the title's row while there is room beside it, also with page zoom or a larger
+  default font in Chrome.
+- Review: The commits menu uses smaller text, and the time of each commit is short and stays on one line.
+- Review: An approval you sent from GitHub, another tab or the desktop app turns Approve into Approved when you come back
+  to the review, and Approved has a light green fill so it reads as done.
+- Options: When Chrome limits Check for updates, About now says Chrome updates PR Sift on its own within a few hours,
+  and Update in Chrome opens the extensions page, where Update checks right away.
+- Appearance: The settings page header shows the PR Sift logo, the same as About, instead of a blue tile.
+- Options: About's links sit in one tidy list without gaps between rows, and About has its own icon like the other
+  sections.
+- Options: Always hidden leaves room under its description, its box suggests a new path instead of repeating one already
+  in the list, and the token box shows a classic token (`ghp_…`), the kind the page asks for.
+- Appearance: The Code colors menu shows its choices again. It opened with no background or text on the settings page.
+- Notes: A note on several lines shows all of them in the notes list, not only the last line. Long ranges scroll inside
+  the note.
+
+## 1.5.0 - 2026-11-26
 
 ### Added
 
@@ -13,6 +41,12 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Review: Hide the sidebar to a thin rail of icons; it stays hidden until you bring it back.
 - Review: Expand all and Collapse all files, beside the diff view toggle, open or close every file card at once.
 - Review: A loading skeleton in the shape of the review panel while the pull request loads.
+- Appearance: Themes. Pick GitHub (the default), PR Sift, Minimal, Soft or Mono, and Light, Dark or System, in
+  Settings > Appearance. The PR Sift theme follows the website: black and white, IBM Plex and 4 px corners.
+- Appearance: Code colors. GitHub, One, Catppuccin, Gruvbox, Solarized, Tokyo Night or Night Owl, each with a light and
+  a dark version.
+- Filters: Quick filters under the file types: Tests, Docs, Migrations, Translations, Config, CI / Docker and AI (agent
+  and prompt files such as CLAUDE.md, AGENTS.md and .claude/). Only the kinds this pull request touches show.
 
 ### Changed
 
@@ -26,6 +60,11 @@ goes under `## Unreleased` until the next release moves it under its version and
 - Tree: Viewed marks stay visible on every file and folder. Folder actions show on hover, and All folders is a quiet
   section label with its count.
 - Appearance: Menus and popovers have a clearer border, shadow and opening animation.
+- Settings: The gear opens settings straight away, in a floating sheet with text tabs, a live preview and simpler
+  About. Mode, Merge method and Diff view are segmented choices.
+- Appearance: One colour per status: a dot for new things, amber when something needs you (update ready, pull request
+  changed), a green version badge after an update, and red when PR Sift needs a reload.
+- Review: The header stays on one row from tablet width.
 
 ## 1.4.0 - 2026-11-24
 

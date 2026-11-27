@@ -90,8 +90,8 @@ export const home = {
     ],
   },
   featuresIntro: {
-    title: 'Find the files that matter. Read each one once.',
-    lead: 'Filters, folders and progress made for pull requests with hundreds of files.',
+    title: 'Everything a big review needs, in one panel.',
+    lead: 'Filters, folders, progress, themes and a merge without AI co-authors, made for pull requests with hundreds of files.',
   },
   features: [
     {
@@ -110,7 +110,7 @@ export const home = {
       id: 'smart',
       icon: 'sparkles',
       title: 'Jump to a category',
-      text: 'Tests, migrations, translations, config and CI, grouped the way reviewers read them.',
+      text: 'Tests, docs, migrations, translations, config, CI and AI files, one click under the file types.',
     },
     {
       id: 'review',
@@ -127,8 +127,14 @@ export const home = {
     {
       id: 'theme',
       icon: 'sun-moon',
-      title: 'Light, dark or your system',
-      text: 'GitHub colors in both themes. Switch from the palette button, or let your device decide.',
+      title: 'Themes and code colors',
+      text: 'GitHub, PR Sift, Minimal, Soft or Mono, with your pick of code colors. Light, dark or your system, from Settings.',
+    },
+    {
+      id: 'merge',
+      icon: 'git-merge',
+      title: 'Merge without AI, next to GitHub’s button',
+      text: 'One click squashes and merges with AI co-authors left out. Real people stay credited.',
     },
     {
       id: 'notes',

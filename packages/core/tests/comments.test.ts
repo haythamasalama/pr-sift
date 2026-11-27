@@ -35,6 +35,12 @@ describe('timeAgo', () => {
     expect(timeAgo('2025-11-01T12:00:00Z', now)).toBe('last year')
   })
 
+  it('shortens the words with the narrow style', () => {
+    expect(timeAgo('2026-11-16T11:41:00Z', now, 'narrow')).toBe('19m ago')
+    expect(timeAgo('2026-11-16T09:00:00Z', now, 'narrow')).toBe('3h ago')
+    expect(timeAgo('2026-11-16T11:59:30Z', now, 'narrow')).toBe('just now')
+  })
+
   it('returns nothing for a bad date', () => {
     expect(timeAgo('soon', now)).toBe('')
   })

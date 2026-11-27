@@ -74,6 +74,7 @@ Helps people review large GitHub pull requests: filter changed files, track view
 | Permission                                   | Justification                                                                                   |
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `storage`                                    | Saves settings, viewed files and private notes locally in the browser.                          |
+| `scripting`                                  | Loads the packaged code highlighter into a GitHub tab only when a review opens there.           |
 | `https://github.com/*`                       | Shows the review on pull request pages and reads the pull request diff with the user's login.   |
 | `https://patch-diff.githubusercontent.com/*` | GitHub redirects some diff downloads to this host.                                              |
 | `https://api.github.com/*`                   | Only with a user-added token: reads large diffs and comments, approves, merges and posts notes. |

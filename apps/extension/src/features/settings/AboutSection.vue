@@ -3,6 +3,7 @@ import { Bug, ExternalLink, Lightbulb, PackageCheck, RefreshCw, RotateCw, Sparkl
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from '@/components/ui/item'
+import BrandIcon from '../../components/BrandIcon.vue'
 import BrandLogo from '../../components/BrandLogo.vue'
 import NewDot from '../../components/NewDot.vue'
 import { openReport } from '../../lib/report'
@@ -12,7 +13,7 @@ import SettingsSection from './SettingsSection.vue'
 import { useNewMarks } from './useNewMarks'
 
 const { framed = false } = defineProps<{ framed?: boolean }>()
-const { version, ready, updated, checking, status, check, restart, dismiss } = useUpdates()
+const { version, ready, updated, checking, status, throttled, check, restart, dismiss, openExtensionsPage } = useUpdates()
 const { isNew, markSeen } = useNewMarks()
 
 const LINKS = [
@@ -30,6 +31,7 @@ function checkForUpdates() {
 
 <template>
   <SettingsSection id="about" title="About" description="Your version, updates and help." :framed="framed" :headless="!framed">
+    <template #icon><BrandIcon class="size-6" /></template>
     <div class="flex flex-col gap-6" :class="framed ? 'py-4' : 'pt-3'">
       <div v-if="updated" class="flex items-center gap-2 text-xs">
         <PackageCheck class="size-4 shrink-0 text-success-fg" />
@@ -50,13 +52,22 @@ function checkForUpdates() {
           </p>
         </div>
         <Button v-if="ready" size="sm" @click="restart"><RotateCw /> Restart to update to {{ ready }}</Button>
+        <Button
+          v-else-if="throttled"
+          variant="outline"
+          size="sm"
+          title="Turn on Developer mode there, then press Update"
+          @click="openExtensionsPage"
+        >
+          <ExternalLink /> Update in Chrome
+        </Button>
         <Button v-else variant="outline" size="sm" class="relative" :disabled="checking" @click="checkForUpdates">
           <Spinner v-if="checking" /><RefreshCw v-else /> Check for updates
           <NewDot v-if="isNew('updates')" class="absolute -top-1 -right-1" />
         </Button>
       </div>
 
-      <ItemGroup class="overflow-hidden rounded-lg border">
+      <ItemGroup class="gap-0 overflow-hidden rounded-lg border has-data-[size=sm]:gap-0">
         <template v-for="(link, i) in LINKS" :key="link.label">
           <ItemSeparator v-if="i > 0" class="my-0" />
           <Item

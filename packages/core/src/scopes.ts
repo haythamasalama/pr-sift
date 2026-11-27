@@ -23,7 +23,16 @@ export interface SmartScopes {
 const segments = (filename: string) => filename.split('/').slice(0, -1)
 const base = (filename: string) => filename.split('/').pop() ?? filename
 
+const AI_FILES =
+  /^(CLAUDE|AGENTS|GEMINI)\.md$|^\.(cursorrules|windsurfrules|clinerules)$|^copilot-instructions\.md$|\.(prompt|instructions)\.md$/i
+const AI_DIRS = /^\.(claude|cursor|windsurf|clinerules|codex|gemini|aider)$|^prompts$/i
+
 const CATEGORIES: { id: string; label: string; test: (filename: string) => boolean }[] = [
+  {
+    id: 'ai',
+    label: 'AI',
+    test: (f) => AI_FILES.test(base(f)) || segments(f).some((s) => AI_DIRS.test(s)),
+  },
   {
     id: 'tests',
     label: 'Tests',

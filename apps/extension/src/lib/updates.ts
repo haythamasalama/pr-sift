@@ -41,6 +41,12 @@ export function checkForUpdate(): Promise<UpdateCheck> {
   })
 }
 
+/** Chrome's extensions page, where Update (with Developer mode on) checks every extension at once, without the limit. */
+export function openExtensionsPage() {
+  if (!alive()) return
+  chrome.runtime.sendMessage({ type: 'extensions-page' }, () => void chrome.runtime.lastError)
+}
+
 export function applyUpdate() {
   if (!alive()) return
   // Reading lastError stops Chrome logging the closed port when the worker restarts before replying.

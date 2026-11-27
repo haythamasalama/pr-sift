@@ -28,6 +28,107 @@ for (const button of themeButtons) {
   })
 }
 
+// Feature cards on the home page. Each control keeps its state in an ARIA attribute that the card's classes read.
+const features = document.querySelector('#features')
+if (features) {
+  const flip = (el, attr) => el.setAttribute(attr, String(el.getAttribute(attr) !== 'true'))
+  const RING = 88 // circumference of the progress ring, as the dash array uses it
+
+  const updateReview = (card) => {
+    const total = Number(card.dataset.total)
+    const shown = card.querySelectorAll('[data-file]')
+    const viewed = [...shown].filter((f) => f.getAttribute('aria-pressed') === 'true').length
+    const done = viewed + 3 // three files outside the drawn list are viewed already
+    card.querySelector('[data-left]').textContent = String(total - done)
+    card.querySelector('[data-done-count]').textContent = String(done)
+    card.querySelector('[data-ring]')?.setAttribute('stroke-dasharray', `${((done / total) * RING).toFixed(1)} ${RING}`)
+    const hide = card.querySelector('[data-hide-viewed]')?.getAttribute('aria-checked') === 'true'
+    for (const f of shown) f.hidden = hide && f.getAttribute('aria-pressed') === 'true'
+  }
+
+  const toggleTree = (row) => {
+    const open = row.getAttribute('aria-expanded') !== 'true'
+    row.setAttribute('aria-expanded', String(open))
+    const depth = Number(row.dataset.depth)
+    let next = row.nextElementSibling
+    // Show direct children only when opening; hide every descendant when closing.
+    let hiddenBelow = Infinity
+    while (next?.matches('[data-tree-row]') && Number(next.dataset.depth) > depth) {
+      const d = Number(next.dataset.depth)
+      if (!open) next.classList.add('hidden')
+      else if (d <= hiddenBelow) {
+        next.classList.remove('hidden')
+        hiddenBelow = next.getAttribute('aria-expanded') === 'false' ? d : Infinity
+      }
+      next = next.nextElementSibling
+    }
+  }
+
+  features.addEventListener('click', (event) => {
+    const target = event.target
+    const chip = target.closest('[data-chip]')
+    if (chip) {
+      if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) {
+        const off = chip.dataset.state === 'off'
+        if (off) delete chip.dataset.state
+        else chip.dataset.state = 'off'
+        chip.setAttribute('aria-pressed', 'false')
+      } else {
+        delete chip.dataset.state
+        flip(chip, 'aria-pressed')
+      }
+      return
+    }
+    const sw = target.closest('[data-switch]')
+    if (sw) {
+      event.preventDefault()
+      flip(sw, 'aria-checked')
+      const review = sw.closest('[data-review]')
+      if (review) updateReview(review)
+      return
+    }
+    const file = target.closest('[data-file]')
+    if (file) {
+      flip(file, 'aria-pressed')
+      updateReview(file.closest('[data-review]'))
+      return
+    }
+    const row = target.closest('[data-tree-row][aria-expanded]')
+    if (row) return toggleTree(row)
+    const collapse = target.closest('[data-collapse]')
+    if (collapse) {
+      flip(collapse, 'aria-expanded')
+      collapse.nextElementSibling.hidden = collapse.getAttribute('aria-expanded') !== 'true'
+      return
+    }
+    const resolve = target.closest('[data-resolve]')
+    if (resolve) {
+      const note = resolve.closest('[data-note]')
+      note.dataset.state = note.dataset.state === 'resolved' ? 'open' : 'resolved'
+      return
+    }
+    const merge = target.closest('[data-merge]')
+    if (merge) {
+      merge.dataset.done = ''
+      setTimeout(() => delete merge.dataset.done, 1800)
+      return
+    }
+    const swatch = target.closest('[data-swatch]')
+    if (swatch) {
+      for (const s of swatch.parentElement.querySelectorAll('[data-swatch]')) s.setAttribute('aria-pressed', String(s === swatch))
+      return
+    }
+    const press = target.closest('[data-press]')
+    if (press) {
+      const single = press.closest('[data-single]')
+      if (single) for (const p of single.querySelectorAll('[data-press]')) p.setAttribute('aria-pressed', String(p === press))
+      else flip(press, 'aria-pressed')
+      const view = press.dataset.view
+      if (view) for (const pane of press.closest('[data-views]').querySelectorAll('[data-pane]')) pane.hidden = pane.dataset.pane !== view
+    }
+  })
+}
+
 const menu = document.querySelector('[data-menu]')
 if (menu) {
   document.addEventListener('click', (event) => {

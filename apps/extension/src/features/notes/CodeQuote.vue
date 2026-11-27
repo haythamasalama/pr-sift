@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { highlightSnippet } from '../diff/highlight'
+import { computed, shallowRef } from 'vue'
+import { highlighterReady, loadHighlighter, plainSnippet } from '../diff/highlight'
 
 const { code, filename } = defineProps<{ code: string; filename: string }>()
 
-const html = computed(() => highlightSnippet(code, filename))
+const highlighter = shallowRef(highlighterReady())
+if (!highlighter.value)
+  void loadHighlighter()
+    .then((loaded) => (highlighter.value = loaded))
+    .catch(() => undefined)
+
+const html = computed(() => highlighter.value?.highlightSnippet(code, filename) ?? plainSnippet(code))
 </script>
 
 <template>

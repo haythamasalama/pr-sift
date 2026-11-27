@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef } from 'vue'
 import { Eye, FolderTree, Palette } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import BrandMark from '../components/BrandMark.vue'
+import BrandLogo from '../components/BrandLogo.vue'
 import BrandIcon from '../components/BrandIcon.vue'
 import GithubMark from '../components/GithubMark.vue'
 import { useAppearance } from '../features/appearance/useAppearance'
+import { portalTargetKey } from '../lib/portal'
 import SettingsForm from '../features/settings/SettingsForm.vue'
 import { SETTINGS_TABS, TAB_OF, type SettingsSectionId, type SettingsTab } from '../features/settings/sections'
 
@@ -15,6 +16,9 @@ const { dark, rootAttrs, zoomStyle } = useAppearance()
 const section = (location.hash.slice(1) || undefined) as SettingsSectionId | undefined
 const form = useTemplateRef<InstanceType<typeof SettingsForm>>('form')
 const current = shallowRef<SettingsTab>(section ? TAB_OF[section] : 'about')
+// Menus and tooltips open here, inside .ps-root, so they get the theme's colours and styles.
+const portalEl = useTemplateRef<HTMLElement>('portal')
+provide(portalTargetKey, portalEl)
 
 let pickedAt = 0
 
@@ -43,9 +47,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', track))
   <div class="ps-root min-h-screen bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs" :style="zoomStyle">
     <div class="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
       <header class="flex items-center gap-3">
-        <div class="flex size-9 items-center justify-center rounded-lg bg-primary p-1.5 text-primary-foreground">
-          <BrandMark />
-        </div>
+        <BrandLogo class="size-9 shrink-0" />
         <div class="flex flex-col">
           <h1 class="text-lg leading-6 font-semibold">PR Sift settings</h1>
           <p class="text-sm text-muted-foreground">Changes apply right away, here and in open reviews.</p>
@@ -72,5 +74,6 @@ onBeforeUnmount(() => window.removeEventListener('scroll', track))
         </main>
       </div>
     </div>
+    <div ref="portal" />
   </div>
 </template>

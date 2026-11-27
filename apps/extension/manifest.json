@@ -1,15 +1,20 @@
 {
   "manifest_version": 3,
   "name": "PR Sift",
-  "version": "1.4.0",
+  "version": "1.5.1",
   "description": "Review big GitHub pull requests: filter files, track what you read, send private notes to your AI and merge without AI co-authors.",
   "homepage_url": "https://pr-sift.haythamasalama.me/",
-  "permissions": ["storage"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": ["https://api.github.com/*", "https://github.com/*", "https://patch-diff.githubusercontent.com/*"],
   "background": {
     "service_worker": "dist/background.js"
   },
   "content_scripts": [
+    {
+      "matches": ["https://github.com/*/*/pull/*"],
+      "js": ["dist/early.js"],
+      "run_at": "document_start"
+    },
     {
       "matches": ["https://github.com/*"],
       "js": ["dist/content.js"],

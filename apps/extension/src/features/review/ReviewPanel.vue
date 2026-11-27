@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
 })
 
 const settings = shallowRef<Settings>(DEFAULTS)
-const { files: prFiles, info, status, error, headSha, load, hasUpdate, refresh } = usePullRequest()
+const { files: prFiles, info, status, error, headSha, outdated, load, hasUpdate, refresh } = usePullRequest()
 
 // Commits: pick one or a range to see only those changes. Viewed marks follow the pull request's own files.
 const commitList = shallowRef<PrCommit[]>([])
@@ -170,13 +170,23 @@ const conversation = shallowRef<Conversation | null>(null)
 const conversationUrl = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
 const actionNote = shallowRef('')
 
+let conversationAt = 0
+
 async function loadConversation() {
   if (!tokenAvailable.value) return
+  conversationAt = Date.now()
   try {
     conversation.value = await fetchConversation(pr)
   } catch {
     conversation.value = null
   }
+}
+
+// An approval sent from GitHub, another tab or the desktop app shows once you come back to this tab.
+const CONVERSATION_FRESH = 15_000
+function reloadConversationOnReturn() {
+  if (document.visibilityState !== 'visible' || Date.now() - conversationAt < CONVERSATION_FRESH) return
+  void loadConversation()
 }
 
 function announce(text: string) {
@@ -271,6 +281,9 @@ provide(fileContextKey, {
 })
 
 const updates = useUpdateWatcher(() => hasUpdate(pr))
+watch(outdated, (value) => {
+  if (value) updates.available.value = true
+})
 const refreshing = shallowRef(false)
 const refreshNote = shallowRef('')
 
@@ -353,8 +366,16 @@ async function onUndoKey(e: KeyboardEvent) {
   if (filter.inScope.value.some((f) => f.filename === restored[0])) await list.value?.scrollTo(restored[0]!)
 }
 
-onMounted(() => window.addEventListener('keydown', onUndoKey, true))
-onBeforeUnmount(() => window.removeEventListener('keydown', onUndoKey, true))
+onMounted(() => {
+  window.addEventListener('keydown', onUndoKey, true)
+  window.addEventListener('focus', reloadConversationOnReturn)
+  document.addEventListener('visibilitychange', reloadConversationOnReturn)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onUndoKey, true)
+  window.removeEventListener('focus', reloadConversationOnReturn)
+  document.removeEventListener('visibilitychange', reloadConversationOnReturn)
+})
 
 const removeExtension = (ext: string) => setCustomExtensions(settings.value.customExtensions.filter((e) => e !== ext))
 
@@ -398,7 +419,11 @@ watch(
 </script>
 
 <template>
-  <div ref="root" class="@container z-40 flex flex-col bg-background text-foreground" :class="inline ? 'absolute inset-0' : 'fixed inset-0'">
+  <div
+    ref="root"
+    class="@container z-40 flex flex-col bg-background text-foreground"
+    :class="inline ? 'absolute inset-0' : 'fixed inset-0'"
+  >
     <Toolbar
       :back="back"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
@@ -472,6 +497,8 @@ watch(
       :view-patterns="viewPatterns"
       :listed-count="filter.inScope.value.length"
       :viewed-in-view="filter.viewedInView.value"
+      :quick="filter.smart.value.categories"
+      :quick-selected="filter.scopes.value"
       @update:review-mode="setReviewMode"
       @toggle-extension="filter.toggleChip"
       @reset-filters="filter.resetFilters"
@@ -485,6 +512,7 @@ watch(
       @select-preset="filter.togglePreset"
       @hide-preset="filter.hidePreset"
       @expand-files="(open) => (cardsExpand = { open, n: cardsExpand.n + 1 })"
+      @toggle-quick="filter.toggleScope"
     />
 
     <NoticeBar v-if="updates.available.value || externalUpdate || refreshNote">

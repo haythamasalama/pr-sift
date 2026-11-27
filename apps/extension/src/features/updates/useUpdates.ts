@@ -4,6 +4,7 @@ import {
   checkForUpdate,
   currentVersion,
   dismissUpdated,
+  openExtensionsPage,
   watchUpdated,
   watchUpdateReady,
   type UpdateCheck,
@@ -17,7 +18,7 @@ export function checkMessage(check: UpdateCheck): string {
     case 'update_available':
       return check.version ? `Downloading ${check.version}…` : 'Downloading the update…'
     case 'throttled':
-      return 'Chrome limits how often this can run. Try again in a few minutes.'
+      return 'Chrome limits this check. It updates PR Sift on its own within a few hours.'
     default:
       return 'Could not check for updates'
   }
@@ -32,6 +33,9 @@ export function useUpdates() {
 
   const stops = [watchUpdateReady((value) => (ready.value = value ?? '')), watchUpdated((value) => (updated.value = value ?? null))]
   onScopeDispose(() => stops.forEach((stop) => stop()))
+
+  /** Chrome refused the last check: the wait grows after each check that found nothing, up to hours. */
+  const throttled = computed(() => !ready.value && lastCheck.value?.status === 'throttled')
 
   const status = computed(() => {
     if (ready.value) return 'Update ready'
@@ -54,5 +58,5 @@ export function useUpdates() {
     await dismissUpdated()
   }
 
-  return { version, ready, updated, checking, status, check, restart: applyUpdate, dismiss }
+  return { version, ready, updated, checking, status, throttled, check, restart: applyUpdate, dismiss, openExtensionsPage }
 }

@@ -15,7 +15,7 @@ describe('checkMessage', () => {
   it('says what each update check result means', () => {
     expect(checkMessage({ status: 'no_update' })).toBe('You have the latest version')
     expect(checkMessage({ status: 'update_available', version: '1.2.0' })).toBe('Downloading 1.2.0…')
-    expect(checkMessage({ status: 'throttled' })).toBe('Chrome limits how often this can run. Try again in a few minutes.')
+    expect(checkMessage({ status: 'throttled' })).toBe('Chrome limits this check. It updates PR Sift on its own within a few hours.')
     expect(checkMessage({ status: 'error' })).toBe('Could not check for updates')
   })
 })

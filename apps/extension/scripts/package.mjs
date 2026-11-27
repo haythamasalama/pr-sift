@@ -4,7 +4,14 @@ import { existsSync, readFileSync, rmSync } from 'node:fs'
 const { version } = JSON.parse(readFileSync(new URL('../manifest.json', import.meta.url), 'utf8'))
 const output = `pr-sift-${version}.zip`
 
-for (const required of ['dist/content.js', 'dist/background.js', 'dist/options.html', 'icons/icon-128.png']) {
+for (const required of [
+  'dist/content.js',
+  'dist/early.js',
+  'dist/highlighter.js',
+  'dist/background.js',
+  'dist/options.html',
+  'icons/icon-128.png',
+]) {
   if (!existsSync(required)) throw new Error(`Missing ${required}. Run "pnpm build" first.`)
 }
 

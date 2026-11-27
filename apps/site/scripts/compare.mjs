@@ -1,7 +1,7 @@
 export const CHECKED = '10 November 2026'
 
 export const FEATURES = [
-  ['price', 'badge-dollar-sign', 'Price'],
+  ['price', 'badge-dollar-sign', 'Free'],
   ['openSource', 'code', 'Open source'],
   ['extension', 'file-code', 'Filter by file type'],
   ['status', 'git-compare', 'Filter by change'],

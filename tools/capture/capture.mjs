@@ -390,6 +390,12 @@ const folderViewed = (page, name) =>
     .first()
     .locator('[title="Mark the whole folder as viewed"]')
 
+// The filter bar folds the less common file types behind "+N more".
+async function showAllTypes(page) {
+  const more = page.getByRole('button', { name: /^\+\d+ more/ })
+  if (await more.count()) await more.click()
+}
+
 async function openReview(page) {
   await launcher(page).click()
   await page.getByText('src/Domain/Billing/Actions/GenerateInvoice.php').first().waitFor()
@@ -882,10 +888,16 @@ await shot(browser, 'comments', async (page) => {
 
 await shot(browser, 'settings', async (page) => {
   await openReview(page)
-  await page.getByRole('button', { name: 'Options' }).click()
-  await page.getByRole('menuitem', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await page.getByRole('tab', { name: 'GitHub' }).click()
   await page.getByText('Leave out AI co-authors').waitFor()
+})
+
+await shot(browser, 'appearance', async (page) => {
+  await openReview(page)
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await page.getByRole('tab', { name: 'Appearance' }).click()
+  await page.locator('#settings-style-prsift').waitFor()
 })
 
 await shot(browser, 'split', async (page) => {
@@ -898,6 +910,7 @@ await shot(
   'hide-noise',
   async (page) => {
     await openReview(page)
+    await showAllTypes(page)
     for (const type of ['.test.ts', '.lock', '.yaml', '.yml', '.md']) {
       await page.getByRole('button', { name: new RegExp(`^${type.replace('.', '\\.')} \\d+$`) }).click({ modifiers: ['Shift'] })
     }
@@ -1017,8 +1030,11 @@ await clip(browser, 'folders', async (page) => {
   await camera(page, folderRow(page, 'src'), 1.8)
   const src = folderRow(page, 'src')
   await glide(page, src, { click: false })
+  // The folder buttons only show while the row is hovered.
+  await src.hover()
   await glide(page, src.getByRole('button', { name: 'Collapse folder tree' }))
   await pause(page, 900)
+  await src.hover()
   await glide(page, src.getByRole('button', { name: 'Expand folder tree' }))
   await pause(page, 900)
   const domain = folderRow(page, 'Domain')
@@ -1126,15 +1142,21 @@ await clip(
   browser,
   'theme',
   async (page) => {
-    const button = page.getByRole('button', { name: 'Options' })
-    await camera(page, button, 1.6)
-    for (const name of ['Dark', 'Light', 'System']) {
-      await glide(page, button)
-      await pause(page, 450)
-      await glide(page, page.getByRole('menuitemradio', { name }))
-      await camera(page, null)
-      await pause(page, 1200)
-      if (name !== 'System') await camera(page, button, 1.6)
+    const gear = page.getByRole('button', { name: 'Settings', exact: true })
+    await camera(page, gear, 1.6)
+    await glide(page, gear)
+    await pause(page, 500)
+    await glide(page, page.getByRole('tab', { name: 'Appearance' }))
+    await pause(page, 700)
+    // Each theme restyles the whole review behind the sheet, then the mode flips it to dark and back.
+    for (const style of ['prsift', 'mono', 'soft', 'github']) {
+      await glide(page, page.locator(`#settings-style-${style}`))
+      await pause(page, 1100)
+    }
+    const dark = await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches)
+    for (const mode of dark ? ['light', 'dark'] : ['dark', 'light']) {
+      await glide(page, page.locator(`#settings-theme-${mode}`))
+      await pause(page, 1100)
     }
   },
   { poster: 0.71 },

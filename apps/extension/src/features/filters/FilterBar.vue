@@ -37,7 +37,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator'
 import { Toggle } from '@/components/ui/toggle'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { FOLDER_CHIP, NOTES_CHIP } from '@pr-sift/core'
+import { FOLDER_CHIP, NOTES_CHIP, type ScopeItem } from '@pr-sift/core'
 import type { DiffMode, ExtChip, PrFile, Preset } from '../../lib/types'
 import FileStatusIcon from '../diff/FileStatusIcon.vue'
 import { useSettingsOpener } from '../settings/useSettingsOpener'
@@ -48,6 +48,8 @@ const {
   presets = [],
   activePreset = '',
   hiddenPresets = [],
+  quick = [],
+  quickSelected = [],
 } = defineProps<{
   chips: ExtChip[]
   presets?: Preset[]
@@ -59,6 +61,8 @@ const {
   hiddenCount: number
   filtersActive: boolean
   viewPatterns?: string[]
+  quick?: ScopeItem[]
+  quickSelected?: string[]
 }>()
 const reviewMode = defineModel<boolean>('reviewMode', { required: true })
 const showHidden = defineModel<boolean>('showHidden', { required: true })
@@ -82,6 +86,7 @@ const emit = defineEmits<{
   selectPreset: [name: string]
   hidePreset: [name: string]
   expandFiles: [open: boolean]
+  toggleQuick: [key: string]
 }>()
 
 const openSettings = useSettingsOpener()
@@ -284,8 +289,30 @@ const chipClass = (chip: ExtChip) => [
           /></Button>
         </template>
 
-        <template v-if="folderChips.length || filtersActive">
+        <!-- Quick filters by what a file is for (tests, docs, AI instructions...), found in this pull request. -->
+        <template v-if="quick.length">
           <Separator v-if="presets.length" orientation="vertical" class="mx-1.5 h-4 data-[orientation=vertical]:self-center" />
+          <span class="mr-0.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Quick</span>
+          <Button
+            v-for="q in quick"
+            :key="q.key"
+            size="xs"
+            :variant="quickSelected.includes(q.key) ? 'default' : 'outline'"
+            :aria-pressed="quickSelected.includes(q.key)"
+            :title="quickSelected.includes(q.key) ? 'Showing only these files. Click to undo' : `Show only ${q.label.toLowerCase()} files`"
+            class="h-[22px] gap-1 rounded-sm px-2 text-xs font-normal shadow-none"
+            @click="emit('toggleQuick', q.key)"
+          >
+            {{ q.label }} <span class="tabular-nums opacity-60">{{ q.count }}</span>
+          </Button>
+        </template>
+
+        <template v-if="folderChips.length || filtersActive">
+          <Separator
+            v-if="presets.length || quick.length"
+            orientation="vertical"
+            class="mx-1.5 h-4 data-[orientation=vertical]:self-center"
+          />
           <Button
             v-for="c in folderChips"
             :key="c.ext"

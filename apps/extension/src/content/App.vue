@@ -12,6 +12,7 @@ import { useUpdates } from '../features/updates/useUpdates'
 import { portalTargetKey } from '../lib/portal'
 import { getSettings, onSettingsChange } from '../lib/settings'
 import { prKey, type PrRef } from '../lib/types'
+import { prefetchPr } from '../features/review/pull'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 import QuickMerge from '../features/quick-merge/QuickMerge.vue'
 import OpenInApp from '../features/desktop/OpenInApp.vue'
@@ -85,9 +86,18 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
 }
 
+// GitHub moves between pages without reloading. The Navigation API reports that at once; the timer covers browsers
+// without it.
+const navigation = (window as { navigation?: EventTarget }).navigation
+
+const prefetch = () => {
+  if (pr.value && !dead.value) prefetchPr(pr.value)
+}
+
 onMounted(async () => {
   sync()
   timer = window.setInterval(sync, 800)
+  navigation?.addEventListener('navigatesuccess', sync)
   document.addEventListener('keydown', onKey)
   stopWatchingSettings = onSettingsChange((next) => {
     autoOpen.value = next.autoOpen
@@ -101,6 +111,7 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   clearInterval(timer)
+  navigation?.removeEventListener('navigatesuccess', sync)
   document.removeEventListener('keydown', onKey)
   stopWatchingSettings()
 })
@@ -124,6 +135,8 @@ onBeforeUnmount(() => {
           ]"
           :title="dead ? undefined : updateNote || undefined"
           @click="dead ? reload() : (open = true)"
+          @pointerenter="prefetch"
+          @focus="prefetch"
         >
           <BrandPulse class="size-6">
             <RefreshCw v-if="dead" />

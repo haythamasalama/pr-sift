@@ -138,7 +138,7 @@ const browsers = (cls = '') =>
   </ul>`
 
 const NAV = [
-  ['Notes', '#notes'],
+  ['Notes', '#ai'],
   ['Features', '#features'],
   ['Guides', 'guides/'],
   ['Compare', 'compare/'],
@@ -197,7 +197,7 @@ function footer() {
         <a href="${link('changelog/')}" class="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted hover:border-ink hover:text-ink" title="What’s new">v${VERSION}</a>
       </div>
       ${column('Product', [
-        ['Private notes', link() + '#notes'],
+        ['Private notes', link() + '#ai'],
         ['Features', link() + '#features'],
         ['Changelog', link('changelog/')],
       ])}
@@ -220,8 +220,8 @@ function footer() {
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <div class="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line py-6">
         <p class="w-full text-sm text-muted sm:w-auto">Sibling apps</p>
-        <ul class="-mx-2.5 flex flex-wrap items-center gap-2 sm:mx-0">
-          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="flex items-center gap-3 rounded-xl py-2 pr-4 pl-2.5 transition-colors hover:bg-raised">${appLogo(app.logo)}<span class="flex flex-col"><span class="leading-tight font-semibold tracking-tight">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
+        <ul class="flex flex-wrap items-center gap-x-8 gap-y-2">
+          ${SIBLING_APPS.map((app) => `<li><a href="${app.url}" class="group flex items-center gap-3 py-2">${appLogo(app.logo)}<span class="flex flex-col"><span class="leading-tight font-semibold tracking-tight underline-offset-4 group-hover:underline">${appName(app)}</span><span class="text-xs text-muted">${esc(app.about)}</span></span></a></li>`).join('')}
         </ul>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-line py-6 text-sm">
@@ -325,7 +325,7 @@ const appLd = {
   screenshot: ['review', 'merge', 'comments', 'filters', 'notes', 'ai-export', 'split'].map(
     (n) => SITE_URL + `media/screenshots/${n}.webp`,
   ),
-  featureList: [home.notesStory.title, home.merge.title, ...home.features.map((f) => f.title)],
+  featureList: [home.ai.title, home.merge.title, ...home.features.map((f) => f.title)],
   author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
 }
 
@@ -403,10 +403,10 @@ function homePage() {
       ${installButton()}
     </div>`
 
-  const FEATURE_SPAN = { views: 'md:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
+  const FEATURE_SPAN = { views: 'md:col-span-2', merge: 'lg:col-span-2', settings: 'md:col-span-2 lg:col-span-1' }
   const featureCard = (f) => `
         <article class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 overflow-hidden rounded-xl border border-line bg-paper ${FEATURE_SPAN[f.id] ?? ''}">
-          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8" aria-hidden="true">${featureVisual(f.id, icon)}</div>
+          <div class="flex min-h-[260px] items-center justify-center border-b border-line bg-raised p-6 sm:p-8">${featureVisual(f.id, icon)}</div>
           <div class="p-5 sm:px-6 sm:pb-6">
             <h3 class="flex items-center gap-2.5 text-[17px] font-semibold">${icon(f.icon, 'size-[18px] shrink-0')}${esc(f.title)}</h3>
             <p class="mt-1.5 leading-relaxed text-muted">${esc(f.text)}</p>
@@ -419,28 +419,11 @@ function homePage() {
         <span class="shrink-0">${installButton('md')}</span>
       </div>
       <div class="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        ${h.features
-          .filter((f) => f.id !== 'notes')
-          .map(featureCard)
-          .join('')}
+        ${h.features.map(featureCard).join('')}
       </div>`,
   ]
 
   const sections = [
-    [
-      'notes',
-      `<div class="grid gap-12 lg:grid-cols-12 lg:items-end">
-        <div class="lg:col-span-5">
-          ${iconBox('lock')}
-          ${h2(h.notesStory.title, 'mt-5')}
-          ${lead(h.notesStory.lead)}
-          <ul class="mt-8 flex flex-col gap-6">
-            ${h.notesStory.cases.map(([ic, title, text]) => `<li class="flex gap-4">${iconBox(ic)}<span><span class="block font-medium">${esc(title)}</span><span class="mt-1 block leading-relaxed text-muted">${esc(text)}</span></span></li>`).join('\n            ')}
-          </ul>
-        </div>
-        <div class="lg:col-span-7">${video('notes', 'Writing a private note on several lines')}</div>
-      </div>`,
-    ],
     [
       'ai',
       `<div class="max-w-3xl">${iconBox('bot')}${h2(h.ai.title, 'mt-5')}${lead(h.ai.lead)}</div>
@@ -518,7 +501,7 @@ function homePage() {
   const body = `
     <section class="mx-auto max-w-6xl px-4 pt-12 pb-20 sm:px-6 lg:pt-20 lg:pb-24">
       <div class="@container mx-auto flex max-w-3xl flex-col items-center text-center">
-        <a href="#merge" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span><span class="hidden items-center gap-1.5 sm:flex">${['claude', 'openai', 'googlegemini', 'cursor', 'githubcopilot'].map((slug) => brandIcon(slug, 'size-4')).join('')}</span>New: merge without AI co-authors${icon('chevron-right', 'size-3.5 text-muted')}</a>
+        <a href="${link('changelog/')}" class="inline-flex items-center gap-2 rounded-full border border-line py-1 ps-1 pe-3 text-sm hover:bg-raised"><span class="rounded-full bg-ink px-2 py-0.5 font-mono text-xs font-medium text-paper">v${VERSION}</span>${icon('sun-moon', 'hidden size-4 text-muted sm:block')}New: themes<span class="hidden sm:inline">, code colors</span> and quick filters${icon('chevron-right', 'size-3.5 text-muted')}</a>
         <h1 class="hero-diff mt-7 font-mono leading-[1.25] font-medium tracking-tight whitespace-nowrap">
           <span class="flex gap-3 rounded-t-md bg-del-bg px-3 py-2"><span class="select-none text-del" aria-hidden="true">−</span><span>Scroll 214 changed files.</span></span>
           <span class="flex gap-3 rounded-b-md bg-add-bg px-3 py-2"><span class="select-none text-add" aria-hidden="true">+</span><span>Review the 12 that matter.</span></span>
