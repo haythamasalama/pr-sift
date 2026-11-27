@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Project } from '#shared/ipc'
-import { groupProjects, sortProjects } from '../../src/renderer/useProjectOrder'
+import { byOwner, groupProjects, sortProjects } from '../../src/renderer/useProjectOrder'
 import { reorder, slotAt } from '../../src/renderer/useDragSort'
 
 const p = (name: string, owner?: string): Project => ({ path: `/code/${name}`, name, github: owner ? { owner, repo: name } : undefined })
@@ -22,6 +22,12 @@ describe('sortProjects', () => {
 
   it('keeps your own order and adds new projects at the end', () => {
     expect(names(sortProjects(list, 'custom', {}, ['/code/saas', '/code/App']))).toEqual(['saas', 'App', 'docs', 'notes'])
+  })
+})
+
+describe('grouping by owner', () => {
+  it('keeps the chosen order inside each owner, owners A to Z, local folders last', () => {
+    expect(names(byOwner(sortProjects(list, 'recent', { '/code/docs': 2 }, [])))).toEqual(['docs', 'App', 'saas', 'notes'])
   })
 })
 

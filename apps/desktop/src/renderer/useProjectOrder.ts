@@ -4,11 +4,20 @@ import type { Project } from '#shared/ipc'
 // How the sidebar lists projects. A per-computer preference, so it lives in local storage.
 export type ProjectSort = 'name' | 'recent' | 'owner' | 'custom'
 
-export const PROJECT_SORTS: { value: ProjectSort; label: string; hint: string }[] = [
-  { value: 'name', label: 'Name', hint: 'A to Z' },
-  { value: 'recent', label: 'Recently opened', hint: 'The last one you opened first' },
-  { value: 'owner', label: 'Owner', hint: 'Grouped by GitHub owner, then A to Z' },
-  { value: 'custom', label: 'Custom', hint: 'Drag projects into your own order' },
+// 'owner' is kept only to read what older versions saved; owners are a grouping now.
+export const PROJECT_SORTS: { value: ProjectSort; label: string }[] = [
+  { value: 'name', label: 'Name' },
+  { value: 'recent', label: 'Recently opened' },
+  { value: 'custom', label: 'Custom' },
+]
+
+// Owner: a heading per GitHub owner. Repository: folders of the same repository sit together. Owner does that too.
+export type ProjectGrouping = 'none' | 'owner' | 'repo'
+
+export const PROJECT_GROUPINGS: { value: ProjectGrouping; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'repo', label: 'Repository' },
 ]
 
 const KEY = {
@@ -16,6 +25,7 @@ const KEY = {
   opened: 'ps:project-opened',
   custom: 'ps:project-custom',
   group: 'ps:project-group',
+  grouping: 'ps:project-grouping',
   folded: 'ps:project-folded',
 }
 
@@ -36,11 +46,14 @@ function write(key: string, value: unknown) {
   }
 }
 
-const sort = shallowRef<ProjectSort>(read(KEY.sort, 'name'))
+const savedSort = read<ProjectSort>(KEY.sort, 'name')
+const sort = shallowRef<ProjectSort>(savedSort === 'owner' ? 'name' : savedSort)
 const opened = shallowRef<Record<string, number>>(read(KEY.opened, {}))
 const custom = shallowRef<string[]>(read(KEY.custom, []))
-// Folders that are copies of the same GitHub repository sit together under it. On unless turned off.
-const byRepo = shallowRef<boolean>(read(KEY.group, true))
+// Older versions had an Owner sort and a Group by repository switch; both become a grouping.
+const grouping = shallowRef<ProjectGrouping>(
+  read<ProjectGrouping | null>(KEY.grouping, null) ?? (savedSort === 'owner' ? 'owner' : read(KEY.group, true) ? 'repo' : 'none'),
+)
 // Repositories whose folders are folded away, by group key.
 const folded = shallowRef<string[]>(read(KEY.folded, []))
 
@@ -50,6 +63,20 @@ export interface ProjectGroup {
   // The name shown on a group of several folders.
   title: string
   projects: Project[]
+  // With grouping by owner: the owner it sits under ('' for folders that aren't on GitHub).
+  owner?: string
+}
+
+const ownerOf = (p: Project) => p.github?.owner.toLowerCase() ?? ''
+
+// Keeps the chosen order inside each owner; owners go A to Z, folders that aren't on GitHub last.
+export function byOwner(list: Project[]): Project[] {
+  return [...list].sort((a, b) => {
+    const x = ownerOf(a)
+    const y = ownerOf(b)
+    if (x === y) return 0
+    return !x ? 1 : !y ? -1 : x.localeCompare(y)
+  })
 }
 
 // Groups an already sorted list. A group sits where its first folder sits, and keeps its folders in that order.
@@ -87,16 +114,19 @@ export function sortProjects(list: Project[], how: ProjectSort, openedAt: Record
 
 export function useProjectOrder(projects: Ref<Project[] | null>) {
   const sorted = computed(() => sortProjects(projects.value ?? [], sort.value, opened.value, custom.value))
-  const groups = computed(() => groupProjects(sorted.value, byRepo.value))
+  const groups = computed(() => {
+    if (grouping.value !== 'owner') return groupProjects(sorted.value, grouping.value === 'repo')
+    return groupProjects(byOwner(sorted.value), true).map((g) => ({ ...g, owner: ownerOf(g.projects[0]!) }))
+  })
   return {
     sort,
     sorted,
     groups,
-    byRepo,
+    grouping,
     folded,
-    setByRepo(value: boolean) {
-      byRepo.value = value
-      write(KEY.group, value)
+    setGrouping(value: ProjectGrouping) {
+      grouping.value = value
+      write(KEY.grouping, value)
     },
     toggleFolded(key: string) {
       folded.value = folded.value.includes(key) ? folded.value.filter((k) => k !== key) : [...folded.value, key]

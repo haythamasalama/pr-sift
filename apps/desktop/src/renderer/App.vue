@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
 import {
-  ArrowDownUp,
   BadgeCheck,
   ChevronRight,
+  SlidersHorizontal,
   FolderGit2,
   GripVertical,
   Inbox,
@@ -15,7 +15,6 @@ import {
 } from '@lucide/vue'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -32,7 +31,14 @@ import { portalTargetKey } from '@/lib/portal'
 import { prKey } from '@/lib/types'
 import { useAuth } from './useAuth'
 import { useProjects } from './useProjects'
-import { PROJECT_SORTS, useProjectOrder, type ProjectSort } from './useProjectOrder'
+import {
+  PROJECT_GROUPINGS,
+  PROJECT_SORTS,
+  useProjectOrder,
+  type ProjectGroup,
+  type ProjectGrouping,
+  type ProjectSort,
+} from './useProjectOrder'
 import { useInbox } from './useInbox'
 import { useLive } from './useLive'
 import { useDragSort } from './useDragSort'
@@ -90,7 +96,7 @@ watch(
   { immediate: true },
 )
 const { projects } = useProjects()
-const { sort, groups, byRepo, folded, setSort, setByRepo, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
+const { sort, groups, grouping, folded, setSort, setGrouping, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
 watch(project, (path) => path && markOpened(path))
 // Drag any project to put it where you want; the others slide out of the way, and the order switches to Custom.
 const projectList = useTemplateRef<HTMLElement>('projectList')
@@ -104,6 +110,25 @@ const drag = useDragSort({
 const shownGroups = computed(() =>
   drag.preview.value ? drag.preview.value.flatMap((key) => groupByKey.value.get(key) ?? []) : groups.value,
 )
+// Grouped by owner, each owner gets a heading that folds its projects away. The rail shows them flat.
+type SidebarRow = ProjectGroup & { heading?: { owner: string; title: string; count: number; folded: boolean } }
+const sidebarRows = computed<SidebarRow[]>(() => {
+  const list = shownGroups.value
+  if (grouping.value !== 'owner' || collapsed.value) return list
+  const rows: SidebarRow[] = []
+  list.forEach((g, i) => {
+    const owner = g.owner ?? ''
+    const key = `owner:${owner}`
+    const isFolded = folded.value.includes(key)
+    if (i === 0 || list[i - 1]!.owner !== owner) {
+      const count = list.filter((x) => x.owner === owner).reduce((n, x) => n + x.projects.length, 0)
+      const title = g.projects[0]!.github?.owner ?? 'Not on GitHub'
+      rows.push({ key, title, projects: [g.projects[0]!], owner, heading: { owner, title, count, folded: isFolded } })
+    }
+    if (!isFolded) rows.push(g)
+  })
+  return rows
+})
 // With a review open beside the sidebar, the sidebar marks the project the pull request belongs to.
 const reviewProject = computed(() => {
   const pr = review.value
@@ -437,28 +462,23 @@ function onAdded(paths: string[]) {
                 <button
                   type="button"
                   class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
-                  aria-label="Sort projects"
+                  aria-label="Sort and group projects"
                 >
-                  <ArrowDownUp class="size-3.5" />
+                  <SlidersHorizontal class="size-3.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-60">
-                <DropdownMenuLabel class="text-xs">Sort projects by</DropdownMenuLabel>
+              <DropdownMenuContent align="end" class="w-48">
+                <DropdownMenuLabel class="text-xs">Sort by</DropdownMenuLabel>
                 <DropdownMenuRadioGroup :model-value="sort" @update:model-value="(v) => setSort(v as ProjectSort)">
-                  <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value" class="items-start">
-                    <span class="flex flex-col">
-                      <span>{{ o.label }}</span>
-                      <span class="text-[11px] text-muted-foreground">{{ o.hint }}</span>
-                    </span>
-                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value">{{ o.label }}</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem :model-value="byRepo" class="items-start" @update:model-value="(v) => setByRepo(!!v)">
-                  <span class="flex flex-col">
-                    <span>Group by repository</span>
-                    <span class="text-[11px] text-muted-foreground">Folders of the same repository sit together</span>
-                  </span>
-                </DropdownMenuCheckboxItem>
+                <DropdownMenuLabel class="text-xs">Group by</DropdownMenuLabel>
+                <DropdownMenuRadioGroup :model-value="grouping" @update:model-value="(v) => setGrouping(v as ProjectGrouping)">
+                  <DropdownMenuRadioItem v-for="o in PROJECT_GROUPINGS" :key="o.value" :value="o.value">{{
+                    o.label
+                  }}</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
             <button
@@ -475,14 +495,29 @@ function onAdded(paths: string[]) {
           <div ref="projectList" class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-1">
             <TransitionGroup tag="div" class="flex flex-col gap-0.5" move-class="transition-transform duration-200 ease-out">
               <div
-                v-for="g in shownGroups"
+                v-for="g in sidebarRows"
                 :key="g.key"
-                :data-sort-id="g.key"
+                :data-sort-id="g.heading ? undefined : g.key"
                 class="relative flex flex-col gap-0.5 rounded-md"
-                :class="drag.dragging.value === g.key ? 'z-10 bg-accent shadow-md ring-1 ring-border' : ''"
+                :class="[
+                  drag.dragging.value === g.key ? 'z-10 bg-accent shadow-md ring-1 ring-border' : '',
+                  g.heading ? 'mt-2 first:mt-0' : '',
+                ]"
               >
+                <button
+                  v-if="g.heading"
+                  type="button"
+                  :class="[item, 'h-7 gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground']"
+                  :aria-expanded="!g.heading.folded"
+                  @click="toggleFolded(g.key)"
+                >
+                  <ProjectIcon v-if="g.heading.owner" :project="g.projects[0]!" :size="16" />
+                  <span class="min-w-0 truncate">{{ g.heading.title }}</span>
+                  <span class="text-[11px] font-normal tabular-nums">{{ g.heading.count }}</span>
+                  <ChevronRight class="size-3.5 shrink-0 transition-transform" :class="g.heading.folded ? '' : 'rotate-90'" />
+                </button>
                 <!-- A repository with several folders: its name, then its folders, which fold away. Folded or in the rail, they show flat. -->
-                <template v-if="g.projects.length > 1 && !collapsed">
+                <template v-else-if="g.projects.length > 1 && !collapsed">
                   <button
                     type="button"
                     :class="[item, 'group/grip text-foreground']"
