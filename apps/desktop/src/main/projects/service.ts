@@ -1,5 +1,5 @@
 import { stat } from 'node:fs/promises'
-import { basename, resolve } from 'node:path'
+import { basename, relative, resolve, isAbsolute } from 'node:path'
 import type { Project } from '#shared/ipc'
 import { git } from '../exec'
 import type { Store } from '../store'
@@ -47,6 +47,19 @@ export class ProjectService {
   async require(path: string) {
     const target = resolve(path)
     if (!(await this.has(target))) throw new Error('This folder is not one of your projects.')
+    return target
+  }
+
+  // A project, or a repository inside one of the project folders from Settings (All branches shows those too).
+  async requireRepo(path: string) {
+    const target = resolve(path)
+    if (await this.has(target)) return target
+    const { roots } = await this.deps.roots()
+    const inside = roots.some((root) => {
+      const rel = relative(resolve(root), target)
+      return !!rel && !rel.startsWith('..') && !isAbsolute(rel)
+    })
+    if (!inside || !(await isRepo(target))) throw new Error('This folder is not in your project folders.')
     return target
   }
 

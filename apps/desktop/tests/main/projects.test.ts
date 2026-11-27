@@ -141,6 +141,10 @@ describe('ProjectService', async () => {
     expect(list).toEqual([{ path: app, name: 'app', github: { owner: 'acme', repo: 'app' }, branch: 'main' }])
     expect(await service.candidates()).toEqual([])
     await expect(service.require(other)).rejects.toThrow(/not one of your projects/)
+    // Branches also reach a repository in the project folders, never one outside them.
+    const loose = makeRepo(root, 'loose')
+    expect(await service.requireRepo(loose)).toBe(loose)
+    await expect(service.requireRepo(other)).rejects.toThrow(/not in your project folders/)
     expect(await service.remove(app)).toEqual([])
   })
 })

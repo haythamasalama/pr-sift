@@ -226,11 +226,13 @@ function registerHandlers() {
     if (!known) throw new Error('This folder is not in the last scan.')
     return openIn(target === 'terminal' ? 'terminal' : 'editor', known, platform, process.env)
   })
-  h('branches:list', async (_e, repo) => listBranches(await projects.require(String(repo))))
-  h('branches:delete', async (_e, repo, name, force) => deleteBranch(await projects.require(String(repo)), String(name), force === true))
+  h('branches:list', async (_e, repo) => listBranches(await projects.requireRepo(String(repo))))
+  h('branches:delete', async (_e, repo, name, force) =>
+    deleteBranch(await projects.requireRepo(String(repo)), String(name), force === true),
+  )
 
   h('branches:delete-many', async (_e, repo, names, options) => {
-    const path = await projects.require(String(repo))
+    const path = await projects.requireRepo(String(repo))
     const opts = { force: options?.force === true, remote: options?.remote === true }
     const gh = async (req: Parameters<typeof apiRequest>[1]) => apiRequest(await vault.token(), req)
     return deleteBranches(path, Array.isArray(names) ? names.map(String) : [], opts, {
