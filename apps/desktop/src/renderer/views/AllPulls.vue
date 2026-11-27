@@ -8,6 +8,9 @@ import { githubProjects, useEverywhere } from '~/everywhere'
 import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
 import { useProjects } from '~/useProjects'
+import { useInbox } from '~/useInbox'
+import { useSavedFlag } from '~/savedFlag'
+import ProjectsOnlySwitch from '~/components/ProjectsOnlySwitch.vue'
 import { NO_FILTERS, matchesFilters, type PullFilters } from '~/pulls/filters'
 import PageHeader from '~/components/PageHeader.vue'
 import PullFilterMenu from '~/components/PullFilterMenu.vue'
@@ -20,7 +23,15 @@ import PullListSkeleton from '~/components/skeletons/PullListSkeleton.vue'
 // Every open pull request in every project, in the same rows as a project page.
 const { status } = useAuth()
 const { projects } = useProjects()
-const { loaded, pulls, pullsLoading, pullErrors, pullsAt, loadPulls } = useEverywhere()
+const { loaded, pulls: projectPulls, pullsLoading, pullErrors, pullsAt, loadPulls } = useEverywhere()
+// Off, the page adds what GitHub has for you anywhere (to review, or yours); on, only your projects' pull requests.
+const { on: projectsOnly, set: setProjectsOnly } = useSavedFlag('ps:pulls-projects-only')
+const { inbox } = useInbox()
+const pulls = computed(() => {
+  if (projectsOnly.value || !inbox.value) return projectPulls.value
+  const seen = new Set(projectPulls.value.map((p) => p.url))
+  return [...projectPulls.value, ...[...inbox.value.review, ...inbox.value.mine].filter((p) => !seen.has(p.url) && seen.add(p.url))]
+})
 const me = computed(() => status.value?.account?.login)
 
 const repos = computed(() => githubProjects(projects.value ?? []))
@@ -59,8 +70,8 @@ const visible = computed(() => {
 })
 const tags = computed(() => {
   if (!loaded.value) return []
-  const count = repos.value.length
-  return [`${pulls.value.length} open`, `${count} ${count === 1 ? 'project' : 'projects'}`]
+  const count = new Set(pulls.value.map((p) => `${p.owner}/${p.repo}`.toLowerCase())).size
+  return [`${pulls.value.length} open`, `${count} ${count === 1 ? 'repository' : 'repositories'}`]
 })
 
 watch(
@@ -85,8 +96,7 @@ const refresh = () => projects.value && loadPulls(projects.value, true)
     <Alert v-if="pullErrors.length" variant="destructive"
       ><CircleAlert /><AlertDescription class="whitespace-pre-line">{{ pullErrors.join('\n') }}</AlertDescription></Alert
     >
-    <p v-if="projects && !repos.length" class="text-muted-foreground">None of your projects is on GitHub yet.</p>
-    <PullListSkeleton v-else-if="!loaded" />
+    <PullListSkeleton v-if="!projects || (repos.length && !loaded) || (!projectsOnly && !inbox)" />
     <template v-else>
       <div class="flex flex-wrap items-center gap-3">
         <InputGroup class="w-80 max-w-full">
@@ -95,9 +105,12 @@ const refresh = () => projects.value && loadPulls(projects.value, true)
         </InputGroup>
         <Segmented v-model="show" :options="SHOW" label="Show" />
         <PullFilterMenu v-model="filters" :pulls="pulls" />
+        <ProjectsOnlySwitch :model-value="projectsOnly" @update:model-value="setProjectsOnly" />
         <span class="ml-auto flex items-center gap-2"><PullFoldAll scope="all" /><PullViewMenu scope="all" /></span>
       </div>
-      <p v-if="!pulls.length" class="text-muted-foreground">No open pull requests.</p>
+      <p v-if="!pulls.length" class="text-muted-foreground">
+        {{ projectsOnly && !repos.length ? 'None of your projects is on GitHub yet.' : 'No open pull requests.' }}
+      </p>
       <p v-else-if="!visible.length" class="text-muted-foreground">No pull requests match.</p>
       <PullTable v-else scope="all" show-repo columns :groups="[{ title: 'Open', pulls: visible }]" :me="me" @changed="refresh" />
     </template>

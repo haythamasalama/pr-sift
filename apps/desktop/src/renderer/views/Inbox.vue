@@ -3,9 +3,10 @@ import { computed, onMounted, shallowRef } from 'vue'
 import { CircleAlert, RefreshCw } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { githubProjects, repoKey } from '~/everywhere'
 import { useProjects } from '~/useProjects'
+import { useSavedFlag } from '~/savedFlag'
+import ProjectsOnlySwitch from '~/components/ProjectsOnlySwitch.vue'
 import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
 import { useInbox } from '~/useInbox'
@@ -30,23 +31,7 @@ const needsYou = (p: { decision?: string | null; checks?: string; mergeable?: st
 // Those come first, so what needs you is at the top of the card.
 const filters = shallowRef<PullFilters>({ ...NO_FILTERS })
 // Off, the page shows everything GitHub has for you; on, only the repositories of the projects you added. Kept for next time.
-const ONLY_KEY = 'ps:inbox-projects-only'
-const projectsOnly = shallowRef(readOnly())
-function readOnly() {
-  try {
-    return localStorage.getItem(ONLY_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-function setProjectsOnly(on: boolean) {
-  projectsOnly.value = on
-  try {
-    localStorage.setItem(ONLY_KEY, on ? '1' : '0')
-  } catch {
-    // Lasts until the app closes.
-  }
-}
+const { on: projectsOnly, set: setProjectsOnly } = useSavedFlag('ps:inbox-projects-only')
 const { projects } = useProjects()
 const yours = computed(() => new Set(githubProjects(projects.value ?? []).map((p) => repoKey(p.github!))))
 const inScope = (p: { owner: string; repo: string }) => !projectsOnly.value || yours.value.has(repoKey(p))
@@ -93,10 +78,7 @@ onMounted(() => {
       <p v-if="!inbox.review.length && !inbox.mine.length" class="text-muted-foreground">You’re all caught up.</p>
       <div v-else class="-mb-3 flex flex-wrap items-center gap-2">
         <PullFilterMenu v-model="filters" :pulls="everything" />
-        <label class="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-border px-2.5 text-[0.8rem] select-none">
-          <Switch :model-value="projectsOnly" aria-label="Projects only" @update:model-value="(v) => setProjectsOnly(!!v)" />
-          Projects only
-        </label>
+        <ProjectsOnlySwitch :model-value="projectsOnly" @update:model-value="setProjectsOnly" />
         <span class="ml-auto flex items-center gap-2"><PullFoldAll scope="everywhere" /><PullViewMenu /></span>
       </div>
       <p v-if="everything.length && !review.length && !mine.length" class="text-muted-foreground">No pull requests match.</p>

@@ -172,6 +172,15 @@ await page.getByRole('button', { name: 'Skip for now' }).click()
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 await page.getByText('Add a shopping cart').waitFor()
 await page.screenshot({ path: join(shots, '2-inbox.png') })
+// ⋯ on a row holds Close pull request, which asks first and can delete the branch too.
+await page.getByRole('button', { name: 'More for #7' }).first().click()
+await page.getByRole('menuitem', { name: 'Close pull request' }).waitFor()
+await page.screenshot({ path: join(shots, '2c-row-more.png') })
+await page.getByRole('menuitem', { name: 'Close pull request' }).click()
+await page.getByRole('dialog').getByText('Also delete the branch').waitFor()
+await page.screenshot({ path: join(shots, '2d-close-confirm.png') })
+await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click()
+await page.getByRole('dialog').waitFor({ state: 'detached' })
 // Projects only keeps the pull requests of the projects you added, and is remembered.
 await page.getByRole('switch', { name: 'Projects only' }).click()
 await page.waitForTimeout(200)
@@ -469,10 +478,16 @@ await page
   .catch(() => {})
 await page.waitForTimeout(600)
 await page.screenshot({ path: join(shots, '16b-all-pulls.png') })
+// Projects only on All pull requests and All branches, kept for next time.
+await page.getByRole('switch', { name: 'Projects only' }).click()
+if ((await page.evaluate(() => localStorage.getItem('ps:pulls-projects-only'))) !== '1')
+  throw new Error('Projects only was not kept on pull requests')
+await page.getByRole('switch', { name: 'Projects only' }).click()
 await page.getByRole('button', { name: 'All branches' }).click()
 await page.getByRole('heading', { name: 'All branches' }).waitFor()
 await page.locator('[data-branch]').first().waitFor({ timeout: 20_000 })
 await page.waitForTimeout(600)
+await page.getByRole('switch', { name: 'Projects only' }).waitFor()
 await page.screenshot({ path: join(shots, '16c-all-branches.png') })
 // Collapse all folds every repository at once; Expand all opens them again.
 await page.getByRole('button', { name: 'Collapse all' }).click()
@@ -577,6 +592,17 @@ const ownerPad = await page
   .first()
   .evaluate((b) => getComputedStyle(b).paddingLeft)
 if (ownerPad !== '30px') throw new Error(`Projects under an owner are not indented: ${ownerPad}`)
+// An owner's heading shows a grip under the pointer, so whole owners can be dragged into order.
+await page.locator('[data-owner-sort-id] button').first().hover()
+await page.waitForTimeout(300)
+if (
+  (await page
+    .locator('[data-owner-sort-id] button svg.cursor-grab')
+    .first()
+    .evaluate((g) => getComputedStyle(g).opacity)) !== '1'
+)
+  throw new Error('The owner heading shows no grip')
+await page.screenshot({ path: join(shots, '11e2-owner-grip.png') })
 await page.getByRole('button', { name: 'Sort and group projects' }).click()
 await page.getByRole('menuitem', { name: /Group by/ }).hover()
 await page.getByRole('menuitemradio', { name: 'Repository' }).click()

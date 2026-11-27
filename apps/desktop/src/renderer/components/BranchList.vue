@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRefresh } from '~/useLive'
 import { usePathText } from '~/useProjectFolders'
-import { computed, onMounted, shallowRef } from 'vue'
+import { computed, onMounted, shallowRef, watch } from 'vue'
 import {
   ArrowDownUp,
   CircleAlert,
@@ -89,6 +89,19 @@ type Row = Branch & { src: string; id: string }
 // The last lists are shown at once and refreshed behind them.
 const byRepo = shallowRef<Record<string, Branch[] | undefined>>(
   Object.fromEntries(list.value.map((x) => [x.path, readCache<Branch[]>(`branches:${x.path}`)?.value])),
+)
+// When the page adds or drops repositories (Projects only), it shows the saved lists at once and looks again.
+watch(
+  () => list.value.map((x) => x.path).join('\n'),
+  () => {
+    const missing = list.value.filter((x) => !(x.path in byRepo.value))
+    if (missing.length)
+      byRepo.value = {
+        ...byRepo.value,
+        ...Object.fromEntries(missing.map((x) => [x.path, readCache<Branch[]>(`branches:${x.path}`)?.value])),
+      }
+    void load()
+  },
 )
 const rows = computed<Row[]>(() =>
   list.value.flatMap((x) => (byRepo.value[x.path] ?? []).map((b) => ({ ...b, src: x.path, id: `${x.path}\u0000${b.name}` }))),
@@ -353,6 +366,7 @@ useRefresh(load)
         <InputGroupInput v-model="query" placeholder="Filter branches" aria-label="Filter branches" />
       </InputGroup>
       <Segmented v-model="filter" :options="FILTERS" label="Show" />
+      <slot name="toolbar" />
       <span class="ml-auto flex shrink-0 items-center gap-2">
         <span v-if="notice" class="text-xs text-muted-foreground">{{ notice }}</span>
         <FoldAllButton v-if="many && byRepository && sections.length" :all-folded="allFolded" @fold="foldAll" />

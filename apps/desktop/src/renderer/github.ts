@@ -17,6 +17,19 @@ export async function graphql<T>(query: string, variables: Record<string, unknow
   return data!.data as T
 }
 
+async function rest(path: string, method: string, body?: unknown) {
+  const res = await bridge.invoke('gh:request', { type: 'gh', path, method, body })
+  if (!res.ok) throw new ApiError((res.data as { message?: string } | null)?.message ?? `GitHub answered ${res.status}.`, res.status)
+  return res.data
+}
+
+// Closes a pull request without merging it, and deletes its branch on GitHub when asked.
+export async function closePull(p: { owner: string; repo: string; number: number; branch: string }, deleteBranch: boolean) {
+  await rest(`/repos/${p.owner}/${p.repo}/pulls/${p.number}`, 'PATCH', { state: 'closed' })
+  if (deleteBranch)
+    await rest(`/repos/${p.owner}/${p.repo}/git/refs/heads/${p.branch.split('/').map(encodeURIComponent).join('/')}`, 'DELETE')
+}
+
 export type CheckState = 'SUCCESS' | 'FAILURE' | 'ERROR' | 'PENDING' | 'EXPECTED'
 export type ReviewDecision = 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null
 
@@ -58,6 +71,8 @@ export interface PullItem {
   canMerge: boolean
   // GitHub would take your merge now: the branch rules are met, or you may bypass them.
   mergeableNow: boolean
+  // The branch lives in this repository, not in a fork.
+  sameRepo: boolean
 }
 
 export type MergeState = 'CLEAN' | 'HAS_HOOKS' | 'UNSTABLE' | 'BLOCKED' | 'BEHIND' | 'DIRTY' | 'DRAFT' | 'UNKNOWN'
@@ -66,7 +81,7 @@ export type MergeState = 'CLEAN' | 'HAS_HOOKS' | 'UNSTABLE' | 'BLOCKED' | 'BEHIN
 const MERGES_NOW: MergeState[] = ['CLEAN', 'HAS_HOOKS', 'UNSTABLE']
 
 const PR_FIELDS = `
-  number title url isDraft updatedAt reviewDecision headRefName headRefOid baseRefName additions deletions mergeable
+  number title url isDraft isCrossRepository updatedAt reviewDecision headRefName headRefOid baseRefName additions deletions mergeable
   mergeStateStatus viewerCanMergeAsAdmin
   viewerLatestReview { state }
   repository { name viewerPermission owner { login } }
@@ -82,6 +97,7 @@ interface RawPull {
   title: string
   url: string
   isDraft: boolean
+  isCrossRepository?: boolean
   updatedAt: string
   reviewDecision: ReviewDecision
   headRefName: string
@@ -124,6 +140,7 @@ const toPull = (p: RawPull): PullItem => ({
   myReview: p.viewerLatestReview?.state,
   mergeState: p.mergeStateStatus,
   canMerge: canPush(p.repository.viewerPermission),
+  sameRepo: !p.isCrossRepository,
   mergeableNow:
     !p.isDraft &&
     canPush(p.repository.viewerPermission) &&

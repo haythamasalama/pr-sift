@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
-import { ChevronDown, CircleAlert, GitMerge } from '@lucide/vue'
+import { ChevronDown, CircleAlert, Ellipsis, GitMerge, GitPullRequestClosed } from '@lucide/vue'
 import {
   MERGE_ACTIONS,
   formatPerson,
@@ -15,18 +15,22 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
 import { getSettings, onSettingsChange, saveSetting } from '@/lib/settings'
 import ReviewPopover from '@/features/review/ReviewPopover.vue'
 import BypassRules from '@/features/quick-merge/BypassRules.vue'
 import { useQuickMerge } from '@/features/quick-merge/useQuickMerge'
-import type { PullItem } from '~/github'
+import { closePull, type PullItem } from '~/github'
+import { errorText } from '~/format'
+import ConfirmDialog from './ConfirmDialog.vue'
 import { useAuth } from '~/useAuth'
 import Hint from './Hint.vue'
 import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
@@ -110,6 +114,29 @@ watch(open, (value) => {
   if (value) void load()
 })
 
+// More actions sit behind ⋯ so the row keeps one or two buttons. Close shows only where GitHub would allow it.
+const canClose = computed(() => isAuthor.value || pull.canMerge)
+const canDeleteBranch = computed(() => pull.canMerge && pull.sameRepo)
+const closing = shallowRef(false)
+const closeBusy = shallowRef(false)
+const closeError = shallowRef('')
+const alsoBranch = shallowRef(false)
+const closed = shallowRef(false)
+async function confirmClose() {
+  closeBusy.value = true
+  closeError.value = ''
+  try {
+    await closePull(pull, alsoBranch.value && canDeleteBranch.value)
+    closing.value = false
+    closed.value = true
+    emit('changed')
+  } catch (e) {
+    closeError.value = errorText(e)
+  } finally {
+    closeBusy.value = false
+  }
+}
+
 async function confirm() {
   const sha = await submit()
   if (!sha) return
@@ -124,6 +151,9 @@ async function confirm() {
     <Hint v-if="merged" :text="`Merged as ${merged}`">
       <span class="flex items-center gap-1 text-xs text-merged"><GitMerge class="size-3.5" /> Merged</span>
     </Hint>
+    <span v-else-if="closed" class="flex items-center gap-1 text-xs text-destructive"
+      ><GitPullRequestClosed class="size-3.5" /> Closed</span
+    >
     <template v-else>
       <ReviewPopover v-if="!reviewBlocked" :pr="prRef" :head-sha="pull.headSha" can-act :mine="mine" @reviewed="onReviewed" />
 
@@ -217,6 +247,35 @@ async function confirm() {
           </div>
         </PopoverContent>
       </Popover>
+
+      <DropdownMenu v-if="canClose">
+        <DropdownMenuTrigger as-child>
+          <Button size="icon-sm" variant="ghost" class="text-muted-foreground" :aria-label="`More for #${pull.number}`"
+            ><Ellipsis
+          /></Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-52">
+          <DropdownMenuItem variant="destructive" @select="closing = true"><GitPullRequestClosed /> Close pull request</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <span v-else class="size-7 shrink-0" aria-hidden="true" />
     </template>
   </div>
+  <ConfirmDialog
+    v-model:open="closing"
+    :title="`Close #${pull.number}?`"
+    description="It closes without merging. You can reopen it on GitHub."
+    confirm="Close pull request"
+    :busy="closeBusy"
+    @confirm="confirmClose"
+  >
+    <label v-if="canDeleteBranch" class="flex items-center gap-2 text-sm">
+      <Checkbox :model-value="alsoBranch" @update:model-value="(v) => (alsoBranch = v === true)" />
+      Also delete the branch <code class="font-mono text-xs">{{ pull.branch }}</code> on GitHub
+    </label>
+    <Alert v-if="closeError" variant="destructive">
+      <CircleAlert />
+      <AlertDescription>{{ closeError }}</AlertDescription>
+    </Alert>
+  </ConfirmDialog>
 </template>
