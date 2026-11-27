@@ -12,14 +12,20 @@ import {
   Plus,
   Settings,
   Trash2,
+  GitBranch,
+  GitPullRequest,
 } from '@lucide/vue'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -56,6 +62,9 @@ import Onboarding from './onboarding/Onboarding.vue'
 import { useOnboarding } from './onboarding/useOnboarding'
 import AppLogo from './components/AppLogo.vue'
 import InboxView from './views/Inbox.vue'
+import AllPulls from './views/AllPulls.vue'
+import AllBranches from './views/AllBranches.vue'
+import { useEverywhere } from './everywhere'
 import ProjectView from './views/Project.vue'
 import WorktreeChanges from './views/WorktreeChanges.vue'
 import AutoApprove from './views/AutoApprove.vue'
@@ -96,7 +105,23 @@ watch(
   { immediate: true },
 )
 const { projects } = useProjects()
-const { sort, groups, grouping, folded, setSort, setGrouping, toggleFolded, markOpened, place: placeProjects } = useProjectOrder(projects)
+const {
+  sort,
+  groups,
+  grouping,
+  folded,
+  showBranch,
+  isDefault: orderIsDefault,
+  setSort,
+  setGrouping,
+  setShowBranch,
+  reset: resetOrder,
+  toggleFolded,
+  markOpened,
+  place: placeProjects,
+} = useProjectOrder(projects)
+const sortLabel = computed(() => PROJECT_SORTS.find((o) => o.value === sort.value)?.label)
+const groupLabel = computed(() => PROJECT_GROUPINGS.find((o) => o.value === grouping.value)?.label)
 watch(project, (path) => path && markOpened(path))
 // Drag any project to put it where you want; the others slide out of the way, and the order switches to Custom.
 const projectList = useTemplateRef<HTMLElement>('projectList')
@@ -238,8 +263,30 @@ watch(
   { immediate: true },
 )
 
+// One place for each kind of thing, across every project, with its total.
+const everywhere = useEverywhere()
+const EVERYWHERE = computed<{ id: View; label: string; title: string; icon: typeof FolderGit2; count?: number }[]>(() => [
+  {
+    id: 'pulls',
+    label: 'Pull requests',
+    title: 'All pull requests',
+    icon: GitPullRequest,
+    count: Object.keys(everywhere.activity.value).length ? everywhere.pulls.value.length : undefined,
+  },
+  { id: 'branches', label: 'Branches', title: 'All branches', icon: GitBranch, count: everywhere.branchTotal.value },
+  { id: 'worktrees', label: 'Worktrees', title: 'All worktrees', icon: FolderGit2, count: everywhere.worktreeCount.value },
+])
+watch(
+  () => [projects.value, status.value?.signedIn] as const,
+  ([list, signedIn]) => {
+    if (!list || !signedIn) return
+    everywhere.seedPulls(list)
+    void everywhere.countBranches(list)
+    void everywhere.countWorktrees()
+  },
+  { immediate: true },
+)
 const TOOLS: { id: View; label: string; icon: typeof FolderGit2 }[] = [
-  { id: 'worktrees', label: 'All worktrees', icon: FolderGit2 },
   { id: 'cleanup', label: 'Cleanup', icon: Trash2 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -310,6 +357,8 @@ function onMenu(command: MenuCommand) {
       return go(command)
     case 'view:inbox':
     case 'view:autoapprove':
+    case 'view:pulls':
+    case 'view:branches':
     case 'view:worktrees':
     case 'view:cleanup':
       return go(command.slice(5) as View)
@@ -465,6 +514,18 @@ function onAdded(paths: string[]) {
             </button>
           </Hint>
 
+          <div v-if="!collapsed" class="px-2.5 pt-5 pb-2"><SectionLabel>All projects</SectionLabel></div>
+          <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
+          <Hint v-for="e in EVERYWHERE" :key="e.id" :text="e.title" side="right" :disabled="!collapsed">
+            <button type="button" :class="[item, rail, active(at(e.id))]" :aria-label="e.title" data-nav @click="view = e.id">
+              <component :is="e.icon" class="size-4" />
+              <template v-if="!collapsed">
+                {{ e.label }}
+                <span v-if="e.count !== undefined" class="ml-auto text-xs text-muted-foreground tabular-nums">{{ e.count }}</span>
+              </template>
+            </button>
+          </Hint>
+
           <div v-if="!collapsed" class="flex items-center gap-0.5 px-2.5 pt-5 pb-2">
             <SectionLabel>Projects</SectionLabel>
             <span class="flex-1" />
@@ -478,18 +539,41 @@ function onAdded(paths: string[]) {
                   <SlidersHorizontal class="size-3.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-48">
-                <DropdownMenuLabel class="text-xs">Sort by</DropdownMenuLabel>
-                <DropdownMenuRadioGroup :model-value="sort" @update:model-value="(v) => setSort(v as ProjectSort)">
-                  <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value">{{ o.label }}</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
+              <DropdownMenuContent align="start" class="w-56">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    >Group by<span class="ml-auto text-xs text-muted-foreground">{{ groupLabel }}</span></DropdownMenuSubTrigger
+                  >
+                  <DropdownMenuSubContent class="w-44">
+                    <DropdownMenuRadioGroup :model-value="grouping" @update:model-value="(v) => setGrouping(v as ProjectGrouping)">
+                      <DropdownMenuRadioItem v-for="o in PROJECT_GROUPINGS" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    >Sort by<span class="ml-auto text-xs text-muted-foreground">{{ sortLabel }}</span></DropdownMenuSubTrigger
+                  >
+                  <DropdownMenuSubContent class="w-44">
+                    <DropdownMenuRadioGroup :model-value="sort" @update:model-value="(v) => setSort(v as ProjectSort)">
+                      <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Show</DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent class="w-48">
+                    <DropdownMenuCheckboxItem :model-value="showBranch" @update:model-value="(v) => setShowBranch(!!v)" @select.prevent
+                      >Branch name</DropdownMenuCheckboxItem
+                    >
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel class="text-xs">Group by</DropdownMenuLabel>
-                <DropdownMenuRadioGroup :model-value="grouping" @update:model-value="(v) => setGrouping(v as ProjectGrouping)">
-                  <DropdownMenuRadioItem v-for="o in PROJECT_GROUPINGS" :key="o.value" :value="o.value">{{
-                    o.label
-                  }}</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
+                <DropdownMenuItem :disabled="orderIsDefault" @select="resetOrder">Reset to defaults</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <button
@@ -562,10 +646,13 @@ function onAdded(paths: string[]) {
                       data-nav
                       @click="openProject(p.path)"
                     >
-                      <span class="min-w-0 truncate">{{ p.name }}</span>
-                      <span v-if="p.branch" class="ml-auto min-w-0 truncate font-mono text-[10px] text-muted-foreground">{{
-                        p.branch
-                      }}</span>
+                      <!-- The folder name comes first and keeps its room; the branch takes what is left. -->
+                      <span class="max-w-[70%] shrink-0 truncate">{{ p.name }}</span>
+                      <span
+                        v-if="showBranch && p.branch && p.branch !== p.name"
+                        class="ml-auto min-w-0 truncate font-mono text-[10px] text-muted-foreground"
+                        >{{ p.branch }}</span
+                      >
                     </button>
                   </template>
                 </template>
@@ -636,7 +723,9 @@ function onAdded(paths: string[]) {
             <ProjectView v-else-if="view === 'project'" />
             <WorktreeChanges v-else-if="view === 'worktree' && worktree" :key="worktree" :path="worktree" />
             <AutoApprove v-else-if="view === 'autoapprove'" />
-            <Worktrees v-else-if="view === 'worktrees'" />
+            <AllPulls v-else-if="view === 'pulls'" />
+            <AllBranches v-else-if="view === 'branches'" />
+            <Worktrees v-else-if="view === 'worktrees'" @count="everywhere.setWorktreeCount" />
             <Cleanup v-else-if="view === 'cleanup'" />
             <SettingsView v-else-if="view === 'settings'" />
             <Account v-else />

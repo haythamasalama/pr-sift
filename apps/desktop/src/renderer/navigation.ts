@@ -2,10 +2,22 @@ import { computed, shallowRef, watch } from 'vue'
 import type { PrRef } from '@/lib/types'
 import { parsePullLink } from '#shared/links'
 
-export type View = 'inbox' | 'project' | 'worktree' | 'autoapprove' | 'worktrees' | 'cleanup' | 'settings' | 'account'
+export type View =
+  'inbox' | 'project' | 'worktree' | 'autoapprove' | 'pulls' | 'branches' | 'worktrees' | 'cleanup' | 'settings' | 'account'
 export type ProjectTab = 'pulls' | 'branches' | 'worktrees' | 'files'
 
-export const VIEWS: View[] = ['inbox', 'project', 'worktree', 'autoapprove', 'worktrees', 'cleanup', 'settings', 'account']
+export const VIEWS: View[] = [
+  'inbox',
+  'project',
+  'worktree',
+  'autoapprove',
+  'pulls',
+  'branches',
+  'worktrees',
+  'cleanup',
+  'settings',
+  'account',
+]
 
 export const view = shallowRef<View>('inbox')
 // The project shown when the view is `project`, by folder path.

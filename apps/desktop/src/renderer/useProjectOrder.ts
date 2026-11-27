@@ -27,6 +27,7 @@ const KEY = {
   group: 'ps:project-group',
   grouping: 'ps:project-grouping',
   folded: 'ps:project-folded',
+  branch: 'ps:project-show-branch',
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -56,6 +57,9 @@ const grouping = shallowRef<ProjectGrouping>(
 )
 // Repositories whose folders are folded away, by group key.
 const folded = shallowRef<string[]>(read(KEY.folded, []))
+// Whether a repository's folders show the branch each has checked out, beside the folder name.
+const showBranch = shallowRef<boolean>(read(KEY.branch, true))
+const DEFAULTS = { sort: 'name' as ProjectSort, grouping: 'repo' as ProjectGrouping, showBranch: true }
 
 export interface ProjectGroup {
   // owner/repo for a GitHub repository, the folder path otherwise.
@@ -120,6 +124,21 @@ export function useProjectOrder(projects: Ref<Project[] | null>) {
   })
   return {
     sort,
+    showBranch,
+    isDefault: computed(
+      () => sort.value === DEFAULTS.sort && grouping.value === DEFAULTS.grouping && showBranch.value === DEFAULTS.showBranch,
+    ),
+    setShowBranch(on: boolean) {
+      showBranch.value = on
+      write(KEY.branch, on)
+    },
+    reset() {
+      sort.value = DEFAULTS.sort
+      grouping.value = DEFAULTS.grouping
+      showBranch.value = DEFAULTS.showBranch
+      for (const k of [KEY.sort, KEY.grouping, KEY.branch])
+        write(k, k === KEY.sort ? DEFAULTS.sort : k === KEY.grouping ? DEFAULTS.grouping : true)
+    },
     sorted,
     groups,
     grouping,

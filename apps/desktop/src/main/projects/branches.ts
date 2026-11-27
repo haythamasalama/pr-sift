@@ -49,6 +49,7 @@ export function parseBranches(output: string, merged: Set<string>, email = '', b
         lastCommit: Number(date) * 1000 || 0,
         subject,
         author: author || undefined,
+        email: authorEmail.replace(/[<>]/g, '').toLowerCase() || undefined,
         mine: !!email && authorEmail.replace(/[<>]/g, '').toLowerCase() === email,
         protected: isProtectedBranch(name, base),
       }

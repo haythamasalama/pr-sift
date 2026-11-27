@@ -132,6 +132,8 @@ export interface Branch {
   subject: string
   // Who made the last commit, and whether that was you (by your git email).
   author?: string
+  // Their email in git, used to find their GitHub photo.
+  email?: string
   mine?: boolean
   // The repository's main branch (its default branch on GitHub): listed first, never deleted.
   protected?: boolean
@@ -451,6 +453,8 @@ export type MenuCommand =
   | 'find'
   | 'view:inbox'
   | 'view:autoapprove'
+  | 'view:pulls'
+  | 'view:branches'
   | 'view:worktrees'
   | 'view:cleanup'
   | 'toggle-sidebar'

@@ -67,8 +67,10 @@ export function buildMenu(platform: NodeJS.Platform, run: (command: MenuCommand)
       submenu: [
         item('Needs You', 'view:inbox', 'CmdOrCtrl+1'),
         item('Auto-approve', 'view:autoapprove', 'CmdOrCtrl+2'),
-        item('Worktrees', 'view:worktrees', 'CmdOrCtrl+3'),
-        item('Cleanup', 'view:cleanup', 'CmdOrCtrl+4'),
+        item('All Pull Requests', 'view:pulls', 'CmdOrCtrl+3'),
+        item('All Branches', 'view:branches', 'CmdOrCtrl+4'),
+        item('All Worktrees', 'view:worktrees', 'CmdOrCtrl+5'),
+        item('Cleanup', 'view:cleanup', 'CmdOrCtrl+6'),
         { type: 'separator' },
         item('Toggle Sidebar', 'toggle-sidebar', mac ? 'Cmd+Ctrl+S' : 'Ctrl+B'),
         item('Focus on the Review', 'focus', 'CmdOrCtrl+.'),

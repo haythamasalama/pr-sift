@@ -32,8 +32,10 @@ export const SHORTCUTS: { title: string; items: Shortcut[] }[] = [
     items: [
       { keys: 'Mod+1', label: 'Needs you' },
       { keys: 'Mod+2', label: 'Auto-approve' },
-      { keys: 'Mod+3', label: 'All worktrees' },
-      { keys: 'Mod+4', label: 'Cleanup' },
+      { keys: 'Mod+3', label: 'All pull requests' },
+      { keys: 'Mod+4', label: 'All branches' },
+      { keys: 'Mod+5', label: 'All worktrees' },
+      { keys: 'Mod+6', label: 'Cleanup' },
       { keys: 'Mod+[', label: 'Back' },
       { keys: isMac ? 'Ctrl+Mod+S' : 'Ctrl+B', label: 'Show or hide the sidebar' },
     ],

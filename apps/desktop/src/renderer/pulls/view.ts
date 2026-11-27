@@ -6,10 +6,16 @@ export type PullDetail = 'labels' | 'author' | 'branch' | 'time' | 'size' | 'com
 export type PullDensity = 'comfortable' | 'compact'
 // Lists that mix repositories group by owner or repository; a project's list, all one repository, by author.
 export type PullGrouping = 'none' | 'owner' | 'repo' | 'author'
-export type PullScope = 'everywhere' | 'project'
+// `all` is the All pull requests page, which starts grouped by repository.
+export type PullScope = 'everywhere' | 'project' | 'all'
 
 export const PULL_GROUPINGS: Record<PullScope, { value: PullGrouping; label: string; hint: string }[]> = {
   everywhere: [
+    { value: 'none', label: 'None', hint: 'One list. Each row says where it lives.' },
+    { value: 'owner', label: 'Owner', hint: 'One group per organization or person, biggest first.' },
+    { value: 'repo', label: 'Repository', hint: 'One group per repository, biggest first.' },
+  ],
+  all: [
     { value: 'none', label: 'None', hint: 'One list. Each row says where it lives.' },
     { value: 'owner', label: 'Owner', hint: 'One group per organization or person, biggest first.' },
     { value: 'repo', label: 'Repository', hint: 'One group per repository, biggest first.' },
@@ -58,9 +64,9 @@ interface Stored {
   density: PullDensity
   grouping: Record<PullScope, PullGrouping>
 }
-const NO_GROUPING: Record<PullScope, PullGrouping> = { everywhere: 'none', project: 'none' }
+const NO_GROUPING: Record<PullScope, PullGrouping> = { everywhere: 'none', project: 'none', all: 'repo' }
 const allowed = (scope: PullScope, value: unknown): PullGrouping =>
-  PULL_GROUPINGS[scope].some((g) => g.value === value) ? (value as PullGrouping) : 'none'
+  PULL_GROUPINGS[scope].some((g) => g.value === value) ? (value as PullGrouping) : NO_GROUPING[scope]
 
 function read(): Stored {
   try {
@@ -72,7 +78,11 @@ function read(): Stored {
     return {
       shown: { ...DEFAULT, ...details },
       density: density === 'compact' ? 'compact' : 'comfortable',
-      grouping: { everywhere: allowed('everywhere', grouping?.everywhere), project: allowed('project', grouping?.project) },
+      grouping: {
+        everywhere: allowed('everywhere', grouping?.everywhere),
+        project: allowed('project', grouping?.project),
+        all: allowed('all', grouping?.all),
+      },
     }
   } catch {
     return { shown: { ...DEFAULT }, density: 'comfortable', grouping: { ...NO_GROUPING } }
@@ -119,7 +129,7 @@ export function usePullView() {
   const changed = () =>
     (Object.keys(DEFAULT) as PullDetail[]).filter((k) => shown.value[k] !== DEFAULT[k]).length +
     (density.value === 'compact' ? 1 : 0) +
-    (Object.keys(NO_GROUPING) as PullScope[]).filter((k) => grouping.value[k] !== 'none').length
+    (Object.keys(NO_GROUPING) as PullScope[]).filter((k) => grouping.value[k] !== NO_GROUPING[k]).length
   const hidden = () => (Object.keys(DEFAULT) as PullDetail[]).filter((k) => DEFAULT[k] && !shown.value[k]).length
   return { shown, density, grouping, set, setDensity, setGrouping, reset, hidden, changed }
 }
