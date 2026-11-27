@@ -273,7 +273,7 @@ const EVERYWHERE = computed<{ id: View; label: string; title: string; icon: type
     label: 'Pull requests',
     title: 'All pull requests',
     icon: GitPullRequest,
-    count: Object.keys(everywhere.activity.value).length ? everywhere.pulls.value.length : undefined,
+    count: everywhere.loaded.value ? everywhere.pulls.value.length : undefined,
   },
   { id: 'branches', label: 'Branches', title: 'All branches', icon: GitBranch, count: everywhere.branchTotal.value },
   { id: 'worktrees', label: 'Worktrees', title: 'All worktrees', icon: FolderGit2, count: everywhere.worktreeCount.value },
@@ -284,7 +284,7 @@ watch(
     if (!list || !signedIn) return
     everywhere.seedPulls(list)
     void everywhere.countBranches(list)
-    void everywhere.countWorktrees()
+    void everywhere.countWorktrees(list)
   },
   { immediate: true },
 )
@@ -312,7 +312,9 @@ watch(collapsed, (value) => {
 })
 
 const item = 'flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left transition-colors'
-const rail = computed(() => (collapsed.value ? 'justify-center px-0' : ''))
+const rail = computed(() => (collapsed.value ? 'justify-center px-0!' : ''))
+// Grouped by owner, the projects sit indented under their owner's heading.
+const nested = computed(() => (grouping.value === 'owner' && !collapsed.value ? 'pl-[30px]' : ''))
 const active = (on: boolean) =>
   on ? 'bg-accent font-semibold text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
 
@@ -593,7 +595,12 @@ function onAdded(paths: string[]) {
             </button>
           </div>
           <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
-          <div ref="projectList" class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-1">
+          <!-- In the rail a scrollbar would take the icons' room, so it scrolls without one. -->
+          <div
+            ref="projectList"
+            class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-1"
+            :class="collapsed ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : ''"
+          >
             <TransitionGroup tag="div" class="flex flex-col gap-0.5" move-class="transition-transform duration-200 ease-out">
               <div
                 v-for="g in sidebarRows"
@@ -621,7 +628,7 @@ function onAdded(paths: string[]) {
                 <template v-else-if="g.projects.length > 1 && !collapsed">
                   <button
                     type="button"
-                    :class="[item, 'group/grip text-foreground']"
+                    :class="[item, nested, 'group/grip text-foreground']"
                     :aria-expanded="!folded.includes(g.key)"
                     :title="g.key"
                     @pointerdown="drag.down($event, g.key)"
@@ -646,7 +653,7 @@ function onAdded(paths: string[]) {
                       v-for="p in g.projects"
                       :key="p.path"
                       type="button"
-                      :class="[item, 'h-7 pl-[34px] text-[13px] text-foreground', active(isOpenProject(p.path))]"
+                      :class="[item, nested ? 'pl-[58px]' : 'pl-[34px]', 'h-7 text-[13px] text-foreground', active(isOpenProject(p.path))]"
                       :title="p.path"
                       :aria-label="p.name"
                       data-nav
@@ -666,7 +673,7 @@ function onAdded(paths: string[]) {
                   <Hint v-for="p in g.projects" :key="p.path" :text="p.name" side="right" :disabled="!collapsed || !!drag.dragging.value">
                     <button
                       type="button"
-                      :class="[item, rail, 'group/grip text-foreground', active(isOpenProject(p.path))]"
+                      :class="[item, rail, nested, 'group/grip text-foreground', active(isOpenProject(p.path))]"
                       :aria-label="p.name"
                       data-nav
                       @pointerdown="drag.down($event, g.key)"

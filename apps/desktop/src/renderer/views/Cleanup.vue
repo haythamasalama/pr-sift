@@ -217,7 +217,7 @@ useRefresh(scan)
 </script>
 
 <template>
-  <PageHeader title="Cleanup" description="Worktrees and branches you can safely remove, across all projects.">
+  <PageHeader title="Cleanup">
     <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Look again" :disabled="scanning" @click="scan"
       ><RefreshCw :class="{ 'animate-spin': scanning }"
     /></Button>

@@ -39,6 +39,7 @@ import { useProjects } from '~/useProjects'
 import PullTable from '~/components/PullTable.vue'
 import PullFilterMenu from '~/components/PullFilterMenu.vue'
 import PullViewMenu from '~/components/PullViewMenu.vue'
+import PullFoldAll from '~/components/PullFoldAll.vue'
 import { NO_FILTERS, matchesFilters, type PullFilters } from '~/pulls/filters'
 import Segmented from '~/components/Segmented.vue'
 import BranchList from '~/components/BranchList.vue'
@@ -242,7 +243,6 @@ async function confirmRemove() {
         <div class="flex min-w-0 flex-1 flex-col gap-0.5">
           <div class="flex min-w-0 items-baseline gap-2.5">
             <h1 class="shrink-0 text-base leading-[22px] font-semibold">{{ current.name }}</h1>
-            <span v-if="description" class="truncate text-xs text-muted-foreground" :title="description">{{ description }}</span>
           </div>
           <div class="flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
             <a v-if="current.github" :href="repoUrl" target="_blank" rel="noreferrer" class="shrink-0 hover:text-foreground"
@@ -311,7 +311,7 @@ async function confirmRemove() {
           </DropdownMenu>
         </div>
       </div>
-      <ProjectSummary class="pt-2 pr-6 pl-[108px]" :overview="overview" :info="activity?.info" />
+      <ProjectSummary class="pt-2 pr-6 pl-[108px]" :overview="overview" :info="activity?.info" :description="description" />
       <nav aria-label="Project" role="tablist" class="mt-3 flex gap-5 overflow-x-auto px-6 [scrollbar-width:none]">
         <button
           v-for="t in TABS"
@@ -366,6 +366,7 @@ async function confirmRemove() {
             >
               <RefreshCw :class="{ 'animate-spin': loading }" />
             </Button>
+            <PullFoldAll scope="project" />
             <PullViewMenu scope="project" />
           </span>
         </div>

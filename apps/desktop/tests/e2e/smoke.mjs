@@ -172,6 +172,13 @@ await page.getByRole('button', { name: 'Skip for now' }).click()
 await page.getByRole('heading', { name: 'Needs you' }).waitFor()
 await page.getByText('Add a shopping cart').waitFor()
 await page.screenshot({ path: join(shots, '2-inbox.png') })
+// Projects only keeps the pull requests of the projects you added, and is remembered.
+await page.getByRole('switch', { name: 'Projects only' }).click()
+await page.waitForTimeout(200)
+await page.screenshot({ path: join(shots, '2p-inbox-projects-only.png') })
+if ((await page.evaluate(() => localStorage.getItem('ps:inbox-projects-only'))) !== '1') throw new Error('Projects only was not kept')
+await page.getByRole('switch', { name: 'Projects only' }).click()
+await page.getByText('Add a shopping cart').waitFor()
 // Group by repository: a heading per repository that folds away, rows keep only their number.
 await page.getByRole('button', { name: /^View/ }).click()
 await page.locator('[data-slot=popover-content]').getByText('Repository', { exact: true }).click()
@@ -180,6 +187,14 @@ await page.getByRole('button', { name: /acme\/shop/ }).waitFor()
 await page.getByRole('button', { name: /^View · by repository/ }).waitFor()
 await page.waitForTimeout(200)
 await page.screenshot({ path: join(shots, '2g-inbox-grouped.png') })
+// Collapse all folds every group at once; Expand all opens them again.
+if (await page.getByRole('button', { name: 'Collapse all' }).count()) {
+  await page.getByRole('button', { name: 'Collapse all' }).click()
+  if (await page.getByText('Add a shopping cart').count()) throw new Error('Collapse all left rows showing')
+  await page.screenshot({ path: join(shots, '2h-inbox-collapsed.png') })
+  await page.getByRole('button', { name: 'Expand all' }).click()
+  await page.getByText('Add a shopping cart').waitFor()
+}
 await page.getByRole('button', { name: /acme\/shop/ }).click()
 if (await page.getByText('Add a shopping cart').count()) throw new Error('Folding the group left its rows showing')
 await page.getByRole('button', { name: /acme\/shop/ }).click()
@@ -251,6 +266,14 @@ await page
   .first()
   .waitFor()
 await page.screenshot({ path: join(shots, '5-project-pulls.png') })
+// The repository's description sits short at the start of the facts line; a click shows all of it.
+const about = page.locator('[aria-label="About this project"] button[aria-expanded]')
+if (await about.count()) {
+  await about.click()
+  await page.waitForTimeout(150)
+  await page.screenshot({ path: join(shots, '5d-description-open.png') })
+  await about.click()
+}
 // The Branches and Worktrees tabs know their counts before you visit them.
 await page.waitForFunction(() =>
   ['Branches', 'Worktrees'].every((name) =>
@@ -451,6 +474,12 @@ await page.getByRole('heading', { name: 'All branches' }).waitFor()
 await page.locator('[data-branch]').first().waitFor({ timeout: 20_000 })
 await page.waitForTimeout(600)
 await page.screenshot({ path: join(shots, '16c-all-branches.png') })
+// Collapse all folds every repository at once; Expand all opens them again.
+await page.getByRole('button', { name: 'Collapse all' }).click()
+if (await page.locator('[data-branch]').count()) throw new Error('Collapse all left branches showing')
+await page.screenshot({ path: join(shots, '16d-all-branches-collapsed.png') })
+await page.getByRole('button', { name: 'Expand all' }).click()
+await page.locator('[data-branch]').first().waitFor()
 await page.getByRole('button', { name: 'Settings' }).click()
 await page.waitForTimeout(400)
 await page.screenshot({ path: join(shots, '11-settings.png') })
@@ -542,6 +571,12 @@ await page.getByRole('menuitemradio', { name: 'Owner' }).click()
 await page.getByRole('button', { name: /^acme/ }).first().waitFor()
 await page.waitForTimeout(250)
 await page.screenshot({ path: join(shots, '11e-group-by-owner.png') })
+// Under an owner the projects sit indented.
+const ownerPad = await page
+  .locator('[data-sort-id] button')
+  .first()
+  .evaluate((b) => getComputedStyle(b).paddingLeft)
+if (ownerPad !== '30px') throw new Error(`Projects under an owner are not indented: ${ownerPad}`)
 await page.getByRole('button', { name: 'Sort and group projects' }).click()
 await page.getByRole('menuitem', { name: /Group by/ }).hover()
 await page.getByRole('menuitemradio', { name: 'Repository' }).click()
@@ -622,6 +657,13 @@ await page.getByRole('button', { name: 'Hide the sidebar' }).click()
 await page.getByRole('button', { name: 'Needs you' }).click()
 await page.waitForTimeout(400)
 await page.screenshot({ path: join(shots, '17-sidebar-collapsed.png') })
+// In the rail each project icon keeps its square shape.
+const railIcon = await page
+  .locator('[data-sort-id] button')
+  .first()
+  .evaluate((b) => b.querySelector('img, span').getBoundingClientRect())
+if (Math.round(railIcon.width) !== Math.round(railIcon.height))
+  throw new Error(`A rail icon is squeezed: ${railIcon.width}x${railIcon.height}`)
 await page.getByRole('button', { name: 'Show the sidebar' }).click()
 
 // A busy rule, to check the list stays easy to read.

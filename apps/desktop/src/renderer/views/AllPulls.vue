@@ -13,17 +13,17 @@ import PageHeader from '~/components/PageHeader.vue'
 import PullFilterMenu from '~/components/PullFilterMenu.vue'
 import PullTable from '~/components/PullTable.vue'
 import PullViewMenu from '~/components/PullViewMenu.vue'
+import PullFoldAll from '~/components/PullFoldAll.vue'
 import Segmented from '~/components/Segmented.vue'
 import PullListSkeleton from '~/components/skeletons/PullListSkeleton.vue'
 
 // Every open pull request in every project, in the same rows as a project page.
 const { status } = useAuth()
 const { projects } = useProjects()
-const { activity, pulls, pullsLoading, pullErrors, pullsAt, loadPulls } = useEverywhere()
+const { loaded, pulls, pullsLoading, pullErrors, pullsAt, loadPulls } = useEverywhere()
 const me = computed(() => status.value?.account?.login)
 
 const repos = computed(() => githubProjects(projects.value ?? []))
-const loaded = computed(() => Object.keys(activity.value).length > 0)
 const query = shallowRef('')
 const show = shallowRef<'all' | 'ready' | 'mine' | 'drafts'>('all')
 const filters = shallowRef<PullFilters>({ ...NO_FILTERS })
@@ -57,11 +57,10 @@ const visible = computed(() => {
     )
     .sort((a, b) => b.updatedAt - a.updatedAt)
 })
-const summary = computed(() => {
-  const n = pulls.value.length
+const tags = computed(() => {
+  if (!loaded.value) return []
   const count = repos.value.length
-  if (!loaded.value) return 'Every open pull request in your projects.'
-  return `${n} open across ${count} ${count === 1 ? 'project' : 'projects'}`
+  return [`${pulls.value.length} open`, `${count} ${count === 1 ? 'project' : 'projects'}`]
 })
 
 watch(
@@ -75,7 +74,7 @@ const refresh = () => projects.value && loadPulls(projects.value, true)
 </script>
 
 <template>
-  <PageHeader title="All pull requests" :description="summary">
+  <PageHeader title="All pull requests" :tags="tags">
     <span v-if="pullsAt && loaded" class="text-xs text-muted-foreground">Updated {{ formatAgo(pullsAt) }}</span>
     <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label="Refresh" :disabled="pullsLoading" @click="refresh">
       <RefreshCw :class="{ 'animate-spin': pullsLoading }" />
@@ -96,7 +95,7 @@ const refresh = () => projects.value && loadPulls(projects.value, true)
         </InputGroup>
         <Segmented v-model="show" :options="SHOW" label="Show" />
         <PullFilterMenu v-model="filters" :pulls="pulls" />
-        <span class="ml-auto"><PullViewMenu scope="all" /></span>
+        <span class="ml-auto flex items-center gap-2"><PullFoldAll scope="all" /><PullViewMenu scope="all" /></span>
       </div>
       <p v-if="!pulls.length" class="text-muted-foreground">No open pull requests.</p>
       <p v-else-if="!visible.length" class="text-muted-foreground">No pull requests match.</p>

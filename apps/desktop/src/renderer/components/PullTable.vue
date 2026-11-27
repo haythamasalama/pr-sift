@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onUnmounted, watch } from 'vue'
 import { ChevronRight } from '@lucide/vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import type { PullItem } from '~/github'
 import { openReview } from '~/navigation'
 import PullRow from './PullRow.vue'
 import ProjectIcon from './ProjectIcon.vue'
-import { groupPulls, usePullFolds, usePullView, type PullScope } from '~/pulls/view'
+import { groupPulls, useFoldRegistry, usePullFolds, usePullView, type PullScope } from '~/pulls/view'
 
 // Groups of pull requests in one quiet card. With `columns`, the first group's header names the columns;
 // later groups get a muted band. With `titles`, a page that names the card itself still gets the column titles.
@@ -46,6 +46,12 @@ const sections = computed(() =>
       }),
     })),
 )
+// Tells the page's Collapse all button which groups this table shows.
+const registry = useFoldRegistry()
+watch(sections, (list) => registry.show(scope.value, how.value === 'none' ? [] : list.flatMap((s) => s.parts.map((p) => p.foldKey))), {
+  immediate: true,
+})
+onUnmounted(registry.hide)
 // Previous and Next in the review walk through this table, in the order it shows.
 const order = computed(() => sections.value.flatMap((s) => s.parts.flatMap((p) => p.items)))
 const open = (p: PullItem) => openReview(p, order.value)

@@ -149,14 +149,41 @@ const folded = shallowRef<string[]>(
 export function usePullFolds() {
   function toggle(key: string) {
     folded.value = folded.value.includes(key) ? folded.value.filter((k) => k !== key) : [...folded.value, key]
-    try {
-      localStorage.setItem(FOLDED_KEY, JSON.stringify(folded.value))
-    } catch {
-      // Lasts until the app closes.
-    }
+    saveFolded()
   }
-  return { folded, toggle }
+  return { folded, toggle, setFolded }
 }
+function saveFolded() {
+  try {
+    localStorage.setItem(FOLDED_KEY, JSON.stringify(folded.value))
+  } catch {
+    // Lasts until the app closes.
+  }
+}
+// Folds or opens every group in `keys` at once.
+function setFolded(keys: string[], fold: boolean) {
+  const rest = folded.value.filter((k) => !keys.includes(k))
+  folded.value = fold ? [...rest, ...keys] : rest
+  saveFolded()
+}
+
+// The folding groups each table shows now, by scope, so one button above them can fold or open them all.
+const shownFolds = shallowRef<Record<number, { scope: PullScope; keys: string[] }>>({})
+let nextTable = 0
+export function useFoldRegistry() {
+  const id = nextTable++
+  return {
+    show: (scope: PullScope, keys: string[]) => (shownFolds.value = { ...shownFolds.value, [id]: { scope, keys } }),
+    hide: () => {
+      const { [id]: _gone, ...rest } = shownFolds.value
+      shownFolds.value = rest
+    },
+  }
+}
+export const foldKeysOf = (scope: PullScope) =>
+  Object.values(shownFolds.value)
+    .filter((t) => t.scope === scope)
+    .flatMap((t) => t.keys)
 
 export interface PullGroupOf<T> {
   key: string

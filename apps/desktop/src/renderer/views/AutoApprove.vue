@@ -676,10 +676,7 @@ useRefresh(async () => {
 
   <!-- ── The list of rules ── -->
   <template v-else>
-    <PageHeader
-      title="Auto-approve"
-      description="Approves pull requests that match a rule. Dry run shows what it would approve without approving."
-    >
+    <PageHeader title="Auto-approve">
       <Segmented v-model="modeModel" :options="MODES" label="Mode" />
       <Hint text="What it approved">
         <Button size="icon" variant="ghost" class="text-muted-foreground" aria-label="What it approved" @click="historyOpen = true"

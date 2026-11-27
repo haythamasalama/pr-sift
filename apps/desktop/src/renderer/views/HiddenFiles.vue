@@ -15,6 +15,7 @@ import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
+import StatusPill from '~/components/StatusPill.vue'
 import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
 
 const FOLDER_MIN = 50 * 1024 * 1024
@@ -59,11 +60,11 @@ const selectedSize = computed(() => selectedItems.value.reduce((sum, i) => sum +
 const selectedMedia = computed(() => selectedItems.value.some((i) => i.kind === 'media'))
 const allShownSelected = computed(() => shown.value.length > 0 && shown.value.every((i) => selected.has(i.path)))
 
-const summary = computed(() => {
-  if (!scanned.value) return 'Folders and files you can rebuild, biggest first.'
-  const parts = [`${big.value.length} ${big.value.length === 1 ? 'item' : 'items'} · ${formatBytes(total.value)}`]
-  if (measuring.value) parts.push(`measuring ${measuring.value} more…`)
-  return parts.join(' · ')
+const tags = computed(() => {
+  if (!scanned.value) return []
+  const parts = [`${big.value.length} ${big.value.length === 1 ? 'item' : 'items'}`, formatBytes(total.value)]
+  if (measuring.value) parts.push(`Measuring ${measuring.value} more`)
+  return parts
 })
 
 async function scan() {
@@ -139,7 +140,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PageHeader v-if="!root" title="Cleanup" :description="summary">
+  <PageHeader v-if="!root" title="Cleanup" :tags="tags">
     <Button v-if="settings?.roots.length" variant="outline" :disabled="scanning" @click="scan">
       <Spinner v-if="scanning" />
       <RefreshCw v-else />
@@ -160,7 +161,9 @@ onMounted(async () => {
 
   <div v-else class="flex flex-col gap-4" :class="root ? '' : 'p-6'">
     <div v-if="root" class="flex flex-wrap items-center gap-3">
-      <p class="flex-1 text-muted-foreground">{{ summary }}</p>
+      <span class="flex flex-1 flex-wrap items-center gap-1.5"
+        ><StatusPill v-for="t in tags" :key="t" class="text-[11px] tabular-nums">{{ t }}</StatusPill></span
+      >
       <Button size="sm" variant="outline" :disabled="scanning" @click="scan">
         <Spinner v-if="scanning" />
         <RefreshCw v-else />

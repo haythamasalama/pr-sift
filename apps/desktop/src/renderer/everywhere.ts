@@ -19,11 +19,14 @@ export function githubProjects(projects: Project[]) {
 }
 
 const activity = shallowRef<Record<string, RepoActivity>>({})
+// The repositories of the projects you have now; a removed project's pull requests stop counting at once.
+const liveKeys = shallowRef<string[]>([])
 const pullsLoading = shallowRef(false)
 const pullErrors = shallowRef<string[]>([])
 const pullsAt = shallowRef<number | null>(null)
 
 function seedPulls(projects: Project[]) {
+  liveKeys.value = githubProjects(projects).map((p) => repoKey(p.github!))
   const next = { ...activity.value }
   let oldest: number | null = null
   for (const p of githubProjects(projects)) {
@@ -93,24 +96,33 @@ async function countBranches(all: Project[]) {
   )
 }
 
-const worktreeCount = shallowRef<number | undefined>(readCache<Repo[]>('worktrees:all')?.value.reduce(linkedIn, 0))
-function linkedIn(sum: number, r: Repo) {
-  return sum + r.worktrees.filter((w) => !w.main).length
+// A repository belongs to your projects when one of its folders (the main one or a worktree) is a project.
+const norm = (path: string) => path.replace(/[\\/]+$/, '').toLowerCase()
+export function inProjects(repo: Repo, projects: Project[]) {
+  const paths = new Set(projects.map((p) => norm(p.path)))
+  return paths.has(norm(repo.path)) || repo.worktrees.some((w) => paths.has(norm(w.path)))
 }
-async function countWorktrees() {
+const linkedIn = (repos: Repo[], projects: Project[]) =>
+  repos.filter((r) => inProjects(r, projects)).reduce((sum, r) => sum + r.worktrees.filter((w) => !w.main).length, 0)
+const worktreeCount = shallowRef<number | undefined>()
+async function countWorktrees(projects: Project[]) {
+  const saved = readCache<Repo[]>('worktrees:all')?.value
+  if (saved) worktreeCount.value = linkedIn(saved, projects)
   try {
     const repos = writeCache('worktrees:all', await bridge.invoke('worktrees:scan')).value
-    worktreeCount.value = repos.reduce(linkedIn, 0)
+    worktreeCount.value = linkedIn(repos, projects)
   } catch {
     // The count stays as it was.
   }
 }
 
 export function useEverywhere() {
-  const pulls = computed(() => Object.values(activity.value).flatMap((a) => a.pulls))
+  const pulls = computed(() => liveKeys.value.flatMap((k) => activity.value[k]?.pulls ?? []))
+  const loaded = computed(() => liveKeys.value.some((k) => activity.value[k]))
   return {
     activity,
     pulls,
+    loaded,
     pullsLoading,
     pullErrors,
     pullsAt,

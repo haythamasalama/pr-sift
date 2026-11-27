@@ -46,6 +46,7 @@ import StatusPill from './StatusPill.vue'
 import ProjectIcon from './ProjectIcon.vue'
 import { avatars, findAvatars } from '~/authors'
 import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
+import FoldAllButton from './FoldAllButton.vue'
 
 const short = usePathText()
 const broken = shallowRef(new Set<string>())
@@ -191,6 +192,10 @@ const sections = computed(() => {
     .filter((x) => x.rows.length)
     .sort((a, b) => b.rows.length - a.rows.length || a.name.localeCompare(b.name))
 })
+const allFolded = computed(() => sections.value.every((s) => !s.open))
+function foldAll(fold: boolean) {
+  folded.value = fold ? new Set(sections.value.map((s) => s.key)) : new Set()
+}
 function fold(key: string) {
   const next = new Set(folded.value)
   if (next.has(key)) next.delete(key)
@@ -350,6 +355,7 @@ useRefresh(load)
       <Segmented v-model="filter" :options="FILTERS" label="Show" />
       <span class="ml-auto flex shrink-0 items-center gap-2">
         <span v-if="notice" class="text-xs text-muted-foreground">{{ notice }}</span>
+        <FoldAllButton v-if="many && byRepository && sections.length" :all-folded="allFolded" @fold="foldAll" />
         <DropdownMenu v-if="many">
           <DropdownMenuTrigger as-child>
             <Button size="sm" variant="outline"

@@ -37,6 +37,9 @@ import { bridge } from '~/bridge'
 import { isFresh, readCache, writeCache } from '~/cache'
 import { errorText, formatAgo, formatBytes } from '~/format'
 import { openPullLink, openWorktree } from '~/navigation'
+import { inProjects } from '~/everywhere'
+import { useProjects } from '~/useProjects'
+import FoldAllButton from '~/components/FoldAllButton.vue'
 import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
@@ -87,7 +90,10 @@ const TESTS: Record<Filter, (w: Worktree) => boolean> = {
   merged: (w) => !!details.get(w.path)?.merged,
 }
 
-const allWithWorktrees = computed(() => (only ? repos.value : repos.value.filter((r) => r.worktrees.length > 1 || r.error)))
+// All worktrees shows only the repositories of the projects you added, so removing a project takes its worktrees away.
+const { projects } = useProjects()
+const scoped = computed(() => (only ? repos.value : repos.value.filter((r) => inProjects(r, projects.value ?? []))))
+const allWithWorktrees = computed(() => (only ? scoped.value : scoped.value.filter((r) => r.worktrees.length > 1 || r.error)))
 const matches = (r: Repo, w: Worktree) => {
   const q = query.value.trim().toLowerCase()
   return TESTS[filter.value](w) && (!q || [w.branch ?? '', w.path, r.name].some((x) => x.toLowerCase().includes(q)))
@@ -170,14 +176,27 @@ async function confirmBulk() {
   removing.value = false
   bulkAsking.value = false
 }
-const plainRepos = computed(() => repos.value.filter((r) => r.worktrees.length <= 1 && !r.error))
+const plainRepos = computed(() => scoped.value.filter((r) => r.worktrees.length <= 1 && !r.error))
 const linked = computed(() => allWithWorktrees.value.flatMap((r) => r.worktrees.filter((w) => !w.main)))
+// Each repository folds under its heading on All worktrees.
+const folded = shallowRef(new Set<string>())
+const allFolded = computed(() => withWorktrees.value.every((r) => folded.value.has(r.path)))
+function fold(path: string) {
+  const next = new Set(folded.value)
+  if (!next.delete(path)) next.add(path)
+  folded.value = next
+}
+const foldAll = (f: boolean) => (folded.value = f ? new Set(withWorktrees.value.map((r) => r.path)) : new Set())
 const totalSize = computed(() => linked.value.reduce((sum, w) => sum + (details.get(w.path)?.size ?? 0), 0))
-const summary = computed(() => {
-  if (!scanned.value) return 'Every git worktree in your project folders.'
+const tags = computed(() => {
+  if (!scanned.value) return []
   const count = linked.value.length
-  const size = totalSize.value ? ` · ${formatBytes(totalSize.value)}` : ''
-  return `${count} ${count === 1 ? 'worktree' : 'worktrees'} in ${withWorktrees.value.length} of ${repos.value.length} repositories${size}`
+  const repoCount = withWorktrees.value.length
+  return [
+    `${count} ${count === 1 ? 'worktree' : 'worktrees'}`,
+    `${repoCount} ${repoCount === 1 ? 'repository' : 'repositories'}`,
+    ...(totalSize.value ? [formatBytes(totalSize.value)] : []),
+  ]
 })
 
 watch(
@@ -306,7 +325,7 @@ useRefresh(scan)
 </script>
 
 <template>
-  <PageHeader v-if="!only" title="All worktrees" :description="summary" />
+  <PageHeader v-if="!only" title="All worktrees" :tags="tags" />
 
   <NoticeBar v-if="notice">
     <template #icon><Trash2 /></template>
@@ -335,6 +354,7 @@ useRefresh(scan)
         <span v-if="note" class="text-xs text-muted-foreground">{{ note }}</span>
       </Transition>
 
+      <FoldAllButton v-if="!only && withWorktrees.length" :all-folded="allFolded" @fold="foldAll" />
       <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rescan" :disabled="scanning" @click="scan"
         ><RefreshCw :class="{ 'animate-spin': scanning }"
       /></Button>
@@ -350,17 +370,28 @@ useRefresh(scan)
     <TableSkeleton v-if="scanning && !scanned" label="Looking for worktrees" />
 
     <p v-if="scanned && !withWorktrees.length && !only && filter === 'all' && !query" class="text-muted-foreground">
-      None of your {{ repos.length }} repositories has extra worktrees.
+      None of your {{ scoped.length }} repositories has extra worktrees.
     </p>
     <p v-else-if="scanned && !withWorktrees.length" class="text-muted-foreground">No worktrees match.</p>
 
     <section v-for="repo in withWorktrees" :key="repo.path" class="flex flex-col gap-2">
       <header v-if="!only || repo.worktrees.some((w) => w.prunable)" class="flex items-center gap-2 pt-1">
-        <template v-if="!only">
+        <button
+          v-if="!only"
+          type="button"
+          class="flex min-w-0 items-center gap-2 rounded-sm text-left"
+          :aria-expanded="!folded.has(repo.path)"
+          @click="fold(repo.path)"
+        >
+          <ChevronRight
+            class="size-3.5 shrink-0 text-muted-foreground transition-transform"
+            :class="folded.has(repo.path) ? '' : 'rotate-90'"
+          />
           <FolderGit2 class="size-4 shrink-0 text-muted-foreground" />
           <span class="font-semibold">{{ repo.name }}</span>
           <PathText class="text-xs text-muted-foreground" :path="repo.path" />
-        </template>
+          <span class="text-xs text-muted-foreground tabular-nums">{{ repo.worktrees.length }}</span>
+        </button>
         <span class="flex-1" />
         <Button v-if="!only" size="sm" variant="ghost" class="text-muted-foreground" @click="dialog = { repo: repo.path, worktree: null }"
           ><Plus /> New worktree</Button
@@ -371,7 +402,10 @@ useRefresh(scan)
       </header>
       <p v-if="repo.error" class="text-destructive">{{ repo.error }}</p>
 
-      <div v-if="repo.worktrees.length" class="@container overflow-hidden rounded-lg border border-border">
+      <div
+        v-if="repo.worktrees.length && (only || !folded.has(repo.path))"
+        class="@container overflow-hidden rounded-lg border border-border"
+      >
         <div class="flex h-9 items-center gap-4 border-b border-border px-4">
           <Checkbox
             :model-value="stateOf(repo)"

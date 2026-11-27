@@ -22,7 +22,7 @@ const short = usePathText()
 </script>
 
 <template>
-  <PageHeader title="Settings" description="Changes apply right away, in the app and in reviews." />
+  <PageHeader title="Settings" />
   <div class="flex w-full justify-center px-8 py-4">
     <SettingsForm surface="desktop" :extra-tabs="EXTRA_TABS" class="w-full max-w-[720px] min-w-0 px-4">
       <template #projects>

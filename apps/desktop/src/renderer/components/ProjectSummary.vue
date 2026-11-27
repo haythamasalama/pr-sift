@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { ProjectOverview } from '#shared/ipc'
 import type { RepoInfo } from '~/github'
-import { Clock, GitCommitHorizontal, Link2, Lock, Star, Users } from '@lucide/vue'
+import { shallowRef } from 'vue'
+import { Clock, GitCommitHorizontal, Info, Link2, Lock, Star, Users } from '@lucide/vue'
 import { formatAgo } from '~/format'
 import Hint from './Hint.vue'
 
 // One quiet line of facts under the project's name: an icon and a value each, the words in the hints.
-defineProps<{ overview?: ProjectOverview | null; info?: RepoInfo }>()
+const { description } = defineProps<{ overview?: ProjectOverview | null; info?: RepoInfo; description?: string }>()
+// The repository's description leads the line, cut short; a click shows all of it.
+const SHORT = 32
+const whole = shallowRef(false)
 
 const item = 'inline-flex items-center gap-1.5 [&_svg]:size-3.5 [&_svg]:shrink-0'
 const plural = (n: number, one: string) => `${n.toLocaleString()} ${n === 1 ? one : `${one}s`}`
@@ -14,6 +18,19 @@ const plural = (n: number, one: string) => `${n.toLocaleString()} ${n === 1 ? on
 
 <template>
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="About this project">
+    <button
+      v-if="description"
+      type="button"
+      :class="[item, 'min-w-0 text-left hover:text-foreground', whole ? 'basis-full' : '']"
+      :aria-expanded="description.length > SHORT ? whole : undefined"
+      :title="whole ? undefined : description"
+      :disabled="description.length <= SHORT"
+      @click="whole = !whole"
+    >
+      <Info class="self-start mt-px" />
+      <span v-if="whole" class="whitespace-normal">{{ description }}</span>
+      <span v-else class="max-w-[30ch] truncate">{{ description }}</span>
+    </button>
     <Hint v-if="info?.private" text="Private repository">
       <span :class="item"><Lock /> Private</span>
     </Hint>

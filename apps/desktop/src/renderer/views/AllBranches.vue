@@ -18,12 +18,15 @@ const sources = computed<BranchSource[]>(() =>
     return { path: p.path, name: p.name, github: p.github, pulls: a?.pulls, canPush: a?.info.canPush === true }
   }),
 )
-const summary = computed(() => {
-  if (!total.value) return 'Every branch in your projects.'
+const tags = computed(() => {
+  if (!total.value) return []
   const { n, merged } = total.value
   const count = sources.value.length
-  const base = `${n} ${n === 1 ? 'branch' : 'branches'} across ${count} ${count === 1 ? 'project' : 'projects'}`
-  return merged ? `${base} · ${merged} already merged` : base
+  return [
+    `${n} ${n === 1 ? 'branch' : 'branches'}`,
+    `${count} ${count === 1 ? 'project' : 'projects'}`,
+    ...(merged ? [{ text: `${merged} merged`, tone: 'merged' as const }] : []),
+  ]
 })
 
 function counted(n: number, merged: number) {
@@ -41,7 +44,7 @@ watch(
 </script>
 
 <template>
-  <PageHeader title="All branches" :description="summary" />
+  <PageHeader title="All branches" :tags="tags" />
   <div class="px-8 py-6">
     <TableSkeleton v-if="!projects" :columns="['w-[86px]', 'w-12', 'w-14']" label="Loading branches" />
     <p v-else-if="!sources.length" class="text-muted-foreground">Add a project to see its branches here.</p>
