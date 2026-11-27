@@ -14,7 +14,8 @@ import { usePullView } from '~/pulls/view'
 // `mine` rows are your own pull requests: the pill says what they need from you instead of the review state.
 const props = defineProps<{ pull: PullItem; showRepo?: boolean; me?: string; mine?: boolean }>()
 const emit = defineEmits<{ open: []; changed: [] }>()
-const { shown } = usePullView()
+const { shown, density } = usePullView()
+const compact = computed(() => density.value === 'compact')
 
 type State = { text: string; tone: Tone; hint: string }
 const DECISION: Record<string, State> = {
@@ -53,13 +54,20 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
 
 <template>
   <li class="flex items-center gap-4 border-t border-accent px-4 transition-colors first:border-t-0 hover:bg-muted/60">
-    <button type="button" class="flex min-w-0 flex-1 items-center gap-4 py-2.5 text-left" @click="emit('open')">
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+    <button
+      type="button"
+      class="flex min-w-0 flex-1 items-center gap-4 text-left"
+      :class="compact ? 'py-1.5' : 'py-2.5'"
+      @click="emit('open')"
+    >
+      <div class="flex min-w-0 flex-1 flex-col" :class="compact ? 'gap-0.5' : 'gap-1'">
         <!-- Line one is the title alone, as GitHub lists them; where it lives goes underneath. -->
         <div class="flex min-w-0 items-center gap-2 overflow-hidden">
-          <span class="truncate text-[15px] leading-5 font-semibold" :class="pull.draft ? 'text-muted-foreground' : ''">{{
-            pull.title
-          }}</span>
+          <span
+            class="truncate font-semibold"
+            :class="[compact ? 'text-[13px] leading-[18px]' : 'text-[15px] leading-5', pull.draft ? 'text-muted-foreground' : '']"
+            >{{ pull.title }}</span
+          >
           <template v-if="shown.labels"><LabelChip v-for="l in pull.labels" :key="l.name" :label="l" class="@max-3xl:hidden" /></template>
           <Hint
             v-if="pull.mergeable === 'CONFLICTING' && !mine"
@@ -68,7 +76,10 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
             <StatusPill tone="danger">Conflicts</StatusPill>
           </Hint>
         </div>
-        <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap text-muted-foreground">
+        <div
+          class="flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-muted-foreground"
+          :class="compact ? 'text-[11px]' : 'text-xs'"
+        >
           <span class="flex shrink-0 items-center gap-1.5 tabular-nums" :title="`${pull.branch} into ${pull.base}`">
             <template v-if="showRepo"><ProjectIcon :project="repoProject" :size="14" />{{ pull.owner }}/{{ pull.repo }}</template
             >#{{ pull.number }}
@@ -88,8 +99,8 @@ const repoProject = computed(() => ({ name: props.pull.repo, github: { owner: pr
               ></Avatar
             >{{ pull.author?.login ?? 'ghost' }}
           </span>
-          <span v-if="shown.branch" class="truncate font-mono text-[11px] @max-3xl:hidden">{{ pull.branch }}</span>
-          <span class="shrink-0" :title="new Date(pull.updatedAt).toLocaleString()">{{ formatAgo(pull.updatedAt) }}</span>
+          <span v-if="shown.branch" class="min-w-[8ch] truncate font-mono text-[11px]">{{ pull.branch }}</span>
+          <span v-if="shown.time" class="shrink-0" :title="new Date(pull.updatedAt).toLocaleString()">{{ formatAgo(pull.updatedAt) }}</span>
           <span v-if="shown.size" class="shrink-0 tabular-nums"
             ><span class="text-success-fg">+{{ pull.additions }}</span> <span class="text-destructive">−{{ pull.deletions }}</span></span
           >
