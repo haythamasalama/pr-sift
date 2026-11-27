@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useMediaQuery } from '@vueuse/core'
 import ReviewPanel from '@/features/review/ReviewPanel.vue'
@@ -378,7 +378,18 @@ function onAdded(paths: string[]) {
 <template>
   <TooltipProvider :delay-duration="250">
     <div ref="appRoot" class="ps-root ps-app h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
-      <div v-if="!status" class="flex h-full items-center justify-center"><Spinner class="size-5" /></div>
+      <div v-if="!status" role="status" aria-label="Opening PR Sift" class="flex h-full">
+        <div class="flex w-[232px] shrink-0 flex-col gap-3 border-r border-border p-4">
+          <div class="flex items-center gap-2 pb-2"><AppLogo class="size-5" /><span class="text-sm font-semibold">PR Sift</span></div>
+          <Skeleton class="h-3 w-4/5" /><Skeleton class="h-3 w-3/5" />
+          <Skeleton class="mt-3 h-2 w-2/5" />
+          <Skeleton class="h-3 w-3/4" /><Skeleton class="h-3 w-3/5" /><Skeleton class="h-3 w-2/3" />
+        </div>
+        <div class="flex flex-1 flex-col gap-3 px-8 py-6">
+          <Skeleton class="h-4 w-36" /><Skeleton class="h-2.5 w-56" />
+          <Skeleton class="mt-4 h-32 w-full" />
+        </div>
+      </div>
       <Onboarding v-else-if="!status.signedIn || !onboarded" />
       <div v-else class="ps-app flex h-full">
         <nav

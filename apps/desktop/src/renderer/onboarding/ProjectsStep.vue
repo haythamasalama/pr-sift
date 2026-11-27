@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { appInfo } from '~/appInfo'
 import { bridge } from '~/bridge'
 import { errorText, shortPath } from '~/format'
@@ -12,6 +13,7 @@ import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import { useProjects } from '~/useProjects'
 import ProjectIcon from '~/components/ProjectIcon.vue'
 import Hint from '~/components/Hint.vue'
+import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
 
 // Projects are the repositories you choose; the folders only say where to look for them.
 const { settings, ready, add: addRoot, remove: removeRoot } = useProjectFolders()
@@ -117,7 +119,7 @@ const TIPS = [
         <div class="flex flex-col overflow-hidden rounded-lg border border-border">
           <div class="flex items-center gap-2 border-b border-border px-3 py-2">
             <span class="flex-1 text-xs text-muted-foreground">
-              <template v-if="looking">Looking for repositories…</template>
+              <Skeleton v-if="looking && !found.length" class="h-2.5 w-40" />
               <template v-else-if="found.length">{{ found.length }} repositories not added yet</template>
               <template v-else-if="added.length">Every repository here is added.</template>
               <template v-else>No Git repositories were found here.</template>
@@ -130,8 +132,8 @@ const TIPS = [
             <Search class="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input v-model="query" placeholder="Filter by name" class="h-8 rounded-none border-0 bg-transparent pl-8 shadow-none" />
           </div>
-          <div v-if="looking && !found.length" class="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-            <Spinner class="size-3.5" />
+          <div v-if="looking && !found.length" class="px-3 py-2">
+            <LinesSkeleton :rows="4" mark="box" label="Looking for repositories" />
           </div>
           <ul v-else-if="listed.length" class="max-h-64 overflow-y-auto">
             <li v-for="p in listed" :key="p">

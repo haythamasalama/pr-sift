@@ -30,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
-import { Spinner } from '@/components/ui/spinner'
 import Hint from './Hint.vue'
 import type { Branch } from '#shared/ipc'
 import type { PullItem } from '~/github'
@@ -42,6 +41,7 @@ import ConfirmDialog from './ConfirmDialog.vue'
 import Segmented from './Segmented.vue'
 import SectionLabel from './SectionLabel.vue'
 import StatusPill from './StatusPill.vue'
+import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
 
 const short = usePathText()
 
@@ -247,7 +247,7 @@ useRefresh(load)
         </DropdownMenu>
 
         <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load"
-          ><Spinner v-if="loading" /><RefreshCw v-else
+          ><RefreshCw :class="{ 'animate-spin': loading }"
         /></Button>
       </span>
     </div>
@@ -255,7 +255,7 @@ useRefresh(load)
     <Alert v-if="error" variant="destructive"
       ><CircleAlert /><AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription></Alert
     >
-    <div v-if="!branches" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Reading branches…</div>
+    <TableSkeleton v-if="!branches" :columns="['w-[86px]', 'w-12', 'w-14']" label="Loading branches" />
     <p v-else-if="!shown.length" class="text-muted-foreground">No branches match.</p>
     <div v-else class="@container overflow-hidden rounded-lg border border-border">
       <div class="flex h-9 items-center gap-4 border-b border-border px-4">

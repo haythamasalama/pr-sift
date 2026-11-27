@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { bridge } from '~/bridge'
 import { errorText } from '~/format'
+import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
 
 const short = usePathText()
 
@@ -82,7 +83,7 @@ async function add(paths = [...selected]) {
         <Input v-model="query" class="pl-8" placeholder="Filter repositories" />
       </div>
       <div class="min-h-40 flex-1 overflow-y-auto rounded-md border border-border">
-        <div v-if="loading" class="flex items-center gap-2 p-4 text-muted-foreground"><Spinner /> Looking in your folders…</div>
+        <div v-if="loading" class="p-4"><LinesSkeleton :rows="5" mark="box" label="Looking in your folders" /></div>
         <p v-else-if="!shown.length" class="p-4 text-muted-foreground">
           {{ found.length ? 'Nothing matches.' : 'No repositories found yet. Browse to a folder to add one.' }}
         </p>

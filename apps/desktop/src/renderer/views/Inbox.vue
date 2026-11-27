@@ -3,7 +3,6 @@ import { computed, onMounted, shallowRef } from 'vue'
 import { CircleAlert, RefreshCw } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import { formatAgo } from '~/format'
 import { useAuth } from '~/useAuth'
 import { useInbox } from '~/useInbox'
@@ -15,6 +14,7 @@ import PullFilterMenu from '~/components/PullFilterMenu.vue'
 import PullViewMenu from '~/components/PullViewMenu.vue'
 import { NO_FILTERS, matchesFilters, type PullFilters } from '~/pulls/filters'
 import SectionLabel from '~/components/SectionLabel.vue'
+import PullListSkeleton from '~/components/skeletons/PullListSkeleton.vue'
 
 const { status } = useAuth()
 const { inbox, loading, error, loadedAt, load } = useInbox()
@@ -52,7 +52,7 @@ onMounted(() => {
     <span v-if="loadedAt" class="text-xs text-muted-foreground">Updated {{ formatAgo(loadedAt) }}</span>
 
     <Button variant="ghost" size="icon" class="text-muted-foreground" aria-label="Refresh" :disabled="loading" @click="load">
-      <Spinner v-if="loading" /><RefreshCw v-else />
+      <RefreshCw :class="{ 'animate-spin': loading }" />
     </Button>
   </PageHeader>
 
@@ -60,7 +60,7 @@ onMounted(() => {
     <Alert v-if="error" variant="destructive"
       ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
     >
-    <div v-if="!inbox && loading" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
+    <PullListSkeleton v-if="!inbox && loading" />
 
     <template v-if="inbox">
       <p v-if="!inbox.review.length && !inbox.mine.length" class="text-muted-foreground">You’re all caught up.</p>

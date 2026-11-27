@@ -48,6 +48,7 @@ import Segmented from '~/components/Segmented.vue'
 import StatusPill from '~/components/StatusPill.vue'
 import SectionLabel from '~/components/SectionLabel.vue'
 import type { PullItem } from '~/github'
+import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
 
 // With `projectPath`, shows that one project; without it, every repository in the project folders.
 const { projectPath: only, pulls = [] } = defineProps<{ projectPath?: string; pulls?: PullItem[] }>()
@@ -335,7 +336,7 @@ useRefresh(scan)
       </Transition>
 
       <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Rescan" :disabled="scanning" @click="scan"
-        ><Spinner v-if="scanning" /><RefreshCw v-else
+        ><RefreshCw :class="{ 'animate-spin': scanning }"
       /></Button>
 
       <Button v-if="only" size="sm" variant="outline" @click="dialog = { repo: only, worktree: null }"><Plus /> New worktree</Button>
@@ -346,7 +347,7 @@ useRefresh(scan)
       <AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription>
     </Alert>
 
-    <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking for repositories…</div>
+    <TableSkeleton v-if="scanning && !scanned" label="Looking for worktrees" />
 
     <p v-if="scanned && !withWorktrees.length && !only && filter === 'all' && !query" class="text-muted-foreground">
       None of your {{ repos.length }} repositories has extra worktrees.

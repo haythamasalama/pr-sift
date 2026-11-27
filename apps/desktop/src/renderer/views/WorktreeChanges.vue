@@ -29,7 +29,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Spinner } from '@/components/ui/spinner'
 import FileList from '@/features/diff/FileList.vue'
 import FileTree from '@/features/tree/FileTree.vue'
 import FilterBar from '@/features/filters/FilterBar.vue'
@@ -54,6 +53,8 @@ import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import Hint from '~/components/Hint.vue'
 import PathText from '~/components/PathText.vue'
 import Segmented from '~/components/Segmented.vue'
+import { Skeleton } from '@/components/ui/skeleton'
+import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
 
 // A worktree read the way PR Sift reads a pull request: the same header, type filters, tree and diff cards.
 // What is shown is the worktree's own: uncommitted changes, the whole branch, or one of its commits.
@@ -527,8 +528,22 @@ useRefresh(load)
       ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
     >
 
-    <div v-if="loading && !data" class="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
-      <Spinner /> Reading the changes…
+    <div
+      v-if="loading && !data"
+      role="status"
+      aria-label="Loading the changes"
+      class="grid min-h-0 flex-1"
+      :style="{ gridTemplateColumns: compact ? '1fr' : `${sidebarWidth}px 1fr` }"
+    >
+      <aside v-if="!compact" class="border-r border-border p-3"><LinesSkeleton :rows="8" mark="box" /></aside>
+      <div class="flex flex-col gap-4 p-4">
+        <div v-for="h in [160, 240, 120]" :key="h" class="overflow-hidden rounded-lg border border-border">
+          <div class="flex items-center gap-2 border-b border-border px-3 py-2.5">
+            <Skeleton class="size-3.5 rounded-[3px]" /><Skeleton class="h-3 w-56" />
+          </div>
+          <Skeleton class="rounded-none" :style="{ height: `${h}px` }" />
+        </div>
+      </div>
     </div>
 
     <div

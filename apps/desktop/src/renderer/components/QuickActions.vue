@@ -29,6 +29,7 @@ import { useQuickMerge } from '@/features/quick-merge/useQuickMerge'
 import type { PullItem } from '~/github'
 import { useAuth } from '~/useAuth'
 import Hint from './Hint.vue'
+import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
 
 // Approve and merge straight from a list, with the same buttons, rules and words as the review in the extension.
 // In a list each button shows only when you can use it, so rows stay calm; the review page keeps both in place, disabled with a reason.
@@ -174,9 +175,7 @@ async function confirm() {
             <p class="font-medium">{{ action }}</p>
             <p class="text-xs text-muted-foreground">#{{ pull.number }} goes into {{ pull.base }} with this commit.</p>
           </div>
-          <div v-if="loading && !plan" class="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-            <Spinner class="size-3.5" /> Asking GitHub…
-          </div>
+          <LinesSkeleton v-if="loading && !plan" label="Checking what GitHub allows" />
           <template v-else-if="plan">
             <div v-if="plan.method !== 'rebase'" class="flex flex-col gap-1.5 rounded-md border bg-muted p-2">
               <p class="text-xs font-medium break-words">{{ plan.title }}</p>

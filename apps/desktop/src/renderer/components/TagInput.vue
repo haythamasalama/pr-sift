@@ -3,7 +3,7 @@ import { computed, shallowRef, watch } from 'vue'
 import { X } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import LinesSkeleton from '~/components/skeletons/LinesSkeleton.vue'
 
 export interface Suggestion {
   value: string
@@ -188,9 +188,7 @@ const chipList = computed(() => (chips && !text.value ? matches.value.slice(0, 5
         <span class="truncate" :class="{ 'font-mono text-xs': mono }">{{ s.value }}</span>
         <span v-if="s.detail" class="truncate text-xs text-muted-foreground">{{ s.detail }}</span>
       </li>
-      <li v-if="searching" class="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground">
-        <Spinner class="size-3" /> Looking on GitHub…
-      </li>
+      <li v-if="searching" class="px-2 py-1"><LinesSkeleton :rows="2" mark="dot" label="Looking on GitHub" /></li>
     </ul>
 
     <div v-if="chipList.length" class="flex flex-wrap items-center gap-1.5">

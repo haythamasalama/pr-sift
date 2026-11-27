@@ -70,3 +70,25 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
 }
+
+/* Skeletons shimmer instead of pulsing: a soft light passes over the grey shapes. */
+.ps-root [data-slot='skeleton'] {
+  animation: ps-shimmer 1.4s ease-in-out infinite;
+  background-color: var(--accent);
+  background-image: linear-gradient(90deg, transparent 0, color-mix(in srgb, var(--foreground) 7%, transparent) 50%, transparent 100%);
+  background-repeat: no-repeat;
+  background-size: 240px 100%;
+}
+@keyframes ps-shimmer {
+  from {
+    background-position: -240px 0;
+  }
+  to {
+    background-position: calc(100% + 240px) 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-root [data-slot='skeleton'] {
+    animation: none;
+  }
+}

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Spinner } from '@/components/ui/spinner'
 import NoticeBar from '@/components/NoticeBar.vue'
 import type { Branch, Project, WorktreeDetails } from '#shared/ipc'
 import { bridge } from '~/bridge'
@@ -22,6 +21,7 @@ import Hint from '~/components/Hint.vue'
 import PageHeader from '~/components/PageHeader.vue'
 import Segmented from '~/components/Segmented.vue'
 import SectionLabel from '~/components/SectionLabel.vue'
+import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
 
 const short = usePathText()
 
@@ -219,7 +219,7 @@ useRefresh(scan)
 <template>
   <PageHeader title="Cleanup" description="Worktrees and branches you can safely remove, across all projects.">
     <Button size="icon-sm" variant="ghost" class="text-muted-foreground" aria-label="Look again" :disabled="scanning" @click="scan"
-      ><Spinner v-if="scanning" /><RefreshCw v-else
+      ><RefreshCw :class="{ 'animate-spin': scanning }"
     /></Button>
   </PageHeader>
 
@@ -247,7 +247,7 @@ useRefresh(scan)
       ><CircleAlert /><AlertDescription class="whitespace-pre-line">{{ error }}</AlertDescription></Alert
     >
 
-    <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking through your projects…</div>
+    <TableSkeleton v-if="scanning && !scanned" label="Looking through your projects" />
     <p v-else-if="scanned && !shown.length" class="text-muted-foreground">
       Nothing to clean up. Every worktree and branch is still in use.
     </p>

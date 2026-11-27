@@ -61,6 +61,7 @@ import Hint from '~/components/Hint.vue'
 import RepoPicker from '~/components/RepoPicker.vue'
 import SectionLabel from '~/components/SectionLabel.vue'
 import TagInput, { type Suggestion } from '~/components/TagInput.vue'
+import CardsSkeleton from '~/components/skeletons/CardsSkeleton.vue'
 
 const { projects } = useProjects()
 const status = shallowRef<AutoApproveStatus | null>(null)
@@ -620,11 +621,11 @@ useRefresh(async () => {
                 aria-label="Refresh"
                 :disabled="previewing"
                 @click="runPreview(true)"
-                ><Spinner v-if="previewing" /><RefreshCw v-else
+                ><RefreshCw :class="{ 'animate-spin': previewing }"
               /></Button>
             </div>
             <p v-if="previewError" class="text-xs text-destructive">{{ previewError }}</p>
-            <div v-else-if="!evaluations" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
+            <CardsSkeleton v-else-if="!evaluations" label="Checking open pull requests" />
             <p v-else-if="!forRule.yes.length && !forRule.no.length" class="text-muted-foreground">
               No open pull requests {{ rule.repos.length ? 'in these repositories' : 'waiting for your review' }} right now.
             </p>
@@ -859,7 +860,7 @@ useRefresh(async () => {
         }}</SheetDescription>
         <div class="flex items-center gap-2 pt-2">
           <Button size="sm" variant="outline" :disabled="status?.running || !draft.enabled" @click="runNow"
-            ><Spinner v-if="status?.running" /><RefreshCw v-else /> Look now</Button
+            ><RefreshCw :class="{ 'animate-spin': status?.running }" /> Look now</Button
           >
           <span class="flex-1" />
           <Button

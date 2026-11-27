@@ -15,6 +15,7 @@ import { usePathText, useProjectFolders } from '~/useProjectFolders'
 import ConfirmDialog from '~/components/ConfirmDialog.vue'
 import NoFolders from '~/components/NoFolders.vue'
 import PageHeader from '~/components/PageHeader.vue'
+import TableSkeleton from '~/components/skeletons/TableSkeleton.vue'
 
 const FOLDER_MIN = 50 * 1024 * 1024
 
@@ -185,7 +186,7 @@ onMounted(async () => {
       </ToggleGroup>
     </div>
 
-    <div v-if="scanning && !scanned" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Looking through your folders…</div>
+    <TableSkeleton v-if="scanning && !scanned" label="Looking through your folders" />
 
     <p v-else-if="scanned && !shown.length && !measuring" class="text-muted-foreground">Nothing over 50 MB to clean up here.</p>
 

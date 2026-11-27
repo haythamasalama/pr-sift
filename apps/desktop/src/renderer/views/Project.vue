@@ -20,7 +20,6 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
-import { Spinner } from '@/components/ui/spinner'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +50,7 @@ import CountBadge from '~/components/CountBadge.vue'
 import PathText from '~/components/PathText.vue'
 import Worktrees from './Worktrees.vue'
 import HiddenFiles from './HiddenFiles.vue'
+import PullListSkeleton from '~/components/skeletons/PullListSkeleton.vue'
 
 const { find, remove } = useProjects()
 const { status } = useAuth()
@@ -342,7 +342,7 @@ async function confirmRemove() {
         <Alert v-if="error" variant="destructive"
           ><CircleAlert /><AlertDescription>{{ error }}</AlertDescription></Alert
         >
-        <div v-if="loading && !activity" class="flex items-center gap-2 text-muted-foreground"><Spinner /> Asking GitHub…</div>
+        <PullListSkeleton v-if="loading && !activity" />
       </template>
 
       <template v-if="projectTab === 'pulls' && activity">
@@ -364,7 +364,7 @@ async function confirmRemove() {
               :disabled="loading"
               @click="load(true)"
             >
-              <Spinner v-if="loading" /><RefreshCw v-else />
+              <RefreshCw :class="{ 'animate-spin': loading }" />
             </Button>
             <PullViewMenu />
           </span>
