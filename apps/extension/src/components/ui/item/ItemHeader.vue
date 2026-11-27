@@ -8,10 +8,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
-    data-slot="item-header"
-    :class="cn('gap-2 flex basis-full items-center justify-between', props.class)"
-  >
+  <div data-slot="item-header" :class="cn('gap-2 flex basis-full items-center justify-between', props.class)">
     <slot />
   </div>
 </template>

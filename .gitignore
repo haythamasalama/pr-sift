@@ -8,3 +8,5 @@ coverage
 apps/site/public/
 
 apps/site/pages/
+apps/desktop/out/
+apps/desktop/release/

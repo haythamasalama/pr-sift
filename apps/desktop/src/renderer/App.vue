@@ -1,0 +1,791 @@
+<script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
+import {
+  BadgeCheck,
+  ChevronRight,
+  SlidersHorizontal,
+  FolderGit2,
+  GripVertical,
+  Inbox,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Settings,
+  Trash2,
+  GitBranch,
+  GitPullRequest,
+} from '@lucide/vue'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { useMediaQuery } from '@vueuse/core'
+import ReviewPanel from '@/features/review/ReviewPanel.vue'
+import { UI_SCALES, stepStop, useAppearance } from '@/features/appearance/useAppearance'
+import { portalTargetKey } from '@/lib/portal'
+import { prKey } from '@/lib/types'
+import { useAuth } from './useAuth'
+import { useProjects } from './useProjects'
+import {
+  PROJECT_GROUPINGS,
+  PROJECT_SORTS,
+  useProjectOrder,
+  type ProjectGroup,
+  type ProjectGrouping,
+  type ProjectSort,
+} from './useProjectOrder'
+import { useInbox } from './useInbox'
+import { useLive } from './useLive'
+import { useDragSort } from './useDragSort'
+import { bridge } from './bridge'
+import type { AutoApproveStatus } from '#shared/ipc'
+import { goBack, openProject, openReview, project, review, reviewFocus, stepReview, view, worktree, type View } from './navigation'
+import { refreshNow } from './useLive'
+import ReviewNav from './components/ReviewNav.vue'
+import OpenLinkDialog from './components/OpenLinkDialog.vue'
+import ShortcutsDialog from './shortcuts/ShortcutsDialog.vue'
+import type { MenuCommand } from '#shared/ipc'
+import { parsePullLink } from '#shared/links'
+import ShareMenu from './components/ShareMenu.vue'
+import Onboarding from './onboarding/Onboarding.vue'
+import { useOnboarding } from './onboarding/useOnboarding'
+import AppLogo from './components/AppLogo.vue'
+import InboxView from './views/Inbox.vue'
+import AllPulls from './views/AllPulls.vue'
+import AllBranches from './views/AllBranches.vue'
+import { useEverywhere } from './everywhere'
+import ProjectView from './views/Project.vue'
+import WorktreeChanges from './views/WorktreeChanges.vue'
+import AutoApprove from './views/AutoApprove.vue'
+import Worktrees from './views/Worktrees.vue'
+import Cleanup from './views/Cleanup.vue'
+import SettingsView from './views/Settings.vue'
+import Account from './views/Account.vue'
+import AddProjectDialog from './components/AddProjectDialog.vue'
+import ProjectIcon from './components/ProjectIcon.vue'
+import SectionLabel from './components/SectionLabel.vue'
+import CountBadge from './components/CountBadge.vue'
+import Hint from './components/Hint.vue'
+import { anyColorHex } from './color'
+
+const { theme, dark, rootAttrs, uiScale, setUiScale } = useAppearance()
+// Interface size zooms the whole window. ⌘+ and ⌘− step through the same stops as the setting.
+watch(uiScale, (percent) => void bridge.invoke('window:zoom', percent), { immediate: true })
+// The title bar and window frame follow the theme chosen here, not only the system's.
+const rootEl = useTemplateRef<HTMLElement>('appRoot')
+watch(
+  [theme, dark, rootAttrs, rootEl],
+  async () => {
+    await nextTick()
+    const bg = rootEl.value ? anyColorHex(getComputedStyle(rootEl.value).backgroundColor) : ''
+    void bridge.invoke('window:appearance', theme.value, bg)
+  },
+  { immediate: true },
+)
+const { status } = useAuth()
+const { done: onboarded, adopt } = useOnboarding()
+// The first answer about the sign-in tells whether this is someone who used the app before the walk-through.
+let adopted = false
+watch(
+  status,
+  (s) => {
+    if (!s || adopted) return
+    adopted = true
+    adopt(s.signedIn)
+  },
+  { immediate: true },
+)
+const { projects } = useProjects()
+const {
+  sort,
+  groups,
+  grouping,
+  folded,
+  showBranch,
+  isDefault: orderIsDefault,
+  setSort,
+  setGrouping,
+  setShowBranch,
+  reset: resetOrder,
+  toggleFolded,
+  markOpened,
+  place: placeProjects,
+} = useProjectOrder(projects)
+const sortLabel = computed(() => PROJECT_SORTS.find((o) => o.value === sort.value)?.label)
+const groupLabel = computed(() => PROJECT_GROUPINGS.find((o) => o.value === grouping.value)?.label)
+watch(project, (path) => path && markOpened(path))
+// Drag any project to put it where you want; the others slide out of the way, and the order switches to Custom.
+const projectList = useTemplateRef<HTMLElement>('projectList')
+// A repository with several folders moves as one block.
+const groupByKey = computed(() => new Map(groups.value.map((g) => [g.key, g])))
+const drag = useDragSort({
+  items: () => groups.value.map((g) => g.key),
+  list: () => projectList.value,
+  onDrop: (keys) => placeProjects(keys.flatMap((k) => groupByKey.value.get(k)?.projects.map((p) => p.path) ?? [])),
+})
+// Grouped by owner, a whole owner can be dragged by its heading; its projects move with it.
+const ownerKeys = computed(() => [...new Set(groups.value.map((g) => g.owner || '~'))])
+const ownerDrag = useDragSort({
+  items: () => ownerKeys.value,
+  list: () => projectList.value,
+  attr: 'ownerSortId',
+  onDrop: (owners) =>
+    placeProjects(owners.flatMap((o) => groups.value.filter((g) => (g.owner || '~') === o).flatMap((g) => g.projects.map((p) => p.path)))),
+})
+const shownGroups = computed(() => {
+  const owners = ownerDrag.preview.value
+  if (owners) return owners.flatMap((o) => groups.value.filter((g) => (g.owner || '~') === o))
+  const list = drag.preview.value ? drag.preview.value.flatMap((key) => groupByKey.value.get(key) ?? []) : groups.value
+  if (grouping.value !== 'owner') return list
+  // A project dragged among another owner's projects stays under its own owner.
+  const at = new Map(ownerKeys.value.map((o, i) => [o, i]))
+  return [...list].sort((a, b) => at.get(a.owner || '~')! - at.get(b.owner || '~')!)
+})
+// Grouped by owner, each owner gets a heading that folds its projects away. The rail shows them flat.
+type SidebarRow = ProjectGroup & { heading?: { owner: string; title: string; count: number; folded: boolean } }
+const sidebarRows = computed<SidebarRow[]>(() => {
+  const list = shownGroups.value
+  if (grouping.value !== 'owner' || collapsed.value) return list
+  const rows: SidebarRow[] = []
+  list.forEach((g, i) => {
+    const owner = g.owner ?? ''
+    const key = `owner:${owner}`
+    const isFolded = folded.value.includes(key)
+    if (i === 0 || list[i - 1]!.owner !== owner) {
+      const count = list.filter((x) => x.owner === owner).reduce((n, x) => n + x.projects.length, 0)
+      const title = g.projects[0]!.github?.owner ?? 'Not on GitHub'
+      rows.push({ key, title, projects: [g.projects[0]!], owner, heading: { owner, title, count, folded: isFolded } })
+    }
+    if (!isFolded) rows.push(g)
+  })
+  return rows
+})
+// With a review open beside the sidebar, the sidebar marks the project the pull request belongs to.
+const reviewProject = computed(() => {
+  const pr = review.value
+  if (!pr) return null
+  const same = (a?: string, b?: string) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
+  return projects.value?.find((p) => same(p.github?.owner, pr.owner) && same(p.github?.repo, pr.repo))?.path ?? null
+})
+const isOpenProject = (path: string) =>
+  reviewProject.value ? reviewProject.value === path : (view.value === 'project' || view.value === 'worktree') && project.value === path
+const at = (v: View) => !reviewProject.value && view.value === v
+// Choosing a place in the sidebar leaves the review for it.
+function onNavClick(e: MouseEvent) {
+  if (review.value && (e.target as Element | null)?.closest('[data-nav]')) review.value = null
+}
+// The grip says a row can be dragged: always faint in Custom, on hover otherwise, solid while it is carried.
+// The grip stays out of the way: it fades in on the row under the pointer (or with keyboard focus),
+// stays while that row is dragged, and every other grip hides during a drag.
+const gripClass = (key: string) =>
+  drag.dragging.value === key || ownerDrag.dragging.value === key
+    ? 'opacity-100 translate-x-0'
+    : drag.dragging.value || ownerDrag.dragging.value !== null
+      ? 'opacity-0 translate-x-1'
+      : 'opacity-0 translate-x-1 group-hover/grip:translate-x-0 group-hover/grip:opacity-100 group-focus-visible/grip:translate-x-0 group-focus-visible/grip:opacity-100'
+function clickProject(path: string) {
+  if (!drag.wasDrag()) openProject(path)
+}
+
+// The sidebar is as wide as you drag it, and remembers that between launches.
+const WIDTH_KEY = 'ps:sidebar-width'
+const WIDTH = { min: 180, max: 420, normal: 232 }
+const readWidth = () => {
+  try {
+    const n = Number(localStorage.getItem(WIDTH_KEY))
+    return n >= WIDTH.min && n <= WIDTH.max ? n : WIDTH.normal
+  } catch {
+    return WIDTH.normal
+  }
+}
+const sidebarWidth = shallowRef(readWidth())
+const resizing = shallowRef(false)
+function setWidth(n: number) {
+  sidebarWidth.value = Math.round(Math.max(WIDTH.min, Math.min(WIDTH.max, n)))
+  try {
+    localStorage.setItem(WIDTH_KEY, String(sidebarWidth.value))
+  } catch {
+    // Nothing to remember without storage.
+  }
+}
+function startResize(e: PointerEvent) {
+  if (e.button !== 0) return
+  e.preventDefault()
+  const handle = e.currentTarget as HTMLElement
+  handle.setPointerCapture(e.pointerId)
+  const from = e.clientX - sidebarWidth.value
+  resizing.value = true
+  const move = (ev: PointerEvent) => {
+    // Dragging well past the narrowest width folds it into the rail.
+    if (ev.clientX - from < WIDTH.min - 80) {
+      collapsed.value = true
+      stop()
+      return
+    }
+    setWidth(ev.clientX - from)
+  }
+  const stop = () => {
+    resizing.value = false
+    handle.removeEventListener('pointermove', move)
+    handle.removeEventListener('pointerup', stop)
+  }
+  handle.addEventListener('pointermove', move)
+  handle.addEventListener('pointerup', stop)
+}
+function resizeKey(e: KeyboardEvent) {
+  if (e.key === 'ArrowLeft') setWidth(sidebarWidth.value - 16)
+  else if (e.key === 'ArrowRight') setWidth(sidebarWidth.value + 16)
+  else return
+  e.preventDefault()
+}
+const portal = useTemplateRef<HTMLElement>('portal')
+provide(portalTargetKey, portal)
+const adding = shallowRef(false)
+const { inbox, loadedAt: inboxAt, load: loadInbox } = useInbox()
+// The count in the sidebar and the Needs you page stay current on their own.
+useLive(
+  () => status.value?.signedIn && loadInbox(),
+  () => inboxAt.value,
+)
+const waitingCount = computed(() => inbox.value?.review.length ?? 0)
+const autoApprove = shallowRef<AutoApproveStatus | null>(null)
+const autoMode = computed(() => {
+  const c = autoApprove.value?.config
+  if (!c?.enabled || !c.rules.some((r) => r.enabled)) return null
+  return c.dryRun ? { text: 'Dry run', cls: 'text-attention' } : { text: 'On', cls: 'text-success-fg' }
+})
+let offAuto: (() => void) | undefined
+watch(
+  () => status.value?.signedIn,
+  async (signedIn) => {
+    if (!signedIn) return
+    void loadInbox()
+    try {
+      autoApprove.value = await bridge.invoke('autoapprove:status')
+    } catch {
+      autoApprove.value = null
+    }
+  },
+  { immediate: true },
+)
+
+// One place for each kind of thing, across every project, with its total.
+const everywhere = useEverywhere()
+const EVERYWHERE = computed<{ id: View; label: string; title: string; icon: typeof FolderGit2; count?: number }[]>(() => [
+  {
+    id: 'pulls',
+    label: 'Pull requests',
+    title: 'All pull requests',
+    icon: GitPullRequest,
+    count: everywhere.loaded.value ? everywhere.pulls.value.length : undefined,
+  },
+  { id: 'branches', label: 'Branches', title: 'All branches', icon: GitBranch, count: everywhere.branchTotal.value },
+  { id: 'worktrees', label: 'Worktrees', title: 'All worktrees', icon: FolderGit2, count: everywhere.worktreeCount.value },
+])
+watch(
+  () => [projects.value, status.value?.signedIn] as const,
+  ([list, signedIn]) => {
+    if (!list || !signedIn) return
+    everywhere.seedPulls(list)
+    void everywhere.countBranches(list)
+    void everywhere.countWorktrees(list)
+  },
+  { immediate: true },
+)
+const TOOLS: { id: View; label: string; icon: typeof FolderGit2 }[] = [
+  { id: 'cleanup', label: 'Cleanup', icon: Trash2 },
+  { id: 'settings', label: 'Settings', icon: Settings },
+]
+
+// The sidebar folds into a rail of icons, and remembers that between launches.
+const COLLAPSED_KEY = 'ps:sidebar-collapsed'
+const readCollapsed = () => {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const collapsed = shallowRef(readCollapsed())
+watch(collapsed, (value) => {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, value ? '1' : '0')
+  } catch {
+    // Nothing to remember without storage.
+  }
+})
+
+const item = 'flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left transition-colors'
+const rail = computed(() => (collapsed.value ? 'justify-center px-0!' : ''))
+// Grouped by owner, the projects sit indented under their owner's heading.
+const nested = computed(() => (grouping.value === 'owner' && !collapsed.value ? 'pl-[30px]' : ''))
+const active = (on: boolean) =>
+  on ? 'bg-accent font-semibold text-foreground' : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+
+// Escape closes the review, unless a dialog or menu inside it is open and takes the key.
+function onKey(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || !review.value) return
+  if (document.querySelector('[role="dialog"], [role="menu"]')) return
+  review.value = null
+}
+// Pasting a pull request link anywhere outside a text field opens it, like typing it into an address bar.
+function onPaste(e: ClipboardEvent) {
+  const target = e.target as HTMLElement | null
+  if (target?.closest('input, textarea, [contenteditable="true"]')) return
+  const pull = parsePullLink(e.clipboardData?.getData('text/plain') ?? '')
+  if (!pull) return
+  e.preventDefault()
+  openReview(pull)
+}
+// A small window gives the review all of it; the sidebar stays beside it only when there is room for both.
+const roomy = useMediaQuery('(min-width: 1000px)')
+const linkOpen = shallowRef(false)
+const shortcutsOpen = shallowRef(false)
+const typing = () => !!document.activeElement?.closest('input, textarea, [contenteditable="true"]')
+// What the menu bar's items do here. Each has its shortcut there: ⌘, for Settings, ⌘1 to ⌘4 for the views, and so on.
+let waitingCommand: MenuCommand | null = null
+watch(status, () => {
+  if (status.value && waitingCommand) onMenu(waitingCommand)
+  waitingCommand = null
+})
+function onMenu(command: MenuCommand) {
+  // The interface size works on every screen, the sign-in too.
+  if (command === 'zoom:in' || command === 'zoom:out')
+    return void setUiScale(stepStop(UI_SCALES, uiScale.value, command === 'zoom:in' ? 1 : -1))
+  if (command === 'zoom:reset') return void setUiScale(100)
+  // A command that arrives with a new window waits for the sign-in check.
+  if (!status.value) {
+    waitingCommand = command
+    return
+  }
+  if (!status.value.signedIn || !onboarded.value) return
+  const go = (v: View) => {
+    review.value = null
+    view.value = v
+  }
+  switch (command) {
+    case 'settings':
+    case 'account':
+      return go(command)
+    case 'view:inbox':
+    case 'view:autoapprove':
+    case 'view:pulls':
+    case 'view:branches':
+    case 'view:worktrees':
+    case 'view:cleanup':
+      return go(command.slice(5) as View)
+    case 'add-project':
+      adding.value = true
+      return
+    case 'open-link':
+      linkOpen.value = true
+      return
+    case 'shortcuts':
+      shortcutsOpen.value = true
+      return
+    case 'refresh':
+      return refreshNow()
+    case 'toggle-sidebar':
+      if (review.value && reviewFocus.value) reviewFocus.value = false
+      else collapsed.value = !collapsed.value
+      return
+    case 'focus':
+      if (review.value) reviewFocus.value = !reviewFocus.value
+      return
+    case 'back':
+      if (typing()) return
+      if (review.value) review.value = null
+      else goBack()
+      return
+    case 'pull:previous':
+    case 'pull:next':
+      // Not while writing: leaving would drop the comment being typed.
+      if (!typing()) stepReview(command === 'pull:next' ? 1 : -1)
+      return
+    case 'find': {
+      // The review's file search when a review is open, otherwise the page's filter.
+      const scope = review.value ? document.querySelector('[data-review]') : document.querySelector('.ps-root main')
+      const field = scope?.querySelector<HTMLInputElement>(
+        'input[aria-label^="Filter"], input[placeholder^="Search"], input[placeholder^="Filter"]',
+      )
+      field?.focus()
+      field?.select()
+    }
+  }
+}
+let offPull: (() => void) | undefined
+let offMenu: (() => void) | undefined
+onMounted(() => {
+  offMenu = bridge.on('menu:command', onMenu)
+  document.addEventListener('keydown', onKey)
+  document.addEventListener('paste', onPaste)
+  offAuto = bridge.on('autoapprove:changed', (next) => (autoApprove.value = next))
+  // A prsift:// link, from the browser or a teammate, opens its pull request here.
+  offPull = bridge.on('pull:open', (pull) => openReview(pull))
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  document.removeEventListener('paste', onPaste)
+  offAuto?.()
+  offPull?.()
+  offMenu?.()
+})
+
+function onAdded(paths: string[]) {
+  if (paths.length === 1) openProject(paths[0]!, 'pulls')
+}
+</script>
+
+<template>
+  <TooltipProvider :delay-duration="250">
+    <div ref="appRoot" class="ps-root ps-app h-full bg-background text-foreground" :class="{ dark }" v-bind="rootAttrs">
+      <div v-if="!status" role="status" aria-label="Opening PR Sift" class="flex h-full">
+        <div class="flex w-[232px] shrink-0 flex-col gap-3 border-r border-border p-4">
+          <div class="flex items-center gap-2 pb-2"><AppLogo class="size-5" /><span class="text-sm font-semibold">PR Sift</span></div>
+          <Skeleton class="h-3 w-4/5" /><Skeleton class="h-3 w-3/5" />
+          <Skeleton class="mt-3 h-2 w-2/5" />
+          <Skeleton class="h-3 w-3/4" /><Skeleton class="h-3 w-3/5" /><Skeleton class="h-3 w-2/3" />
+        </div>
+        <div class="flex flex-1 flex-col gap-3 px-8 py-6">
+          <Skeleton class="h-4 w-36" /><Skeleton class="h-2.5 w-56" />
+          <Skeleton class="mt-4 h-32 w-full" />
+        </div>
+      </div>
+      <Onboarding v-else-if="!status.signedIn || !onboarded" />
+      <div v-else class="ps-app flex h-full">
+        <nav
+          class="relative flex shrink-0 flex-col gap-0.5 border-r border-border bg-background py-4"
+          :class="[collapsed ? 'w-[56px] px-2' : 'px-3', resizing ? '' : 'transition-[width] duration-150']"
+          :style="collapsed ? undefined : { width: `${sidebarWidth}px` }"
+          aria-label="Sections"
+          @click.capture="onNavClick"
+        >
+          <div
+            v-if="!collapsed"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the sidebar"
+            :aria-valuenow="sidebarWidth"
+            :aria-valuemin="WIDTH.min"
+            :aria-valuemax="WIDTH.max"
+            tabindex="0"
+            title="Drag to resize · double-click to reset"
+            class="group absolute inset-y-0 -right-1 z-10 w-2 cursor-col-resize outline-none"
+            @pointerdown="startResize"
+            @dblclick="setWidth(WIDTH.normal)"
+            @keydown="resizeKey"
+          >
+            <span
+              class="absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              :class="resizing ? 'opacity-100' : ''"
+            />
+          </div>
+          <div class="flex items-center gap-2.5 pt-1 pb-[18px]" :class="collapsed ? 'justify-center' : 'pl-2.5'">
+            <template v-if="!collapsed">
+              <AppLogo class="size-[22px]" />
+              <span class="text-sm font-semibold">PR Sift</span>
+            </template>
+            <button
+              type="button"
+              class="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              :class="collapsed ? '' : 'ml-auto'"
+              :aria-label="collapsed ? 'Show the sidebar' : 'Hide the sidebar'"
+              :aria-expanded="!collapsed"
+              @click="collapsed = !collapsed"
+            >
+              <PanelLeftOpen v-if="collapsed" class="size-4" /><PanelLeftClose v-else class="size-4" />
+            </button>
+          </div>
+          <Hint text="Needs you" side="right" :disabled="!collapsed">
+            <button type="button" :class="[item, rail, active(at('inbox'))]" aria-label="Needs you" data-nav @click="view = 'inbox'">
+              <span class="relative flex"
+                ><Inbox class="size-4" /><span
+                  v-if="collapsed && waitingCount"
+                  class="absolute -top-1 -right-1 size-2 rounded-full bg-attention"
+                  aria-hidden="true"
+              /></span>
+              <template v-if="!collapsed">
+                Needs you
+                <CountBadge v-if="waitingCount" class="ml-auto">{{ waitingCount }}</CountBadge>
+              </template>
+            </button>
+          </Hint>
+          <Hint text="Auto-approve" side="right" :disabled="!collapsed">
+            <button
+              type="button"
+              :class="[item, rail, active(at('autoapprove'))]"
+              aria-label="Auto-approve"
+              data-nav
+              @click="view = 'autoapprove'"
+            >
+              <BadgeCheck class="size-4" />
+              <template v-if="!collapsed">
+                Auto-approve
+                <span v-if="autoMode" class="ml-auto text-[11px]" :class="autoMode.cls">{{ autoMode.text }}</span>
+              </template>
+            </button>
+          </Hint>
+
+          <div v-if="!collapsed" class="px-2.5 pt-5 pb-2"><SectionLabel>All projects</SectionLabel></div>
+          <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
+          <Hint v-for="e in EVERYWHERE" :key="e.id" :text="e.title" side="right" :disabled="!collapsed">
+            <button type="button" :class="[item, rail, active(at(e.id))]" :aria-label="e.title" data-nav @click="view = e.id">
+              <component :is="e.icon" class="size-4" />
+              <template v-if="!collapsed">
+                {{ e.label }}
+                <span v-if="e.count !== undefined" class="ml-auto text-xs text-muted-foreground tabular-nums">{{ e.count }}</span>
+              </template>
+            </button>
+          </Hint>
+
+          <div v-if="!collapsed" class="flex items-center gap-0.5 px-2.5 pt-5 pb-2">
+            <SectionLabel>Projects</SectionLabel>
+            <span class="flex-1" />
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <button
+                  type="button"
+                  class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-foreground"
+                  aria-label="Sort and group projects"
+                >
+                  <SlidersHorizontal class="size-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" class="w-56">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    >Group by<span class="ml-auto text-xs text-muted-foreground">{{ groupLabel }}</span></DropdownMenuSubTrigger
+                  >
+                  <DropdownMenuSubContent class="w-44">
+                    <DropdownMenuRadioGroup :model-value="grouping" @update:model-value="(v) => setGrouping(v as ProjectGrouping)">
+                      <DropdownMenuRadioItem v-for="o in PROJECT_GROUPINGS" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger
+                    >Sort by<span class="ml-auto text-xs text-muted-foreground">{{ sortLabel }}</span></DropdownMenuSubTrigger
+                  >
+                  <DropdownMenuSubContent class="w-44">
+                    <DropdownMenuRadioGroup :model-value="sort" @update:model-value="(v) => setSort(v as ProjectSort)">
+                      <DropdownMenuRadioItem v-for="o in PROJECT_SORTS" :key="o.value" :value="o.value">{{
+                        o.label
+                      }}</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Show</DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent class="w-48">
+                    <DropdownMenuCheckboxItem :model-value="showBranch" @update:model-value="(v) => setShowBranch(!!v)" @select.prevent
+                      >Branch name</DropdownMenuCheckboxItem
+                    >
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem :disabled="orderIsDefault" @select="resetOrder">Reset to defaults</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              type="button"
+              class="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              title="Add projects"
+              aria-label="Add projects"
+              @click="adding = true"
+            >
+              <Plus class="size-3.5" />
+            </button>
+          </div>
+          <div v-else role="separator" class="mx-1 my-3 h-px bg-border" />
+          <!-- In the rail a scrollbar would take the icons' room, so it scrolls without one. -->
+          <div
+            ref="projectList"
+            class="relative -mx-1 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-1"
+            :class="collapsed ? '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : ''"
+          >
+            <TransitionGroup tag="div" class="flex flex-col gap-0.5" move-class="transition-transform duration-200 ease-out">
+              <div
+                v-for="g in sidebarRows"
+                :key="g.key"
+                :data-sort-id="g.heading ? undefined : g.key"
+                :data-owner-sort-id="g.heading ? g.heading.owner || '~' : undefined"
+                class="relative flex flex-col gap-0.5 rounded-md"
+                :class="[
+                  drag.dragging.value === g.key || (g.heading && ownerDrag.dragging.value === (g.heading.owner || '~'))
+                    ? 'z-10 bg-accent shadow-md ring-1 ring-border'
+                    : '',
+                  g.heading ? 'mt-2 first:mt-0' : '',
+                ]"
+              >
+                <button
+                  v-if="g.heading"
+                  type="button"
+                  :class="[item, 'group/grip h-7 gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground']"
+                  :aria-expanded="!g.heading.folded"
+                  @pointerdown="ownerDrag.down($event, g.heading.owner || '~')"
+                  @click="!ownerDrag.wasDrag() && toggleFolded(g.key)"
+                >
+                  <ProjectIcon v-if="g.heading.owner" :project="g.projects[0]!" :size="16" />
+                  <span class="min-w-0 truncate">{{ g.heading.title }}</span>
+                  <span class="text-[11px] font-normal tabular-nums">{{ g.heading.count }}</span>
+                  <ChevronRight class="size-3.5 shrink-0 transition-transform" :class="g.heading.folded ? '' : 'rotate-90'" />
+                  <span class="flex-1" />
+                  <GripVertical
+                    class="size-3.5 shrink-0 cursor-grab transition-[opacity,translate] duration-150 ease-out"
+                    :class="gripClass(g.heading.owner || '~')"
+                    aria-hidden="true"
+                  />
+                </button>
+                <!-- A repository with several folders: its name, then its folders, which fold away. Folded or in the rail, they show flat. -->
+                <template v-else-if="g.projects.length > 1 && !collapsed">
+                  <button
+                    type="button"
+                    :class="[item, nested, 'group/grip text-foreground']"
+                    :aria-expanded="!folded.includes(g.key)"
+                    :title="g.key"
+                    @pointerdown="drag.down($event, g.key)"
+                    @click="!drag.wasDrag() && toggleFolded(g.key)"
+                  >
+                    <ProjectIcon :project="g.projects[0]!" :size="18" />
+                    <span class="min-w-0 truncate">{{ g.title }}</span>
+                    <span class="text-[11px] text-muted-foreground tabular-nums">{{ g.projects.length }}</span>
+                    <ChevronRight
+                      class="size-3.5 shrink-0 text-muted-foreground transition-transform"
+                      :class="folded.includes(g.key) ? '' : 'rotate-90'"
+                    />
+                    <span class="flex-1" />
+                    <GripVertical
+                      class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-[opacity,translate] duration-150 ease-out"
+                      :class="gripClass(g.key)"
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <template v-if="!folded.includes(g.key)">
+                    <button
+                      v-for="p in g.projects"
+                      :key="p.path"
+                      type="button"
+                      :class="[item, nested ? 'pl-[58px]' : 'pl-[34px]', 'h-7 text-[13px] text-foreground', active(isOpenProject(p.path))]"
+                      :title="p.path"
+                      :aria-label="p.name"
+                      data-nav
+                      @click="openProject(p.path)"
+                    >
+                      <!-- The folder name comes first and keeps its room; the branch takes what is left. -->
+                      <span class="max-w-[70%] shrink-0 truncate">{{ p.name }}</span>
+                      <span
+                        v-if="showBranch && p.branch && p.branch !== p.name"
+                        class="ml-auto min-w-0 truncate font-mono text-[10px] text-muted-foreground"
+                        >{{ p.branch }}</span
+                      >
+                    </button>
+                  </template>
+                </template>
+                <template v-else>
+                  <Hint v-for="p in g.projects" :key="p.path" :text="p.name" side="right" :disabled="!collapsed || !!drag.dragging.value">
+                    <button
+                      type="button"
+                      :class="[item, rail, nested, 'group/grip text-foreground', active(isOpenProject(p.path))]"
+                      :aria-label="p.name"
+                      data-nav
+                      @pointerdown="drag.down($event, g.key)"
+                      @click="clickProject(p.path)"
+                    >
+                      <ProjectIcon :project="p" :size="18" />
+                      <template v-if="!collapsed">
+                        <span class="min-w-0 flex-1 truncate">{{ p.name }}</span>
+                        <GripVertical
+                          class="size-3.5 shrink-0 cursor-grab text-muted-foreground transition-[opacity,translate] duration-150 ease-out"
+                          :class="gripClass(g.key)"
+                          aria-hidden="true"
+                        />
+                      </template>
+                    </button>
+                  </Hint>
+                </template>
+              </div>
+            </TransitionGroup>
+            <button
+              v-if="projects && !projects.length && !collapsed"
+              type="button"
+              :class="[item, 'text-muted-foreground']"
+              @click="adding = true"
+            >
+              <Plus class="size-4" /> Add your first project
+            </button>
+          </div>
+
+          <div class="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
+            <Hint v-for="t in TOOLS" :key="t.id" :text="t.label" side="right" :disabled="!collapsed">
+              <button type="button" :class="[item, rail, active(at(t.id))]" :aria-label="t.label" data-nav @click="view = t.id">
+                <component :is="t.icon" class="size-4" /><template v-if="!collapsed">{{ t.label }}</template>
+              </button>
+            </Hint>
+            <div role="separator" class="my-1.5 h-px bg-border" :class="collapsed ? 'mx-1' : 'mx-2.5'" />
+            <Hint :text="status.account?.login ?? 'Account'" side="right" :disabled="!collapsed">
+              <button
+                type="button"
+                :class="[item, rail, 'h-10 text-foreground', active(at('account'))]"
+                aria-label="Account"
+                data-nav
+                @click="view = 'account'"
+              >
+                <img v-if="status.account?.avatarUrl" :src="status.account.avatarUrl" alt="" class="size-6 shrink-0 rounded-full" />
+                <span v-else class="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] uppercase">{{
+                  status.account?.login.slice(0, 1)
+                }}</span>
+                <span v-if="!collapsed" class="flex min-w-0 flex-col leading-4 font-normal">
+                  <span class="truncate font-medium">{{ status.account?.name || status.account?.login }}</span>
+                  <span v-if="status.account?.name" class="truncate text-[11px] text-muted-foreground">{{ status.account.login }}</span>
+                </span>
+              </button>
+            </Hint>
+          </div>
+        </nav>
+        <div class="ps-app relative min-w-0 flex-1">
+          <main class="@container h-full overflow-y-auto" :inert="!!review || undefined">
+            <InboxView v-if="view === 'inbox'" />
+            <ProjectView v-else-if="view === 'project'" />
+            <WorktreeChanges v-else-if="view === 'worktree' && worktree" :key="worktree" :path="worktree" />
+            <AutoApprove v-else-if="view === 'autoapprove'" />
+            <AllPulls v-else-if="view === 'pulls'" />
+            <AllBranches v-else-if="view === 'branches'" />
+            <Worktrees v-else-if="view === 'worktrees'" @count="everywhere.setWorktreeCount" />
+            <Cleanup v-else-if="view === 'cleanup'" />
+            <SettingsView v-else-if="view === 'settings'" />
+            <Account v-else />
+          </main>
+          <!-- One panel either way, so switching Focus keeps the review where it is: inline beside the sidebar, or over the window. -->
+          <ReviewPanel
+            v-if="review && status?.signedIn"
+            :key="prKey(review)"
+            :pr="review"
+            back
+            data-review
+            :inline="!reviewFocus && roomy"
+            @close="review = null"
+          >
+            <template #tools="{ title }"><ReviewNav /><ShareMenu :pr="review" :title="title" /></template>
+          </ReviewPanel>
+        </div>
+      </div>
+      <AddProjectDialog v-model:open="adding" @added="onAdded" />
+      <OpenLinkDialog v-model:open="linkOpen" />
+      <ShortcutsDialog v-model:open="shortcutsOpen" />
+      <div ref="portal" />
+    </div>
+  </TooltipProvider>
+</template>

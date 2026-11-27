@@ -18,15 +18,24 @@ const COMMITS = [
   { commit: { message: 'fix: totals', author: { name: 'Sam', email: 'sam@x.dev' } }, author: { login: 'sam' } },
 ]
 
-function github() {
+function github({ blocked = false, admin = false } = {}) {
   const chrome = installChrome((message) => {
     const path = String(message.path)
     if (message.method === 'PUT') return { ok: true, status: 200, data: { sha: 'def4567890' } }
+    if (path === '/graphql')
+      return { ok: true, status: 200, data: { data: { repository: { pullRequest: { viewerCanMergeAsAdmin: admin } } } } }
     if (path.endsWith('/pulls/7'))
       return {
         ok: true,
         status: 200,
-        data: { title: 'Ship invoices', body: '', commits: 2, user: { login: 'haytham' }, head: { sha: 'abc', label: 'haytham:feat/x' } },
+        data: {
+          title: 'Ship invoices',
+          body: '',
+          commits: 2,
+          user: { login: 'haytham' },
+          head: { sha: 'abc', label: 'haytham:feat/x' },
+          ...(blocked ? { mergeable_state: 'blocked' } : {}),
+        },
       }
     if (path === '/repos/o/r') return { ok: true, status: 200, data: { allow_rebase_merge: false } }
     if (path.includes('/commits')) return { ok: true, status: 200, data: COMMITS }
@@ -174,5 +183,25 @@ describe('MergeSheet', () => {
     await wrapper.setProps({ canAct: true })
     await vi.waitFor(() => expect(document.querySelector('#co-author-1')).not.toBeNull())
     expect(button('Squash and merge').hasAttribute('disabled')).toBe(false)
+  })
+
+  it('waits for the bypass box before merging past the branch rules', async () => {
+    const { sent } = github({ blocked: true, admin: true })
+    const wrapper = mountDialog()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Merge without waiting for the rules'))
+    expect(button('Squash and merge').hasAttribute('disabled')).toBe(true)
+
+    ;(document.querySelector('[data-slot="checkbox"]:not([id])') as HTMLElement).click()
+    await vi.waitFor(() => expect(button('Bypass rules and merge').hasAttribute('disabled')).toBe(false))
+    button('Bypass rules and merge').click()
+    await vi.waitFor(() => expect(wrapper.emitted('merged')).toEqual([['def4567890']]))
+    expect(sent.find((m) => m.method === 'PUT')!.path).toBe('/repos/o/r/pulls/7/merge')
+  })
+
+  it('offers no bypass to people who may not skip the rules', async () => {
+    github({ blocked: true })
+    mountDialog()
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Waiting for required reviews or checks'))
+    expect(document.body.textContent).not.toContain('Merge without waiting for the rules')
   })
 })

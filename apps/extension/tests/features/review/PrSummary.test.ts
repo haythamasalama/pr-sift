@@ -21,6 +21,8 @@ const conversation: Conversation = {
   discussion: [],
   reviews: { approvals: 0, changesRequested: 0, mine: null },
   readiness: 'ready',
+  canMerge: true,
+  canBypass: false,
 }
 
 describe('PrSummary', () => {

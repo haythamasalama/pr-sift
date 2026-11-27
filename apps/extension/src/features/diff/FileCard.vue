@@ -2,7 +2,7 @@
 import DiffSplitIcon from '@/components/DiffSplitIcon.vue'
 import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue'
-import { Check, ChevronDown, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, MessageSquare } from '@lucide/vue'
+import { Check, ChevronDown, Copy, ExternalLink, FileDiff, FileText, FolderTree, ListPlus, MessageSquare, Undo2 } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -172,7 +172,26 @@ defineExpose({ reveal, flash, el })
           <DropdownMenuItem :disabled="!addedLines" @select="copy(addedLines)"><ListPlus /> Copy added lines</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button variant="ghost" size="icon-xs" as-child title="Open this file in the pull request on GitHub" aria-label="Open on GitHub">
+      <!-- Only the desktop app's worktrees can throw a file's changes away. -->
+      <Button
+        v-if="fileContext?.discard"
+        variant="ghost"
+        size="icon-xs"
+        title="Throw away the changes in this file"
+        aria-label="Discard changes"
+        @click="fileContext.discard(file.filename)"
+      >
+        <Undo2 />
+      </Button>
+      <!-- A worktree file may have no pull request on GitHub to open. -->
+      <Button
+        v-if="githubUrl"
+        variant="ghost"
+        size="icon-xs"
+        as-child
+        title="Open this file in the pull request on GitHub"
+        aria-label="Open on GitHub"
+      >
         <a :href="githubUrl" target="_blank" rel="noreferrer"><ExternalLink /></a>
       </Button>
     </div>

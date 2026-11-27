@@ -266,7 +266,7 @@ function cellClass(index: number | null, side: 'left' | 'right') {
 
 <template>
   <div ref="root" class="overflow-x-auto" @mouseup="onMouseUp" @mousedown="floating = null">
-    <table v-if="mode === 'unified'" class="w-full border-collapse font-mono text-xs leading-[1.5]">
+    <table v-if="mode === 'unified'" class="w-full border-collapse font-mono text-[length:var(--ps-code-size,12px)] leading-[1.5]">
       <tbody>
         <template v-for="(row, i) in visibleRows" :key="i">
           <tr v-if="row.kind === 'hunk'" :class="rowClass.hunk">
@@ -335,7 +335,7 @@ function cellClass(index: number | null, side: 'left' | 'right') {
       </tbody>
     </table>
 
-    <table v-else class="w-full table-fixed border-collapse font-mono text-xs leading-[1.5]">
+    <table v-else class="w-full table-fixed border-collapse font-mono text-[length:var(--ps-code-size,12px)] leading-[1.5]">
       <colgroup>
         <col class="w-12" />
         <col />

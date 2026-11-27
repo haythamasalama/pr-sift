@@ -5,23 +5,16 @@ import { inject } from 'vue'
 import { reactiveOmit } from '@vueuse/core'
 import { cn } from 'cn'
 import { portalTargetKey } from '@/lib/portal'
-import {
-  PopoverContent,
-  PopoverPortal,
-  useForwardPropsEmits,
-} from 'reka-ui'
+import { PopoverContent, PopoverPortal, useForwardPropsEmits } from 'reka-ui'
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = withDefaults(
-  defineProps<PopoverContentProps & { class?: HTMLAttributes['class'] }>(),
-  {
-    align: 'center',
-    sideOffset: 4,
-  },
-)
+const props = withDefaults(defineProps<PopoverContentProps & { class?: HTMLAttributes['class'] }>(), {
+  align: 'center',
+  sideOffset: 4,
+})
 const emits = defineEmits<PopoverContentEmits>()
 const portalTarget = inject(portalTargetKey, null)
 

@@ -56,7 +56,7 @@ const LINES: { sign: string; tone: string; tokens: Token[] }[] = [
       <span class="truncate font-mono text-xs text-muted-foreground">src/review/approve.ts</span>
       <Button size="sm" tabindex="-1" aria-hidden="true"><Check /> Approve</Button>
     </div>
-    <div class="py-1.5 font-mono text-xs leading-5" aria-hidden="true">
+    <div class="py-1.5 font-mono text-[length:var(--ps-code-size,12px)] leading-[1.6]" aria-hidden="true">
       <div v-for="(line, i) in LINES" :key="i" class="flex px-3 whitespace-pre" :class="line.tone">
         <span class="sign w-4 shrink-0 text-muted-foreground">{{ line.sign }}</span>
         <span

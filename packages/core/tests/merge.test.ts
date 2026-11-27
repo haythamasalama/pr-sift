@@ -10,6 +10,8 @@ import {
   defaultSquashTitle,
   isRemovedCoAuthor,
   keepsCoAuthor,
+  approveBlockReason,
+  mergeBlockReason,
   mergeReadiness,
   parsePerson,
   rememberCoAuthors,
@@ -139,6 +141,33 @@ describe('mergeReadiness', () => {
     expect(mergeReadiness('dirty')).toBe('conflicts')
     expect(mergeReadiness('blocked')).toBe('blocked')
     expect(mergeReadiness(undefined)).toBe('unknown')
+  })
+})
+
+describe('mergeBlockReason', () => {
+  const push = { canPush: true }
+  it('says nothing when GitHub would merge it', () => {
+    expect(mergeBlockReason('ready', push)).toBeNull()
+    expect(mergeBlockReason('checks', push)).toBeNull()
+  })
+  it('puts the repository before the pull request', () => {
+    expect(mergeBlockReason('ready', { canPush: false })).toMatch(/permission/)
+    expect(mergeBlockReason('ready', { canPush: true, archived: true })).toMatch(/archived/)
+  })
+  it('names what holds it back', () => {
+    expect(mergeBlockReason('blocked', push)).toMatch(/approval or required checks/)
+    expect(mergeBlockReason('blocked', push, 'REVIEW_REQUIRED')).toBe('Needs an approval first')
+    expect(mergeBlockReason('blocked', push, 'CHANGES_REQUESTED')).toBe('Changes were requested')
+    expect(mergeBlockReason('conflicts', push)).toBe('Has merge conflicts')
+    expect(mergeBlockReason('unknown', push)).toMatch(/checking/)
+  })
+})
+
+describe('approveBlockReason', () => {
+  it('stops you approving your own pull request or a draft', () => {
+    expect(approveBlockReason({ isAuthor: true, draft: false })).toMatch(/your own/)
+    expect(approveBlockReason({ isAuthor: false, draft: true })).toMatch(/Drafts/)
+    expect(approveBlockReason({ isAuthor: false, draft: false })).toBeNull()
   })
 })
 

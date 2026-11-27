@@ -1,0 +1,39 @@
+name: Desktop
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['apps/desktop/**', 'apps/extension/src/**', 'packages/core/**']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: dist:mac
+          - os: windows-latest
+            target: dist:win
+          - os: ubuntu-latest
+            target: dist:linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @pr-sift/desktop test
+      - run: pnpm --filter @pr-sift/desktop ${{ matrix.target }} --publish never
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-sift-desktop-${{ matrix.os }}
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb

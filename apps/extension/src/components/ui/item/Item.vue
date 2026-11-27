@@ -6,15 +6,20 @@ import { cn } from 'cn'
 import { Primitive } from 'reka-ui'
 import { itemVariants } from '.'
 
-const props = withDefaults(defineProps<PrimitiveProps & {
-  class?: HTMLAttributes['class']
-  variant?: ItemVariants['variant']
-  size?: ItemVariants['size']
-}>(), {
-  as: 'div',
-  variant: 'default',
-  size: 'default',
-})
+const props = withDefaults(
+  defineProps<
+    PrimitiveProps & {
+      class?: HTMLAttributes['class']
+      variant?: ItemVariants['variant']
+      size?: ItemVariants['size']
+    }
+  >(),
+  {
+    as: 'div',
+    variant: 'default',
+    size: 'default',
+  },
+)
 </script>
 
 <template>

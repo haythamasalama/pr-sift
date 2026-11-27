@@ -32,11 +32,16 @@ export interface Settings {
   hiddenTypes: string[]
   reviewMode: boolean
   autoOpen: boolean
+  /** Shows an "Open in PR Sift app" button on pull requests, for people who also use PR Sift for desktop. */
+  desktopApp: boolean
   diffView: DiffMode
   sidebarWidth: number
   theme: ThemeMode
   themeStyle: ThemeStyle
   codeTheme: string
+  // Interface size in percent, and the code size in reviews in pixels. Both snap to fixed stops.
+  uiScale: number
+  codeSize: number
   treeIndent: number
   treeGuides: boolean
   mergeMethod: MergeMethod

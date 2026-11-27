@@ -9,6 +9,7 @@ function github() {
   return installChrome((message) => {
     const path = String(message.path)
     if (path === '/user') return { ok: true, status: 200, data: user('lee') }
+    if (/^\/repos\/[^/]+\/[^/]+$/.test(path)) return { ok: true, status: 200, data: { permissions: { push: true } } }
     if (path.endsWith('/pulls/7')) return { ok: true, status: 200, data: { comments: 1, review_comments: 4, mergeable_state: 'unstable' } }
     if (path.includes('/reviews'))
       return {
@@ -107,6 +108,7 @@ describe('fetchConversation', () => {
     expect(result.viewer).toBe('lee')
     expect(result.reviews).toEqual({ approvals: 1, changesRequested: 0, mine: 'approved' })
     expect(result.readiness).toBe('checks')
+    expect(result.canMerge).toBe(true)
     expect(result.conversation + result.code).toBe(5)
     expect(sent.filter((m) => String(m.path).includes('/comments')).every((m) => m.accept === 'application/vnd.github.html+json')).toBe(
       true,
@@ -123,5 +125,23 @@ describe('fetchConversation', () => {
     expect(result.viewer).toBeUndefined()
     expect(result.discussion).toEqual([])
     expect(result.readiness).toBe('unknown')
+    expect(result.canMerge).toBe(false)
+  })
+
+  it('asks again while GitHub is still working out whether it can merge', async () => {
+    let asked = 0
+    installChrome((message) => {
+      const path = String(message.path)
+      if (path.endsWith('/pulls/7')) {
+        asked++
+        return { ok: true, status: 200, data: { comments: 0, review_comments: 0, mergeable_state: asked === 1 ? 'unknown' : 'blocked' } }
+      }
+      if (/^\/repos\/[^/]+\/[^/]+$/.test(path)) return { ok: true, status: 200, data: { archived: true, permissions: { admin: true } } }
+      return { ok: false, status: 404, data: {} }
+    })
+    const result = await fetchConversation(PR)
+    expect(asked).toBe(2)
+    expect(result.readiness).toBe('blocked')
+    expect(result.canMerge).toBe(false)
   })
 })

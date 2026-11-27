@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, shallowRef, useTemplateRef, watch } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
+import { useElementSize, useMediaQuery } from '@vueuse/core'
 import {
   AlertCircle,
   CheckCircle2,
@@ -53,7 +53,14 @@ import AutoOpenTip from './AutoOpenTip.vue'
 import NoticeBar from '../../components/NoticeBar.vue'
 import { REVIEWS_URL } from '../../lib/updates'
 
-const { pr, externalUpdate = false } = defineProps<{ pr: PrRef; externalUpdate?: boolean }>()
+// back: the desktop app shows the panel as a page, so it leaves with a Back arrow instead of a close button.
+// inline: the panel fills the box it is placed in, beside the app's own sidebar, instead of the whole window.
+const {
+  pr,
+  externalUpdate = false,
+  back = false,
+  inline = false,
+} = defineProps<{ pr: PrRef; externalUpdate?: boolean; back?: boolean; inline?: boolean }>()
 const emit = defineEmits<{ close: []; refreshed: [] }>()
 let stopWatchingSettings = () => {}
 let stopWatchingToken = () => {}
@@ -116,8 +123,14 @@ const list = useTemplateRef<InstanceType<typeof FileList>>('list')
 const main = useTemplateRef<HTMLElement>('main')
 
 const diffMode = shallowRef<DiffMode>('unified')
-const compact = useMediaQuery('(max-width: 900px)')
-const narrow = useMediaQuery('(max-width: 760px)')
+// Inline, the panel's own width decides the layout, since the app's sidebar takes part of the window.
+const root = useTemplateRef<HTMLElement>('root')
+const { width: rootWidth } = useElementSize(root)
+const windowCompact = useMediaQuery('(max-width: 900px)')
+const windowNarrow = useMediaQuery('(max-width: 760px)')
+const fits = (max: number, byWindow: boolean) => (inline && rootWidth.value > 0 ? rootWidth.value <= max : byWindow)
+const compact = computed(() => fits(900, windowCompact.value))
+const narrow = computed(() => fits(760, windowNarrow.value))
 const sidebarOpen = shallowRef(false)
 provide(
   diffModeKey,
@@ -406,8 +419,13 @@ watch(
 </script>
 
 <template>
-  <div class="fixed inset-0 z-40 flex flex-col bg-background text-foreground">
+  <div
+    ref="root"
+    class="@container z-40 flex flex-col bg-background text-foreground"
+    :class="inline ? 'absolute inset-0' : 'fixed inset-0'"
+  >
     <Toolbar
+      :back="back"
       :title="info ? `#${pr.number} ${info.title}` : `#${pr.number}`"
       :done="filter.progress.value.done"
       :total="filter.progress.value.total"
@@ -419,6 +437,7 @@ watch(
       @open-notes="notesOpen = true"
       @close="emit('close')"
     >
+      <template #tools><slot name="tools" :title="info?.title" /></template>
       <template #meta>
         <PrSummary
           v-if="status === 'ready'"

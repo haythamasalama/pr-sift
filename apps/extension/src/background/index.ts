@@ -19,8 +19,29 @@ type Message =
   | { type: 'options'; section?: string }
   | { type: 'update-check' }
   | { type: 'apply-update' }
+  | { type: 'handoff' }
   | { type: 'extensions-page' }
   | { type: 'highlighter' }
+
+// After a pull request page hands itself to PR Sift for desktop, its tab closes once the app comes to the front
+// (Chrome loses focus to another app). If that doesn't happen soon, for example when the app isn't installed
+// or the browser's "Open PR Sift?" prompt was dismissed, the tab stays.
+const HANDOFF_WAIT_MS = 20_000
+
+function closeWhenAppOpens(tabId: number, send: (result: { closed: boolean }) => void) {
+  const finish = (closed: boolean) => {
+    chrome.windows.onFocusChanged.removeListener(onFocus)
+    clearTimeout(timer)
+    send({ closed })
+  }
+  const onFocus = (windowId: number) => {
+    if (windowId !== chrome.windows.WINDOW_ID_NONE) return
+    void chrome.tabs.remove(tabId).catch(() => {})
+    finish(true)
+  }
+  chrome.windows.onFocusChanged.addListener(onFocus)
+  const timer = setTimeout(() => finish(false), HANDOFF_WAIT_MS)
+}
 
 // The review keeps its last few pull requests in session storage, which content scripts can only read once allowed.
 void chrome.storage.session.setAccessLevel?.({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' }).catch(() => undefined)
@@ -88,6 +109,11 @@ chrome.runtime.onMessage.addListener((msg: Message, sender, send) => {
   if (msg.type === 'apply-update') {
     chrome.runtime.reload()
     return
+  }
+  if (msg.type === 'handoff') {
+    if (sender.tab?.id === undefined) return
+    closeWhenAppOpens(sender.tab.id, send)
+    return true
   }
   if (msg.type === 'extensions-page') {
     void chrome.tabs.create({ url: 'chrome://extensions/' })

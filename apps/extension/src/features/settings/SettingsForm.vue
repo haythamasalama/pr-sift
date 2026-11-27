@@ -14,7 +14,9 @@ import DiffUnifiedIcon from '@/components/DiffUnifiedIcon.vue'
 import BrandIcon from '../../components/BrandIcon.vue'
 import GithubMark from '../../components/GithubMark.vue'
 import type { DiffMode, MergeMethod, PrFile, ThemeMode } from '../../lib/types'
-import { THEME_STYLES, useAppearance } from '../appearance/useAppearance'
+import { CODE_SIZES, THEME_STYLES, UI_SCALES, useAppearance } from '../appearance/useAppearance'
+import SizeStops from './SizeStops.vue'
+import { DEFAULTS } from '../../lib/settings'
 import AboutSection from './AboutSection.vue'
 import ConnectionRow from './ConnectionRow.vue'
 import PatternList from './PatternList.vue'
@@ -27,7 +29,7 @@ import CodeThemeSelect from './CodeThemeSelect.vue'
 import SegmentedControl from './SegmentedControl.vue'
 import ThemeSwatches from './ThemeSwatches.vue'
 import TreePreview from './TreePreview.vue'
-import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId, type SettingsTab } from './sections'
+import { SHEET_TABS, TAB_OF, sectionElementId, type SettingsSectionId } from './sections'
 import { useSettingsState } from './useSettingsState'
 import { useNewMarks } from './useNewMarks'
 
@@ -65,11 +67,37 @@ const TAB_ICONS = { github: GithubMark, review: Eye, files: FolderTree, appearan
 
 const hintOf = <T extends string>(options: { value: T; hint: string }[], value: T) => options.find((o) => o.value === value)?.hint ?? ''
 
-const { section, files, layout = 'tabs' } = defineProps<{ section?: SettingsSectionId; files?: PrFile[]; layout?: 'tabs' | 'page' }>()
-const tab = shallowRef<SettingsTab>(section ? TAB_OF[section] : SHEET_TABS[0]!.id)
-const shows = (id: SettingsTab) => layout === 'page' || tab.value === id
+const {
+  section,
+  files,
+  layout = 'tabs',
+  surface = 'extension',
+  extraTabs = [],
+} = defineProps<{
+  section?: SettingsSectionId
+  files?: PrFile[]
+  layout?: 'tabs' | 'page'
+  // The desktop app signs in on its own and has no github.com pages, so it leaves the connection, auto-open and the extension's About out.
+  surface?: 'extension' | 'desktop'
+  // Tabs of the host's own, shown first. Each one fills the slot named after its id.
+  extraTabs?: { id: string; label: string; icon: Component }[]
+}>()
+const inBrowser = surface === 'extension'
+const tabs = computed(() => [
+  ...extraTabs,
+  ...SHEET_TABS.map((t) => ({
+    ...t,
+    // Without the connection, the desktop's GitHub tab only holds merging.
+    label: !inBrowser && t.id === 'github' ? 'Merging' : t.label,
+    icon: TAB_ICONS[t.id] as Component,
+  })),
+])
+const tab = shallowRef<string>(section ? TAB_OF[section] : (extraTabs[0]?.id ?? SHEET_TABS[0]!.id))
+const shows = (id: string) => layout === 'page' || tab.value === id
 
-const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark } = useAppearance()
+const { theme, setTheme, themeStyle, setThemeStyle, codeTheme, setCodeTheme, dark, uiScale, setUiScale, codeSize, setCodeSize } =
+  useAppearance()
+const mod = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform) ? '⌘' : 'Ctrl'
 const themeHint = computed(() => THEME_STYLES.find((t) => t.value === themeStyle.value)?.hint ?? '')
 const { settings, load, update, reset } = useSettingsState()
 const { isNew, markSeen } = useNewMarks()
@@ -125,7 +153,7 @@ async function scrollToSection(id: SettingsSectionId) {
   target.querySelector<HTMLElement>('h2, h3')?.focus({ preventScroll: true })
 }
 
-function openTab(id: SettingsTab) {
+function openTab(id: string) {
   if (tab.value === id) return
   tab.value = id
   void nextTick(() => root.value?.scrollIntoView({ block: 'start' }))
@@ -155,30 +183,36 @@ defineExpose({ scrollToSection })
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
+  <div ref="root" class="@container flex flex-col" :class="layout === 'page' ? 'gap-6' : 'gap-3'">
     <nav
       v-if="layout === 'tabs'"
       aria-label="Settings"
       role="tablist"
-      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto border-b bg-background px-4"
+      class="sticky top-0 z-10 -mx-4 -mb-2 flex gap-5 overflow-x-auto overflow-y-hidden border-b bg-background px-4 [scrollbar-width:none]"
     >
       <button
-        v-for="t in SHEET_TABS"
+        v-for="t in tabs"
         :key="t.id"
         type="button"
         role="tab"
         :aria-selected="tab === t.id"
+        :aria-label="t.label"
+        :title="t.label"
         class="-mb-px flex items-center gap-1.5 border-b-2 py-2.5 text-sm whitespace-nowrap outline-none focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0"
         :class="
           tab === t.id ? 'border-foreground font-medium text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
         "
         @click="openTab(t.id)"
       >
-        <component :is="TAB_ICONS[t.id]" />{{ t.label }}
+        <!-- When the tabs don't fit, the others show only their icon. -->
+        <component :is="t.icon" /><span :class="tab === t.id ? '' : '@max-xl:hidden'">{{ t.label }}</span>
       </button>
     </nav>
 
-    <AboutSection v-show="shows('about')" :framed="layout === 'page'" />
+    <div v-for="t in extraTabs" v-show="shows(t.id)" :key="t.id"><slot :name="t.id" /></div>
+
+    <AboutSection v-if="inBrowser" v-show="shows('about')" :framed="layout === 'page'" />
+    <div v-else v-show="shows('about')"><slot name="about" /></div>
 
     <SettingsSection
       v-show="shows('github')"
@@ -189,7 +223,7 @@ defineExpose({ scrollToSection })
       description="Comment, review and merge without leaving the review."
     >
       <template #icon><GithubMark class="size-6" /></template>
-      <SettingsGroup id="token" title="Connection">
+      <SettingsGroup v-if="inBrowser" id="token" title="Connection">
         <ConnectionRow :token-entry="layout === 'page'" />
       </SettingsGroup>
       <SettingsGroup id="merging" title="Merging" hide-title>
@@ -247,6 +281,7 @@ defineExpose({ scrollToSection })
       area="files"
     >
       <SettingsRow
+        v-if="inBrowser"
         label="Open PR Sift automatically"
         description="Pull requests open straight in PR Sift. Close it to see GitHub's page."
         control-id="settings-auto-open"
@@ -262,6 +297,14 @@ defineExpose({ scrollToSection })
             }
           "
         />
+      </SettingsRow>
+      <SettingsRow
+        v-if="inBrowser"
+        label="Open pull requests in the desktop app"
+        description="Links from Slack, mail or other apps open in PR Sift for desktop and the tab closes. Links inside GitHub stay here, with an Open in app button."
+        control-id="settings-desktop-app"
+      >
+        <Switch id="settings-desktop-app" :model-value="settings.desktopApp" @update:model-value="(v) => update('desktopApp', v)" />
       </SettingsRow>
       <SettingsRow label="Hide files once viewed" description="The list gets shorter as you go." control-id="settings-review-mode">
         <Switch id="settings-review-mode" :model-value="settings.reviewMode" @update:model-value="(v) => update('reviewMode', v)" />
@@ -326,6 +369,71 @@ defineExpose({ scrollToSection })
       </SettingsRow>
       <SettingsRow id="settings-section-style" data-section="style" label="Theme" :description="themeHint">
         <ThemeSwatches :model-value="themeStyle" :dark="dark" @update:model-value="setThemeStyle" />
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-ui-size"
+        data-section="ui-size"
+        label="Interface size"
+        description="Text, icons and spacing grow together, so nothing gets cramped."
+      >
+        <div class="flex min-w-[260px] flex-1 flex-col gap-2.5">
+          <SizeStops :model-value="uiScale" :stops="UI_SCALES" unit="%" label="Interface size" @update:model-value="setUiScale">
+            <template #small><span class="text-xs text-muted-foreground" aria-hidden="true">A</span></template>
+            <template #large><span class="text-lg text-muted-foreground" aria-hidden="true">A</span></template>
+          </SizeStops>
+          <div class="flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <template v-if="!inBrowser">
+              <span class="flex items-center gap-1 whitespace-nowrap"
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} +</kbd
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} −</kbd
+                >
+                anywhere</span
+              >
+              <span class="flex items-center gap-1 whitespace-nowrap"
+                ><kbd
+                  class="inline-flex h-5 items-center rounded-sm border border-border bg-muted px-1.5 font-mono text-[11px] font-medium whitespace-nowrap text-foreground"
+                  >{{ mod }} 0</kbd
+                >
+                back to 100%</span
+              >
+            </template>
+            <button
+              v-if="uiScale !== DEFAULTS.uiScale"
+              type="button"
+              class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              @click="setUiScale(DEFAULTS.uiScale)"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </SettingsRow>
+      <SettingsRow
+        id="settings-section-code-size"
+        data-section="code-size"
+        label="Code size"
+        description="Only the code in reviews and changes."
+      >
+        <div class="flex min-w-[260px] flex-1 flex-col gap-2.5">
+          <SizeStops :model-value="codeSize" :stops="CODE_SIZES" unit=" px" label="Code size" @update:model-value="setCodeSize">
+            <template #small><span class="font-mono text-[11px] text-muted-foreground" aria-hidden="true">{ }</span></template>
+            <template #large><span class="font-mono text-base text-muted-foreground" aria-hidden="true">{ }</span></template>
+          </SizeStops>
+          <div class="flex min-h-5 justify-end">
+            <button
+              v-if="codeSize !== DEFAULTS.codeSize"
+              type="button"
+              class="text-xs text-muted-foreground hover:text-foreground"
+              @click="setCodeSize(DEFAULTS.codeSize)"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
       </SettingsRow>
       <SettingsRow
         id="settings-section-code-colors"

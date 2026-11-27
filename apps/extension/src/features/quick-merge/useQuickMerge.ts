@@ -49,7 +49,11 @@ export function useQuickMerge(pr: PrRef) {
     }
   })
 
-  const mergeable = computed(() => Boolean(context.value) && !UNMERGEABLE.includes(mergeReadiness(context.value?.mergeableState)))
+  // `ready` is GitHub's own answer; with the bypass box ticked, a pull request held only by its branch rules merges too.
+  const ready = computed(() => Boolean(context.value) && !UNMERGEABLE.includes(mergeReadiness(context.value?.mergeableState)))
+  const canBypass = computed(() => mergeReadiness(context.value?.mergeableState) === 'blocked' && context.value?.canBypass === true)
+  const bypass = shallowRef(false)
+  const mergeable = computed(() => ready.value || (canBypass.value && bypass.value))
 
   async function load() {
     loading.value = true
@@ -81,5 +85,5 @@ export function useQuickMerge(pr: PrRef) {
     }
   }
 
-  return { context, plan, mergeable, loading, busy, error, load, submit }
+  return { context, plan, ready, canBypass, bypass, mergeable, loading, busy, error, load, submit }
 }

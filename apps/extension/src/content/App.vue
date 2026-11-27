@@ -15,6 +15,8 @@ import { prKey, type PrRef } from '../lib/types'
 import { prefetchPr } from '../features/review/pull'
 import ReviewPanel from '../features/review/ReviewPanel.vue'
 import QuickMerge from '../features/quick-merge/QuickMerge.vue'
+import OpenInApp from '../features/desktop/OpenInApp.vue'
+import { appLink, handOffTarget, withoutMark } from '../features/desktop/handoff'
 
 const PR_PATH = /^\/([^/]+)\/([^/]+)\/pull\/(\d+)/
 
@@ -22,7 +24,7 @@ let timer = 0
 const pr = shallowRef<PrRef | null>(null)
 const open = shallowRef(false)
 const dead = shallowRef(false)
-const { dark, rootAttrs } = useAppearance()
+const { dark, rootAttrs, zoomStyle } = useAppearance()
 const githubDark = useGithubDark()
 const rootEl = useTemplateRef<HTMLElement>('root')
 const portalEl = useTemplateRef<HTMLElement>('portal')
@@ -53,6 +55,7 @@ function sync() {
 }
 
 const autoOpen = shallowRef<boolean | null>(null)
+const desktopApp = shallowRef(false)
 let decidedFor = ''
 let stopWatchingSettings = () => {}
 
@@ -64,6 +67,20 @@ function maybeAutoOpen() {
 }
 
 const reload = () => location.reload()
+
+// A pull request opened from Slack, mail or another app goes straight to PR Sift for desktop, once, when the page first loads.
+// The background closes this tab as soon as the app comes to the front.
+function handOffToApp(): boolean {
+  const navigation = (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type
+  const target = handOffTarget({ url: location.href, referrer: document.referrer, navigation })
+  const clean = withoutMark(location.href)
+  if (clean) history.replaceState(history.state, '', clean)
+  if (!target) return false
+  decidedFor = prKey(target)
+  window.location.href = appLink(target)
+  void Promise.resolve(chrome.runtime.sendMessage({ type: 'handoff' })).catch(() => {})
+  return true
+}
 
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && !rootEl.value?.querySelector('[role="dialog"], [role="menu"]')) open.value = false
@@ -82,8 +99,14 @@ onMounted(async () => {
   timer = window.setInterval(sync, 800)
   navigation?.addEventListener('navigatesuccess', sync)
   document.addEventListener('keydown', onKey)
-  stopWatchingSettings = onSettingsChange((next) => (autoOpen.value = next.autoOpen))
-  autoOpen.value = (await getSettings()).autoOpen
+  stopWatchingSettings = onSettingsChange((next) => {
+    autoOpen.value = next.autoOpen
+    desktopApp.value = next.desktopApp
+  })
+  const settings = await getSettings()
+  autoOpen.value = settings.autoOpen
+  desktopApp.value = settings.desktopApp
+  if (settings.desktopApp && !dead.value) handOffToApp()
   maybeAutoOpen()
 })
 onBeforeUnmount(() => {
@@ -95,48 +118,56 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs">
+  <div ref="root" class="ps-root" :class="{ dark }" v-bind="rootAttrs" :style="zoomStyle">
     <div v-if="pr && (dead || !open)" class="ps-root" :class="{ dark: githubDark }">
-      <Button
-        variant="outline"
-        :class="[
-          'fixed right-5 bottom-5 z-30 h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
-          dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
-        ]"
-        :title="dead ? undefined : updateNote || undefined"
-        @click="dead ? reload() : (open = true)"
-        @pointerenter="prefetch"
-        @focus="prefetch"
-      >
-        <BrandPulse class="size-6">
-          <RefreshCw v-if="dead" />
-          <BrandMark v-else class="size-3.5" />
-        </BrandPulse>
-        {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
-        <Badge
-          v-if="externalUpdate && !dead"
+      <!-- .ps-root sets position: relative outside the utility layer, so the fixed corner needs its own box. -->
+      <div class="fixed right-5 bottom-5 z-30 flex items-center gap-2">
+        <OpenInApp
+          v-if="desktopApp && !dead"
+          :pr="pr"
+          class="size-9 rounded-lg border border-border bg-popover shadow-sm hover:bg-secondary dark:bg-popover dark:hover:bg-secondary"
+        />
+        <Button
           variant="outline"
-          class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3"
+          :class="[
+            'relative h-9 gap-2 rounded-lg border-border bg-popover pr-3.5 pl-1.5 text-popover-foreground shadow-sm hover:border-muted-foreground/40 hover:bg-secondary active:bg-accent dark:border-border dark:bg-popover dark:hover:bg-secondary [&_svg]:size-3.5',
+            dead ? 'border-destructive/40 text-destructive hover:text-destructive dark:border-destructive/40' : '',
+          ]"
+          :title="dead ? undefined : updateNote || undefined"
+          @click="dead ? reload() : (open = true)"
+          @pointerenter="prefetch"
+          @focus="prefetch"
         >
-          <RefreshCw /> Changed
-        </Badge>
-        <Badge
-          v-else-if="updated && !updateReady && !dead"
-          data-update-badge
-          variant="outline"
-          class="gap-1 border-transparent bg-success-fg/15 text-success-fg [&_svg]:size-3"
-        >
-          <Check /> {{ updated.version }}
-          <span class="sr-only">{{ updateNote }}</span>
-        </Badge>
-        <span
-          v-if="updateReady && !dead"
-          data-update-dot
-          class="absolute -top-1 -right-1 size-2.5 rounded-full bg-attention ring-2 ring-background"
-        >
-          <span class="sr-only">{{ updateNote }}</span>
-        </span>
-      </Button>
+          <BrandPulse class="size-6">
+            <RefreshCw v-if="dead" />
+            <BrandMark v-else class="size-3.5" />
+          </BrandPulse>
+          {{ dead ? 'Reload PR Sift' : 'PR Sift' }}
+          <Badge
+            v-if="externalUpdate && !dead"
+            variant="outline"
+            class="gap-1 border-transparent bg-attention/15 text-attention [&_svg]:size-3"
+          >
+            <RefreshCw /> Changed
+          </Badge>
+          <Badge
+            v-else-if="updated && !updateReady && !dead"
+            data-update-badge
+            variant="outline"
+            class="gap-1 border-transparent bg-success-fg/15 text-success-fg [&_svg]:size-3"
+          >
+            <Check /> {{ updated.version }}
+            <span class="sr-only">{{ updateNote }}</span>
+          </Badge>
+          <span
+            v-if="updateReady && !dead"
+            data-update-dot
+            class="absolute -top-1 -right-1 size-2.5 rounded-full bg-attention ring-2 ring-background"
+          >
+            <span class="sr-only">{{ updateNote }}</span>
+          </span>
+        </Button>
+      </div>
     </div>
     <QuickMerge v-if="pr && !open && !dead" :key="`quick-${prKey(pr)}`" :pr="pr" :dark="githubDark" />
     <ReviewPanel
@@ -146,7 +177,9 @@ onBeforeUnmount(() => {
       :external-update="externalUpdate"
       @refreshed="acknowledged = githubRefresh"
       @close="open = false"
-    />
+    >
+      <template v-if="desktopApp" #tools><OpenInApp :pr="pr" /></template>
+    </ReviewPanel>
     <div ref="portal" />
   </div>
 </template>

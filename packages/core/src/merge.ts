@@ -27,6 +27,35 @@ const READINESS: Record<string, MergeReadiness> = {
 
 export const mergeReadiness = (state: string | undefined): MergeReadiness => READINESS[state ?? ''] ?? 'unknown'
 
+const HOLDS: Record<Exclude<MergeReadiness, 'ready' | 'checks'>, string> = {
+  blocked: 'Needs an approval or required checks first',
+  behind: 'Update the branch from its base first',
+  conflicts: 'Has merge conflicts',
+  draft: 'Still a draft',
+  unknown: 'GitHub is still checking it',
+}
+
+/** Why GitHub would refuse a merge right now, in a few words, or null when it would take it. */
+export function mergeBlockReason(
+  readiness: MergeReadiness,
+  repo: { canPush: boolean; archived?: boolean },
+  review?: 'APPROVED' | 'CHANGES_REQUESTED' | 'REVIEW_REQUIRED' | null,
+): string | null {
+  if (repo.archived) return 'This repository is archived'
+  if (!repo.canPush) return 'You don’t have permission to merge here'
+  if (readiness === 'ready' || readiness === 'checks') return null
+  if (readiness === 'blocked' && review === 'CHANGES_REQUESTED') return 'Changes were requested'
+  if (readiness === 'blocked' && review === 'REVIEW_REQUIRED') return 'Needs an approval first'
+  return HOLDS[readiness]
+}
+
+/** Why you can't approve, or null when you can. */
+export function approveBlockReason(pull: { isAuthor: boolean; draft: boolean }): string | null {
+  if (pull.isAuthor) return 'You can’t approve your own pull request'
+  if (pull.draft) return 'Drafts can’t be approved'
+  return null
+}
+
 // Exact identities rather than words like "claude", which also match people with that name.
 export const DEFAULT_REMOVED_CO_AUTHORS = [
   '@anthropic.com',

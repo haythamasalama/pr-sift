@@ -15,6 +15,8 @@ export default tseslint.config(
       '**/coverage',
       '.playwright-mcp',
       'apps/extension/src/components/ui/**',
+      'apps/desktop/out',
+      'apps/desktop/release',
     ],
   },
   js.configs.recommended,
@@ -48,5 +50,8 @@ export default tseslint.config(
   // The demo's chrome shim is serialised into the page and runs in the browser.
   { files: ['apps/site/scripts/demo.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   { files: ['tools/**/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
+  { files: ['apps/desktop/src/main/**', 'apps/desktop/tests/**'], languageOptions: { globals: globals.node } },
+  // Playwright serialises the callbacks given to page.evaluate and runs them in the app's window.
+  { files: ['apps/desktop/tests/e2e/**'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   prettier,
 )

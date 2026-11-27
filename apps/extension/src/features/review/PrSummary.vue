@@ -68,14 +68,14 @@ const commentsTitle = computed(() =>
     <span v-if="state" class="inline-flex shrink-0 items-center gap-1 font-medium" :class="state.tone">
       <component :is="state.icon" class="size-3" />{{ state.label }}
     </span>
-    <span v-if="info?.author && info.base && info.head" class="hidden min-w-0 items-center gap-1 truncate md:flex">
+    <span v-if="info?.author && info.base && info.head" class="hidden min-w-0 items-center gap-1 truncate @3xl:flex">
       <Avatar class="size-4">
         <AvatarImage v-if="info.authorAvatar" :src="info.authorAvatar" alt="" />
         <AvatarFallback class="text-[8px] uppercase">{{ info.author.slice(0, 1) }}</AvatarFallback>
       </Avatar>
       <span class="truncate">
         <span class="font-medium text-foreground">{{ info.author }}</span>{{ ' ' }}
-        <span class="hidden xl:inline">{{ `${verb} ${commits}into ` }}</span>
+        <span class="hidden @[96rem]:inline">{{ `${verb} ${commits}into ` }}</span>
         <template v-for="(branch, i) in [info.base, info.head]" :key="i">
           <button
             type="button"
@@ -87,8 +87,8 @@ const commentsTitle = computed(() =>
             {{ branch }}<Check v-if="copied === branch" class="size-3" />
           </button>
           <template v-if="i === 0">
-            <span class="hidden xl:inline">{{ ' from ' }}</span>
-            <ArrowLeft class="mx-0.5 inline size-3 align-[-2px] xl:hidden" aria-label="from" />
+            <span class="hidden @[96rem]:inline">{{ ' from ' }}</span>
+            <ArrowLeft class="mx-0.5 inline size-3 align-[-2px] @[96rem]:hidden" aria-label="from" />
           </template>
         </template>
       </span>

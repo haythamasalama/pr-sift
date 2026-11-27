@@ -1,0 +1,39 @@
+appId: me.haythamasalama.prsift
+productName: PR Sift
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+asar: true
+# prsift:// links open a pull request in the app.
+protocols:
+  - name: PR Sift
+    schemes: [prsift]
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  icon: build/icon.png
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  category: Development
+  executableName: pr-sift
+  target: [AppImage, deb]
+  icon: build/icon.png
+  maintainer: Haytham A. Salama
+deb:
+  packageName: pr-sift
+  artifactName: pr-sift_${version}_${arch}.${ext}
+publish: null
