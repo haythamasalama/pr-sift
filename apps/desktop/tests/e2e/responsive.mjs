@@ -258,7 +258,7 @@ const problems = () =>
   })
 
 const report = []
-for (const style of ['github', 'mono']) {
+for (const style of ['prsift', 'github', 'mono']) {
   await nav('Settings').click()
   await page.getByRole('tab', { name: 'Appearance' }).click()
   await page.locator(`#settings-style-${style}`).click()
