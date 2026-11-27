@@ -33,4 +33,7 @@ linux:
   target: [AppImage, deb]
   icon: build/icon.png
   maintainer: Haytham A. Salama
+deb:
+  packageName: pr-sift
+  artifactName: pr-sift_${version}_${arch}.${ext}
 publish: null
