@@ -5,8 +5,19 @@ defineProps<{ label: Label }>()
 </script>
 
 <template>
-  <!-- Quiet, like the canvas: a muted chip with a dot in the label's own colour. -->
-  <span class="inline-flex h-5 shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 text-[11px] text-muted-foreground"
-    ><span class="size-1.5 rounded-full" :style="{ backgroundColor: `#${label.color}` }" />{{ label.name }}</span
+  <!-- The label's own colour, softened: a tinted fill, a stronger edge, and text mixed toward the page's text colour,
+       so it reads in light and dark and in every style. -->
+  <span
+    class="label-chip inline-flex h-[22px] shrink-0 items-center rounded-full border px-[9px] text-xs font-medium"
+    :style="{ '--label': `#${label.color}` }"
+    >{{ label.name }}</span
   >
 </template>
+
+<style scoped>
+.label-chip {
+  background-color: color-mix(in srgb, var(--label) 17%, transparent);
+  border-color: color-mix(in srgb, var(--label) 44%, transparent);
+  color: color-mix(in srgb, var(--label) 55%, var(--foreground));
+}
+</style>

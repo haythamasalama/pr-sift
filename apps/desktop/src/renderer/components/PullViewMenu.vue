@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Switch } from '@/components/ui/switch'
 import { PULL_DETAIL_GROUPS, usePullView, type PullDensity } from '~/pulls/view'
 import Segmented from './Segmented.vue'
+import LabelChip from './LabelChip.vue'
 import StatusPill from './StatusPill.vue'
 
 // Which details the pull request rows show, with a sample row that follows each switch. Holds for every list.
@@ -36,11 +37,7 @@ const DENSITIES: { value: PullDensity; label: string }[] = [
               <span class="truncate font-semibold" :class="compact ? 'text-[13px]' : 'text-[15px] leading-5'"
                 >perf(orders): skip the unused total count in the search</span
               >
-              <span
-                v-if="shown.labels"
-                class="inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full border border-border px-2 text-xs text-muted-foreground"
-                ><span class="size-[7px] rounded-full bg-muted-foreground" />refactor</span
-              >
+              <LabelChip v-if="shown.labels" :label="{ name: 'refactor', color: 'c5def5' }" />
             </div>
             <div class="flex min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap text-muted-foreground">
               <span class="tabular-nums">#11364</span>
